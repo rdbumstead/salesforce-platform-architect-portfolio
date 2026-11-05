@@ -23,7 +23,7 @@ Create the user and the app by hand:
 1. Create the user `site-edge@ryanbumstead.com` on the Portfolio API Integration profile. Assign only `Portfolio_Site_Edge`.
 2. Setup, External Client App Manager, New External Client App, named "Portfolio Site Edge". Turn OAuth on, add the scope `api`, and turn on the client credentials flow, run as `site-edge@ryanbumstead.com`.
 3. Set the policy to admin approved users are pre authorized, and pre authorize through the permission set `Portfolio_Site_Edge`.
-4. Copy the consumer key into `SF_CLIENT_ID` and the consumer secret into `SF_CLIENT_SECRET`, in Cloudflare only. Put the My Domain URL, no trailing slash, into `SF_INSTANCE_URL`, and a long random value into `IP_HASH_SALT`.
+4. Copy the consumer key into `SF_CLIENT_ID` and the consumer secret into `SF_CLIENT_SECRET`, in Cloudflare only. Put the My Domain URL, no trailing slash, into `SF_INSTANCE_URL`, and a long random value into `IP_HASH_SALT`. All four are the Secret type (0.2).
 5. Put the same four values in the GitHub secrets `SITE_EDGE_CLIENT_ID`, `SITE_EDGE_CLIENT_SECRET`, `SITE_EDGE_INSTANCE_URL` and `SITE_EDGE_IP_HASH_SALT`, which the API Lab recording step reads.
 6. **Check the edge user.** `pipeline-status` returns 200 with the edge token. A user without `Site_Edge_Actions` gets 403 from the same call. A cover letter POST with a test hash returns provider Agentforce. I do not go on until all three pass.
 
@@ -31,17 +31,17 @@ Steps 2 and 3 copy the existing Portfolio API app. Its metadata, read from produ
 
 ### 0.2 The Cloudflare secrets and variables
 
-Set these on the Pages project `ryanbumstead`, Production environment: Cloudflare dashboard, Workers and Pages, `ryanbumstead`, Settings, with Production chosen, then Variables and secrets, Add (dashboard, read 2026-11-03).
+Set the secrets on the Pages project `ryanbumstead`, Production environment: Cloudflare dashboard, Workers and Pages, `ryanbumstead`, Settings, with Production chosen, then Variables and secrets, Add (dashboard, read 2026-11-03). Choose the Secret type for every one, `SF_INSTANCE_URL` included. `web/wrangler.toml` is the project's source of truth for plain variables, so a deploy drops any text variable set only in the dashboard (Maintenance Guide section 3.12). The switches and `PRODUCTION_HOSTS` go in `[vars]` in that file instead.
 
-| Name                                                                                                      | Kind     | Value                                                                                                                                                                     |
-| :-------------------------------------------------------------------------------------------------------- | :------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `SF_INSTANCE_URL`                                                                                         | Variable | The My Domain URL of the org, no trailing slash                                                                                                                           |
-| `SF_CLIENT_ID`                                                                                            | Secret   | The External Client App consumer key                                                                                                                                      |
-| `SF_CLIENT_SECRET`                                                                                        | Secret   | The External Client App consumer secret                                                                                                                                   |
-| `IP_HASH_SALT`                                                                                            | Secret   | A long random string. Visitor addresses are hashed with it at the edge and Salesforce never sees one                                                                      |
-| `TURNSTILE_SECRET`                                                                                        | Secret   | The Turnstile widget's secret key                                                                                                                                         |
-| `FEATURE_CONTACT`, `FEATURE_TESTIMONIAL`, `FEATURE_COVER_LETTER`, `FEATURE_API_LAB`, `FEATURE_LIVE_READS` | Variable | `live` or `recorded`. **On a production host a switch that is not set reads as live.** See 0.4                                                                            |
-| `PRODUCTION_HOSTS`                                                                                        | Variable | Optional. A comma list that replaces the default production hosts `ryanbumstead.pages.dev`, `ryanbumstead.com`, `www.ryanbumstead.com`. Any other host is always recorded |
+| Name                                                                                                      | Kind                            | Value                                                                                                                                                                     |
+| :-------------------------------------------------------------------------------------------------------- | :------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `SF_INSTANCE_URL`                                                                                         | Secret                          | The My Domain URL of the org, no trailing slash. Not sensitive, but a text variable would not survive a deploy                                                            |
+| `SF_CLIENT_ID`                                                                                            | Secret                          | The External Client App consumer key                                                                                                                                      |
+| `SF_CLIENT_SECRET`                                                                                        | Secret                          | The External Client App consumer secret                                                                                                                                   |
+| `IP_HASH_SALT`                                                                                            | Secret                          | A long random string. Visitor addresses are hashed with it at the edge and Salesforce never sees one                                                                      |
+| `TURNSTILE_SECRET`                                                                                        | Secret                          | The Turnstile widget's secret key                                                                                                                                         |
+| `FEATURE_CONTACT`, `FEATURE_TESTIMONIAL`, `FEATURE_COVER_LETTER`, `FEATURE_API_LAB`, `FEATURE_LIVE_READS` | `[vars]` in `web/wrangler.toml` | `live` or `recorded`, set in the file and not in the dashboard. **On a production host a switch that is not set reads as live.** See 0.4                                  |
+| `PRODUCTION_HOSTS`                                                                                        | `[vars]` in `web/wrangler.toml` | Optional. A comma list that replaces the default production hosts `ryanbumstead.pages.dev`, `ryanbumstead.com`, `www.ryanbumstead.com`. Any other host is always recorded |
 
 On GitHub, the variable `TURNSTILE_SITE_KEY` (the widget's site key, read by the build) and the secrets the build reads (Maintenance Guide section 3.12): `SFDX_SITE_BUILD_USERNAME`, `CLOUDFLARE_PAGES_TOKEN`, `SITE_DENYLIST` and the four `SITE_EDGE_*` secrets from 0.1. The Turnstile widget covers `ryanbumstead.com` and `ryanbumstead.pages.dev`. Turnstile checks the contact and testimonial forms only.
 
@@ -53,10 +53,10 @@ Behind it, `SubmissionGuard` rate limits each form by the hashed visitor address
 
 ### 0.4 Switch order
 
-1. **Before the first real data build reaches production**, set all five `FEATURE_*` variables to `recorded` on the Production environment. An unset switch reads as live on a production host, so a real data build with no variables would open the forms to Salesforce before the rate limit exists.
+1. All five `FEATURE_*` switches are `recorded` in `[vars]` in `web/wrangler.toml`, so every deploy carries them. An unset switch reads as live on a production host, which would open the forms to Salesforce before the rate limit exists. The first real data build on 2026-11-04 showed it: the switches had been set in the dashboard, that deploy dropped them, and `ryanbumstead.pages.dev` read all five as `live` until the file carried them.
 2. They stay `recorded` on `ryanbumstead.pages.dev` until cutover.
 3. At cutover, after the WAF rule in 0.3 exists, flip them to `live` one at a time and check each (section 2, step 4).
-4. A change to a variable applies from the next deployment, so run `site.yml` by hand after each flip (Maintenance Guide section 3.12).
+4. Each flip is a change to the file and a merge, which runs `site.yml` and deploys (Maintenance Guide section 3.12). Check `/api/features` once that deploy finishes.
 
 ### 0.5 Previews behind Cloudflare Access
 
@@ -107,9 +107,9 @@ Alternative that I make myself, in the repository: change `crons = ["*/5 * * * *
 1. In the Pages project `ryanbumstead`, Custom domains, add `ryanbumstead.com` and `www.ryanbumstead.com`. Let Cloudflare create the DNS records when it offers.
 2. Make `www` redirect to the apex. The Pages documentation says `_redirects` cannot do domain level redirects and points to Bulk Redirects and Redirect Rules (https://developers.cloudflare.com/pages/configuration/redirects/, read 2026-11-03). So I make a Single Redirect on the `ryanbumstead.com` zone: Rules, Overview, the template "Redirect from WWW to root" (Redirect Rules), Create from template. The zone has used 0 of its 10 Redirect Rules (dashboard, read 2026-11-03).
 3. Turn off the redirect that sends visitors to the Experience Cloud site. It is a Page Rule, not a Redirect Rule: `ryanbumstead.com` zone, Rules, Page Rules, position 1, URL `*ryanbumstead.com/*`, Forwarding URL with status 301 to the Salesforce site, path kept with `$2` (dashboard, read 2026-11-03). Its pattern also matches `www`, so `www` keeps forwarding to Salesforce until this rule is off. Turn its Enabled toggle off and keep the rule, so rollback is one toggle.
-4. Add the WAF rate limiting rule from 0.3, then flip the five switches to `live` in the order of 0.4, checking `/api/features` after each run of `site.yml`.
+4. Add the WAF rate limiting rule from 0.3, then flip the five switches to `live` in the order of 0.4, checking `/api/features` after each merge deploys.
 5. Check the home page, `/skills` and `/docs`, and two deep links such as `/api-lab` and `/resume`, at `https://ryanbumstead.com`. Each loads the static page. A request to `www` ends on the apex.
-6. Check `/api/features` on the apex shows five `live` values, then test each switch both ways: set it to `recorded`, run `site.yml`, check the page, set it back to `live` and check again.
+6. Check `/api/features` on the apex shows five `live` values, then test each switch both ways: set it to `recorded` in the file and merge, check the page once the deploy finishes, set it back to `live`, merge and check again. Each flip is its own pull request, because only a merged commit deploys.
 7. Submit the contact form and the testimonial form once each and confirm both land in Salesforce. Send a request with no Turnstile token and confirm it is refused. Run a cover letter and confirm the provider is Agentforce, not the template.
 
 ## 3. Same day

@@ -40,6 +40,34 @@ test('the leak scan catches a session id, an undeclared field, an email and a de
   assert.ok(!problems.some((problem) => problem.toLowerCase().includes('acme')), 'a match is never printed');
 });
 
+test('a denylist term matches whole words only', () => {
+  const denylist = 'XYZ, acmewidgets, Acme Widgets';
+  const clean = site({
+    'ResumeController.getHeader': { heroLine: 'Quotes from Pat Xyzzy and Sam McXyz', valueSentence: 'glass acmewidgetsco' }
+  });
+  assert.deepEqual(scan(clean, { denylist }).problems, [], 'a term inside a longer word is not a match');
+  ['XYZ', 'Built at (xyz).', 'line one\nXYZ', 'see https://www.acmewidgets.org/about', 'Acme\n  Widgets'].forEach((heroLine) => {
+    const dir = site({ 'ResumeController.getHeader': { heroLine } });
+    assert.ok(
+      scan(dir, { denylist }).problems.some((problem) => problem.includes('denylisted term')),
+      `a whole word is a match: ${JSON.stringify(heroLine)}`
+    );
+  });
+});
+
+test('an allowed entry that starts with @ allows that exact domain only', () => {
+  const allowedEmails = '@owner.test, one@other.test';
+  const ok = site({ 'ResumeController.getHeader': { heroLine: 'a@owner.test b@owner.test one@other.test' } });
+  assert.deepEqual(scan(ok, { denylist: 'zzzz', allowedEmails }).problems, []);
+  ['two@other.test', 'a@sub.owner.test', 'a@owner.test.evil.test', 'a@notowner.test'].forEach((address) => {
+    const dir = site({ 'ResumeController.getHeader': { heroLine: `write to ${address}` } });
+    assert.ok(
+      scan(dir, { denylist: 'zzzz', allowedEmails }).problems.some((problem) => problem.includes('email address')),
+      `${address} is not allowed`
+    );
+  });
+});
+
 test('example domains are allowed, and a fixture build may skip the denylist', () => {
   const dir = site({ 'ResumeController.getHeader': { heroLine: 'write to you@example.com' } });
   const result = scan(dir, { fixture: true });

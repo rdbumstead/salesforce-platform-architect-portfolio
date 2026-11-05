@@ -137,7 +137,9 @@ jobs:
         working-directory: web
         env:
           SITE_DENYLIST: ${{ secrets.SITE_DENYLIST }}
-          SITE_ALLOWED_EMAILS: portfolio-api@ryanbumstead.com
+          # Every address at my own domain is public in the repo docs (the build, edge and API
+          # users), and the docs viewer serves those docs as page data. Any other address fails.
+          SITE_ALLOWED_EMAILS: "@ryanbumstead.com"
         run: node build/leak-scan.mjs dist
 
       # The project is made once by hand (see the runbook). Until it exists, or while the token
