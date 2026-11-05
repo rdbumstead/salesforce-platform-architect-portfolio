@@ -98,7 +98,9 @@ export function localLabel(value) {
 /**
  * The live data marker's words for a section read when the site was built.
  * @param {string} value the build time, ISO 8601
- * @returns {{markerLabel: string, panelHeading: string, explanation: string}}
+ * markerShort is the same words without the time, for the button on a narrow screen. The full
+ * label stays in the button's title and spoken name.
+ * @returns {{markerLabel: string, markerShort: string, panelHeading: string, explanation: string}}
  */
 export function buildWording(value) {
   const utc = utcLabel(value);
@@ -106,6 +108,7 @@ export function buildWording(value) {
   const when = local ? `${utc} (${local} your time)` : utc;
   return {
     markerLabel: `From Salesforce · built ${utc}`,
+    markerShort: `From Salesforce · built ${utc.split(", ")[0]}`,
     panelHeading: "Salesforce data",
     explanation: `This section was read from my Salesforce records when the site was built, on ${when}. Each build reads them through an allowlisted API, after every change and every 6 hours.`
   };

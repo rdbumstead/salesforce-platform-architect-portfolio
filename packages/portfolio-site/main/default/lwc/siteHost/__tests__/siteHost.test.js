@@ -32,6 +32,7 @@ describe("c-site-host", () => {
     expect(words.markerLabel).toBe(
       "From Salesforce · built 3 Nov 2026, 14:05 UTC"
     );
+    expect(words.markerShort).toBe("From Salesforce · built 3 Nov 2026");
     expect(words.explanation).toContain(
       "when the site was built, on 3 Nov 2026, 14:05 UTC"
     );

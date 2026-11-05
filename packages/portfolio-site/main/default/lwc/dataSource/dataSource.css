@@ -71,6 +71,17 @@
   background-color: var(--pf-accent);
 }
 
+/* Keep the words on one line where they fit. The counts then wrap under them, never inside them. */
+.marker-label {
+  white-space: nowrap;
+}
+
+@media (max-width: 340px) {
+  .marker-label {
+    white-space: normal;
+  }
+}
+
 .marker-counts {
   min-width: 0;
   color: var(--pf-body);
