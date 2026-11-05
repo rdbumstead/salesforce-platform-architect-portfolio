@@ -132,6 +132,23 @@ export async function exportAllowlist(connection) {
   return body.calls;
 }
 
+const ENTITIES = { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'", '&#x27;': "'" };
+
+/**
+ * The recorded GraphQL response carries text HTML encoded, such as "AI &amp; Innovation". The
+ * Lightning wire on the Salesforce site hands the component the plain text, and a component
+ * escapes what it prints. So the build decodes each string once, in one pass, and a literal
+ * "&amp;amp;" comes out as "&amp;".
+ */
+export function decodeEntities(value) {
+  if (typeof value === 'string') return value.replace(/&(?:amp|lt|gt|quot|#39|#x27);/g, (match) => ENTITIES[match]);
+  if (Array.isArray(value)) return value.map(decodeEntities);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, decodeEntities(item)]));
+  }
+  return value;
+}
+
 /** One GraphQL query as the build user. */
 export async function graphqlCall(connection, query, variables) {
   const { status, body } = await request(connection, `${connection.instanceUrl}/services/data/${API_VERSION}/graphql`, {
@@ -143,7 +160,7 @@ export async function graphqlCall(connection, query, variables) {
   if (body.errors && body.errors.length) {
     throw new Error(`GraphQL query failed: ${body.errors.map((error) => error.message).join('; ')}`);
   }
-  return { data: body.data, errors: [] };
+  return { data: decodeEntities(body.data), errors: [] };
 }
 
 /** The key a read is filed under, the same key the browser shims look up. */

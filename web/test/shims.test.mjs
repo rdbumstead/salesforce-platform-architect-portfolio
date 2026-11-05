@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readKey, setSiteData, lookup } from '../src/shims/site-data.js';
 import { apexMethod, refreshApex, setRequestHandler, NOT_IN_BUILD } from '../src/shims/apex.js';
 import { gql, graphqlParams, normalizeQuery, graphql } from '../src/shims/graphql.js';
-import { keyOf } from '../build/export.mjs';
+import { keyOf, decodeEntities } from '../build/export.mjs';
 import { currentPageReference } from '../src/shims/navigation.js';
 
 test('a read key sorts parameters and drops undefined ones', () => {
@@ -109,4 +109,11 @@ test('a failed section load is dropped when the page is being left and thrown ot
   setLeaving(true);
   assert.equal(unlessLeaving(failure), null);
   setLeaving(false);
+});
+
+test('the build decodes the HTML encoded text of a GraphQL response once', () => {
+  const data = { node: { Name: { value: 'AI &amp; Innovation' }, list: ['a &lt; b', 'it&#39;s'], n: 3 } };
+  assert.deepEqual(decodeEntities(data), { node: { Name: { value: 'AI & Innovation' }, list: ['a < b', "it's"], n: 3 } });
+  assert.equal(decodeEntities('&amp;amp;'), '&amp;');
+  assert.equal(decodeEntities('AI & Innovation'), 'AI & Innovation');
 });
