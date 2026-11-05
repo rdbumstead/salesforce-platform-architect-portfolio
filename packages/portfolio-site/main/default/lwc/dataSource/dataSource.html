@@ -6,10 +6,11 @@
       aria-expanded={expanded}
       aria-controls={panelId}
       aria-label={buttonLabel}
+      title={markerTitle}
       onclick={handleToggle}
     >
       <span class="dot" aria-hidden="true"></span>
-      <span class="marker-label" aria-hidden="true">{wording.markerLabel}</span>
+      <span class="marker-label" aria-hidden="true">{visibleLabel}</span>
       <span lwc:if={hasSummary} class="marker-counts" aria-hidden="true"
         >{summary}</span
       >

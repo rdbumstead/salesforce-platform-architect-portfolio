@@ -234,6 +234,16 @@ export default class DataSource extends LightningElement {
     return this.isOpen ? "true" : "false";
   }
 
+  /** The words shown on the button. The static site shows the date, the full label is its title. */
+  get visibleLabel() {
+    return this.wording.markerShort || this.wording.markerLabel;
+  }
+
+  /** The full label as a hover title, only where the shown words are the shorter form. */
+  get markerTitle() {
+    return this.wording.markerShort ? this.wording.markerLabel : undefined;
+  }
+
   get buttonLabel() {
     const label = this.wording.markerLabel;
     return this.hasSummary ? `${label}, ${this.summary}` : label;
