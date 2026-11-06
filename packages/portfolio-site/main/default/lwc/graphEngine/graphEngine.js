@@ -431,6 +431,9 @@ export function attachPanZoom(d3, svg, options = {}) {
   }
   // A double click selects a node twice, so it never zooms.
   selection.call(behaviour).on("dblclick.zoom", null);
+  // d3 stops text selection during a drag with a listener on the window, which never hears a
+  // selectstart from inside a shadow root, so a drag selected page text. Stop it here instead.
+  selection.on("selectstart.pan", (event) => event.preventDefault());
   // A button move eases over the duration when one is given and d3-transition is loaded.
   const mover = (duration) => {
     if (
@@ -466,7 +469,7 @@ export function attachPanZoom(d3, svg, options = {}) {
       selection.call(behaviour.translateBy, dx / k, dy / k);
     },
     scale: () => d3.zoomTransform(svg).k,
-    detach: () => selection.on(".zoom", null)
+    detach: () => selection.on(".zoom", null).on(".pan", null)
   };
 }
 

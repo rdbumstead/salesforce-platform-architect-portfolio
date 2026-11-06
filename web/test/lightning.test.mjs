@@ -115,3 +115,34 @@ test("the card does not add an outer margin, the page section owns the gutter", 
   );
   assert.doesNotMatch(css, /:host\s*\{[^}]*margin/);
 });
+
+test("the card follows the site theme through the variables the platform card reads", () => {
+  const css = fs.readFileSync(
+    path.join(LIGHTNING_DIR, "card/card.css"),
+    "utf8"
+  );
+  const card = css.match(/\.card\s*\{([^}]*)\}/)[1];
+  assert.match(card, /background:\s*var\(--dxp-g-root,/);
+  assert.match(card, /border:\s*1px solid var\(--dxp-g-neutral-1,/);
+  assert.match(card, /color:\s*var\(--dxp-g-root-contrast,/);
+});
+
+test("no stand in sets a background, border or text colour without a theme variable", () => {
+  // A literal colour in a shadow root never changes with the theme, which is how the card's
+  // header went white on white in dark mode. A literal is fine only as a var() fallback.
+  const offenders = [];
+  for (const name of fs.readdirSync(LIGHTNING_DIR)) {
+    const file = path.join(LIGHTNING_DIR, name, `${name}.css`);
+    if (!fs.existsSync(file)) continue;
+    const css = fs.readFileSync(file, "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+    for (const match of css.matchAll(
+      /(?:^|[;{\s])((?:background(?:-color)?|border(?:-[a-z]+)*|color|fill|stroke)\s*:\s*([^;}]*))/g
+    )) {
+      const value = match[2].replace(/var\([^()]*(?:\([^()]*\)[^()]*)*\)/g, "");
+      if (/#[0-9a-f]{3,8}\b|rgba?\(|\b(white|black)\b/i.test(value)) {
+        offenders.push(`${name}.css: ${match[1].trim()}`);
+      }
+    }
+  }
+  assert.deepEqual(offenders, []);
+});

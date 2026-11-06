@@ -814,7 +814,7 @@ describe("c-skill-network (Large form factor)", () => {
     expect(thirdOptions.position("a01S1")).not.toEqual({ x: 5, y: 5 });
   });
 
-  it("pans a little past the content at any zoom and leaves the plain wheel to the page", async () => {
+  it("pans far enough at the fit to bring an edge to the middle and leaves the plain wheel to the page", async () => {
     attachPanZoom.mockReturnValue(fakeControls());
     const element = await mountWithData();
     await openGraph(element);
@@ -826,6 +826,17 @@ describe("c-skill-network (Large form factor)", () => {
     expect(top).toBeLessThanOrEqual(-120);
     expect(right).toBeGreaterThanOrEqual(size + 120);
     expect(bottom).toBeGreaterThanOrEqual(size + 120);
+    // At the fit the content spans the view less its 24 unit fit margin on each side, and the
+    // limit must reach half a view past that on every side, or a drag stops after a short way.
+    const [[x0, y0], [x1, y1]] = options.extent;
+    const k = options.rest;
+    const fitted = (span) => (span - 48) / k;
+    expect(right - left).toBeGreaterThanOrEqual(
+      fitted(x1 - x0) + (x1 - x0) / k - 1
+    );
+    expect(bottom - top).toBeGreaterThanOrEqual(
+      fitted(y1 - y0) + (y1 - y0) / k - 1
+    );
     expect(options.ctrlWheel).toBe(true);
     expect(
       element.shadowRoot.querySelector(".graph-hint").textContent
