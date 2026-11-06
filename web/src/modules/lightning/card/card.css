@@ -1,13 +1,14 @@
 :host {
   display: block;
 }
+/* The platform card reads the same site theme variables, so both follow the light and dark sets. */
 .card {
   box-sizing: border-box;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: var(--dxp-g-root, #ffffff);
+  border: 1px solid var(--dxp-g-neutral-1, #e5e7eb);
   border-radius: 0.25rem;
   box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.1);
-  color: inherit;
+  color: var(--dxp-g-root-contrast, inherit);
 }
 .header {
   box-sizing: border-box;
