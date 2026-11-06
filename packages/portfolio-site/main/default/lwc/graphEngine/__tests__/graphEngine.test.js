@@ -634,6 +634,26 @@ describe("c/graphEngine attachPanZoom and attachNodeDrag", () => {
     expect(onGestureEnd).toHaveBeenCalledWith("mouse");
   });
 
+  it("stops a drag on the graph from selecting text, and lets go of that on detach", () => {
+    const svg = svgWithNodes([]);
+    const controls = engine.attachPanZoom(d3, svg, {
+      onZoom: jest.fn(),
+      extent: EXTENT
+    });
+    const select = () => {
+      const event = new CustomEvent("selectstart", {
+        bubbles: true,
+        cancelable: true
+      });
+      svg.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+
+    expect(select()).toBe(true);
+    controls.detach();
+    expect(select()).toBe(false);
+  });
+
   // A touch event as d3-zoom reads it: touches still down, and the ones that changed.
   function touch(type, down, changed) {
     const event = new CustomEvent(type, { bubbles: true, cancelable: true });
