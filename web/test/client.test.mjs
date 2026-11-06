@@ -90,6 +90,8 @@ test('recorded footer readings return the captured snapshot marked recorded with
   assert.equal((await sample('FooterController.getSystemSnapshot', {})).sample, true);
   const none = createRequestHandler({ fetch: fakeSite({ features: ALL_RECORDED }).fetch });
   await assert.rejects(none('FooterController.getSystemSnapshot', {}), (error) => error.status === 503);
+  const held = createRequestHandler({ fetch: fakeSite({ features: ALL_RECORDED, files: { '/recorded/glass-box.json': { recordedAt: null, snapshot: null } } }).fetch });
+  await assert.rejects(held('FooterController.getSystemSnapshot', {}), (error) => error.status === 503);
 });
 
 test('a host with no functions reads every switch as recorded', async () => {

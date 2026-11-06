@@ -424,6 +424,9 @@ test('the sample footer readings are copied only into a fixture build', () => {
   assert.ok(fs.existsSync(path.join(fixture, 'recorded/glass-box.json')));
   const real = fs.mkdtempSync(path.join(os.tmpdir(), 'recorded-real-'));
   copyRecorded(real, undefined, { fixture: false });
-  assert.ok(!fs.existsSync(path.join(real, 'recorded/glass-box.json')));
+  // A real data build holds an empty snapshot instead, so a build that never captures serves no 404.
+  const held = JSON.parse(fs.readFileSync(path.join(real, 'recorded/glass-box.json'), 'utf8'));
+  assert.deepEqual(held, { recordedAt: null, snapshot: null });
+  assert.notEqual(held.sample, true);
   assert.ok(fs.existsSync(path.join(real, 'recorded/cover-letter.json')));
 });
