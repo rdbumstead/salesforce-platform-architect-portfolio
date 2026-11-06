@@ -29,12 +29,21 @@ export const SECRETS = ['SF_INSTANCE_URL', 'SF_CLIENT_ID', 'SF_CLIENT_SECRET', '
 /** The sample footer readings. Only a fixture build keeps it, so real data is never mixed with a sample. */
 export const SAMPLE_ONLY = ['glass-box.json'];
 
+/**
+ * What a real data build holds in place of the sample until captureSnapshot replaces it. A pull
+ * request build never captures, and a missing file is a 404 the browser logs on every page.
+ * With no snapshot the footer falls back exactly as it does when the file is absent.
+ */
+export const NO_SNAPSHOT = { recordedAt: null, snapshot: null };
+
 export function copyRecorded(distDir, source = RECORDED_SOURCE, { fixture = true } = {}) {
   if (!fs.existsSync(source)) return [];
   const target = path.join(distDir, 'recorded');
   fs.mkdirSync(target, { recursive: true });
   fs.cpSync(source, target, { recursive: true });
-  if (!fixture) SAMPLE_ONLY.forEach((name) => fs.rmSync(path.join(target, name), { force: true }));
+  if (!fixture) {
+    SAMPLE_ONLY.forEach((name) => fs.writeFileSync(path.join(target, name), `${JSON.stringify(NO_SNAPSHOT)}\n`));
+  }
   return fs.readdirSync(target);
 }
 
