@@ -72,10 +72,26 @@ test('recorded mode never calls a function: sample letter, recorded lab response
   assert.deepEqual(await handler('ApiLabController.invokeVersioned', params), { statusCode: 200 });
   await assert.rejects(handler('ApiLabController.invokeVersioned', { ...params, path: '/sapi/skills' }), (error) => error.body.message === MESSAGES.noRecordedCall);
   await assert.rejects(handler('ApiLabController.requestEvaluatorToken', {}), (error) => error.body.message === MESSAGES.noToken);
-  await assert.rejects(handler('FooterController.getSystemSnapshot', {}));
+  await assert.rejects(handler('FooterController.getSystemSnapshot', {}), (error) => error.body.message === MESSAGES.noLive);
   assert.ok(site.seen.every((entry) => !entry.url.startsWith('/api/') || entry.url === '/api/features'));
   const empty = createRequestHandler({ fetch: fakeSite({ features: ALL_RECORDED }).fetch });
   await assert.rejects(empty('ApiLabController.invokeVersioned', params), (error) => error.body.message === MESSAGES.noRecordedLab);
+});
+
+test('recorded footer readings return the captured snapshot marked recorded with its capture time', async () => {
+  const site = fakeSite({
+    features: ALL_RECORDED,
+    files: { '/recorded/glass-box.json': { recordedAt: '2026-11-01T12:00:00.000Z', snapshot: { aiRequestsToday: 3, orgQuotas: [] } } }
+  });
+  const handler = createRequestHandler({ fetch: site.fetch });
+  assert.deepEqual(await handler('FooterController.getSystemSnapshot', {}), { aiRequestsToday: 3, orgQuotas: [], recorded: true, recordedAt: '2026-11-01T12:00:00.000Z' });
+  assert.ok(site.seen.every((entry) => !entry.url.startsWith('/api/') || entry.url === '/api/features'));
+  const sample = createRequestHandler({ fetch: fakeSite({ features: ALL_RECORDED, files: { '/recorded/glass-box.json': { sample: true, recordedAt: 'x', snapshot: {} } } }).fetch });
+  assert.equal((await sample('FooterController.getSystemSnapshot', {})).sample, true);
+  const none = createRequestHandler({ fetch: fakeSite({ features: ALL_RECORDED }).fetch });
+  await assert.rejects(none('FooterController.getSystemSnapshot', {}), (error) => error.status === 503);
+  const held = createRequestHandler({ fetch: fakeSite({ features: ALL_RECORDED, files: { '/recorded/glass-box.json': { recordedAt: null, snapshot: null } } }).fetch });
+  await assert.rejects(held('FooterController.getSystemSnapshot', {}), (error) => error.status === 503);
 });
 
 test('a host with no functions reads every switch as recorded', async () => {
@@ -144,50 +160,27 @@ test('a build time wire that has no live reading never calls the handler', async
   setRequestHandler(null);
 });
 
-/** Just enough DOM for the mount swap. */
-function fakeDocument() {
-  const make = (tag) => ({
-    tag,
-    children: [],
-    style: {},
-    attrs: {},
-    setAttribute(name, value) {
-      this.attrs[name] = value;
-    },
-    appendChild(child) {
-      this.children.push(child);
-    },
-    append(...kids) {
-      this.children.push(...kids);
-    },
-    replaceWith(node) {
-      const siblings = this.parent.children;
-      siblings[siblings.indexOf(this)] = node;
-    }
-  });
-  return { createElement: make };
-}
-
-test('a form whose switch reads recorded is replaced with the profile links, a live one is kept', () => {
-  const doc = fakeDocument();
-  const form = doc.createElement('c-contact-form');
-  const testimonialForm = doc.createElement('c-testimonial-submit');
+test('a form whose switch reads recorded is paused with the profile links, a live one is kept', () => {
+  const form = { tag: 'c-contact-form' };
+  const testimonialForm = { tag: 'c-testimonial-submit' };
   const root = {
     children: [form, testimonialForm],
     querySelectorAll(tag) {
       return this.children.filter((child) => child.tag === tag);
     }
   };
-  form.parent = root;
-  testimonialForm.parent = root;
-  const replaced = swapRecordedForms(root, { ...LIVE, contact: 'recorded' }, [{ label: 'GitHub', url: 'https://github.com/x' }, { label: 'Bad', url: 'javascript:alert(1)' }], doc);
-  assert.equal(replaced, 1);
-  assert.equal(root.children[0].tag, 'section');
-  assert.equal(root.children[0].attrs['data-recorded'], 'contact');
-  const list = root.children[0].children[2];
-  assert.equal(list.children.length, 1, 'only an https link is kept');
-  assert.equal(root.children[1].tag, 'c-testimonial-submit');
-  assert.ok(FALLBACK_LINKS.length > 0);
+  const links = [
+    { label: 'GitHub', url: 'https://github.com/x' },
+    { label: 'Bad', url: 'javascript:alert(1)' },
+    { label: 'Contact', url: 'https://example.com/contact' }
+  ];
+  const paused = swapRecordedForms(root, { ...LIVE, contact: 'recorded' }, links);
+  assert.equal(paused, 1);
+  assert.equal(form.paused, true);
+  assert.deepEqual(form.pausedLinks, [{ label: 'GitHub', url: 'https://github.com/x' }], 'only a known https link is kept');
+  assert.equal(testimonialForm.paused, undefined, 'a live form is untouched');
+  swapRecordedForms(root, { ...LIVE, testimonial: 'recorded' }, []);
+  assert.deepEqual(testimonialForm.pausedLinks, FALLBACK_LINKS, 'no profile read falls back');
 });
 
 test('a preview build sends noindex on every path and a production build does not', () => {

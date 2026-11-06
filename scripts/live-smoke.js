@@ -122,9 +122,9 @@ const ROUTES = [
   }
 ];
 
-// The static site's forms give way to a note when their switch reads recorded (every preview).
-// The note carries data-recorded with the switch name. The Salesforce site has no /api/features,
-// so there the list is used exactly as written.
+// When a switch reads recorded (every preview), the static site renders the real form paused,
+// with every control disabled and a note inside it, so the smoke expects that note in the form.
+// The Salesforce site has no /api/features, so there the list is used exactly as written.
 const FORM_SWAPS = {
   "/contact": { feature: "contact", form: "c-contact-form" },
   "/testimonials": { feature: "testimonial", form: "c-testimonial-submit" }
@@ -153,7 +153,7 @@ function parseFeatures(status, text) {
 
 /**
  * The route list for the switches read. With none, or a switch that reads live, a route is
- * unchanged. A recorded switch swaps the form the route expects for the recorded note.
+ * unchanged. A recorded switch swaps the form the route expects for the paused note inside it.
  * @param {object[]} routes the route list
  * @param {object|null} features the switches, or null
  * @returns {object[]} the list to check
@@ -170,9 +170,7 @@ function routesFor(routes, features) {
     return {
       ...route,
       components: route.components.map((entry) =>
-        entry === swap.form
-          ? `section.recorded-note[data-recorded="${swap.feature}"]`
-          : entry
+        entry === swap.form ? `${swap.form} [data-id="paused-note"]` : entry
       )
     };
   });

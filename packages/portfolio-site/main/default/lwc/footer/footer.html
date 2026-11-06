@@ -6,9 +6,12 @@
       >
 
       <div class="metrics-head">
-        <p class="metrics-caption" data-id="metrics-caption">
-          Live readings from Salesforce and its integrations
-        </p>
+        <p class="metrics-caption" data-id="metrics-caption">{captionText}</p>
+        <template lwc:if={recordedLabel}>
+          <p class="metrics-caption" data-id="recorded-label">
+            {recordedLabel}
+          </p>
+        </template>
         <c-view-source source-key="footer"></c-view-source>
         <c-analytics-events></c-analytics-events>
         <c-view-source
@@ -110,14 +113,16 @@
               >Quotas and limits</span
             >
             <ul class="group-list" aria-labelledby="footer-group-quotas">
-              <li class="metric">
-                <span
-                  class="target ai-requests"
-                  data-id="ai-requests"
-                  onmouseenter={handleQuotaVisibility}
-                  >AI requests today: {aiRequestsToday}</span
-                >
-              </li>
+              <template lwc:if={showAiRequests}>
+                <li class="metric">
+                  <span
+                    class="target ai-requests"
+                    data-id="ai-requests"
+                    onmouseenter={handleQuotaVisibility}
+                    >AI requests today: {aiRequestsToday}</span
+                  >
+                </li>
+              </template>
               <template for:each={quotaRows} for:item="row">
                 <li key={row.key} class="metric" data-id="quota">
                   {row.label}

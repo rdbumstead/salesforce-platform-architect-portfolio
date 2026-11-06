@@ -45,6 +45,15 @@
  *                      returns them, the site's page views. The button carries aria-expanded
  *                      and keeps focus, and Escape closes the panel. Opening it sends
  *                      storage_panel_opened once.
+ *                      On the static site, while the live reads switch says recorded, the
+ *                      snapshot is the one the build captured, marked recorded with its capture
+ *                      time. The caption then reads "Readings from Salesforce and its
+ *                      integrations" and a label under it gives the capture time. The GraphQL
+ *                      item is a browser probe and cannot be recorded, so it is left out
+ *                      instead of reading "unavailable" beside a full set of readings.
+ *                      AI requests today, CPU time and Memory describe one request or one day,
+ *                      so a copy saved at build time would read as current when it is not.
+ *                      They are left out of a recorded snapshot too.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -56,7 +65,7 @@ import basePath from "@salesforce/community/basePath";
 import getLinks from "@salesforce/apex/FooterController.getLinks";
 import getSystemSnapshot from "@salesforce/apex/FooterController.getSystemSnapshot";
 import { EVENTS, trackEvent } from "c/analyticsService";
-import { IS_STATIC } from "c/siteHost";
+import { IS_STATIC, utcLabel } from "c/siteHost";
 
 /** What the copyright line says the site is built on, true on each host. */
 export const BUILT_ON = IS_STATIC
@@ -335,7 +344,32 @@ export default class Footer extends LightningElement {
     }));
   }
 
+  /** True when the snapshot is the one the static build captured. */
+  get snapshotRecorded() {
+    return this.snapshot?.recorded === true;
+  }
+
+  get captionText() {
+    return this.snapshotRecorded
+      ? "Readings from Salesforce and its integrations"
+      : "Live readings from Salesforce and its integrations";
+  }
+
+  get recordedLabel() {
+    if (!this.snapshotRecorded) {
+      return "";
+    }
+    if (this.snapshot.sample) {
+      return "Sample readings for this preview build, not from Salesforce";
+    }
+    const when = utcLabel(this.snapshot.recordedAt);
+    return when ? `From Salesforce · captured ${when}` : "";
+  }
+
   get graphqlLabel() {
+    if (this.graphqlFailed && this.snapshotRecorded) {
+      return null;
+    }
     if (this.graphqlFailed) {
       return "GraphQL: unavailable";
     }
@@ -392,6 +426,11 @@ export default class Footer extends LightningElement {
 
   get aiRequestsToday() {
     return formatNumber(this.snapshot?.aiRequestsToday ?? 0);
+  }
+
+  /** A day's count saved at build time would read as today's, so recorded builds leave it out. */
+  get showAiRequests() {
+    return !this.snapshotRecorded;
   }
 
   get storage() {
@@ -489,7 +528,7 @@ export default class Footer extends LightningElement {
     const kb = (bytes) => Math.round((bytes || 0) / 1024);
     const of = (used, max) =>
       `${formatNumber(used ?? 0)} of ${formatNumber(max ?? 0)}`;
-    return [
+    const rows = [
       {
         key: "cpu",
         label: `CPU time: ${of(s.cpuTimeMs, s.cpuTimeLimitMs)} ms`
@@ -503,6 +542,10 @@ export default class Footer extends LightningElement {
         label: `Database queries: ${of(s.soqlQueries, s.soqlQueryLimit)}`
       }
     ];
+    // CPU time and Memory belong to the one request that took the reading.
+    return this.snapshotRecorded
+      ? rows.filter((row) => row.key !== "cpu" && row.key !== "heap")
+      : rows;
   }
 
   handleBadgeError(event) {

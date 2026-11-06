@@ -194,3 +194,22 @@
     animation: none;
   }
 }
+
+.paused-note {
+  margin: 1.25rem 0 0;
+  color: var(--form-muted);
+  font-size: 0.875rem;
+}
+
+.paused-text {
+  margin: 0;
+}
+
+.paused-links {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin: 0.25rem 0 0;
+  padding: 0;
+}

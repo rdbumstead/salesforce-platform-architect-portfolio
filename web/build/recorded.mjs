@@ -8,6 +8,10 @@
  * usage counter row, for every catalog path that takes no parameters. It runs only when
  * SF_INSTANCE_URL, SF_CLIENT_ID, SF_CLIENT_SECRET and IP_HASH_SALT are all set. Without
  * them nothing is written and recorded mode says no recorded responses are in this build.
+ * The footer readings are one GET of glass-box as the same edge user. It is read only and
+ * writes no row. The answer holds provider states, integration states, org quota counts and
+ * the stored storage figures, which the live footer already shows to everyone. It names no
+ * person and no client. It is saved with its capture time in recorded/glass-box.json.
  * These files live under /recorded, not /data, because /data is cached as immutable.
  */
 import crypto from 'node:crypto';
@@ -22,11 +26,24 @@ import { labKey } from '../src/shims/api-client.js';
 export const RECORDED_SOURCE = path.join(WEB_DIR, 'fixtures/recorded');
 export const SECRETS = ['SF_INSTANCE_URL', 'SF_CLIENT_ID', 'SF_CLIENT_SECRET', 'IP_HASH_SALT'];
 
-export function copyRecorded(distDir, source = RECORDED_SOURCE) {
+/** The sample footer readings. Only a fixture build keeps it, so real data is never mixed with a sample. */
+export const SAMPLE_ONLY = ['glass-box.json'];
+
+/**
+ * What a real data build holds in place of the sample until captureSnapshot replaces it. A pull
+ * request build never captures, and a missing file is a 404 the browser logs on every page.
+ * With no snapshot the footer falls back exactly as it does when the file is absent.
+ */
+export const NO_SNAPSHOT = { recordedAt: null, snapshot: null };
+
+export function copyRecorded(distDir, source = RECORDED_SOURCE, { fixture = true } = {}) {
   if (!fs.existsSync(source)) return [];
   const target = path.join(distDir, 'recorded');
   fs.mkdirSync(target, { recursive: true });
   fs.cpSync(source, target, { recursive: true });
+  if (!fixture) {
+    SAMPLE_ONLY.forEach((name) => fs.writeFileSync(path.join(target, name), `${JSON.stringify(NO_SNAPSHOT)}\n`));
+  }
   return fs.readdirSync(target);
 }
 
@@ -65,14 +82,35 @@ export async function captureLab(distDir, env = process.env, versions = ['v2']) 
   return { recorded: Object.keys(calls).length, skipped };
 }
 
+/**
+ * The footer readings as they stood at build time.
+ * @returns {Promise<{recorded: boolean, message?: string}|null>} null when the secrets are missing
+ */
+export async function captureSnapshot(distDir, env = process.env, now = new Date()) {
+  if (!hasSecrets(env)) return null;
+  const outcome = await callAction(env, { action: 'glass-box', method: 'GET', recording: true, timeoutMs: 30000 });
+  if (!outcome.ok || !outcome.result || typeof outcome.result !== 'object') {
+    return { recorded: false, message: outcome.message || 'no result' };
+  }
+  const dir = path.join(distDir, 'recorded');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'glass-box.json'), `${JSON.stringify({ recordedAt: now.toISOString(), snapshot: outcome.result })}\n`);
+  return { recorded: true };
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  captureLab(path.join(WEB_DIR, 'dist'))
-    .then((result) => {
+  const distDir = path.join(WEB_DIR, 'dist');
+  captureLab(distDir)
+    .then(async (result) => {
       if (!result) console.log('No edge secrets, so no API Lab responses were recorded. Recorded mode says so.');
       else {
         console.log(`Recorded ${result.recorded} API Lab responses.`);
         result.skipped.forEach((line) => console.log(`Skipped ${line}`));
       }
+      const snapshot = await captureSnapshot(distDir);
+      if (!snapshot) console.log('No edge secrets, so no footer readings were recorded.');
+      else if (snapshot.recorded) console.log('Recorded the footer readings.');
+      else console.log(`The footer readings were not recorded: ${snapshot.message}`);
     })
     .catch((error) => {
       console.error(error.message);

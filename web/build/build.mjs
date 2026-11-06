@@ -174,7 +174,7 @@ export async function build(args = new Set()) {
 
   writePages({ routes, scripts: bundled.scripts, readKeys, reads, manifest, resourceUrls, distDir: DIST_DIR });
   writeLabPaths();
-  copyRecorded(DIST_DIR);
+  copyRecorded(DIST_DIR, undefined, { fixture: Boolean(manifest.fixture) });
   writeHostFiles(copied.lines, isPreviewBuild(args));
 
   const report = {

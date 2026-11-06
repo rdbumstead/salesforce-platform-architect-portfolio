@@ -276,7 +276,7 @@ test("switches that read live keep the forms the smoke expects", () => {
   assert.deepStrictEqual(routesFor(ROUTES, features), ROUTES);
 });
 
-test("recorded switches swap the form for the recorded note and keep the rest", () => {
+test("recorded switches expect the paused note inside the form and keep the rest", () => {
   const features = parseFeatures(
     200,
     JSON.stringify({ ...LIVE, contact: "recorded", testimonial: "recorded" })
@@ -284,12 +284,12 @@ test("recorded switches swap the form for the recorded note and keep the rest", 
   const routes = routesFor(ROUTES, features);
   const find = (list, route) => list.find((item) => item.path === route);
   assert.deepStrictEqual(find(routes, "/contact").components, [
-    'section.recorded-note[data-recorded="contact"]'
+    'c-contact-form [data-id="paused-note"]'
   ]);
   const testimonials = find(routes, "/testimonials").components;
   assert.strictEqual(
     testimonials[0],
-    'section.recorded-note[data-recorded="testimonial"]'
+    'c-testimonial-submit [data-id="paused-note"]'
   );
   assert.deepStrictEqual(
     testimonials[1],

@@ -1,12 +1,21 @@
 <template>
   <article class="card">
-    <header class="card-header">
-      <h2 class="card-title">
-        <slot name="title">{title}</slot>
-      </h2>
-      <div class="card-actions"><slot name="actions"></slot></div>
-    </header>
-    <div class="card-body"><slot></slot></div>
-    <footer class="card-footer"><slot name="footer"></slot></footer>
+    <div class="header">
+      <header class="media">
+        <div lwc:if={iconName} class="figure">
+          <lightning-icon icon-name={iconName} size="small"></lightning-icon>
+        </div>
+        <div class="media-body">
+          <h2 class="card-title">
+            <slot name="title"><span class="truncate">{title}</span></slot>
+          </h2>
+        </div>
+      </header>
+      <div class="actions"><slot name="actions"></slot></div>
+    </div>
+    <div class="body"><slot></slot></div>
+    <div class={footerClass}>
+      <slot name="footer" onslotchange={handleFooterChange}></slot>
+    </div>
   </article>
 </template>

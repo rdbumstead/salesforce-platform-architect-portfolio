@@ -10,6 +10,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { SITE_DIR, SITE_ORIGIN } from './routes.mjs';
+import { pageLayoutCss } from './layout.mjs';
 
 /** Reads under this many characters are inlined in the page. Larger ones load on demand. */
 export const INLINE_LIMIT = 12000;
@@ -82,6 +83,14 @@ export function siteStylesheet(siteDir = SITE_DIR) {
   return css.replace(/url\((["']?)(?:\.\.\/)+resource\/([A-Za-z0-9_]+)\//g, 'url($1/sr/$2/');
 }
 
+/**
+ * The page stylesheet: the layout and SLDS rules the live site gets from Salesforce, then
+ * the site's own stylesheet, so the site's rules win where both set the same thing.
+ */
+export function pageStylesheet(siteDir = SITE_DIR) {
+  return `${pageLayoutCss()}\n${siteStylesheet(siteDir)}`;
+}
+
 function writeHashed(distDir, name, extension, text) {
   const file = `assets/${name}-${hash(text)}.${extension}`;
   fs.mkdirSync(path.join(distDir, 'assets'), { recursive: true });
@@ -150,7 +159,7 @@ function page({ route, head, styles, scripts, data, analytics, analyticsLoader, 
 export function writePages(input) {
   const { routes, scripts, readKeys, reads, manifest, resourceUrls, distDir } = input;
   const head = readHeadMarkup(resourceUrls);
-  const styles = writeHashed(distDir, 'site', 'css', siteStylesheet());
+  const styles = writeHashed(distDir, 'site', 'css', pageStylesheet());
   const analytics = head.analytics ? writeHashed(distDir, 'analytics', 'js', head.analytics) : null;
   const fonts = resourceUrls.get('Portfolio_Fonts');
   const fontPreload = fonts ? `${fonts}/inter-latin-400-normal.woff2` : null;

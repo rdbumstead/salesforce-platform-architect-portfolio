@@ -361,4 +361,57 @@ describe("c-contact-form", () => {
       expect(sentParams()).toEqual([]);
     });
   });
+
+  describe("while paused on the static build", () => {
+    const LINKS = [
+      { label: "LinkedIn", url: "https://www.linkedin.com/in/x" },
+      { label: "Bad", url: "http://example.com/plain" }
+    ];
+
+    async function paused() {
+      const element = createComponent();
+
+      element.pausedLinks = LINKS;
+      element.paused = true;
+      await flushPromises();
+      return element;
+    }
+
+    it("turns every control off", async () => {
+      const element = await paused();
+      const controls = element.shadowRoot.querySelectorAll(
+        "input, textarea, select, button"
+      );
+      expect(controls.length).toBeGreaterThan(5);
+      controls.forEach((control) => expect(control.disabled).toBe(true));
+    });
+
+    it("shows one note with the https links only", async () => {
+      const element = await paused();
+      const note = q(element, '[data-id="paused-note"]');
+      expect(note.textContent).toContain("opens at launch");
+      const anchors = [...note.querySelectorAll("a")];
+      expect(anchors.map((a) => a.textContent)).toEqual(["LinkedIn"]);
+      expect(anchors[0].getAttribute("href")).toBe(
+        "https://www.linkedin.com/in/x"
+      );
+    });
+
+    it("sends nothing when the form is submitted", async () => {
+      const element = await paused();
+      await submit(element);
+      expect(submitContact).not.toHaveBeenCalled();
+      expect(q(element, '[data-id="success"]')).toBeNull();
+    });
+
+    it("shows no note and leaves controls on when live", async () => {
+      const element = createComponent();
+
+      await flushPromises();
+      expect(q(element, '[data-id="paused-note"]')).toBeNull();
+      const submitButton = q(element, '[data-id="submit"]');
+      expect(submitButton.disabled).toBe(false);
+      expect(q(element, '[name="firstName"]').disabled).toBe(false);
+    });
+  });
 });

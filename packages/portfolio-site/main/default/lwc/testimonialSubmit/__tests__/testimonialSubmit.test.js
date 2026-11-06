@@ -717,4 +717,57 @@ describe("c-testimonial-submit, written in the reviewer's own words", () => {
       new RegExp(`MAX_CONTEXT_LENGTH = ${MAX_OWN_WORDS_LENGTH};`)
     );
   });
+
+  describe("while paused on the static build", () => {
+    const LINKS = [
+      { label: "LinkedIn", url: "https://www.linkedin.com/in/x" },
+      { label: "Bad", url: "http://example.com/plain" }
+    ];
+
+    async function paused() {
+      const element = createComponent();
+      getFragments.emit(FRAGMENTS);
+      element.pausedLinks = LINKS;
+      element.paused = true;
+      await flushPromises();
+      return element;
+    }
+
+    it("turns every control off", async () => {
+      const element = await paused();
+      const controls = element.shadowRoot.querySelectorAll(
+        "input, textarea, select, button"
+      );
+      expect(controls.length).toBeGreaterThan(5);
+      controls.forEach((control) => expect(control.disabled).toBe(true));
+    });
+
+    it("shows one note with the https links only", async () => {
+      const element = await paused();
+      const note = q(element, '[data-id="paused-note"]');
+      expect(note.textContent).toContain("opens at launch");
+      const anchors = [...note.querySelectorAll("a")];
+      expect(anchors.map((a) => a.textContent)).toEqual(["LinkedIn"]);
+      expect(anchors[0].getAttribute("href")).toBe(
+        "https://www.linkedin.com/in/x"
+      );
+    });
+
+    it("sends nothing when the form is submitted", async () => {
+      const element = await paused();
+      await submit(element);
+      expect(submitTestimonial).not.toHaveBeenCalled();
+      expect(q(element, '[data-id="success"]')).toBeNull();
+    });
+
+    it("shows no note and leaves controls on when live", async () => {
+      const element = createComponent();
+      getFragments.emit(FRAGMENTS);
+      await flushPromises();
+      expect(q(element, '[data-id="paused-note"]')).toBeNull();
+      const submitButton = q(element, '[data-id="submit"]');
+      expect(submitButton.disabled).toBe(false);
+      expect(q(element, '[name="authorName"]').disabled).toBe(false);
+    });
+  });
 });

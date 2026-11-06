@@ -18,6 +18,7 @@
         <div class="field">
           <label class="field-label" for="authorName">Your name</label>
           <input
+            disabled={paused}
             id="authorName"
             class="field-input"
             name="authorName"
@@ -53,6 +54,7 @@
             >Your title (optional)</label
           >
           <input
+            disabled={paused}
             id="authorTitle"
             class="field-input"
             name="authorTitle"
@@ -86,6 +88,7 @@
           <span class="field-label" id="vibe-label">{vibeLabel}</span>
           <button
             type="button"
+            disabled={paused}
             class="vibe-toggle"
             role="switch"
             aria-checked={vibeChecked}
@@ -112,6 +115,7 @@
           <div class="mode-options">
             <button
               type="button"
+              disabled={paused}
               class="mode-option"
               data-mode="builder"
               data-id="mode-builder"
@@ -122,6 +126,7 @@
             </button>
             <button
               type="button"
+              disabled={paused}
               class="mode-option"
               data-mode="own"
               data-id="mode-own"
@@ -139,6 +144,7 @@
               >How do you know Ryan?</label
             >
             <select
+              disabled={paused}
               id="relationship-own"
               class="field-input"
               name="relationship"
@@ -173,6 +179,7 @@
           <div class="field">
             <label class="field-label" for="ownWords">Your review</label>
             <textarea
+              disabled={paused}
               id="ownWords"
               class="field-input field-textarea"
               name="ownWords"
@@ -217,6 +224,7 @@
             <div class="blank">
               <label class="blank-label" for="relationship">I'm a</label>
               <select
+                disabled={paused}
                 id="relationship"
                 class="field-input blank-input"
                 name="relationship"
@@ -251,6 +259,7 @@
             <div class="blank">
               <label class="blank-label" for="strength">and Ryan</label>
               <select
+                disabled={paused}
                 id="strength"
                 class="field-input blank-input"
                 name="strength"
@@ -285,6 +294,7 @@
             <div class="blank">
               <label class="blank-label" for="outcome">The result?</label>
               <select
+                disabled={paused}
                 id="outcome"
                 class="field-input blank-input"
                 name="outcome"
@@ -324,6 +334,7 @@
               >Anything to add? (optional)</label
             >
             <textarea
+              disabled={paused}
               id="note"
               class="field-input field-textarea"
               name="note"
@@ -347,6 +358,7 @@
         <div class="trap" aria-hidden="true">
           <label for="website">Leave this field empty</label>
           <input
+            disabled={paused}
             id="website"
             name="website"
             type="text"
@@ -357,6 +369,21 @@
             oninput={handleInput}
           />
         </div>
+
+        <template lwc:if={paused}>
+          <div class="paused-note" data-id="paused-note">
+            <p class="paused-text">
+              This form opens at launch. Until then, you can reach Ryan here.
+            </p>
+            <ul class="paused-links">
+              <template for:each={pausedLinkItems} for:item="link">
+                <li key={link.url}>
+                  <a href={link.url} rel="noopener noreferrer">{link.label}</a>
+                </li>
+              </template>
+            </ul>
+          </div>
+        </template>
 
         <div class="actions">
           <button

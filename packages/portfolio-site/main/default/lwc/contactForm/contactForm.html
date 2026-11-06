@@ -29,6 +29,7 @@
           <div class="field">
             <label class="field-label" for="firstName">First name</label>
             <input
+              disabled={paused}
               id="firstName"
               class="field-input"
               name="firstName"
@@ -54,6 +55,7 @@
           <div class="field">
             <label class="field-label" for="lastName">Last name</label>
             <input
+              disabled={paused}
               id="lastName"
               class="field-input"
               name="lastName"
@@ -81,6 +83,7 @@
         <div class="field">
           <label class="field-label" for="email">Email</label>
           <input
+            disabled={paused}
             id="email"
             class="field-input"
             name="email"
@@ -106,6 +109,7 @@
         <div class="field">
           <label class="field-label" for="company">Company (optional)</label>
           <input
+            disabled={paused}
             id="company"
             class="field-input"
             name="company"
@@ -127,6 +131,7 @@
         <div class="field">
           <label class="field-label" for="message">Message</label>
           <textarea
+            disabled={paused}
             id="message"
             class="field-input field-textarea"
             name="message"
@@ -148,6 +153,7 @@
         <div class="trap" aria-hidden="true">
           <label for="website">Leave this field empty</label>
           <input
+            disabled={paused}
             id="website"
             name="website"
             type="text"
@@ -160,6 +166,21 @@
         </div>
 
         <p class="privacy" data-id="privacy">{privacyNote}</p>
+
+        <template lwc:if={paused}>
+          <div class="paused-note" data-id="paused-note">
+            <p class="paused-text">
+              This form opens at launch. Until then, you can reach Ryan here.
+            </p>
+            <ul class="paused-links">
+              <template for:each={pausedLinkItems} for:item="link">
+                <li key={link.url}>
+                  <a href={link.url} rel="noopener noreferrer">{link.label}</a>
+                </li>
+              </template>
+            </ul>
+          </div>
+        </template>
 
         <div class="actions">
           <button

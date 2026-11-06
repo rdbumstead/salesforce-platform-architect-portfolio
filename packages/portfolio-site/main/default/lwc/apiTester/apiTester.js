@@ -61,6 +61,7 @@ import POSTMAN_COLLECTION from "@salesforce/resourceUrl/PAPI_Postman_Collection"
 import { trackEvent, EVENTS } from "c/analyticsService";
 import { loadPrism, highlight } from "c/prismHighlighter";
 import { isReduced } from "c/motionPreference";
+import { siteOrigin } from "c/siteHost";
 import { onShowMe, revealAnchor } from "c/tourShowMe";
 
 /** The tour stop whose control is this component's Execute button. */
@@ -1206,10 +1207,7 @@ export default class ApiTester extends LightningElement {
 
   /** The curl examples, filled with the issued token once there is one. */
   get curlExamples() {
-    const origin =
-      typeof window !== "undefined" && window.location
-        ? window.location.origin
-        : "";
+    const origin = siteOrigin();
     const token = this.tokenIssued ? this.tokenResult.token : undefined;
     return buildCurlExamples(
       origin,
