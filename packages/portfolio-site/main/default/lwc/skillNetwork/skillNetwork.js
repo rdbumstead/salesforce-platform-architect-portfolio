@@ -214,8 +214,11 @@ const FIT_MARGIN = 24;
 // The view zooms out to half the fitted scale and in to four times it.
 const MIN_ZOOM_OF_FIT = 0.5;
 const MAX_ZOOM_OF_FIT = 4;
-// The pan limit: the content plus this margin on every side, in layout units.
+// The pan limit: the content plus at least this margin on every side, in layout units.
 const PAN_MARGIN = 120;
+// At the fit the content fills the view, so the margin is also at least this share of the
+// view, which lets a drag bring any edge of the graph to the middle of the box.
+const PAN_VIEW_SHARE = 0.5;
 // One arrow key press pans this far on screen, in view box units, at any zoom level.
 const PAN_STEP = 40;
 // Each arrow key moves the view that way, so the graph moves the other way.
@@ -1604,9 +1607,15 @@ export default class SkillNetwork extends LightningElement {
     const right = (VIEW_WIDTH - FIT_MARGIN - fit.x) / fit.k;
     const bottom = (VIEW_HEIGHT - FIT_MARGIN - fit.y) / fit.k;
     const size = this.layout.size;
+    // A fixed margin left a drag at the fit about 100px of travel before it stopped.
+    const marginX = Math.max(PAN_MARGIN, (VIEW_WIDTH * PAN_VIEW_SHARE) / fit.k);
+    const marginY = Math.max(
+      PAN_MARGIN,
+      (VIEW_HEIGHT * PAN_VIEW_SHARE) / fit.k
+    );
     return [
-      [Math.min(left, 0) - PAN_MARGIN, Math.min(top, 0) - PAN_MARGIN],
-      [Math.max(right, size) + PAN_MARGIN, Math.max(bottom, size) + PAN_MARGIN]
+      [Math.min(left, 0) - marginX, Math.min(top, 0) - marginY],
+      [Math.max(right, size) + marginX, Math.max(bottom, size) + marginY]
     ];
   }
 
