@@ -204,6 +204,7 @@ const TOUR = {
 };
 
 const TOUR_STEP_TIMEOUT_MS = 30000;
+const TOUR_SETTLE_MS = 10000;
 
 const VIEWPORTS = [
   { name: "desktop", width: 1400, height: 900 },
@@ -504,6 +505,20 @@ function waitText(locator, pattern) {
 }
 
 /**
+ * Lets the page's requests finish before the tour moves to the next page, as a reader would.
+ * The footer reads its snapshot once the page is idle. Leaving mid request, WebKit on a preview
+ * behind Cloudflare Access sent that read without the service token, Access answered with its
+ * login on another host, and the cancelled read was logged as an access control error. A page
+ * that never goes quiet still moves on after the timeout, and any real error is still caught.
+ * @param {object} page the Playwright page
+ */
+async function settleBeforeLeaving(page) {
+  await page
+    .waitForLoadState("networkidle", { timeout: TOUR_SETTLE_MS })
+    .catch(() => {});
+}
+
+/**
  * Walks the tour once: opt in, the hero link, every stop with Show me and Next, Finish, the
  * ending and Close. Each check is a "component" of the row, so the CI summary names a failing
  * step the same way it names a missing component.
@@ -555,6 +570,7 @@ async function tourOnce(browser, viewport) {
     if (steps["hero tour link"] !== "visible") {
       return finishCheck(result, []);
     }
+    await settleBeforeLeaving(page);
     await heroLink.click();
     const total = TOUR.stops.length;
     for (let index = 0; index < total; index += 1) {
@@ -590,6 +606,7 @@ async function tourOnce(browser, viewport) {
       // Show me asks the page to show the control the task names. It must never fail.
       await task.click();
       await page.waitForTimeout(300);
+      await settleBeforeLeaving(page);
       if (index < total - 1) {
         await tourPart(page, "tour-next").click();
       } else {
