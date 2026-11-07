@@ -4,7 +4,7 @@
     <description
   >Short version of the accomplishment for the home timeline, which holds each bullet to one line. Blank means the timeline uses Description instead.</description>
     <inlineHelpText
-  >70 characters at most, plain past tense. Leave blank to show the full Description on the timeline.</inlineHelpText>
+  >70 characters at most. Present tense while the role is current, past tense once it ends. Leave blank to show the full Description on the timeline.</inlineHelpText>
     <label>Timeline Text</label>
     <length>70</length>
     <required>false</required>

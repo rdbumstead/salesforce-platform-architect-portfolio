@@ -13,16 +13,20 @@
  *                      FooterController), then the Analytics events button (c-analytics-events, this visit's event
  *                      list) and a second View source for it (source key siteAnalytics: the
  *                      analytics service and that component). The readings are labelled groups, each a list named by
- *                      its visible label (Platform, Integrations, Storage, Quotas and limits),
+ *                      its visible label (Platform, Integrations, Daily quotas, Storage, Request
+ *                      limits),
  *                      set apart by vertical rules on wide screens and stacked on phones. Inside
  *                      a group the metrics are split by thin bars drawn in CSS only, clipped away
  *                      at the start of every line so none dangles when a row wraps, and absent
  *                      from the markup and the text. Platform holds the GraphQL timing, or the
  *                      snapshot error. Integrations holds the AI providers and the GitHub and
  *                      Jira connections, in plain words: "connected", or "paused" while a
- *                      circuit breaker holds calls back. Quotas and limits is always open, like
- *                      the other groups, and holds AI requests today, the org quotas and the
- *                      governor limits, every number grouped by thousands. Platform shows once it
+ *                      circuit breaker holds calls back. Daily quotas holds AI requests today and
+ *                      the daily org quotas. Request limits holds the governor limits of the
+ *                      request that took the reading. They are separate groups, with Storage
+ *                      between them, so each fits one row on a wide screen even when every number
+ *                      is at its longest. Every number is grouped by thousands, and every group is
+ *                      always open. Platform shows once it
  *                      has a line, the last groups once the telemetry from
  *                      FooterController.getSystemSnapshot() has loaded. The snapshot is requested
  *                      only once the page has loaded and the browser is idle, so it never delays
@@ -38,8 +42,8 @@
  *                      put it in the layout's preloads. Hovering over the AI requests line
  *                      sends finops_quota_visibility once.
  *                      Back to top sends back_to_top_used, as the header's arrow does.
- *                      Storage sits between Integrations and Quotas and limits once the snapshot
- *                      holds stored figures. It is one line, "Data 1 of 5 MB, Files 5 of 20 MB",
+ *                      Storage is a group of its own, after Daily quotas, once the snapshot holds
+ *                      stored figures. It is one line, "Data 1 of 5 MB, Files 5 of 20 MB",
  *                      and a button that opens a small panel grouped by area, not by object:
  *                      the data estimate by area, the files by kind and, only when the server
  *                      returns them, the site's page views. The button carries aria-expanded

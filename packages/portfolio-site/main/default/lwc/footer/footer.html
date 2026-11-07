@@ -104,13 +104,9 @@
               </ul>
             </div>
           </template>
-          <div
-            class="metric-group"
-            data-group="quotas"
-            onkeydown={handleStorageKeydown}
-          >
+          <div class="metric-group" data-group="quotas">
             <span class="group-label" id="footer-group-quotas"
-              >Quotas and limits</span
+              >Daily quotas</span
             >
             <ul class="group-list" aria-labelledby="footer-group-quotas">
               <template lwc:if={showAiRequests}>
@@ -128,9 +124,17 @@
                   {row.label}
                 </li>
               </template>
-              <template lwc:if={storageLine}>
+            </ul>
+          </div>
+          <template lwc:if={storageLine}>
+            <div
+              class="metric-group"
+              data-group="storage"
+              onkeydown={handleStorageKeydown}
+            >
+              <span class="group-label" id="footer-group-storage">Storage</span>
+              <ul class="group-list" aria-labelledby="footer-group-storage">
                 <li class="metric" data-id="storage">
-                  Storage:
                   <button
                     type="button"
                     class="target storage-toggle"
@@ -142,14 +146,7 @@
                     {storageLine}
                   </button>
                 </li>
-              </template>
-              <template for:each={limitRows} for:item="row">
-                <li key={row.key} class="metric" data-id="limit">
-                  {row.label}
-                </li>
-              </template>
-            </ul>
-            <template lwc:if={storageLine}>
+              </ul>
               <div
                 class="storage-panel"
                 id="footer-storage-panel"
@@ -184,7 +181,19 @@
                   {storageNote} {storageUpdated}
                 </p>
               </div>
-            </template>
+            </div>
+          </template>
+          <div class="metric-group" data-group="limits">
+            <span class="group-label" id="footer-group-limits"
+              >Request limits</span
+            >
+            <ul class="group-list" aria-labelledby="footer-group-limits">
+              <template for:each={limitRows} for:item="row">
+                <li key={row.key} class="metric" data-id="limit">
+                  {row.label}
+                </li>
+              </template>
+            </ul>
           </div>
         </template>
       </div>
