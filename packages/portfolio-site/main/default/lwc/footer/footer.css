@@ -229,6 +229,31 @@ a.target:hover,
   border-radius: var(--pf-radius-sm);
 }
 
+/*
+ * On a wide screen each group is a row of its own, and no item ever breaks inside itself. A
+ * group only moves whole items onto a next line when its row is too short for all of them,
+ * because the list clips its overflow and a row that refused to wrap would hide the last items.
+ * The rules between groups are not needed when every group has a full row, so they go. This
+ * block comes after the base rules on purpose, because it overrides them at equal specificity.
+ */
+@media (min-width: 768px) {
+  /* With no rules to clip, the row starts at the gutter and lines up with the copyright. */
+  .metrics {
+    margin-left: 0;
+  }
+
+  .metric-group {
+    flex: 1 0 100%;
+    margin-left: 0;
+    padding: 0;
+    border-left: 0;
+  }
+
+  .metric {
+    white-space: nowrap;
+  }
+}
+
 /* Phones: the groups stack, with no rules between them. */
 @media screen and (max-width: 767.98px) {
   .metrics {

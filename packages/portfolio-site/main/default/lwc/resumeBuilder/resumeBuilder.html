@@ -222,7 +222,9 @@
                         <p lwc:if={group.hasIssuer} class="issuer-label">
                           {group.issuer}
                         </p>
-                        <ul class="current-certifications plain-list">
+                        <ul
+                          class="current-certifications plain-list centred-list"
+                        >
                           <template
                             for:each={group.certifications}
                             for:item="cert"
@@ -247,7 +249,9 @@
                     </p>
                     <template lwc:if={model.hasRetiredCertifications}>
                       <h4 class="retired-title">{model.retiredLabel}</h4>
-                      <ul class="retired-certifications plain-list">
+                      <ul
+                        class="retired-certifications plain-list centred-list"
+                      >
                         <template
                           for:each={model.retiredCertifications}
                           for:item="cert"
@@ -261,7 +265,7 @@
                   </template>
 
                   <template lwc:if={section.isEducation}>
-                    <ul class="plain-list">
+                    <ul class="plain-list centred-list">
                       <template for:each={model.education} for:item="edu">
                         <li key={edu.key} class="education">{edu.text}</li>
                       </template>

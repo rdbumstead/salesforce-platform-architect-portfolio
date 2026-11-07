@@ -98,6 +98,9 @@
   --pf-color-scheme: light;
   --pf-glass: rgba(255, 255, 255, 0.9);
   --pf-shadow: 0 12px 32px rgba(16, 24, 40, 0.14);
+  --pf-paper-edge: #cbd5e1;
+  --pf-paper-shadow:
+    0 1px 2px rgba(16, 24, 40, 0.08), 0 6px 16px rgba(16, 24, 40, 0.1);
 
   --pf-font-sans: "Inter", system-ui, sans-serif;
   --pf-font-mono: "Fira Code", ui-monospace, monospace;
@@ -184,6 +187,9 @@
     --pf-color-scheme: dark;
     --pf-glass: rgba(11, 15, 23, 0.9);
     --pf-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+    --pf-paper-edge: #475569;
+    --pf-paper-shadow:
+      0 0 0 1px rgba(148, 163, 184, 0.25), 0 8px 24px rgba(0, 0, 0, 0.5);
   }
 }
 
@@ -220,6 +226,9 @@
   --pf-color-scheme: dark;
   --pf-glass: rgba(11, 15, 23, 0.9);
   --pf-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+  --pf-paper-edge: #475569;
+  --pf-paper-shadow:
+    0 0 0 1px rgba(148, 163, 184, 0.25), 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
 html,
