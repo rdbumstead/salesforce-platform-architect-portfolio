@@ -403,7 +403,7 @@ describe("c-footer", () => {
 
     const rows = all(element, '[data-id="provider"]').map((n) => n.textContent);
     expect(rows).toEqual(["TestProvider: test-state"]);
-    // The rows only: the group label "Quotas and limits" is fixed text, not data.
+    // The rows only: the group label "Daily quotas" is fixed text, not data.
     const text = all(element, ".group-list")
       .map((list) => list.textContent)
       .join(" ");
@@ -699,7 +699,8 @@ describe("c-footer", () => {
         "CI",
         "Platform",
         "Integrations",
-        "Quotas and limits"
+        "Daily quotas",
+        "Request limits"
       ]);
       found.forEach((g) => {
         expect(g.labelled).toBe(true);
@@ -709,7 +710,7 @@ describe("c-footer", () => {
 
     it("puts each metric in its group, each one a list item", async () => {
       const element = await loadEverything();
-      const [ci, platform, integrations, quotas] = groups(element);
+      const [ci, platform, integrations, quotas, limits] = groups(element);
       expect(ci.group.querySelector('[data-id="badge"]')).not.toBeNull();
       expect(ci.group.querySelector('[data-id="badge-smoke"]')).not.toBeNull();
       expect(
@@ -724,14 +725,8 @@ describe("c-footer", () => {
         "integration",
         "integration"
       ]);
-      expect(quotas.ids).toEqual([
-        "ai-requests",
-        "quota",
-        "quota",
-        "limit",
-        "limit",
-        "limit"
-      ]);
+      expect(quotas.ids).toEqual(["ai-requests", "quota", "quota"]);
+      expect(limits.ids).toEqual(["limit", "limit", "limit"]);
       all(element, ".group-list > *").forEach((child) => {
         expect(child.tagName).toBe("LI");
       });
@@ -768,7 +763,8 @@ describe("c-footer", () => {
       await runIdle();
       expect(groups(element).map((g) => g.label)).toEqual([
         "CI",
-        "Quotas and limits"
+        "Daily quotas",
+        "Request limits"
       ]);
     });
   });
@@ -807,7 +803,7 @@ describe("c-footer", () => {
       Array.from(readings.querySelectorAll(".metric-group")).map(
         (g) => g.dataset.group
       )
-    ).toEqual(["ci", "integrations", "quotas"]);
+    ).toEqual(["ci", "integrations", "quotas", "limits"]);
   });
 
   it("offers View source for the footer beside the caption", () => {
@@ -880,9 +876,47 @@ describe("c-footer", () => {
     const group = q(element, 'div[data-group="quotas"]');
     expect(group).not.toBeNull();
     expect(group.querySelector(".group-label").textContent.trim()).toBe(
-      "Quotas and limits"
+      "Daily quotas"
     );
     expect(group.querySelector('[data-id="ai-requests"]')).not.toBeNull();
+    expect(group.querySelector('[data-id="limit"]')).toBeNull();
+  });
+
+  it("puts storage in a group of its own between the quotas and the limits", async () => {
+    getSystemSnapshot.mockResolvedValue(snapshot({ storage: STORAGE }));
+    const element = createComponent();
+    await runIdle();
+    const group = q(element, 'div[data-group="storage"]');
+    expect(group.querySelector(".group-label").textContent.trim()).toBe(
+      "Storage"
+    );
+    expect(group.querySelector('[data-id="storage-toggle"]')).not.toBeNull();
+    expect(group.querySelector('[data-id="storage-panel"]')).not.toBeNull();
+    expect(
+      q(element, 'div[data-group="quotas"] [data-id="storage"]')
+    ).toBeNull();
+    expect(group.previousElementSibling.dataset.group).toBe("quotas");
+    expect(group.nextElementSibling.dataset.group).toBe("limits");
+  });
+
+  it("puts the governor limits in their own Request limits group after the quotas", async () => {
+    const element = createComponent();
+    await runIdle();
+    const group = q(element, 'div[data-group="limits"]');
+    expect(group).not.toBeNull();
+    expect(group.querySelector(".group-label").textContent.trim()).toBe(
+      "Request limits"
+    );
+    expect(
+      Array.from(group.querySelectorAll('[data-id="limit"]')).map((n) =>
+        n.textContent.trim()
+      )
+    ).toEqual([
+      expect.stringMatching(/^CPU time: /),
+      expect.stringMatching(/^Memory: /),
+      expect.stringMatching(/^Database queries: /)
+    ]);
+    expect(group.previousElementSibling.dataset.group).toBe("quotas");
   });
 
   it("tracks finops_quota_visibility once on hover over AI requests", async () => {
@@ -1010,7 +1044,7 @@ describe("c-footer", () => {
     toggle.click();
     await flushPromises();
 
-    q(element, '[data-group="quotas"]').dispatchEvent(
+    q(element, '[data-group="storage"]').dispatchEvent(
       new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
     );
     await flushPromises();
