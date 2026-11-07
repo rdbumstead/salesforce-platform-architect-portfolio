@@ -581,6 +581,61 @@ export function writePdf(doc, model, options = {}) {
   const { margin, width, textRow, block, paragraph, labelled, measure, shown } =
     writer;
 
+  // One line centred across the text width, for the issuer label and the verify link.
+  const centredRow = (piece, style) =>
+    textRow(
+      [{ ...piece, x: margin + (width - measure(piece.text, style)) / 2 }],
+      style
+    );
+
+  /*
+   * Certifications and education sit centred in two equal columns, the same rule as the
+   * preview's .centred-list. A list of one takes the full width. Otherwise the items pair up in
+   * order, each centred in its half, and an odd last item keeps a half cell in the middle. Each
+   * pair is one block, so a pair never splits across pages.
+   */
+  const centredItems = (kind, texts, style) => {
+    const half = (width - space.columnGap) / 2;
+    const cellLines = (text, cellLeft, cellWidth) => {
+      writer.setType(style);
+      return wrapText(doc, text, cellWidth, cellWidth).map((line) => ({
+        kind,
+        text: line,
+        x: cellLeft + (cellWidth - measure(line, style)) / 2
+      }));
+    };
+    const cells = [];
+    if (texts.length === 1) {
+      cells.push([cellLines(texts[0], margin, width)]);
+    } else {
+      for (let index = 0; index < texts.length; index += 2) {
+        if (index + 1 < texts.length) {
+          cells.push([
+            cellLines(texts[index], margin, half),
+            cellLines(texts[index + 1], margin + half + space.columnGap, half)
+          ]);
+        } else {
+          cells.push([
+            cellLines(texts[index], margin + (width - half) / 2, half)
+          ]);
+        }
+      }
+    }
+    cells.forEach((pair) => {
+      const count = Math.max(...pair.map((lines) => lines.length));
+      const rows = [];
+      for (let line = 0; line < count; line += 1) {
+        rows.push(
+          textRow(
+            pair.map((lines) => lines[line]).filter((piece) => piece),
+            style
+          )
+        );
+      }
+      block(rows, space.itemGap);
+    });
+  };
+
   // Header: centred name, title and links side by side, then the summary with no heading.
   writer.header(model.header);
 
@@ -710,14 +765,8 @@ export function writePdf(doc, model, options = {}) {
         if (group.hasIssuer) {
           block(
             [
-              textRow(
-                [
-                  {
-                    kind: "cert-issuer",
-                    text: shown(group.issuer, type.label),
-                    x: margin
-                  }
-                ],
+              centredRow(
+                { kind: "cert-issuer", text: shown(group.issuer, type.label) },
                 type.label
               )
             ],
@@ -725,22 +774,21 @@ export function writePdf(doc, model, options = {}) {
             true
           );
         }
-        group.certifications.forEach((cert) =>
-          block(paragraph("cert", cert.text, type.text), space.itemGap)
+        centredItems(
+          "cert",
+          group.certifications.map((cert) => cert.text),
+          type.text
         );
       });
       if (model.hasVerificationLink) {
         block(
           [
-            textRow(
-              [
-                {
-                  kind: "verify",
-                  text: model.verifyLabel,
-                  x: margin,
-                  url: model.verificationUrl
-                }
-              ],
+            centredRow(
+              {
+                kind: "verify",
+                text: model.verifyLabel,
+                url: model.verificationUrl
+              },
               type.text
             )
           ],
@@ -751,27 +799,28 @@ export function writePdf(doc, model, options = {}) {
         writer.spacer(space.subheadingBefore);
         block(
           [
-            textRow(
-              [
-                {
-                  kind: "retired-title",
-                  text: shown(model.retiredLabel, type.subheading),
-                  x: margin
-                }
-              ],
+            centredRow(
+              {
+                kind: "retired-title",
+                text: shown(model.retiredLabel, type.subheading)
+              },
               type.subheading
             )
           ],
           space.itemGap,
           true
         );
-        model.retiredCertifications.forEach((cert) =>
-          block(paragraph("retired", cert.text, type.text), space.itemGap)
+        centredItems(
+          "retired",
+          model.retiredCertifications.map((cert) => cert.text),
+          type.text
         );
       }
     } else if (entry.isEducation) {
-      model.education.forEach((credential) =>
-        block(paragraph("education", credential.text, type.text), space.itemGap)
+      centredItems(
+        "education",
+        model.education.map((credential) => credential.text),
+        type.text
       );
     }
   });

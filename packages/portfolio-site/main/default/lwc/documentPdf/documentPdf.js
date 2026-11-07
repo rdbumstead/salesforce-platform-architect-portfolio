@@ -108,6 +108,9 @@ export function previewStyle(layout = DOCUMENT_LAYOUT) {
   if (space.paragraphAfter !== undefined) {
     vars["--resume-paragraph-after"] = px(space.paragraphAfter);
   }
+  if (space.columnGap !== undefined) {
+    vars["--resume-column-gap"] = px(space.columnGap);
+  }
   Object.keys(type).forEach((key) => {
     const name = key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
     vars[`--resume-${name}-size`] = px(type[key].size);

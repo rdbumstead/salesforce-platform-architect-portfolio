@@ -1049,6 +1049,51 @@ describe("c-resume-builder", () => {
       expect(element.shadowRoot.textContent).not.toContain("Summary");
     });
 
+    it("centres certifications in two columns and a single education entry across the page", () => {
+      const model = buildViewModel(FULL, {
+        includeHeader: false,
+        includeSkills: false
+      });
+      model.certificationGroups = [
+        {
+          key: "group",
+          issuer: "Salesforce",
+          hasIssuer: true,
+          certifications: [
+            { key: "a", text: "Alpha One (2025)" },
+            { key: "b", text: "Beta Two Longer (2024)" },
+            { key: "c", text: "Gamma (2023)" }
+          ]
+        }
+      ];
+      model.hasVerificationLink = false;
+      model.hasRetiredCertifications = false;
+      model.education = [
+        { key: "e", text: "Bachelor of Science, Example University, May 2015" }
+      ];
+      const doc = fakeDoc();
+      writePdf(doc, model, { family: "Inter" });
+
+      // Letter is 612 pt with 54 pt margins, so the text is 504 pt wide and centred on 306.
+      // Two columns of 244 pt with a 16 pt gap centre on 176 and 436.
+      const centreOf = (text) => {
+        const piece = doc.drawn.find((entry) => entry.text === text);
+        return piece.x + (String(text).length * piece.size * 0.5) / 2;
+      };
+      expect(centreOf("Alpha One (2025)")).toBeCloseTo(176);
+      expect(centreOf("Beta Two Longer (2024)")).toBeCloseTo(436);
+      expect(centreOf("Gamma (2023)")).toBeCloseTo(306);
+      expect(centreOf("Salesforce")).toBeCloseTo(306);
+      expect(
+        centreOf("Bachelor of Science, Example University, May 2015")
+      ).toBeCloseTo(306);
+
+      // A pair shares one row, the odd last item drops to the next.
+      const yOf = (text) => doc.drawn.find((entry) => entry.text === text).y;
+      expect(yOf("Alpha One (2025)")).toBe(yOf("Beta Two Longer (2024)"));
+      expect(yOf("Gamma (2023)")).toBeGreaterThan(yOf("Alpha One (2025)"));
+    });
+
     it("draws the header centred, the title and dates of a role on one row", () => {
       const model = buildViewModel(FULL, {
         includeHeader: true,
