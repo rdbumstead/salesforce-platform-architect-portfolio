@@ -225,7 +225,9 @@ private class PAPIProjectsTest {
     PAPIProjects.getProjects();
     Test.stopTest();
 
-    List<Object> rows = (List<Object>) RestTestUtil.getBodyAsMap().get('data');
+    List<Object> rows = (List<Object>) JSON.deserializeUntyped(
+      RestContext.response.responseBody.toString()
+    );
     Map<String, Object> row = (Map<String, Object>) rows[0];
     Assert.areEqual(
       'Pillar A: Business Architecture',
