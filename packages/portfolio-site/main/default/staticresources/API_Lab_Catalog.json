@@ -157,7 +157,7 @@
         {
           "name": "limit",
           "type": "integer",
-          "description": "Maximum number of records to return.",
+          "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
           "minimum": 1,
           "maximum": 200,
           "default": 50
@@ -447,7 +447,7 @@
         {
           "name": "limit",
           "type": "integer",
-          "description": "Maximum number of records to return.",
+          "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
           "minimum": 1,
           "maximum": 200,
           "default": 50
@@ -753,7 +753,7 @@
         {
           "name": "limit",
           "type": "integer",
-          "description": "Maximum number of records to return.",
+          "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
           "minimum": 1,
           "maximum": 200,
           "default": 50
@@ -1046,7 +1046,7 @@
         {
           "name": "limit",
           "type": "integer",
-          "description": "Maximum number of records to return.",
+          "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
           "minimum": 1,
           "maximum": 200,
           "default": 50
@@ -1382,7 +1382,7 @@
         {
           "name": "limit",
           "type": "integer",
-          "description": "Maximum number of records to return.",
+          "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
           "minimum": 1,
           "maximum": 200,
           "default": 50
@@ -1660,7 +1660,7 @@
         {
           "name": "limit",
           "type": "integer",
-          "description": "Maximum number of records to return.",
+          "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
           "minimum": 1,
           "maximum": 200,
           "default": 50
@@ -2157,7 +2157,7 @@
         {
           "name": "limit",
           "type": "integer",
-          "description": "Maximum number of records to return.",
+          "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
           "minimum": 1,
           "maximum": 200,
           "default": 50
@@ -2431,7 +2431,7 @@
         {
           "name": "limit",
           "type": "integer",
-          "description": "Maximum number of records to return.",
+          "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
           "minimum": 1,
           "maximum": 200,
           "default": 50
@@ -2725,7 +2725,7 @@
         {
           "name": "limit",
           "type": "integer",
-          "description": "Maximum number of records to return.",
+          "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
           "minimum": 1,
           "maximum": 200,
           "default": 50
@@ -3022,7 +3022,7 @@
         {
           "name": "limit",
           "type": "integer",
-          "description": "Maximum number of records to return.",
+          "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
           "minimum": 1,
           "maximum": 200,
           "default": 50
@@ -3313,7 +3313,7 @@
         {
           "name": "limit",
           "type": "integer",
-          "description": "Maximum number of records to return.",
+          "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
           "minimum": 1,
           "maximum": 200,
           "default": 50
@@ -3595,7 +3595,7 @@
         {
           "name": "limit",
           "type": "integer",
-          "description": "Maximum number of records to return.",
+          "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
           "minimum": 1,
           "maximum": 200,
           "default": 50
@@ -3877,7 +3877,7 @@
         {
           "name": "limit",
           "type": "integer",
-          "description": "Maximum number of records to return.",
+          "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
           "minimum": 1,
           "maximum": 200,
           "default": 50

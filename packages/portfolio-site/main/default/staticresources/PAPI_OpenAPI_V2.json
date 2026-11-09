@@ -966,7 +966,7 @@
           "completionDate": {
             "type": "string",
             "format": "date",
-            "description": "Mapped from SAPI dateCompleted",
+            "description": "The completion date, mapped from SAPI dateCompleted. Optional. The key is left out of the response for a project that has no completion date yet.",
             "example": "2025-12-01",
             "nullable": true
           },
@@ -1002,7 +1002,7 @@
           },
           "assets": {
             "type": "array",
-            "description": "Images, videos, or links related to the project",
+            "description": "Images, videos, or links related to the project. Optional in practice. The list is empty for a project that has no assets, and most projects have none.",
             "items": {
               "type": "object",
               "required": [
@@ -1098,6 +1098,7 @@
           "calendlyUrl": {
             "type": "string",
             "format": "uri",
+            "description": "Optional. The scheduling link. Null or empty until one is set in the portfolio configuration.",
             "example": "https://example.com/schedule"
           },
           "githubUrl": {
@@ -1264,7 +1265,7 @@
           },
           "skillsUsed": {
             "type": "array",
-            "description": "Derived from CertificationSkill junction",
+            "description": "The skill names linked to the certification through the CertificationSkill junction, highest proficiency first. Empty when the certification has no linked skills.",
             "items": {
               "type": "string",
               "example": "Security"
@@ -1994,7 +1995,7 @@
           "Logic"
         ],
         "summary": "Get Curated Testimonials",
-        "description": "Retrieves testimonials with \"Vibe Control\" logic applied.\n\n**Reads**, in process: approved testimonials only (`Approved__c = true`), at most 200.\n\n**Filtering Logic**:\n- `professional`: Filters result set to only include records where `relationship` IN ('Manager', 'Client', 'Peer') AND `vibe` = 'Professional'.\n- `casual`: Returns all approved testimonials, regardless of relationship type or vibe (includes 'Casual' vibe and 'Fan' relationships).\n\n**Use Case**: About page testimonials section\n\n`mode` is matched case-insensitively (the VibeMode values `Professional` and `Casual` are accepted);\nany other value returns 400 BAD_REQUEST. Ordered by sort order, then newest first; at most 200.\n",
+        "description": "Retrieves testimonials with \"Vibe Control\" logic applied.\n\n**Reads**, in process: approved testimonials only (`Approved__c = true`), at most 200. The list is empty until a testimonial is approved.\n\n**Filtering Logic**:\n- `professional`: Filters result set to only include records where `relationship` IN ('Manager', 'Client', 'Peer') AND `vibe` = 'Professional'.\n- `casual`: Returns all approved testimonials, regardless of relationship type or vibe (includes 'Casual' vibe and 'Fan' relationships).\n\n**Use Case**: About page testimonials section\n\n`mode` is matched case-insensitively (the VibeMode values `Professional` and `Casual` are accepted);\nany other value returns 400 BAD_REQUEST. Ordered by sort order, then newest first; at most 200.\n",
         "operationId": "getTestimonialFeed",
         "parameters": [
           {

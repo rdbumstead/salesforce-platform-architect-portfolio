@@ -3516,7 +3516,7 @@
               },
               "request": {
                 "description": {
-                  "content": "Retrieves testimonials with \"Vibe Control\" logic applied.\n\n**Reads**, in process: approved testimonials only (`Approved__c = true`), at most 200.\n\n**Filtering Logic**:\n- `professional`: Filters result set to only include records where `relationship` IN ('Manager', 'Client', 'Peer') AND `vibe` = 'Professional'.\n- `casual`: Returns all approved testimonials, regardless of relationship type or vibe (includes 'Casual' vibe and 'Fan' relationships).\n\n**Use Case**: About page testimonials section\n\n`mode` is matched case-insensitively (the VibeMode values `Professional` and `Casual` are accepted);\nany other value returns 400 BAD_REQUEST. Ordered by sort order, then newest first; at most 200.\n",
+                  "content": "Retrieves testimonials with \"Vibe Control\" logic applied.\n\n**Reads**, in process: approved testimonials only (`Approved__c = true`), at most 200. The list is empty until a testimonial is approved.\n\n**Filtering Logic**:\n- `professional`: Filters result set to only include records where `relationship` IN ('Manager', 'Client', 'Peer') AND `vibe` = 'Professional'.\n- `casual`: Returns all approved testimonials, regardless of relationship type or vibe (includes 'Casual' vibe and 'Fan' relationships).\n\n**Use Case**: About page testimonials section\n\n`mode` is matched case-insensitively (the VibeMode values `Professional` and `Casual` are accepted);\nany other value returns 400 BAD_REQUEST. Ordered by sort order, then newest first; at most 200.\n",
                   "type": "text/plain"
                 },
                 "header": [
@@ -6158,7 +6158,7 @@
                       "value": "<string>"
                     },
                     {
-                      "description": "Maximum number of records to return.",
+                      "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
                       "disabled": true,
                       "key": "limit",
                       "value": "50"
@@ -6921,7 +6921,7 @@
                       "value": "<boolean>"
                     },
                     {
-                      "description": "Maximum number of records to return.",
+                      "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
                       "disabled": true,
                       "key": "limit",
                       "value": "50"
@@ -7750,7 +7750,7 @@
                       "value": "<string>"
                     },
                     {
-                      "description": "Maximum number of records to return.",
+                      "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
                       "disabled": true,
                       "key": "limit",
                       "value": "50"
@@ -8548,7 +8548,7 @@
                       "value": "<string>"
                     },
                     {
-                      "description": "Maximum number of records to return.",
+                      "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
                       "disabled": true,
                       "key": "limit",
                       "value": "50"
@@ -9425,7 +9425,7 @@
                       "value": "<string>"
                     },
                     {
-                      "description": "Maximum number of records to return.",
+                      "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
                       "disabled": true,
                       "key": "limit",
                       "value": "50"
@@ -10139,7 +10139,7 @@
               },
               "request": {
                 "description": {
-                  "content": "Retrieves received testimonials. Returns only records where Approved__c = true.",
+                  "content": "Retrieves received testimonials. Returns only records where Approved__c = true, so the list is empty until a testimonial is approved.",
                   "type": "text/plain"
                 },
                 "header": [
@@ -10170,7 +10170,7 @@
                   ],
                   "query": [
                     {
-                      "description": "Maximum number of records to return.",
+                      "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
                       "disabled": true,
                       "key": "limit",
                       "value": "50"
@@ -10885,7 +10885,7 @@
                       "value": "<string>"
                     },
                     {
-                      "description": "Maximum number of records to return.",
+                      "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
                       "disabled": true,
                       "key": "limit",
                       "value": "50"
@@ -11636,7 +11636,7 @@
                       "value": "<string>"
                     },
                     {
-                      "description": "Maximum number of records to return.",
+                      "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
                       "disabled": true,
                       "key": "limit",
                       "value": "50"
@@ -12399,7 +12399,7 @@
                       "value": "<string>"
                     },
                     {
-                      "description": "Maximum number of records to return.",
+                      "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
                       "disabled": true,
                       "key": "limit",
                       "value": "50"
@@ -13228,7 +13228,7 @@
                       "value": "<string>"
                     },
                     {
-                      "description": "Maximum number of records to return.",
+                      "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
                       "disabled": true,
                       "key": "limit",
                       "value": "50"
@@ -14026,7 +14026,7 @@
                       "value": "<string>"
                     },
                     {
-                      "description": "Maximum number of records to return.",
+                      "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
                       "disabled": true,
                       "key": "limit",
                       "value": "50"
@@ -14777,7 +14777,7 @@
                       "value": "<string>"
                     },
                     {
-                      "description": "Maximum number of records to return.",
+                      "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
                       "disabled": true,
                       "key": "limit",
                       "value": "50"
@@ -15528,7 +15528,7 @@
                       "value": "<string>"
                     },
                     {
-                      "description": "Maximum number of records to return.",
+                      "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
                       "disabled": true,
                       "key": "limit",
                       "value": "50"

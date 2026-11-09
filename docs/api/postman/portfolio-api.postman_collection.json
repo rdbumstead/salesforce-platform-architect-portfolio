@@ -92,7 +92,7 @@
                 {
                   "key": "limit",
                   "value": "50",
-                  "description": "Maximum number of records to return.",
+                  "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
                   "disabled": true
                 },
                 {
@@ -150,7 +150,7 @@
                 {
                   "key": "limit",
                   "value": "50",
-                  "description": "Maximum number of records to return.",
+                  "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
                   "disabled": true
                 },
                 {
@@ -202,7 +202,7 @@
                 {
                   "key": "limit",
                   "value": "50",
-                  "description": "Maximum number of records to return.",
+                  "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
                   "disabled": true
                 },
                 {
@@ -248,7 +248,7 @@
                 {
                   "key": "limit",
                   "value": "50",
-                  "description": "Maximum number of records to return.",
+                  "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
                   "disabled": true
                 },
                 {
@@ -312,7 +312,7 @@
                 {
                   "key": "limit",
                   "value": "50",
-                  "description": "Maximum number of records to return.",
+                  "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
                   "disabled": true
                 },
                 {
@@ -352,7 +352,7 @@
                 {
                   "key": "limit",
                   "value": "50",
-                  "description": "Maximum number of records to return.",
+                  "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
                   "disabled": true
                 },
                 {
@@ -425,7 +425,7 @@
                 {
                   "key": "limit",
                   "value": "50",
-                  "description": "Maximum number of records to return.",
+                  "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
                   "disabled": true
                 },
                 {
@@ -471,7 +471,7 @@
                 {
                   "key": "limit",
                   "value": "50",
-                  "description": "Maximum number of records to return.",
+                  "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
                   "disabled": true
                 },
                 {
@@ -529,7 +529,7 @@
                 {
                   "key": "limit",
                   "value": "50",
-                  "description": "Maximum number of records to return.",
+                  "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
                   "disabled": true
                 },
                 {
@@ -581,7 +581,7 @@
                 {
                   "key": "limit",
                   "value": "50",
-                  "description": "Maximum number of records to return.",
+                  "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
                   "disabled": true
                 },
                 {
@@ -627,7 +627,7 @@
                 {
                   "key": "limit",
                   "value": "50",
-                  "description": "Maximum number of records to return.",
+                  "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
                   "disabled": true
                 },
                 {
@@ -673,7 +673,7 @@
                 {
                   "key": "limit",
                   "value": "50",
-                  "description": "Maximum number of records to return.",
+                  "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
                   "disabled": true
                 },
                 {
@@ -719,7 +719,7 @@
                 {
                   "key": "limit",
                   "value": "50",
-                  "description": "Maximum number of records to return.",
+                  "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
                   "disabled": true
                 },
                 {
