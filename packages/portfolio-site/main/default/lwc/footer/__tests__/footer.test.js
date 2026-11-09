@@ -769,6 +769,124 @@ describe("c-footer", () => {
     });
   });
 
+  describe("collapsible groups", () => {
+    afterEach(() => {
+      delete window.matchMedia;
+    });
+
+    async function loaded() {
+      getSystemSnapshot.mockResolvedValue(
+        snapshot({
+          integrations: INTEGRATIONS,
+          orgQuotas: ORG_QUOTAS,
+          storage: STORAGE
+        })
+      );
+      const element = createComponent();
+      await runIdle();
+      graphql.emit({
+        data: { uiapi: { query: { Skill__c: { edges: [] } } } }
+      });
+      await flushPromises();
+      return element;
+    }
+
+    const openState = (element) =>
+      Object.fromEntries(
+        all(element, "details.metric-group").map((d) => [
+          d.dataset.group,
+          d.open
+        ])
+      );
+
+    it("opens CI only on a desktop", async () => {
+      window.matchMedia = jest.fn(() => ({ matches: false }));
+      const element = await loaded();
+      expect(openState(element)).toEqual({
+        ci: true,
+        platform: false,
+        integrations: false,
+        quotas: false,
+        storage: false,
+        limits: false
+      });
+    });
+
+    it("starts every group closed on a phone", async () => {
+      window.matchMedia = jest.fn(() => ({ matches: true }));
+      const element = await loaded();
+      expect(window.matchMedia).toHaveBeenCalledWith("(max-width: 767.98px)");
+      expect(Object.values(openState(element))).toEqual([
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]);
+    });
+
+    it("gives every group a summary with its label and a count or status word", async () => {
+      const element = await loaded();
+      const text = (group) =>
+        q(element, `[data-id="status-${group}"]`).textContent.trim();
+      expect(text("ci")).toBe("3 workflows");
+      expect(text("platform")).toBe("live");
+      expect(text("integrations")).toBe("5 services");
+      expect(text("quotas")).toBe("3 readings");
+      expect(text("storage")).toBe("2 readings");
+      expect(text("limits")).toBe("3 readings");
+      all(element, "details.metric-group").forEach((d) => {
+        const summary = d.querySelector(":scope > summary");
+        expect(summary).not.toBeNull();
+        expect(summary.querySelector(".group-label")).not.toBeNull();
+        expect(
+          d.querySelector("ul.group-list").getAttribute("aria-labelledby")
+        ).toBe(summary.querySelector(".group-label").id);
+      });
+    });
+
+    it("says unavailable under Platform when the snapshot fails", async () => {
+      getSystemSnapshot.mockRejectedValue(new Error("boom"));
+      const element = createComponent();
+      await runIdle();
+      expect(q(element, '[data-id="status-platform"]').textContent).toBe(
+        "unavailable"
+      );
+    });
+
+    it("uses no click handler of ours on a summary, so the browser does the toggling", () => {
+      const html = readFileSync(join(__dirname, "..", "footer.html"), "utf8");
+      expect(html).not.toMatch(/<summary[^>]*onclick/);
+    });
+
+    it("leaves Escape on a summary alone, and still closes the storage panel from the toggle", async () => {
+      const element = await loaded();
+      q(element, '[data-id="storage-toggle"]').click();
+      await flushPromises();
+      expect(q(element, '[data-id="storage-panel"]').hidden).toBe(false);
+
+      const summary = q(element, '[data-id="summary-storage"]');
+      summary.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
+      );
+      await flushPromises();
+      expect(q(element, '[data-id="storage-panel"]').hidden).toBe(false);
+
+      q(element, '[data-id="storage-toggle"]').dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
+      );
+      await flushPromises();
+      expect(q(element, '[data-id="storage-panel"]').hidden).toBe(true);
+    });
+
+    it("keeps Back to top last in the tab order", async () => {
+      const element = await loaded();
+      const stops = all(element, "summary, a[href], button");
+      expect(stops[stops.length - 1].dataset.id).toBe("back-to-top");
+    });
+  });
+
   it("says in one caption what the readings are", () => {
     const element = createComponent();
     const caption = q(element, '[data-id="metrics-caption"]');
@@ -869,11 +987,12 @@ describe("c-footer", () => {
     );
   });
 
-  it("shows the quotas open, like every other group", async () => {
+  it("shows the quotas as a native details group, closed until opened", async () => {
     const element = createComponent();
     await runIdle();
-    expect(q(element, "details")).toBeNull();
-    const group = q(element, 'div[data-group="quotas"]');
+    expect(q(element, "details").tagName).toBe("DETAILS");
+    expect(q(element, 'details[data-group="quotas"]').open).toBe(false);
+    const group = q(element, 'details[data-group="quotas"]');
     expect(group).not.toBeNull();
     expect(group.querySelector(".group-label").textContent.trim()).toBe(
       "Daily quotas"
@@ -886,14 +1005,14 @@ describe("c-footer", () => {
     getSystemSnapshot.mockResolvedValue(snapshot({ storage: STORAGE }));
     const element = createComponent();
     await runIdle();
-    const group = q(element, 'div[data-group="storage"]');
+    const group = q(element, 'details[data-group="storage"]');
     expect(group.querySelector(".group-label").textContent.trim()).toBe(
       "Storage"
     );
     expect(group.querySelector('[data-id="storage-toggle"]')).not.toBeNull();
     expect(group.querySelector('[data-id="storage-panel"]')).not.toBeNull();
     expect(
-      q(element, 'div[data-group="quotas"] [data-id="storage"]')
+      q(element, 'details[data-group="quotas"] [data-id="storage"]')
     ).toBeNull();
     expect(group.previousElementSibling.dataset.group).toBe("quotas");
     expect(group.nextElementSibling.dataset.group).toBe("limits");
@@ -902,7 +1021,7 @@ describe("c-footer", () => {
   it("puts the governor limits in their own Request limits group after the quotas", async () => {
     const element = createComponent();
     await runIdle();
-    const group = q(element, 'div[data-group="limits"]');
+    const group = q(element, 'details[data-group="limits"]');
     expect(group).not.toBeNull();
     expect(group.querySelector(".group-label").textContent.trim()).toBe(
       "Request limits"
@@ -1153,12 +1272,10 @@ describe("c-footer", () => {
       integrations: INTEGRATIONS
     };
 
-    it("shows every group and a capture label, and hides the GraphQL item when the probe fails", async () => {
+    it("shows every group and a capture label", async () => {
       getSystemSnapshot.mockResolvedValue(snapshot(RECORDED));
       const element = createComponent();
       await runIdle();
-      graphql.emit({ errors: [{ message: "denied" }] });
-      await flushPromises();
 
       expect(q(element, '[data-id="metrics-caption"]').textContent).toBe(
         "Readings from Salesforce and its integrations"
