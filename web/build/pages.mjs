@@ -66,6 +66,8 @@ export function readHeadMarkup(resourceUrls, siteDir = SITE_DIR) {
     if (perRoute.test(tag)) continue;
     if (/\/assets\/styles\/|\{ styles\//.test(tag)) continue;
     if (/rel="preload"/.test(tag)) continue;
+    // The Salesforce copy carries noindex to stay out of search. The static site must not.
+    if (/name="robots"/i.test(tag)) continue;
     keep.push(resourcePath(tag, resourceUrls).replace(SALESFORCE_SITE, SITE_ORIGIN));
   }
   // The head markup is this repo's own file, never visitor input. Tag names match in any case.

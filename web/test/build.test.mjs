@@ -86,6 +86,7 @@ test('the head keeps the shared tags and drops the per route ones and the platfo
   const joined = head.tags.join('\n');
   assert.match(joined, /og:image" content="https:\/\/ryanbumstead\.com\/sr\/Portfolio_Share_Image\.png"/);
   assert.doesNotMatch(joined, /og:title|twitter:title|my\.site\.com|\/assets\/styles\//);
+  assert.doesNotMatch(joined, /name="robots"|noindex/i, 'the Salesforce noindex never reaches the static site');
   assert.match(head.analytics, /gtag\('config'/);
   assert.match(head.analyticsLoader, /^https:\/\/www\.googletagmanager\.com\/gtag\/js\?id=/);
 });
