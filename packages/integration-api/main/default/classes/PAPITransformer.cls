@@ -121,7 +121,7 @@ public with sharing class PAPITransformer {
       'id' => s.Id,
       'key' => s.Public_Key__c,
       'name' => s.Name,
-      'displayName' => s.Name,
+      'displayName' => s.Display_Name__c ?? s.Name,
       'category' => s.Category__c,
       'proficiency' => s.Proficiency__c,
       'iconName' => s.Icon_Name__c

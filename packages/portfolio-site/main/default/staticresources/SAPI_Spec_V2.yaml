@@ -1263,12 +1263,14 @@ components:
           type: string
           example: "M10..."
           nullable: true
-          description: "SVG Path Data"
+          deprecated: true
+          description: "SVG Path Data. Deprecated. It is null on every skill, and it will be removed from v2 after v1 sunsets on 2026-11-29."
         colorHex:
           type: string
           example: "#0070d2"
           nullable: true
-          description: "Category Color Hex"
+          deprecated: true
+          description: "Category Color Hex. Deprecated. Every skill carries the same default colour, and it will be removed from v2 after v1 sunsets on 2026-11-29."
         categoryOrder:
           type: number
           example: 10

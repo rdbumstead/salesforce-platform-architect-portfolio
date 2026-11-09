@@ -261,8 +261,7 @@ The "Hydration" endpoint. Returns the entire portfolio state in a single call.
       "displayName": "Salesforce Apex",
       "category": "Backend",
       "proficiency": 5,
-      "iconName": "utility:code",
-      "colorHex": "#0070d2"
+      "iconName": "utility:code"
     },
     {
       "key": "skl_8d2q6v4nwc",
@@ -270,8 +269,7 @@ The "Hydration" endpoint. Returns the entire portfolio state in a single call.
       "displayName": "Lightning Web Components",
       "category": "Frontend",
       "proficiency": 5,
-      "iconName": "standard:lightning_component",
-      "colorHex": "#00A1E0"
+      "iconName": "standard:lightning_component"
     }
   ],
   "experience": [
@@ -754,7 +752,6 @@ strictest-policy-wins.
       "category": "Backend",
       "proficiency": 5,
       "iconName": "utility:code",
-      "colorHex": "#0070d2",
       "categoryOrder": 10
     }
   ],
@@ -3909,7 +3906,6 @@ What the platform sends for a refusal that happens before our code runs: an ende
       "category": "Backend",
       "proficiency": 5,
       "iconName": "utility:code",
-      "colorHex": "#0070d2",
       "categoryOrder": 10
     }
   ],
@@ -4036,7 +4032,6 @@ The master payload for initial app load
       "category": "Backend",
       "proficiency": 5,
       "iconName": "utility:code",
-      "colorHex": "#0070d2",
       "categoryOrder": 10
     }
   ],
@@ -4331,7 +4326,6 @@ Simplified contact information for the header. No email or phone is returned.
   "category": "Backend",
   "proficiency": 5,
   "iconName": "utility:code",
-  "colorHex": "#0070d2",
   "categoryOrder": 10
 }
 
@@ -4349,7 +4343,6 @@ Lightweight skill object for list views
 |category|string|true|none|none|
 |proficiency|number|true|none|1-5 score|
 |iconName|string|false|none|SLDS Icon reference|
-|colorHex|string|false|none|Brand color for the category|
 |categoryOrder|number|false|none|Order to display the category in the UI|
 
 <h2 id="tocS_EnrichedCertification">EnrichedCertification</h2>
