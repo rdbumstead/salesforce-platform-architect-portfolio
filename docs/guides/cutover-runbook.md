@@ -1,6 +1,6 @@
 # Cutover Runbook: Static Front End on Cloudflare Pages
 
-Section 0 was run on 2026-11-04 and 2026-11-05, and the notes below say what that run found. Sections 1 onward are not yet run. This runbook moves `ryanbumstead.com` from a Cloudflare 301 to the Experience Cloud site over to the static site on Cloudflare Pages ([ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)). I run it by hand. Nothing in Salesforce changes at cutover, so the rollback takes minutes.
+Section 0 was run on 2026-11-04 and 2026-11-05. Sections 1 to 3 were run on 2026-11-09, and the notes below say what each run found. Section 4 is the rollback for the two weeks after that, and sections 5 and 6 come later. This runbook moves `ryanbumstead.com` from a Cloudflare 301 to the Experience Cloud site over to the static site on Cloudflare Pages ([ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)). I run it by hand. Nothing in Salesforce changes at cutover, so the rollback takes minutes.
 
 A fact I could not settle from code or documentation is marked `[unverified]`. I check each one in the dashboard before step 1, and I do not run a step that still carries one.
 
@@ -51,7 +51,7 @@ On GitHub, the variable `TURNSTILE_SITE_KEY` (the widget's site key, read by the
 
 ### 0.3 The rate limit
 
-Cloudflare does not document the Workers rate limiting binding for Pages Functions, so the limit is a WAF rate limiting rule on the `ryanbumstead.com` zone: path starts with `/api/`, counted by IP, 10 second period, about 20 requests, action block for 10 seconds. It cannot cover `ryanbumstead.pages.dev`, which is why every switch stays `recorded` there until cutover. I make the rule at cutover, before I flip any switch to `live` (0.4). It exists since 2026-11-09 as "API rate limit": URI path starts with `/api/`, 20 requests per 10 seconds by IP, block for 10 seconds. A burst of 30 requests to `/api/features` got 20 answers of 200, then 429.
+Cloudflare does not document the Workers rate limiting binding for Pages Functions, so the limit is a WAF rate limiting rule on the `ryanbumstead.com` zone: path starts with `/api/`, counted by IP, 10 second period, about 20 requests, action block for 10 seconds. It cannot cover `ryanbumstead.pages.dev`, which is why every switch stays `recorded` there until cutover. I make the rule at cutover, before I flip any switch to `live` (0.4). It exists since 2026-11-09 as "API rate limit": `(starts_with(http.request.uri.path, "/api/") and not http.request.uri.path in {"/api/features" "/api/live/glass-box" "/api/live/pipeline-status"})`, 20 requests per 10 seconds by IP, block for 10 seconds. The first version counted every `/api/` path. Once live reads were on, every page made two counted calls, and the live smoke failed 14 of 52 rows on 429 from four pages at once. The three paths left out never call Salesforce on demand: `/api/features` reads only variables, and the two live reads are cached at the edge. After the change the smoke passed 52 of 52, and `/api/contact` still answered 429 after 20 requests.
 
 Behind it, `SubmissionGuard` rate limits each form by the hashed visitor address, with the `Form_Rate_Per_Hash_Per_Minute` setting in `Portfolio_Setting__mdt`, default 3. The visitor sees "Too many tries. Wait a minute and send again." The daily cap keeps "Try again tomorrow".
 
