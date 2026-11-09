@@ -12,7 +12,11 @@ pages_build_output_dir = "./dist"
 compatibility_date = "2026-10-01"
 
 # Each switch is "live" or "recorded". A preview is always recorded whatever it says here.
+# PRODUCTION_HOSTS lists the hosts where a live switch is live. It leaves out
+# ryanbumstead.pages.dev on purpose. The WAF rate limit on /api/ belongs to the
+# ryanbumstead.com zone and cannot cover pages.dev, so pages.dev always reads recorded.
 [vars]
+PRODUCTION_HOSTS = "ryanbumstead.com,www.ryanbumstead.com"
 FEATURE_CONTACT = "recorded"
 FEATURE_TESTIMONIAL = "recorded"
 FEATURE_COVER_LETTER = "recorded"

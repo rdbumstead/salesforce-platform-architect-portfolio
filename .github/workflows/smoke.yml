@@ -26,7 +26,7 @@ on:
       site_base:
         description: Site root to check, for example a scratch org's site. Defaults to production.
         required: false
-        default: https://ryan-bumstead-dev-ed.develop.my.site.com/portfolio
+        default: https://ryanbumstead.com
   # 09:30 UTC, after the 08:00 Daily Org Heartbeat.
   schedule:
     - cron: "30 9 * * *"
@@ -41,7 +41,7 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v1.64.0-noble
     env:
-      SITE_BASE: ${{ inputs.site_base || 'https://ryan-bumstead-dev-ed.develop.my.site.com/portfolio' }}
+      SITE_BASE: ${{ inputs.site_base || 'https://ryanbumstead.com' }}
       PLAYWRIGHT_VERSION: "1.64.0"
     steps:
       - uses: actions/checkout@v4
@@ -97,7 +97,7 @@ jobs:
   # a scratch org's, writes nothing to production.
   report-failure:
     needs: [smoke]
-    if: failure() && (inputs.site_base == '' || inputs.site_base == 'https://ryan-bumstead-dev-ed.develop.my.site.com/portfolio')
+    if: failure() && (inputs.site_base == '' || inputs.site_base == 'https://ryanbumstead.com')
     runs-on: ubuntu-latest
     steps:
       - name: Sign In For The Failure Event
