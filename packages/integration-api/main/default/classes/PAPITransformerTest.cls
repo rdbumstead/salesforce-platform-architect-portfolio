@@ -224,7 +224,20 @@ private class PAPITransformerTest {
       Pillar__c = 'B'
     );
     Project__c proj = [
-      SELECT Id, Public_Key__c, Name, Status__c, Pillar_Label__c
+      SELECT
+        Id,
+        Public_Key__c,
+        Name,
+        Challenge__c,
+        Solution__c,
+        Business_Value__c,
+        Status__c,
+        Hero_Image_URL__c,
+        Live_URL__c,
+        Repository_URL__c,
+        Date_Completed__c,
+        Is_Featured__c,
+        Pillar_Label__c
       FROM Project__c
       WHERE Name = 'Pillar Project'
     ];
@@ -254,7 +267,20 @@ private class PAPITransformerTest {
       Sort_Order__c = 1
     );
     Project__c proj = [
-      SELECT Id, Public_Key__c, Name, Status__c, Pillar_Label__c
+      SELECT
+        Id,
+        Public_Key__c,
+        Name,
+        Challenge__c,
+        Solution__c,
+        Business_Value__c,
+        Status__c,
+        Hero_Image_URL__c,
+        Live_URL__c,
+        Repository_URL__c,
+        Date_Completed__c,
+        Is_Featured__c,
+        Pillar_Label__c
       FROM Project__c
       WHERE Name = 'Loose Project'
     ];
