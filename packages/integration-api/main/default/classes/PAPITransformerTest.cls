@@ -214,4 +214,59 @@ private class PAPITransformerTest {
       );
     }
   }
+
+  @IsTest
+  static void transformProjectCarriesThePillarLabel() {
+    insert new Project__c(
+      Name = 'Pillar Project',
+      Status__c = 'Live – In Production',
+      Pillar__c = 'B'
+    );
+    Project__c proj = [
+      SELECT Id, Public_Key__c, Name, Status__c, Pillar_Label__c
+      FROM Project__c
+      WHERE Name = 'Pillar Project'
+    ];
+
+    Map<String, Object> result = PAPITransformer.transformProject(
+      proj,
+      new List<String>(),
+      new List<Map<String, Object>>()
+    );
+
+    Assert.isTrue(
+      result.containsKey('pillarLabel'),
+      'The key is always written'
+    );
+    Assert.areEqual(
+      'Pillar B: Solution Architecture',
+      result.get('pillarLabel'),
+      'The label is the formula text, not the pillar letter'
+    );
+  }
+
+  @IsTest
+  static void transformProjectLabelsAnUnassignedPillar() {
+    insert new Project__c(
+      Name = 'Loose Project',
+      Status__c = 'Live – In Production'
+    );
+    Project__c proj = [
+      SELECT Id, Public_Key__c, Name, Status__c, Pillar_Label__c
+      FROM Project__c
+      WHERE Name = 'Loose Project'
+    ];
+
+    Map<String, Object> result = PAPITransformer.transformProject(
+      proj,
+      new List<String>(),
+      new List<Map<String, Object>>()
+    );
+
+    Assert.areEqual(
+      'Unassigned',
+      result.get('pillarLabel'),
+      'A project with no pillar reads Unassigned, as SAPI does'
+    );
+  }
 }

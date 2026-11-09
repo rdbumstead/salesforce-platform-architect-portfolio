@@ -419,4 +419,154 @@ private class PAPIProfileTest {
       'Never the Issuer__c Id'
     );
   }
+
+  @IsTest
+  static void certificationsListTheirSkills() {
+    Account issuer = new Account(Name = 'Salesforce Issuer');
+    insert issuer;
+    Contact owner = [SELECT Id FROM Contact WHERE Is_Portfolio_Owner__c = TRUE];
+    Certification__c linked = new Certification__c(
+      Name = 'Platform Developer I',
+      Issuer__c = issuer.Id,
+      Contact__c = owner.Id,
+      Earned_Date__c = Date.today().addMonths(-6)
+    );
+    Certification__c bare = new Certification__c(
+      Name = 'Associate',
+      Issuer__c = issuer.Id,
+      Contact__c = owner.Id,
+      Earned_Date__c = Date.today().addMonths(-12)
+    );
+    insert new List<Certification__c>{ linked, bare };
+    Skill__c apex = [SELECT Id FROM Skill__c WHERE Name = 'Apex'];
+    Skill__c lwc = new Skill__c(
+      Name = 'LWC',
+      Category__c = 'Frontend',
+      Proficiency__c = 4
+    );
+    insert lwc;
+    insert new List<Certification_Skill__c>{
+      new Certification_Skill__c(
+        Certification__c = linked.Id,
+        Skill__c = apex.Id
+      ),
+      new Certification_Skill__c(
+        Certification__c = linked.Id,
+        Skill__c = lwc.Id
+      )
+    };
+    RestTestUtil.initGet('/services/apexrest/papi/v1/profile/full');
+
+    Test.startTest();
+    PAPIProfile.getProfile();
+    Test.stopTest();
+
+    Map<String, Map<String, Object>> byName = certsByName(
+      RestTestUtil.getBodyAsMap()
+    );
+    Assert.areEqual(
+      new List<Object>{ 'Apex', 'LWC' },
+      byName.get('Platform Developer I').get('skillsUsed'),
+      'Skills come back by proficiency, highest first'
+    );
+    Assert.areEqual(
+      0,
+      ((List<Object>) byName.get('Associate').get('skillsUsed')).size(),
+      'A certification with no links keeps an empty list'
+    );
+  }
+
+  @IsTest
+  static void summaryCertificationsListTheirSkills() {
+    Account issuer = new Account(Name = 'Salesforce Issuer');
+    insert issuer;
+    Contact owner = [SELECT Id FROM Contact WHERE Is_Portfolio_Owner__c = TRUE];
+    Certification__c cert = new Certification__c(
+      Name = 'Platform Developer I',
+      Issuer__c = issuer.Id,
+      Contact__c = owner.Id,
+      Earned_Date__c = Date.today().addMonths(-6)
+    );
+    insert cert;
+    Skill__c apex = [SELECT Id FROM Skill__c WHERE Name = 'Apex'];
+    insert new Certification_Skill__c(
+      Certification__c = cert.Id,
+      Skill__c = apex.Id
+    );
+    RestTestUtil.initGet('/services/apexrest/papi/v1/profile/summary');
+
+    Test.startTest();
+    PAPIProfile.getProfile();
+    Test.stopTest();
+
+    Map<String, Map<String, Object>> byName = certsByName(
+      RestTestUtil.getBodyAsMap()
+    );
+    Assert.areEqual(
+      new List<Object>{ 'Apex' },
+      byName.get('Platform Developer I').get('skillsUsed'),
+      'The summary fills skillsUsed too'
+    );
+  }
+
+  @IsTest
+  static void forcedCertificationSkillsFailureKeepsCertificationsAndIsPartial() {
+    Account issuer = new Account(Name = 'Salesforce Issuer');
+    insert issuer;
+    Contact owner = [SELECT Id FROM Contact WHERE Is_Portfolio_Owner__c = TRUE];
+    Certification__c cert = new Certification__c(
+      Name = 'Platform Developer I',
+      Issuer__c = issuer.Id,
+      Contact__c = owner.Id,
+      Earned_Date__c = Date.today().addMonths(-6)
+    );
+    insert cert;
+    Skill__c apex = [SELECT Id FROM Skill__c WHERE Name = 'Apex'];
+    insert new Certification_Skill__c(
+      Certification__c = cert.Id,
+      Skill__c = apex.Id
+    );
+    PAPITransformer.forcedSectionFailures.add('certification-skills');
+    RestTestUtil.initGet('/services/apexrest/papi/v1/profile/full');
+    RestResponse res = RestTestUtil.getResponse();
+
+    Test.startTest();
+    PAPIProfile.getProfile();
+    Test.stopTest();
+
+    Map<String, Object> body = RestTestUtil.getBodyAsMap();
+    Map<String, Map<String, Object>> byName = certsByName(body);
+    Assert.areEqual(200, res.statusCode, 'A section failure is not a 500');
+    Assert.areEqual(
+      'partial',
+      res.headers.get('X-Data-Integrity'),
+      'Header is partial'
+    );
+    Assert.areEqual(
+      ApiMessages.partial(new List<String>{ 'certification-skills' }),
+      body.get('integrityNote'),
+      'The note names the failed read'
+    );
+    Assert.isTrue(
+      byName.containsKey('Platform Developer I'),
+      'The certification is still returned'
+    );
+    Assert.areEqual(
+      0,
+      ((List<Object>) byName.get('Platform Developer I').get('skillsUsed'))
+        .size(),
+      'Its skills are empty'
+    );
+  }
+
+  private static Map<String, Map<String, Object>> certsByName(
+    Map<String, Object> body
+  ) {
+    Map<String, Map<String, Object>> byName = new Map<String, Map<String, Object>>();
+    for (Object o : (List<Object>) body.get('certifications')) {
+      Map<String, Object> cert = (Map<String, Object>) o;
+      byName.put((String) cert.get('name'), cert);
+    }
+    return byName;
+  }
 }
