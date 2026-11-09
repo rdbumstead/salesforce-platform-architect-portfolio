@@ -56,44 +56,50 @@ jest.mock(
         "A",
         "Business Architecture",
         "Business Architecture",
-        ["Employer Hub", "Data model"]
+        ["Employer Hub", "Data model"],
+        "Process and data, education provider"
       ],
       [
         "nonprofit-solutions",
         "B",
         "Solution Architecture",
         "Solution Architecture",
-        ["Solution design", "Decision matrix"]
+        ["Solution design", "Decision matrix"],
+        "Platform choice, literacy nonprofit"
       ],
       [
         "api-lab",
         "C",
         "API Lab",
         "Work Experience Verification API",
-        ["Apex REST", "OAuth 2.0", "OpenAPI"]
+        ["Apex REST", "OAuth 2.0", "OpenAPI"],
+        "Work Experience Verification API"
       ],
       [
         "ai-lab",
         "D",
         "AI Lab",
         "AI & Innovation",
-        ["Grounded generation", "Fallback chain"]
+        ["Grounded generation", "Fallback chain"],
+        "AI & Innovation"
       ],
       [
         "delivery",
         "E",
         "Delivery",
         "Agile Delivery & DevOps",
-        ["Jira", "GitHub Actions"]
+        ["Jira", "GitHub Actions"],
+        "Agile Delivery & DevOps"
       ]
     ];
     let coming = [];
     const build = () =>
-      source.map(([key, letter, pageLabel, sasName, tags]) => ({
+      source.map(([key, letter, pageLabel, sasName, tags, menuNote]) => ({
         key,
         letter,
         pageLabel,
         sasName,
+        menuNote,
         tags,
         url: key,
         href: `/portfolio/${key}`,
@@ -479,7 +485,7 @@ describe("c-portfolio-theme-layout", () => {
       remove.mockRestore();
     });
 
-    it("lists pillars A to E from pillarData with their SAS names", () => {
+    it("lists pillars A to E from pillarData with their menu notes", () => {
       const element = render();
       const links = element.shadowRoot.querySelectorAll(".pillar-link");
       expect(links).toHaveLength(5);
@@ -493,7 +499,7 @@ describe("c-portfolio-theme-layout", () => {
           pillar.pageLabel
         );
         expect(link.querySelector(".pillar-sas").textContent).toBe(
-          pillar.sasName
+          pillar.menuNote
         );
         expect(link.getAttribute("href")).toBe(pillar.href);
       });
