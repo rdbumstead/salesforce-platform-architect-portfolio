@@ -191,13 +191,26 @@
   font-size: 13px;
 }
 
+/* Each icon is drawn so its lowest ink sits on the bottom edge of its viewBox, and the box is
+   aligned to the text baseline, so the bottom of every icon meets the bottom of the text. */
 .profile-link {
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   gap: 6px;
+  box-sizing: border-box;
   min-height: 32px;
+  padding-block: 5px;
   color: var(--pf-muted);
   text-decoration: none;
+}
+
+.profile-link svg {
+  display: block;
+  flex: none;
+}
+
+.profile-label {
+  line-height: 22px;
 }
 
 .profile-link:hover {
