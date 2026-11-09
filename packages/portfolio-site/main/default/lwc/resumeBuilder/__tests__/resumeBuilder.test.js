@@ -1049,7 +1049,7 @@ describe("c-resume-builder", () => {
       expect(element.shadowRoot.textContent).not.toContain("Summary");
     });
 
-    it("centres certifications in two columns and a single education entry across the page", () => {
+    it("sets certifications, the verify link, retired certifications and education on one left edge", () => {
       const model = buildViewModel(FULL, {
         includeHeader: false,
         includeSkills: false
@@ -1066,32 +1066,39 @@ describe("c-resume-builder", () => {
           ]
         }
       ];
-      model.hasVerificationLink = false;
-      model.hasRetiredCertifications = false;
+      model.hasVerificationLink = true;
+      model.verifyLabel = "Verify";
+      model.verificationUrl = "https://example.test/verify";
+      model.hasRetiredCertifications = true;
+      model.retiredLabel = "Retired";
+      model.retiredCertifications = [{ key: "r", text: "Old Cert (2019)" }];
       model.education = [
         { key: "e", text: "Bachelor of Science, Example University, May 2015" }
       ];
       const doc = fakeDoc();
       writePdf(doc, model, { family: "Inter" });
 
-      // Letter is 612 pt with 54 pt margins, so the text is 504 pt wide and centred on 306.
-      // Two columns of 244 pt with a 16 pt gap centre on 176 and 436.
-      const centreOf = (text) => {
-        const piece = doc.drawn.find((entry) => entry.text === text);
-        return piece.x + (String(text).length * piece.size * 0.5) / 2;
-      };
-      expect(centreOf("Alpha One (2025)")).toBeCloseTo(176);
-      expect(centreOf("Beta Two Longer (2024)")).toBeCloseTo(436);
-      expect(centreOf("Gamma (2023)")).toBeCloseTo(306);
-      expect(centreOf("Salesforce")).toBeCloseTo(306);
-      expect(
-        centreOf("Bachelor of Science, Example University, May 2015")
-      ).toBeCloseTo(306);
+      // Letter is 612 pt with 54 pt margins, so every left edge is 54.
+      const leftOf = (text) => doc.drawn.find((entry) => entry.text === text).x;
+      [
+        "Alpha One (2025)",
+        "Beta Two Longer (2024)",
+        "Gamma (2023)",
+        "Old Cert (2019)",
+        "Bachelor of Science, Example University, May 2015",
+        "Verify"
+      ].forEach((text) => expect(leftOf(text)).toBeCloseTo(54));
+      expect(leftOf("Salesforce")).toBeCloseTo(54);
+      expect(leftOf("RETIRED")).toBeCloseTo(54);
 
-      // A pair shares one row, the odd last item drops to the next.
+      // One item per row, in order.
       const yOf = (text) => doc.drawn.find((entry) => entry.text === text).y;
-      expect(yOf("Alpha One (2025)")).toBe(yOf("Beta Two Longer (2024)"));
-      expect(yOf("Gamma (2023)")).toBeGreaterThan(yOf("Alpha One (2025)"));
+      expect(yOf("Beta Two Longer (2024)")).toBeGreaterThan(
+        yOf("Alpha One (2025)")
+      );
+      expect(yOf("Gamma (2023)")).toBeGreaterThan(
+        yOf("Beta Two Longer (2024)")
+      );
     });
 
     it("draws the header centred, the title and dates of a role on one row", () => {
