@@ -19,11 +19,16 @@
 //
 // The footer check, once per engine and size: on the home page every footer group has a
 // summary, the groups start closed on the phone size and with only CI open on the desktop
-// size, and pressing each summary opens its group and pressing it again closes it.
+// size, and pressing each summary opens its group and pressing it again closes it. It runs only
+// when SMOKE_FOOTER_CHECK is "1". It is off by default because the deploy workflow runs this
+// script against the live site right after the Salesforce deploy, while that site still serves
+// the old footer, and the site build waits on that run. Turn it on once the new footer is live
+// on the apex. With the variable unset no footer rows exist and the row count is unchanged.
 //
 // Environment:
 //   SITE_BASE   the site root, for example https://example.my.site.com/portfolio (required)
 //   BROWSERS    comma list of Playwright engines, default "chromium,webkit"
+//   SMOKE_FOOTER_CHECK  "1" adds the footer check rows, off by default
 //   SMOKE_JSON  optional file path that also receives the JSON body
 //   CF_ACCESS_CLIENT_ID, CF_ACCESS_CLIENT_SECRET  optional Cloudflare Access service token for a
 //               preview behind Access, sent only to the base's own pages.dev host
@@ -53,6 +58,7 @@ const BROWSERS = (process.env.BROWSERS || "chromium,webkit")
   .map((name) => name.trim())
   .filter(Boolean);
 const SMOKE_JSON = process.env.SMOKE_JSON || "";
+const FOOTER_CHECK = process.env.SMOKE_FOOTER_CHECK === "1";
 
 // What each page must show. A component named as a string counts once its first instance
 // is visible. A component that renders nothing until it has records (the testimonial wall
@@ -820,7 +826,9 @@ async function main() {
       }
       for (const viewport of VIEWPORTS) {
         tasks.push(() => tourRow(browser, engine, viewport));
-        tasks.push(() => footerRow(browser, engine, viewport));
+        if (FOOTER_CHECK) {
+          tasks.push(() => footerRow(browser, engine, viewport));
+        }
       }
       rows.push(...(await runPool(tasks, PARALLEL_PAGES)));
     } finally {
@@ -832,7 +840,7 @@ async function main() {
   const ok = rows.length > 0 && failed.length === 0;
   const summary =
     `live smoke: ${ok ? "PASS" : "FAIL"}, ${rows.length - failed.length} of ` +
-    `${rows.length} rows pass (${BROWSERS.join(", ")}, ${ROUTES.length} routes, the tour walk and the footer check, ` +
+    `${rows.length} rows pass (${BROWSERS.join(", ")}, ${ROUTES.length} routes and the tour walk${FOOTER_CHECK ? ", the footer check" : ""}, ` +
     `${VIEWPORTS.length} sizes)` +
     (failed.length
       ? `, failing: ${failed
