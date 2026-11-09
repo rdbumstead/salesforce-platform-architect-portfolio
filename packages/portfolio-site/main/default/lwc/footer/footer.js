@@ -15,7 +15,7 @@
  *                      analytics service and that component). The readings are labelled groups, each a list named by
  *                      its visible label (Platform, Integrations, Daily quotas, Storage, Request
  *                      limits),
- *                      set apart by vertical rules on wide screens and stacked on phones. Inside
+ *                      stacked on every width. Inside
  *                      a group the metrics are split by thin bars drawn in CSS only, clipped away
  *                      at the start of every line so none dangles when a row wraps, and absent
  *                      from the markup and the text. Platform holds the GraphQL timing, or the
@@ -25,8 +25,13 @@
  *                      the daily org quotas. Request limits holds the governor limits of the
  *                      request that took the reading. They are separate groups, with Storage
  *                      between them, so each fits one row on a wide screen even when every number
- *                      is at its longest. Every number is grouped by thousands, and every group is
- *                      always open. Platform shows once it
+ *                      is at its longest. Every number is grouped by thousands. Each group is a native
+ *                      details element with a summary that shows the label and a count or one
+ *                      status word, for example "3 readings" or "live". On a phone (width up to
+ *                      767.98 px, read once when the footer connects, the same width the
+ *                      stylesheet uses) every group starts closed. On a desktop only CI starts
+ *                      open. The browser does the toggling, so there is no click handler of ours.
+ *                      Platform shows once it
  *                      has a line, the last groups once the telemetry from
  *                      FooterController.getSystemSnapshot() has loaded. The snapshot is requested
  *                      only once the page has loaded and the browser is idle, so it never delays
@@ -232,6 +237,19 @@ function pageViews(day) {
   return (day?.originPageViews || 0) + (day?.cachePageViews || 0);
 }
 
+/** The same width the stylesheet uses for phones. */
+export const PHONE_QUERY = "(max-width: 767.98px)";
+
+/**
+ * A count with its noun, for example "1 reading" or "3 readings".
+ * @param {number} count The count.
+ * @param {string} noun The singular noun.
+ * @returns {string} The count and the noun, plural unless the count is 1.
+ */
+export function countLabel(count, noun) {
+  return `${count} ${noun}${count === 1 ? "" : "s"}`;
+}
+
 /**
  * Runs the callback once the page has loaded and the browser is idle. Safari has no
  * requestIdleCallback, so it falls back to a single zero delay timeout.
@@ -280,6 +298,7 @@ export default class Footer extends LightningElement {
   _quotaTracked = false;
   _storageTracked = false;
   storageOpen = false;
+  phone = false;
 
   @wire(getLinks)
   wiredLinks({ data }) {
@@ -288,6 +307,11 @@ export default class Footer extends LightningElement {
   }
 
   connectedCallback() {
+    // Decided once, by width, so it follows the stylesheet's phone rule and a resize never
+    // reopens or closes a group the visitor has toggled.
+    this.phone =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia(PHONE_QUERY).matches;
     this._cancelDeferred = whenIdleAfterLoad(() => {
       // The static build leaves the probe out on purpose, so it could only fail there.
       if (!IS_STATIC) {
@@ -386,6 +410,52 @@ export default class Footer extends LightningElement {
     return this.graphqlCached
       ? CACHED_GRAPHQL_LABEL
       : `GraphQL: live, ${this.graphqlMs} ms`;
+  }
+
+  /** CI starts open on a desktop and closed on a phone. Every other group starts closed. */
+  get ciOpen() {
+    return !this.phone;
+  }
+
+  get ciStatus() {
+    return countLabel(CI_BADGES.length, "workflow");
+  }
+
+  /** One status word for the Platform group, the problem first. */
+  get platformStatus() {
+    if (this.snapshotFailed || this.graphqlFailed) {
+      return "unavailable";
+    }
+    return this.graphqlCached ? "cached" : "live";
+  }
+
+  get integrationsStatus() {
+    return countLabel(
+      this.providerRows.length + this.integrationRows.length,
+      "service"
+    );
+  }
+
+  get quotasStatus() {
+    return countLabel(
+      this.quotaRows.length + (this.showAiRequests ? 1 : 0),
+      "reading"
+    );
+  }
+
+  /** How many of the two stored figures, data and files, the snapshot holds. */
+  get storageStatus() {
+    const count = [
+      [this.storage?.dataUsedMb, this.storage?.dataMaxMb],
+      [this.storage?.fileUsedMb, this.storage?.fileMaxMb]
+    ].filter(
+      ([used, max]) => Number.isFinite(used) && Number.isFinite(max)
+    ).length;
+    return countLabel(count, "reading");
+  }
+
+  get limitsStatus() {
+    return countLabel(this.limitRows.length, "reading");
   }
 
   get snapshotLoaded() {
@@ -578,7 +648,12 @@ export default class Footer extends LightningElement {
   }
 
   handleStorageKeydown(event) {
-    if (event.key !== "Escape" || !this.storageOpen) {
+    // Escape on a group summary does nothing of ours, so it never moves focus off the summary.
+    if (
+      event.key !== "Escape" ||
+      !this.storageOpen ||
+      event.target?.closest?.("summary")
+    ) {
       return;
     }
     this.storageOpen = false;

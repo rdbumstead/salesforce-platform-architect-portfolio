@@ -17,6 +17,10 @@
 // tour's own links and buttons. TOUR below must follow LIVE_PILLARS in c/pillarData, which
 // scripts/check-smoke-routes.js checks.
 //
+// The footer check, once per engine and size: on the home page every footer group has a
+// summary, the groups start closed on the phone size and with only CI open on the desktop
+// size, and pressing each summary opens its group and pressing it again closes it.
+//
 // Environment:
 //   SITE_BASE   the site root, for example https://example.my.site.com/portfolio (required)
 //   BROWSERS    comma list of Playwright engines, default "chromium,webkit"
@@ -486,6 +490,82 @@ async function checkRow(browser, engine, route, viewport) {
 }
 
 /**
+ * The footer's groups on the home page. Their summaries must be there, start in the default
+ * state for the size (all closed on a phone, only CI open on a desktop) and toggle when pressed.
+ * @param {object} browser the Playwright browser
+ * @param {object} viewport one of VIEWPORTS
+ * @returns {Promise<object>} the row without its browser name
+ */
+async function footerOnce(browser, viewport) {
+  const context = await browser.newContext({
+    viewport: { width: viewport.width, height: viewport.height }
+  });
+  const result = { route: "footer", pass: false, groups: {} };
+  try {
+    await prepare(context);
+    const page = await context.newPage();
+    await page.goto(BASE + "/", {
+      waitUntil: "domcontentloaded",
+      timeout: NAVIGATION_TIMEOUT_MS
+    });
+    const summaries = page.locator("c-footer summary");
+    await summaries
+      .first()
+      .waitFor({ state: "attached", timeout: COMPONENT_TIMEOUT_MS });
+    // The late groups come with the snapshot, so give it a moment, then check what is there.
+    await page.waitForTimeout(SETTLE_MS);
+    const count = await summaries.count();
+    const problems = [];
+    for (let i = 0; i < count; i++) {
+      const summary = summaries.nth(i);
+      const group = await summary.evaluate(
+        (el) => el.parentElement.dataset.group
+      );
+      const isOpen = () => summary.evaluate((el) => el.parentElement.open);
+      const expectedOpen = viewport.name !== "phone" && group === "ci";
+      const start = await isOpen();
+      await summary.scrollIntoViewIfNeeded();
+      await summary.click();
+      const afterOpen = await isOpen();
+      await summary.click();
+      const afterClose = await isOpen();
+      result.groups[group] = {
+        start,
+        toggled: afterOpen === !start && afterClose === start
+      };
+      if (start !== expectedOpen) {
+        problems.push(`${group} starts ${start ? "open" : "closed"}`);
+      }
+      if (!result.groups[group].toggled) {
+        problems.push(`${group} does not toggle`);
+      }
+    }
+    if (count === 0) {
+      problems.push("no footer summary");
+    } else if (!result.groups.ci) {
+      problems.push("no CI group");
+    }
+    if (problems.length) {
+      result.problems = problems;
+    }
+    result.pass = problems.length === 0;
+  } catch (error) {
+    result.error = String(error.message).split("\n")[0];
+  } finally {
+    await context.close();
+  }
+  return result;
+}
+
+async function footerRow(browser, engine, viewport) {
+  let attempt = await footerOnce(browser, viewport);
+  if (!attempt.pass) {
+    attempt = await footerOnce(browser, viewport);
+  }
+  return { browser: engine, viewport: viewport.name, ...attempt };
+}
+
+/**
  * The tour bar's own element, inside the layout's shadow tree. Playwright's CSS locators
  * pierce open shadow roots.
  * @param {object} page the Playwright page
@@ -740,6 +820,7 @@ async function main() {
       }
       for (const viewport of VIEWPORTS) {
         tasks.push(() => tourRow(browser, engine, viewport));
+        tasks.push(() => footerRow(browser, engine, viewport));
       }
       rows.push(...(await runPool(tasks, PARALLEL_PAGES)));
     } finally {
@@ -751,7 +832,7 @@ async function main() {
   const ok = rows.length > 0 && failed.length === 0;
   const summary =
     `live smoke: ${ok ? "PASS" : "FAIL"}, ${rows.length - failed.length} of ` +
-    `${rows.length} rows pass (${BROWSERS.join(", ")}, ${ROUTES.length} routes and the tour walk, ` +
+    `${rows.length} rows pass (${BROWSERS.join(", ")}, ${ROUTES.length} routes, the tour walk and the footer check, ` +
     `${VIEWPORTS.length} sizes)` +
     (failed.length
       ? `, failing: ${failed
