@@ -18,7 +18,7 @@ compatibility_date = "2026-10-01"
 [vars]
 PRODUCTION_HOSTS = "ryanbumstead.com,www.ryanbumstead.com"
 FEATURE_CONTACT = "live"
-FEATURE_TESTIMONIAL = "recorded"
+FEATURE_TESTIMONIAL = "live"
 FEATURE_COVER_LETTER = "live"
 FEATURE_API_LAB = "live"
 FEATURE_LIVE_READS = "live"
