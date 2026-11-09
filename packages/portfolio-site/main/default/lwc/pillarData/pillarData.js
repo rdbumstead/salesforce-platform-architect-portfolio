@@ -28,6 +28,7 @@ const SOURCE = [
     letter: "A",
     pageLabel: "Business Architecture",
     sasName: "Business Architecture",
+    menuNote: "Process and data, education provider",
     url: "business-architecture",
     summary:
       "How an employer hub for an education provider models a business process and its data.",
@@ -43,6 +44,7 @@ const SOURCE = [
     letter: "B",
     pageLabel: "Solution Architecture",
     sasName: "Solution Architecture",
+    menuNote: "Platform choice, literacy nonprofit",
     url: "nonprofit-solutions",
     summary:
       "A solution design, decision matrix and cost comparison for an adult literacy nonprofit.",
@@ -58,6 +60,7 @@ const SOURCE = [
     letter: "C",
     pageLabel: "API Lab",
     sasName: "Work Experience Verification API",
+    menuNote: "Work Experience Verification API",
     url: "api-lab",
     summary: "Call the portfolio REST API and read the headers it returns.",
     tour: "Press Execute GET and find X-Request-Id and X-RateLimit-Limit.",
@@ -74,6 +77,7 @@ const SOURCE = [
     letter: "D",
     pageLabel: "AI Lab",
     sasName: "AI & Innovation",
+    menuNote: "AI & Innovation",
     url: "ai-lab",
     summary: "Generate a cover letter grounded in the portfolio data.",
     tour: "Paste a job posting, press Generate, read the letter (about 40 s).",
@@ -86,6 +90,7 @@ const SOURCE = [
     letter: "E",
     pageLabel: "Delivery",
     sasName: "Agile Delivery & DevOps",
+    menuNote: "Agile Delivery & DevOps",
     url: "delivery",
     summary: "The Jira roadmap and the commits that shipped this site.",
     staticSummary:
@@ -99,8 +104,10 @@ const SOURCE = [
 
 /**
  * The five pillars, A to E, in tour order. Each entry is frozen, tags and sub links included.
- * Fields: key, letter, pageLabel, sasName, url, href, summary, tour, tourMinutes, tags,
+ * Fields: key, letter, pageLabel, sasName, menuNote, url, href, summary, tour, tourMinutes, tags,
  * inProgress, subLinks, and code where a pillar has a code line to show.
+ * sasName is the name the solution architecture document uses and the Project pillar label
+ * formula repeats, so a test pins it. menuNote is the line under the name in the header menu.
  * tour is the stop's task line in the tour bar, at most TOUR_TASK_MAX characters, and doubles as
  * its "Show me" button. tourMinutes is the time the stop asks of a careful reader.
  * inProgress marks a pillar that is coming: the home page leaves it out of the cards and the

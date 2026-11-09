@@ -616,7 +616,7 @@ export default class PortfolioThemeLayout extends LightningElement {
       key: pillar.key,
       letter: pillar.letter,
       pageLabel: pillar.pageLabel,
-      sasName: pillar.sasName,
+      menuNote: pillar.menuNote,
       href: pillar.href,
       current: this.currentFor(pillar.href),
       inProgress: pillar.inProgress

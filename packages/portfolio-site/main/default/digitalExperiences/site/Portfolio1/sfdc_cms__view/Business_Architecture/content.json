@@ -29,7 +29,7 @@
                         "designUrl": "/docs?doc=sas#5-1-pillar-a-business-architecture-employer-hub",
                         "eyebrow": "Pillar A",
                         "heading": "Business Architecture",
-                        "lead": "Several departments at an education provider worked with the same employer partners, and none could see what the others had agreed. The Employer Hub gives each partner one home, routes every request to the right team and reports the results. Designed so partners get one front door, departments see each other's work with a partner, and leadership reports on the whole relationship.",
+                        "lead": "Business architecture for an education provider. Several departments there worked with the same employer partners, and none could see what the others had agreed. The Employer Hub gives each partner one home, routes every request to the right team and reports the results. Designed so partners get one front door, departments see each other's work with a partner, and leadership reports on the whole relationship.",
                         "points": "Process maps and dashboards for the partner inquiry | The live data model behind the hub | A walkthrough of how one inquiry moves through it"
                       },
                       "definition": "c:pageIntro",
@@ -79,9 +79,9 @@
           "children": [
             {
               "attributes": {
-                "customHeadTags": "<link rel=\"canonical\" href=\"https://ryanbumstead.com/business-architecture\" />\n<meta property=\"og:title\" content=\"Business Architecture | Ryan Bumstead\" />\n<meta property=\"og:description\" content=\"Pillar A. Business architecture for an employer hub: process maps, a live data model and the walkthrough.\" />\n<meta property=\"og:url\" content=\"https://ryanbumstead.com/business-architecture\" />\n<meta name=\"twitter:title\" content=\"Business Architecture | Ryan Bumstead\" />\n<meta name=\"twitter:description\" content=\"Pillar A. Business architecture for an employer hub: process maps, a live data model and the walkthrough.\" />",
-                "description": "Pillar A. Business architecture for an employer hub: process maps, a live data model and the walkthrough.",
-                "pageTitle": "Business Architecture | Ryan Bumstead",
+                "customHeadTags": "<link rel=\"canonical\" href=\"https://ryanbumstead.com/business-architecture\" />\n<meta property=\"og:title\" content=\"Business Architecture for an Education Provider | Ryan Bumstead\" />\n<meta property=\"og:description\" content=\"Pillar A. Business architecture for an education provider: process maps, a live data model and the walkthrough.\" />\n<meta property=\"og:url\" content=\"https://ryanbumstead.com/business-architecture\" />\n<meta name=\"twitter:title\" content=\"Business Architecture for an Education Provider | Ryan Bumstead\" />\n<meta name=\"twitter:description\" content=\"Pillar A. Business architecture for an education provider: process maps, a live data model and the walkthrough.\" />",
+                "description": "Pillar A. Business architecture for an education provider: process maps, a live data model and the walkthrough.",
+                "pageTitle": "Business Architecture for an Education Provider | Ryan Bumstead",
                 "recordId": "{!recordId}"
               },
               "definition": "community_builder:seoAssistant",
