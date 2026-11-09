@@ -581,58 +581,10 @@ export function writePdf(doc, model, options = {}) {
   const { margin, width, textRow, block, paragraph, labelled, measure, shown } =
     writer;
 
-  // One line centred across the text width, for the issuer label and the verify link.
-  const centredRow = (piece, style) =>
-    textRow(
-      [{ ...piece, x: margin + (width - measure(piece.text, style)) / 2 }],
-      style
-    );
-
-  /*
-   * Certifications and education sit centred in two equal columns, the same rule as the
-   * preview's .centred-list. A list of one takes the full width. Otherwise the items pair up in
-   * order, each centred in its half, and an odd last item keeps a half cell in the middle. Each
-   * pair is one block, so a pair never splits across pages.
-   */
-  const centredItems = (kind, texts, style) => {
-    const half = (width - space.columnGap) / 2;
-    const cellLines = (text, cellLeft, cellWidth) => {
-      writer.setType(style);
-      return wrapText(doc, text, cellWidth, cellWidth).map((line) => ({
-        kind,
-        text: line,
-        x: cellLeft + (cellWidth - measure(line, style)) / 2
-      }));
-    };
-    const cells = [];
-    if (texts.length === 1) {
-      cells.push([cellLines(texts[0], margin, width)]);
-    } else {
-      for (let index = 0; index < texts.length; index += 2) {
-        if (index + 1 < texts.length) {
-          cells.push([
-            cellLines(texts[index], margin, half),
-            cellLines(texts[index + 1], margin + half + space.columnGap, half)
-          ]);
-        } else {
-          cells.push([
-            cellLines(texts[index], margin + (width - half) / 2, half)
-          ]);
-        }
-      }
-    }
-    cells.forEach((pair) => {
-      const count = Math.max(...pair.map((lines) => lines.length));
-      const rows = [];
-      for (let line = 0; line < count; line += 1) {
-        rows.push(
-          textRow(
-            pair.map((lines) => lines[line]).filter((piece) => piece),
-            style
-          )
-        );
-      }
-      block(rows, space.itemGap);
+  // Certifications and education are one left aligned column, the same as experience and skills.
+  const leftItems = (kind, texts, style) => {
+    texts.forEach((text) => {
+      block(paragraph(kind, text, style), space.itemGap);
     });
   };
 
@@ -765,8 +717,14 @@ export function writePdf(doc, model, options = {}) {
         if (group.hasIssuer) {
           block(
             [
-              centredRow(
-                { kind: "cert-issuer", text: shown(group.issuer, type.label) },
+              textRow(
+                [
+                  {
+                    kind: "cert-issuer",
+                    text: shown(group.issuer, type.label),
+                    x: margin
+                  }
+                ],
                 type.label
               )
             ],
@@ -774,7 +732,7 @@ export function writePdf(doc, model, options = {}) {
             true
           );
         }
-        centredItems(
+        leftItems(
           "cert",
           group.certifications.map((cert) => cert.text),
           type.text
@@ -783,12 +741,15 @@ export function writePdf(doc, model, options = {}) {
       if (model.hasVerificationLink) {
         block(
           [
-            centredRow(
-              {
-                kind: "verify",
-                text: model.verifyLabel,
-                url: model.verificationUrl
-              },
+            textRow(
+              [
+                {
+                  kind: "verify",
+                  text: model.verifyLabel,
+                  url: model.verificationUrl,
+                  x: margin
+                }
+              ],
               type.text
             )
           ],
@@ -799,25 +760,28 @@ export function writePdf(doc, model, options = {}) {
         writer.spacer(space.subheadingBefore);
         block(
           [
-            centredRow(
-              {
-                kind: "retired-title",
-                text: shown(model.retiredLabel, type.subheading)
-              },
+            textRow(
+              [
+                {
+                  kind: "retired-title",
+                  text: shown(model.retiredLabel, type.subheading),
+                  x: margin
+                }
+              ],
               type.subheading
             )
           ],
           space.itemGap,
           true
         );
-        centredItems(
+        leftItems(
           "retired",
           model.retiredCertifications.map((cert) => cert.text),
           type.text
         );
       }
     } else if (entry.isEducation) {
-      centredItems(
+      leftItems(
         "education",
         model.education.map((credential) => credential.text),
         type.text

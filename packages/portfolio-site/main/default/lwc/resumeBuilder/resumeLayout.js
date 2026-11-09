@@ -19,12 +19,11 @@ import {
 export { PREVIEW_PX_PER_PT };
 
 /**
- * The shared document spec plus the resume's own section order and labels, and the gap between
- * the two centred columns that hold the certifications and education.
+ * The shared document spec plus the resume's own section order and labels.
  */
 export const RESUME_LAYOUT = Object.freeze({
   ...DOCUMENT_LAYOUT,
-  space: Object.freeze({ ...DOCUMENT_LAYOUT.space, columnGap: 16 }),
+  space: DOCUMENT_LAYOUT.space,
   sections: Object.freeze([
     "experience",
     "skills",
