@@ -220,6 +220,7 @@ private class PAPITransformerTest {
     insert new Project__c(
       Name = 'Pillar Project',
       Status__c = 'Live – In Production',
+      Sort_Order__c = 1,
       Pillar__c = 'B'
     );
     Project__c proj = [
@@ -249,7 +250,8 @@ private class PAPITransformerTest {
   static void transformProjectLabelsAnUnassignedPillar() {
     insert new Project__c(
       Name = 'Loose Project',
-      Status__c = 'Live – In Production'
+      Status__c = 'Live – In Production',
+      Sort_Order__c = 1
     );
     Project__c proj = [
       SELECT Id, Public_Key__c, Name, Status__c, Pillar_Label__c

@@ -125,4 +125,21 @@ private class SAPICertificationSkillTest {
     SapiTestData.assertError(500, 'INTERNAL_SERVER_ERROR');
     RestTestUtil.assertServerError();
   }
+
+  @IsTest
+  static void allLinksReturnsEveryJunctionRowWithItsSkillName() {
+    Test.startTest();
+    List<Certification_Skill__c> links = SAPICertificationSkill.allLinks();
+    Test.stopTest();
+
+    Assert.areEqual(
+      [SELECT COUNT() FROM Certification_Skill__c],
+      links.size(),
+      'Every junction row is returned, with no certification filter'
+    );
+    for (Certification_Skill__c link : links) {
+      Assert.isNotNull(link.Certification__c, 'Certification is selected');
+      Assert.isNotNull(link.Skill__r.Name, 'Skill name is selected');
+    }
+  }
 }
