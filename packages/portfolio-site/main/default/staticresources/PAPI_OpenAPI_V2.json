@@ -1222,11 +1222,6 @@
             "description": "SLDS Icon reference",
             "example": "utility:code"
           },
-          "colorHex": {
-            "type": "string",
-            "description": "Brand color for the category",
-            "example": "#0070d2"
-          },
           "categoryOrder": {
             "type": "number",
             "description": "Order to display the category in the UI",
@@ -1589,8 +1584,7 @@
                       "displayName": "Salesforce Apex",
                       "category": "Backend",
                       "proficiency": 5,
-                      "iconName": "utility:code",
-                      "colorHex": "#0070d2"
+                      "iconName": "utility:code"
                     },
                     {
                       "key": "skl_8d2q6v4nwc",
@@ -1598,8 +1592,7 @@
                       "displayName": "Lightning Web Components",
                       "category": "Frontend",
                       "proficiency": 5,
-                      "iconName": "standard:lightning_component",
-                      "colorHex": "#00A1E0"
+                      "iconName": "standard:lightning_component"
                     }
                   ],
                   "experience": [

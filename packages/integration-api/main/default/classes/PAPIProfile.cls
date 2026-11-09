@@ -488,7 +488,7 @@ global with sharing class PAPIProfile implements QueryDefinitions.Provider {
   private static QueryDefinitions.QueryDefault skillsDefault() {
     return new QueryDefinitions.QueryDefault(
         'Skill__c',
-        'Id, Public_Key__c, Name, Category__c, Proficiency__c, Icon_Name__c'
+        'Id, Public_Key__c, Name, Display_Name__c, Category__c, Proficiency__c, Icon_Name__c'
       )
       .orderBy('Proficiency__c DESC, Name ASC')
       .rowLimit(MAX_SKILLS)

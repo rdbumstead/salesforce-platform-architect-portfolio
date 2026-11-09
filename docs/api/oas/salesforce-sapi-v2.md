@@ -3415,8 +3415,8 @@ Status Code **200**
 |» category|string|false|none|Skill Category|
 |» proficiencyScore|number|false|none|Self-Reported Proficiency|
 |» iconName|string¦null|false|none|Icon Name|
-|» svgPathData|string¦null|false|none|SVG Path Data|
-|» colorHex|string¦null|false|none|Category Color Hex|
+|» svgPathData|string¦null|false|none|SVG Path Data. Deprecated. It is null on every skill, and it will be removed from v2 after v1 sunsets on 2026-11-29.|
+|» colorHex|string¦null|false|none|Category Color Hex. Deprecated. Every skill carries the same default colour, and it will be removed from v2 after v1 sunsets on 2026-11-29.|
 |» categoryOrder|number|false|none|Category Order|
 
 #### Enumerated Values
@@ -6392,8 +6392,8 @@ Skill Schema.
 |category|string|false|none|Skill Category|
 |proficiencyScore|number|false|none|Self-Reported Proficiency|
 |iconName|string¦null|false|none|Icon Name|
-|svgPathData|string¦null|false|none|SVG Path Data|
-|colorHex|string¦null|false|none|Category Color Hex|
+|svgPathData|string¦null|false|none|SVG Path Data. Deprecated. It is null on every skill, and it will be removed from v2 after v1 sunsets on 2026-11-29.|
+|colorHex|string¦null|false|none|Category Color Hex. Deprecated. Every skill carries the same default colour, and it will be removed from v2 after v1 sunsets on 2026-11-29.|
 |categoryOrder|number|false|none|Category Order|
 
 <h2 id="tocS_Certification">Certification</h2>

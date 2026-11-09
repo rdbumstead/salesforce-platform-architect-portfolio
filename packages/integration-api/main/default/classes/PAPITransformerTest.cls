@@ -269,4 +269,34 @@ private class PAPITransformerTest {
       'A project with no pillar reads Unassigned, as SAPI does'
     );
   }
+
+  @IsTest
+  static void transformSkillUsesTheDisplayNameWhenFilled() {
+    Skill__c skill = new Skill__c(
+      Name = 'Apex',
+      Display_Name__c = 'Salesforce Apex'
+    );
+
+    Map<String, Object> result = PAPITransformer.transformSkill(skill);
+
+    Assert.areEqual('Apex', result.get('name'), 'name stays the record name');
+    Assert.areEqual(
+      'Salesforce Apex',
+      result.get('displayName'),
+      'displayName is Display_Name__c when it is filled'
+    );
+  }
+
+  @IsTest
+  static void transformSkillFallsBackToTheNameWhenDisplayNameIsBlank() {
+    Skill__c skill = new Skill__c(Name = 'Apex');
+
+    Map<String, Object> result = PAPITransformer.transformSkill(skill);
+
+    Assert.areEqual(
+      'Apex',
+      result.get('displayName'),
+      'displayName falls back to Name when Display_Name__c is blank'
+    );
+  }
 }
