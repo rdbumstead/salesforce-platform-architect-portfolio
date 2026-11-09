@@ -53,8 +53,10 @@
  *                      snapshot is the one the build captured, marked recorded with its capture
  *                      time. The caption then reads "Readings from Salesforce and its
  *                      integrations" and a label under it gives the capture time. The GraphQL
- *                      item is a browser probe and cannot be recorded, so it is left out
- *                      instead of reading "unavailable" beside a full set of readings.
+ *                      item is a browser probe that the static build does not contain, so on
+ *                      the static site, recorded or live, the footer never starts the probe and
+ *                      shows no GraphQL line, instead of reading "unavailable" beside a full
+ *                      set of readings.
  *                      AI requests today, CPU time and Memory describe one request or one day,
  *                      so a copy saved at build time would read as current when it is not.
  *                      They are left out of a recorded snapshot too.
@@ -287,7 +289,10 @@ export default class Footer extends LightningElement {
 
   connectedCallback() {
     this._cancelDeferred = whenIdleAfterLoad(() => {
-      this.startGraphqlProbe();
+      // The static build leaves the probe out on purpose, so it could only fail there.
+      if (!IS_STATIC) {
+        this.startGraphqlProbe();
+      }
       this.loadSnapshot();
     });
   }
@@ -371,9 +376,6 @@ export default class Footer extends LightningElement {
   }
 
   get graphqlLabel() {
-    if (this.graphqlFailed && this.snapshotRecorded) {
-      return null;
-    }
     if (this.graphqlFailed) {
       return "GraphQL: unavailable";
     }

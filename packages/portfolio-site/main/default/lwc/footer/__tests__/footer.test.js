@@ -1153,12 +1153,10 @@ describe("c-footer", () => {
       integrations: INTEGRATIONS
     };
 
-    it("shows every group and a capture label, and hides the GraphQL item when the probe fails", async () => {
+    it("shows every group and a capture label", async () => {
       getSystemSnapshot.mockResolvedValue(snapshot(RECORDED));
       const element = createComponent();
       await runIdle();
-      graphql.emit({ errors: [{ message: "denied" }] });
-      await flushPromises();
 
       expect(q(element, '[data-id="metrics-caption"]').textContent).toBe(
         "Readings from Salesforce and its integrations"
