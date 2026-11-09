@@ -237,7 +237,7 @@ _The design is in the SAS. Apart from the GraphQL check, which confirms what run
 
 **Phase 9: Edge AI Proxy (Cloudflare Workers)**
 
-- A deferred design in [ADR-016](../adr/016-cloudflare-worker-as-edge-ai-proxy.md), not built. The one Cloudflare Worker that runs today is the cache warmer ([Technical Guide §2.13](./04-Technical-Guide.md#213-cloudflare-cache-warmer-worker)), which calls no API.
+- A deferred design in [ADR-016](../adr/016-cloudflare-worker-as-edge-ai-proxy.md), not built. No Cloudflare Worker runs today. The cache warmer ([Technical Guide §2.13](./04-Technical-Guide.md#213-cloudflare-cache-warmer-worker)), which called no API, was retired at cutover on 2026-11-09. The static site's Pages Functions are a separate thing (SAS section 6.3).
 
 ## 4. Implementation Checklist (Execution Plan)
 

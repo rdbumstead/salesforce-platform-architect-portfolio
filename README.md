@@ -1,12 +1,12 @@
 # Ryan Bumstead: Salesforce Platform Architect Portfolio
 
-**Live App:** [https://ryanbumstead.com](https://ryanbumstead.com), which redirects to the Experience Cloud site and keeps the path. A static build of the same site is deployed to Cloudflare Pages and is not the front door yet ([ADR-041](docs/adr/041-headless-static-front-end-on-cloudflare-pages.md), cutover pending)
+**Live App:** [https://ryanbumstead.com](https://ryanbumstead.com), a static build of the site on Cloudflare Pages, built from the Salesforce org's records ([ADR-041](docs/adr/041-headless-static-front-end-on-cloudflare-pages.md), cut over on 2026-11-09). The Experience Cloud site stays up for two weeks as the rollback target
 
 > [!IMPORTANT]
 > **Project Status:** Live since October 2026. 6 enterprise docs and 41 ADRs. This README describes what runs in production.
 
 > [!TIP]
-> **Non-Salesforce Reader?** This is a public website whose content lives in a Salesforce org. Every case study, stat and timeline entry is a record in that org. The live site reads them when a page loads. A static build of the same site, which is meant to become the front door, reads them through an allowlisted API when it is built. Its forms and labs stay paused until cutover, then call Salesforce through the site's own functions. It writes cover letters with an AI model and is deployed by an automated pipeline with quality gates.
+> **Non-Salesforce Reader?** This is a public website whose content lives in a Salesforce org. Every case study, stat and timeline entry is a record in that org. The live site is a static build that reads them through an allowlisted API when it is built. Its forms, labs and live readings call Salesforce at request time through the site's own functions, each behind a kill switch. It writes cover letters with an AI model and is deployed by an automated pipeline with quality gates.
 
 **Documentation:** [**View the Governance Hub**](https://rdbumstead.github.io/salesforce-platform-architect-portfolio/) (Rendered Specs, ADRs, & Guides)
 
@@ -39,7 +39,7 @@ Salesforce platform architecture, including:
 - **6 Enterprise Documents**: SAS, Charter, Technical Guide, Ops Guide, Governance, Overview.
 - **41 Architectural Decisions (ADRs)**: documented rationale for performance, security, and AI.
 - **15 Core Competencies**: mapped to verifiable artifacts and validation methods.
-- **9 CI/CD Workflows**: delta deploys that also refresh the docs cache after a push that changes the docs, PR gates (including a check only validation against production), an internal reference check for pull requests that change only the docs, a read only live smoke test after each deploy and once a day, a Postman sync that pushes the public collection after each green production deploy, the daily heartbeat, the static site build and deploy to Cloudflare Pages, the cache warmer worker deploy, and a Lighthouse audit run on demand.
+- **8 CI/CD Workflows**: delta deploys that also refresh the docs cache after a push that changes the docs, PR gates (including a check only validation against production), an internal reference check for pull requests that change only the docs, a read only live smoke test after each deploy and once a day, a Postman sync that pushes the public collection after each green production deploy, the daily heartbeat, the static site build and deploy to Cloudflare Pages, and a Lighthouse audit run on demand.
 
 **Quick Navigation:** [Evidence Matrix](#evidence-matrix) • [Architecture Diagram](#architecture) • [Full Docs](#full-architecture-documentation)
 
@@ -98,8 +98,8 @@ EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design"
 **Available Now:**
 
 - [Architecture decisions documented with rationale](docs/adr/): 41 ADRs covering performance, security and AI. Each one in the [index below](#architectural-decision-records) says whether it is built, superseded, or a design only
-- [CI/CD pipelines green with delta deployment strategy](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions): 9 workflows (deploy, PR validation, the docs internal reference check, the live smoke test, the Postman sync, the heartbeat, the static site build, the cache warmer worker deploy, plus a Lighthouse audit run on demand)
-- [A static front end built from the same components](docs/adr/041-headless-static-front-end-on-cloudflare-pages.md): the existing Lightning Web Components compile with LWC OSS, the org's data comes through an allowlisted export with parity tests against what the guest sees, and the features that need a request go through Cloudflare Pages Functions with a kill switch each. It is deployed to a `*.pages.dev` address and not yet the front door. [Cutover runbook](docs/guides/cutover-runbook.md)
+- [CI/CD pipelines green with delta deployment strategy](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions): 8 workflows (deploy, PR validation, the docs internal reference check, the live smoke test, the Postman sync, the heartbeat, the static site build, plus a Lighthouse audit run on demand)
+- [A static front end built from the same components](docs/adr/041-headless-static-front-end-on-cloudflare-pages.md): the existing Lightning Web Components compile with LWC OSS, the org's data comes through an allowlisted export with parity tests against what the guest sees, and the features that need a request go through Cloudflare Pages Functions with a kill switch each. It has been the front door at `ryanbumstead.com` since 2026-11-09. [Cutover runbook](docs/guides/cutover-runbook.md)
 - [API contracts OpenAPI 3.0 compliant](packages/integration-api/specs/salesforce-sapi.yaml): Twin API pattern with SAPI + PAPI specifications
 - [Mobile performance targets quantified](docs/guides/03-SAS.md#21-core-nfrs): an LCP target of 2.5 s and a gate at the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, October 2026) on the six main routes, with the skills matrix on phones and the graph engine loaded only on demand
 - [Zero Trust security model enforced](docs/guides/03-SAS.md#46-data-security-matrix): Guest user FLS restrictions + OAuth 2.0 client-credentials auth (External Client App) + read-only endpoints

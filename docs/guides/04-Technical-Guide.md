@@ -552,15 +552,12 @@ The home page reads for a hiring manager first and a technical reviewer second (
 ### 2.13 Cloudflare Cache Warmer Worker
 
 > [!NOTE]
-> **Retired at cutover.** The warmer exists to wake the Salesforce site. When the static site is the front door ([ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)) there is nothing to wake, and the Worker would send guest traffic to a redirect for no purpose. I pause it before cutover and delete the Worker and `deploy-worker.yml` the same day ([cutover runbook](./cutover-runbook.md)). Until then this section describes what runs.
+> **Retired at cutover on 2026-11-09.** The warmer existed to wake the Salesforce site. With the static site as the front door ([ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)) there is nothing to wake. Its cron trigger was removed before the domain moved, and its code, `config/wrangler.toml` and `deploy-worker.yml` left the repository the same day ([cutover runbook](./cutover-runbook.md)). This section is kept as a record.
 
-The one piece of the running system outside Salesforce, apart from the domain redirect (SAS section 6.1).
-
-- **What it is.** A Cloudflare Worker named `portfolio-cache-warmer` (`config/wrangler.toml`), whose code is `scripts/cache-warmer.js`. Its `scheduled` handler runs on a cron trigger every 5 minutes (`*/5 * * * *`) and sends one GET to `TARGET_URL`, `https://ryanbumstead.com/`, with `Cache-Control: no-cache` and `Pragma: no-cache`. It logs the status and never retries.
-- **Why.** To wake the site regularly, so a visitor is less likely to be the first request after a quiet spell. The Worker's own comment says the `no-cache` headers make sure the request reaches Salesforce rather than a cache. No measurement of the effect has been taken, so none is claimed.
-- **What it is not.** It is not the edge AI proxy of [ADR-016](../adr/016-cloudflare-worker-as-edge-ai-proxy.md), which stays deferred. It reads nothing, caches nothing and calls no API.
-- **Deploy.** `deploy-worker.yml` runs `wrangler deploy --config config/wrangler.toml` on a push to `main` that changes either file, or by hand, with the `CLOUDFLARE_API_TOKEN` secret.
-- **Not yet checked.** `TARGET_URL` is the redirect domain, so the request reaches the site only by following the 301. Whether the deployed Worker follows it, and whether it fires every 5 minutes, has not been read from Cloudflare's logs.
+- **What it was.** A Cloudflare Worker named `portfolio-cache-warmer`, whose `scheduled` handler ran every 5 minutes and sent one GET to `https://ryanbumstead.com/` with `Cache-Control: no-cache`, so a visitor was less likely to be the first request after a quiet spell. No measurement of the effect was taken, so none is claimed.
+- **What it was not.** It was not the edge AI proxy of [ADR-016](../adr/016-cloudflare-worker-as-edge-ai-proxy.md), which stays deferred. It read nothing, cached nothing and called no API.
+- **Last runs.** The Worker's cron events show a run every 5 minutes until 12:10:57 UTC on 2026-11-09, and none after the trigger was removed.
+- **Bringing it back.** Only if the Salesforce site is the front door again (runbook section 4): restore the three files from git history and run the workflow.
 
 ### 2.14 View Source (`c-view-source`)
 
