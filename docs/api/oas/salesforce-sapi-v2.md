@@ -483,7 +483,7 @@ Retrieves the primary contact details for the portfolio owner. Returns only the 
 |X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |contactName|query|string|false|Filter by Contact Name.|
-|limit|query|integer|false|Maximum number of records to return.|
+|limit|query|integer|false|Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.|
 |offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 
 #### Enumerated Values
@@ -851,7 +851,7 @@ Retrieves professional experience history.
 |contactName|query|string|false|Filter by Contact Name.|
 |employerName|query|string|false|Filter by Employer Name.|
 |currentlyEmployed|query|boolean|false|Filter by active employment status.|
-|limit|query|integer|false|Maximum number of records to return.|
+|limit|query|integer|false|Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.|
 |offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 
 #### Enumerated Values
@@ -1226,7 +1226,7 @@ Fetches resume bullets. Supports Persona filtering for PAPI optimization. An unk
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |experienceKey|query|string|false|Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `experienceId` returns 400.|
 |persona|query|string|false|Filters records where the target field (Multi-Select Picklist) includes the specified persona(s).|
-|limit|query|integer|false|Maximum number of records to return.|
+|limit|query|integer|false|Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.|
 |offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 
 #### Detailed descriptions
@@ -1610,7 +1610,7 @@ a Salesforce Id.
 |X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |status|query|[ProjectStatus](#schemaprojectstatus)|false|Filter by Project Status.|
-|limit|query|integer|false|Maximum number of records to return.|
+|limit|query|integer|false|Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.|
 |offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 |contactName|query|string|false|Filter by Contact Name.|
 |projectName|query|string|false|Filter by Project Name.|
@@ -1912,7 +1912,7 @@ Status Code **200**
 |» solution|string¦null|false|none|STAR Method: Action|
 |» businessValue|string¦null|false|none|STAR Method: Result|
 |» status|[ProjectStatus](#schemaprojectstatus)|false|none|Project Lifecycle Status|
-|» dateCompleted|string(date)¦null|false|none|Completion Date|
+|» dateCompleted|string(date)¦null|false|none|Completion Date. Optional. Null until the project has a completion date.|
 |» heroImageUrl|string(uri)¦null|false|none|Banner Image URL|
 |» liveUrl|string(uri)¦null|false|none|Live Demo URL|
 |» repositoryUrl|string(uri)¦null|false|none|Code Repository URL|
@@ -2012,7 +2012,7 @@ Retrieves assets (images, links) associated with a project. A filter that is not
 |X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |projectKey|query|string|false|Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `projectId` returns 400.|
-|limit|query|integer|false|Maximum number of records to return.|
+|limit|query|integer|false|Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.|
 |offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 
 #### Enumerated Values
@@ -2380,7 +2380,7 @@ fetch('https://{domain}/services/apexrest/sapi/testimonials',
 
 *Get Testimonials*
 
-Retrieves received testimonials. Returns only records where Approved__c = true.
+Retrieves received testimonials. Returns only records where Approved__c = true, so the list is empty until a testimonial is approved.
 
 <h3 id="gettestimonials-parameters">Parameters</h3>
 
@@ -2388,7 +2388,7 @@ Retrieves received testimonials. Returns only records where Approved__c = true.
 |---|---|---|---|---|
 |X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
-|limit|query|integer|false|Maximum number of records to return.|
+|limit|query|integer|false|Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.|
 |offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 
 #### Enumerated Values
@@ -2768,7 +2768,7 @@ Retrieves related account/employer records.
 |X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |accountName|query|string|false|Filter by Account Name.|
-|limit|query|integer|false|Maximum number of records to return.|
+|limit|query|integer|false|Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.|
 |offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 
 #### Enumerated Values
@@ -3046,8 +3046,8 @@ Status Code **200**
 |*anonymous*|[[Account](#schemaaccount)]|false|none|[Account/Employer Schema.]|
 |» key|string|true|read-only|Stable public key of the record. It is set once and never changes.|
 |» name|string|false|none|Account Name|
-|» industry|string¦null|false|none|Industry|
-|» abbreviation|string¦null|false|none|Abbreviation|
+|» industry|string¦null|false|none|Industry. Optional. Null for an account with no industry set.|
+|» abbreviation|string¦null|false|none|Abbreviation. Optional. Null for an account with no short name set.|
 
 #### Enumerated Values
 
@@ -3128,7 +3128,7 @@ Retrieves technical skills and proficiency scores.
 |X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |category|query|string|false|Filter skills by Category, one of the Skill Category picklist values, for example 'Backend', 'Frontend' or 'Integration'.|
-|limit|query|integer|false|Maximum number of records to return.|
+|limit|query|integer|false|Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.|
 |offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 
 #### Enumerated Values
@@ -3411,7 +3411,7 @@ Status Code **200**
 |*anonymous*|[[Skill](#schemaskill)]|false|none|[Skill Schema.]|
 |» key|string|true|read-only|Stable public key of the record. It is set once and never changes.|
 |» name|string|false|none|Skill Name|
-|» displayName|string¦null|false|none|Display Name|
+|» displayName|string¦null|false|none|Display Name. Optional. Null for a skill with no display name set, in which case use name.|
 |» category|string|false|none|Skill Category|
 |» proficiencyScore|number|false|none|Self-Reported Proficiency|
 |» iconName|string¦null|false|none|Icon Name|
@@ -3500,7 +3500,7 @@ Retrieves professional certifications.
 |contactName|query|string|false|Filter by Contact Name.|
 |issuerName|query|string|false|Filter by Issuer Name.|
 |certificationName|query|string|false|Filter by Certification Name.|
-|limit|query|integer|false|Maximum number of records to return.|
+|limit|query|integer|false|Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.|
 |offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 
 #### Enumerated Values
@@ -3867,7 +3867,7 @@ Retrieves educational background.
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |contactName|query|string|false|Filter by Contact Name.|
 |issuerName|query|string|false|Filter by Issuer Name.|
-|limit|query|integer|false|Maximum number of records to return.|
+|limit|query|integer|false|Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.|
 |offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 
 #### Enumerated Values
@@ -4241,7 +4241,7 @@ Retrieves junction records linking Projects to Skills. A filter that is not a kn
 |X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |projectKey|query|string|false|Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `projectId` returns 400.|
-|limit|query|integer|false|Maximum number of records to return.|
+|limit|query|integer|false|Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.|
 |offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 
 #### Enumerated Values
@@ -4607,7 +4607,7 @@ Retrieves junction records linking Experiences to Skills. A filter that is not a
 |X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |experienceKey|query|string|false|Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `experienceId` returns 400.|
-|limit|query|integer|false|Maximum number of records to return.|
+|limit|query|integer|false|Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.|
 |offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 
 #### Enumerated Values
@@ -4973,7 +4973,7 @@ Retrieves junction records linking Certifications to Skills. A filter that is no
 |X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |certificationKey|query|string|false|Filter by Certification public key, for example `crt_6q2v8d4nhz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `certificationId` returns 400.|
-|limit|query|integer|false|Maximum number of records to return.|
+|limit|query|integer|false|Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.|
 |offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 
 #### Enumerated Values
@@ -6033,7 +6033,7 @@ Portfolio Project Schema.
 |solution|string¦null|false|none|STAR Method: Action|
 |businessValue|string¦null|false|none|STAR Method: Result|
 |status|[ProjectStatus](#schemaprojectstatus)|false|none|Project Lifecycle Status|
-|dateCompleted|string(date)¦null|false|none|Completion Date|
+|dateCompleted|string(date)¦null|false|none|Completion Date. Optional. Null until the project has a completion date.|
 |heroImageUrl|string(uri)¦null|false|none|Banner Image URL|
 |liveUrl|string(uri)¦null|false|none|Live Demo URL|
 |repositoryUrl|string(uri)¦null|false|none|Code Repository URL|
@@ -6323,7 +6323,7 @@ Global Config Schema (Custom Metadata). The owner's email and phone are never re
 |---|---|---|---|---|
 |linkedInUrl|string(uri)¦null|false|none|LinkedIn URL|
 |gitHubProfileUrl|string(uri)¦null|false|none|GitHub URL|
-|calendlyUrl|string(uri)¦null|false|none|Calendly URL|
+|calendlyUrl|string(uri)¦null|false|none|Calendly URL. Optional. Null until a scheduling link is set.|
 |trailblazerProfileUrl|string(uri)¦null|false|none|Trailhead URL|
 |personalWebsiteUrl|string(uri)¦null|false|none|Personal Website URL|
 |careerObjective|string¦null|false|none|Career Objective Text|
@@ -6355,8 +6355,8 @@ Account/Employer Schema.
 |---|---|---|---|---|
 |key|string|true|read-only|Stable public key of the record. It is set once and never changes.|
 |name|string|false|none|Account Name|
-|industry|string¦null|false|none|Industry|
-|abbreviation|string¦null|false|none|Abbreviation|
+|industry|string¦null|false|none|Industry. Optional. Null for an account with no industry set.|
+|abbreviation|string¦null|false|none|Abbreviation. Optional. Null for an account with no short name set.|
 
 <h2 id="tocS_Skill">Skill</h2>
 <!-- backwards compatibility -->
@@ -6388,7 +6388,7 @@ Skill Schema.
 |---|---|---|---|---|
 |key|string|true|read-only|Stable public key of the record. It is set once and never changes.|
 |name|string|false|none|Skill Name|
-|displayName|string¦null|false|none|Display Name|
+|displayName|string¦null|false|none|Display Name. Optional. Null for a skill with no display name set, in which case use name.|
 |category|string|false|none|Skill Category|
 |proficiencyScore|number|false|none|Self-Reported Proficiency|
 |iconName|string¦null|false|none|Icon Name|

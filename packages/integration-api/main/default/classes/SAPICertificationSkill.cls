@@ -110,6 +110,20 @@ global with sharing class SAPICertificationSkill implements QueryDefinitions.Pro
       .binds(listBinds(null));
   }
 
+  /**
+   * @description Every certification to skill link, for callers inside the package that
+   *              need the junction without the HTTP layer. It runs the same read as the
+   *              list endpoint with no certification filter and no paging.
+   * @return List<Certification_Skill__c> The junction rows.
+   */
+  public static List<Certification_Skill__c> allLinks() {
+    return (List<Certification_Skill__c>) QueryDefinitions.run(
+      LIST_QUERY,
+      listBinds(null),
+      listDefault()
+    );
+  }
+
   private static Map<String, Object> listBinds(String certificationId) {
     return new Map<String, Object>{
       'hasCertificationId' => String.isNotBlank(certificationId),

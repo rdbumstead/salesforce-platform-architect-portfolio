@@ -1490,13 +1490,13 @@ Status Code **200**
 |» solution|string|false|none|none|
 |» businessValue|string|false|none|none|
 |» status|string¦null|false|none|Project Status (e.g., Live, Archived)|
-|» completionDate|string(date)¦null|false|none|Mapped from SAPI dateCompleted|
+|» completionDate|string(date)¦null|false|none|The completion date, mapped from SAPI dateCompleted. Optional. The key is left out of the response for a project that has no completion date yet.|
 |» heroImageUrl|string(uri)|false|none|URL of the main display image. Matches SAPI field name.|
 |» liveUrl|string(uri)|false|none|none|
 |» repositoryUrl|string(uri)|false|none|none|
 |» technologies|[string]|false|none|Skill names from ProjectSkill junction|
 |» pillarLabel|string¦null|false|none|The strategic pillar and pillar description (e.g. Pillar A: Business Architecture)|
-|» assets|[object]|false|none|Images, videos, or links related to the project|
+|» assets|[object]|false|none|Images, videos, or links related to the project. Optional in practice. The list is empty for a project that has no assets, and most projects have none.|
 |»» type|string|true|none|none|
 |»» url|string(uri)|true|none|none|
 |»» caption|string|false|none|none|
@@ -2039,7 +2039,7 @@ fetch('https://{domain}/services/apexrest/papi/testimonials/feed',
 
 Retrieves testimonials with "Vibe Control" logic applied.
 
-**Reads**, in process: approved testimonials only (`Approved__c = true`), at most 200.
+**Reads**, in process: approved testimonials only (`Approved__c = true`), at most 200. The list is empty until a testimonial is approved.
 
 **Filtering Logic**:
 - `professional`: Filters result set to only include records where `relationship` IN ('Manager', 'Client', 'Peer') AND `vibe` = 'Professional'.
@@ -4180,13 +4180,13 @@ Project enriched with Skills and Assets
 |solution|string|false|none|none|
 |businessValue|string|false|none|none|
 |status|string¦null|false|none|Project Status (e.g., Live, Archived)|
-|completionDate|string(date)¦null|false|none|Mapped from SAPI dateCompleted|
+|completionDate|string(date)¦null|false|none|The completion date, mapped from SAPI dateCompleted. Optional. The key is left out of the response for a project that has no completion date yet.|
 |heroImageUrl|string(uri)|false|none|URL of the main display image. Matches SAPI field name.|
 |liveUrl|string(uri)|false|none|none|
 |repositoryUrl|string(uri)|false|none|none|
 |technologies|[string]|false|none|Skill names from ProjectSkill junction|
 |pillarLabel|string¦null|false|none|The strategic pillar and pillar description (e.g. Pillar A: Business Architecture)|
-|assets|[object]|false|none|Images, videos, or links related to the project|
+|assets|[object]|false|none|Images, videos, or links related to the project. Optional in practice. The list is empty for a project that has no assets, and most projects have none.|
 |» type|string|true|none|none|
 |» url|string(uri)|true|none|none|
 |» caption|string|false|none|none|
@@ -4272,7 +4272,7 @@ Public configuration. The owner's email and phone are never returned.
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |linkedInUrl|string(uri)|false|none|none|
-|calendlyUrl|string(uri)|false|none|none|
+|calendlyUrl|string(uri)|false|none|Optional. The scheduling link. Null or empty until one is set in the portfolio configuration.|
 |githubUrl|string(uri)|false|none|none|
 |trailheadUrl|string(uri)|false|none|none|
 |personalWebsiteUrl|string(uri)|false|none|none|
@@ -4382,7 +4382,7 @@ Certification with associated skills
 |name|string|true|none|none|
 |issuer|string|true|none|none|
 |dateEarned|string(date)|true|none|none|
-|skillsUsed|[string]|false|none|Derived from CertificationSkill junction|
+|skillsUsed|[string]|false|none|The skill names linked to the certification through the CertificationSkill junction, highest proficiency first. Empty when the certification has no linked skills.|
 
 <h2 id="tocS_SimpleEducation">SimpleEducation</h2>
 <!-- backwards compatibility -->

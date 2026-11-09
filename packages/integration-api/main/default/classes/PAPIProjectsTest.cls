@@ -208,4 +208,29 @@ private class PAPIProjectsTest {
       'The note names the failed sub-query'
     );
   }
+
+  @IsTest
+  static void featuredProjectsReturnThePillarLabel() {
+    Project__c proj = [
+      SELECT Id
+      FROM Project__c
+      WHERE Is_Featured__c = TRUE
+      LIMIT 1
+    ];
+    proj.Pillar__c = 'A';
+    update proj;
+    RestTestUtil.initGet('/services/apexrest/papi/v1/projects/featured');
+
+    Test.startTest();
+    PAPIProjects.getProjects();
+    Test.stopTest();
+
+    List<Object> rows = (List<Object>) RestTestUtil.getBodyAsMap().get('data');
+    Map<String, Object> row = (Map<String, Object>) rows[0];
+    Assert.areEqual(
+      'Pillar A: Business Architecture',
+      row.get('pillarLabel'),
+      'Featured projects carry the pillar label'
+    );
+  }
 }
