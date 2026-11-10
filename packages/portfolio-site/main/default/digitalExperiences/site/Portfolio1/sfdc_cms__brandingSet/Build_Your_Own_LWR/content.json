@@ -168,7 +168,7 @@
       "LinkTextDecoration": "none",
       "LinkTextDecorationFocus": "underline",
       "LinkTextDecorationHover": "underline",
-      "MaxContentWidthDesktop": "1800px",
+      "MaxContentWidthDesktop": "1280px",
       "MaxContentWidthMobile": "none",
       "MobileBaseFontSize": "1rem",
       "PrimaryAccentColor": "#2563EB",
