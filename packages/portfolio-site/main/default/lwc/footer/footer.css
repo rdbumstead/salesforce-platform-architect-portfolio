@@ -22,18 +22,19 @@
 
 /* The caption and View source share one row over the readings, View source right after the
    caption so it reads as the code behind them. */
+/* Baseline, so the caption and the button text sit on one line when they share a row. */
 .metrics-head {
   display: flex;
   flex: 1 1 100%;
   flex-wrap: wrap;
   gap: var(--pf-space-3);
-  align-items: center;
+  align-items: baseline;
 }
 
+/* The buttons take the shared text button spec (44 px, 1rem, 16 px padding) from their own
+   components, so the footer sets nothing on them but where they start. */
 .metrics-head c-view-source {
   margin-inline-start: 0;
-  --view-source-size: 13px;
-  --view-source-padding: var(--pf-space-3);
 }
 
 .metrics-caption {
