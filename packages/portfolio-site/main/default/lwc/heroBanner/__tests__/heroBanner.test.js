@@ -261,13 +261,13 @@ describe("c-hero-banner", () => {
     it("holds every button in the proof panel, the tour first, with no case studies button, and leaves the resume to the profile links", () => {
       const element = render();
       const panel = byId(element, "proof-panel");
-      const buttons = panel.querySelectorAll(".btn");
+      const buttons = panel.querySelectorAll(".nc-button");
       expect(Array.from(buttons).map((a) => a.dataset.id)).toEqual([
         "tour-link",
         "docs-link",
         "guest-access-link"
       ]);
-      expect(element.shadowRoot.querySelectorAll(".btn")).toHaveLength(3);
+      expect(element.shadowRoot.querySelectorAll(".nc-button")).toHaveLength(3);
       expect(element.shadowRoot.querySelector(".hero-actions")).toBeNull();
       expect(byId(element, "case-studies-button")).toBeNull();
       expect(text(element.shadowRoot.querySelector(".hero"))).not.toContain(
@@ -353,7 +353,7 @@ describe("c-hero-banner", () => {
       );
     });
 
-    it("draws every icon at the same optical height, with its lowest ink on the bottom edge of its box and a 2 unit stroke", async () => {
+    it("draws every icon at the same optical size, with its lowest ink on the bottom edge of its box and a 2 unit stroke", async () => {
       const element = render();
       getHeader.emit({
         ...HEADER,
@@ -397,9 +397,12 @@ describe("c-hero-banner", () => {
         );
         return inkBottom - inkTop;
       });
-      expect(Math.max(...heights) - Math.min(...heights)).toBeLessThanOrEqual(
-        2
-      );
+      // The wide drawings (Trailhead, API docs) are drawn smaller than the tall ones, so they
+      // read as the same optical size. Every ink height stays between 17 and 23 units.
+      heights.forEach((h) => {
+        expect(h).toBeGreaterThanOrEqual(17);
+        expect(h).toBeLessThanOrEqual(23);
+      });
     });
 
     it("shows no Trailhead link when the URL is missing or unsafe, and fixes a bare domain", async () => {
@@ -451,8 +454,8 @@ describe("c-hero-banner", () => {
         "/portfolio/business-architecture"
       );
       expect(text(link)).toBe("Take the 10 minute tour →");
-      expect(link.classList.contains("btn-primary")).toBe(true);
-      expect(link.classList.contains("btn-secondary")).toBe(false);
+      expect(link.classList.contains("nc-button")).toBe(true);
+      expect(link.classList.contains("nc-button_secondary")).toBe(false);
       expect(link.querySelector('[aria-hidden="true"]').textContent).toBe("→");
       expect(byId(element, "proof-panel").contains(link)).toBe(true);
     });
@@ -594,15 +597,17 @@ describe("c-hero-banner", () => {
       expect(guest.getAttribute("href")).toBe(
         "/portfolio/docs?doc=sas#3-2-how-a-guest-reaches-apex"
       );
-      expect(docs.classList.contains("btn-secondary")).toBe(true);
-      expect(guest.classList.contains("btn-secondary")).toBe(true);
+      expect(docs.classList.contains("nc-button_secondary")).toBe(true);
+      expect(guest.classList.contains("nc-button_secondary")).toBe(true);
     });
 
     it("has one primary button only", () => {
       const element = render();
-      expect(element.shadowRoot.querySelectorAll(".btn-primary")).toHaveLength(
-        1
-      );
+      expect(
+        element.shadowRoot.querySelectorAll(
+          ".nc-button:not(.nc-button_secondary)"
+        )
+      ).toHaveLength(1);
     });
   });
 });
