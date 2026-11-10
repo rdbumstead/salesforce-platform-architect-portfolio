@@ -44,87 +44,92 @@
 }
 
 /*
- * The metrics take their own row, in labelled groups split by vertical rules. Every group
- * carries its rule on the left and sits 1 px further left. The row starts one gutter to the
- * left with its overflow clipped, so the group that starts any line, the first or one that
- * wrapped, has its rule clipped away and lines up with the copyright.
+ * The readings are one block: a row of chips, then one panel under it that shows the open
+ * group. The block spacing is one step (--pf-space-4, from the footer's own gap) and inside a
+ * block it is a smaller one (--pf-space-2 between chips, --pf-space-3 from chips to panel). The
+ * block does not clip its overflow, so a chip's focus ring is never cut.
  */
 .metrics {
-  display: flex;
+  display: block;
   flex: 1 1 100%;
-  flex-wrap: wrap;
-  gap: var(--pf-space-3) 0;
-  align-items: flex-start;
-  margin-left: calc(-1 * var(--pf-space-4));
-  padding: var(--pf-space-1) 0;
-  overflow: hidden;
+  min-width: 0;
   font-family: var(--pf-font-mono);
   font-size: 12px;
 }
 
-/* A group is a native details element. It stays a block, because older WebKit ignores
-   display: flex on details. The flex column is the list inside it. */
-.metric-group {
-  display: block;
-  min-width: 0;
-  margin-left: -1px;
-  padding: 0 var(--pf-space-4);
-  border-left: 1px solid var(--pf-border);
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pf-space-2);
+  align-items: center;
 }
 
-/* CI takes the first line of the readings to itself, so Platform and Integrations share the
-   next one as before. */
-.metric-group[data-group="ci"] {
-  flex: 1 0 100%;
+/* A chip is a button: label, a short status and a chevron. It is never text to select. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pf-space-2);
   box-sizing: border-box;
+  min-height: 32px;
+  padding: 0 var(--pf-space-3);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-sm);
+  background: transparent;
+  color: var(--pf-text);
+  font: inherit;
+  font-family: var(--pf-font-sans);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.chip:hover,
+.chip--open {
+  border-color: var(--pf-accent);
+}
+
+.chip:focus-visible {
+  outline: 2px solid var(--pf-focus, var(--pf-accent));
+  outline-offset: 2px;
+}
+
+.chip-chevron {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  color: var(--pf-muted);
+  transform: rotate(45deg);
+  transition: transform 120ms ease;
+}
+
+.chip--open .chip-chevron {
+  margin-top: 3px;
+  transform: rotate(-135deg);
+}
+
+.panel {
+  display: flow-root;
+  min-width: 0;
+}
+
+.panel:not(:empty) {
+  margin-top: var(--pf-space-3);
+}
+
+.metric-group {
+  min-width: 0;
 }
 
 /* The GraphQL probe renders nothing, so it takes no gap in the row. */
 .graphql-probe {
   display: none;
-}
-
-/* The summary is the group's button: a 44 px target with a chevron, the label and a short
-   status. The focus ring sits inside the box so the row's clipped overflow cannot cut it. */
-.group-summary {
-  display: flex;
-  align-items: center;
-  gap: var(--pf-space-2);
-  box-sizing: border-box;
-  min-height: 44px;
-  padding: 0 var(--pf-space-2);
-  cursor: pointer;
-  list-style: none;
-}
-
-.group-summary::-webkit-details-marker {
-  display: none;
-}
-
-.group-summary::before {
-  content: "";
-  flex: 0 0 auto;
-  width: 6px;
-  height: 6px;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-  color: var(--pf-muted);
-  transform: rotate(-45deg);
-  transition: transform 120ms ease;
-}
-
-.metric-group[open] > .group-summary::before {
-  transform: rotate(45deg);
-}
-
-.group-summary:hover .group-label {
-  color: var(--pf-accent);
-}
-
-.group-summary:focus-visible {
-  outline: 2px solid var(--pf-focus, var(--pf-accent));
-  outline-offset: -2px;
-  border-radius: var(--pf-radius-sm);
 }
 
 .group-label {
@@ -142,7 +147,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .group-summary::before {
+  .chip-chevron {
     transition: none;
   }
 }
@@ -284,42 +289,7 @@ a.target:hover,
   border-radius: var(--pf-radius-sm);
 }
 
-/*
- * On a wide screen each group is a row of its own, and no item ever breaks inside itself. A
- * group only moves whole items onto a next line when its row is too short for all of them,
- * because the list clips its overflow and a row that refused to wrap would hide the last items.
- * The rules between groups are not needed when every group has a full row, so they go. This
- * block comes after the base rules on purpose, because it overrides them at equal specificity.
- */
-@media (min-width: 768px) {
-  /* With no rules to clip, the row starts at the gutter and lines up with the copyright. */
-  .metrics {
-    margin-left: 0;
-  }
-
-  .metric-group {
-    flex: 1 0 100%;
-    margin-left: 0;
-    padding: 0;
-    border-left: 0;
-  }
-
-  .metric {
-    white-space: nowrap;
-  }
-}
-
-/* Phones: the groups stack, with no rules between them. */
-@media screen and (max-width: 767.98px) {
-  .metrics {
-    flex-direction: column;
-    gap: 0;
-    margin-left: 0;
-  }
-
-  .metric-group {
-    margin-left: 0;
-    padding: 0;
-    border-left: 0;
-  }
+/* No item ever breaks inside itself. A list only moves whole items onto a next line. */
+.metric {
+  white-space: nowrap;
 }

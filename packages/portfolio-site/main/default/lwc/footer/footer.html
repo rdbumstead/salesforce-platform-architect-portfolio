@@ -19,93 +19,190 @@
           label="View analytics source"
         ></c-view-source>
       </div>
-      <div class="metrics" data-id="metrics">
-        <details class="metric-group" data-group="ci" open={ciOpen}>
-          <summary class="group-summary" data-id="summary-ci">
-            <span class="group-label" id="footer-group-ci">CI</span>
+      <div class="metrics" data-id="metrics" onkeydown={handleKeydown}>
+        <div class="chips" data-id="chips">
+          <button
+            type="button"
+            class={ciChipClass}
+            data-id="chip-ci"
+            data-key="ci"
+            id="footer-chip-ci"
+            aria-expanded={ciExpanded}
+            aria-controls="footer-panel-ci"
+            onclick={handleChipClick}
+          >
+            <span class="group-label">CI</span>
             <span class="group-status" data-id="status-ci">{ciStatus}</span>
-          </summary>
-          <ul class="group-list" aria-labelledby="footer-group-ci">
-            <template for:each={badgeRows} for:item="badge">
-              <li key={badge.key} class="metric ci-badge" data-id="ci-badge">
-                <template lwc:if={badge.failed}>
-                  <a
-                    class="target badge-fallback"
-                    data-id={badge.fallbackId}
-                    href={badge.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    >{badge.label}</a
-                  >
-                </template>
-                <template lwc:else>
-                  <a
-                    class="target badge-link"
-                    href={badge.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <img
-                      class="badge"
-                      data-id={badge.imageId}
-                      data-key={badge.key}
-                      src={badge.src}
-                      alt={badge.label}
-                      height="20"
-                      onerror={handleBadgeError}
-                    />
-                  </a>
-                </template>
-              </li>
-            </template>
-          </ul>
-        </details>
-        <template lwc:if={showPlatform}>
-          <details class="metric-group" data-group="platform">
-            <summary class="group-summary" data-id="summary-platform">
-              <span class="group-label" id="footer-group-platform"
-                >Platform</span
-              >
+            <span class="chip-chevron" aria-hidden="true"></span>
+          </button>
+          <template lwc:if={showPlatform}>
+            <button
+              type="button"
+              class={platformChipClass}
+              data-id="chip-platform"
+              data-key="platform"
+              id="footer-chip-platform"
+              aria-expanded={platformExpanded}
+              aria-controls="footer-panel-platform"
+              onclick={handleChipClick}
+            >
+              <span class="group-label">Platform</span>
               <span class="group-status" data-id="status-platform"
                 >{platformStatus}</span
               >
-            </summary>
-            <ul class="group-list" aria-labelledby="footer-group-platform">
-              <template lwc:if={graphqlLabel}>
-                <li class="metric" data-id="graphql">{graphqlLabel}</li>
-              </template>
-              <template lwc:if={snapshotFailed}>
-                <li class="metric" data-id="snapshot-error">
-                  status unavailable
-                </li>
-              </template>
-            </ul>
-          </details>
-        </template>
-        <template lwc:if={probeConstructor}>
-          <lwc:component
-            lwc:is={probeConstructor}
-            class="graphql-probe"
-            data-id="graphql-probe"
-            onprobe={handleProbe}
-          ></lwc:component>
-        </template>
-
-        <template lwc:if={snapshotLoaded}>
-          <template lwc:if={showIntegrations}>
-            <details class="metric-group" data-group="integrations">
-              <summary class="group-summary" data-id="summary-integrations">
-                <span class="group-label" id="footer-group-integrations"
-                  >Integrations</span
-                >
+              <span class="chip-chevron" aria-hidden="true"></span>
+            </button>
+          </template>
+          <template lwc:if={snapshotLoaded}>
+            <template lwc:if={showIntegrations}>
+              <button
+                type="button"
+                class={integrationsChipClass}
+                data-id="chip-integrations"
+                data-key="integrations"
+                id="footer-chip-integrations"
+                aria-expanded={integrationsExpanded}
+                aria-controls="footer-panel-integrations"
+                onclick={handleChipClick}
+              >
+                <span class="group-label">Integrations</span>
                 <span class="group-status" data-id="status-integrations"
                   >{integrationsStatus}</span
                 >
-              </summary>
-              <ul
-                class="group-list"
-                aria-labelledby="footer-group-integrations"
+                <span class="chip-chevron" aria-hidden="true"></span>
+              </button>
+            </template>
+            <button
+              type="button"
+              class={quotasChipClass}
+              data-id="chip-quotas"
+              data-key="quotas"
+              id="footer-chip-quotas"
+              aria-expanded={quotasExpanded}
+              aria-controls="footer-panel-quotas"
+              onclick={handleChipClick}
+            >
+              <span class="group-label">Daily quotas</span>
+              <span class="group-status" data-id="status-quotas"
+                >{quotasStatus}</span
               >
+              <span class="chip-chevron" aria-hidden="true"></span>
+            </button>
+            <template lwc:if={storageLine}>
+              <button
+                type="button"
+                class={storageChipClass}
+                data-id="chip-storage"
+                data-key="storage"
+                id="footer-chip-storage"
+                aria-expanded={storageGroupExpanded}
+                aria-controls="footer-panel-storage"
+                onclick={handleChipClick}
+              >
+                <span class="group-label">Storage</span>
+                <span class="group-status" data-id="status-storage"
+                  >{storageStatus}</span
+                >
+                <span class="chip-chevron" aria-hidden="true"></span>
+              </button>
+            </template>
+            <button
+              type="button"
+              class={limitsChipClass}
+              data-id="chip-limits"
+              data-key="limits"
+              id="footer-chip-limits"
+              aria-expanded={limitsExpanded}
+              aria-controls="footer-panel-limits"
+              onclick={handleChipClick}
+            >
+              <span class="group-label">Request limits</span>
+              <span class="group-status" data-id="status-limits"
+                >{limitsStatus}</span
+              >
+              <span class="chip-chevron" aria-hidden="true"></span>
+            </button>
+          </template>
+        </div>
+
+        <div class="panel" data-id="panel">
+          <template lwc:if={ciOpen}>
+            <div
+              class="metric-group"
+              data-group="ci"
+              id="footer-panel-ci"
+              role="region"
+              aria-labelledby="footer-chip-ci"
+            >
+              <ul class="group-list" aria-labelledby="footer-chip-ci">
+                <template for:each={badgeRows} for:item="badge">
+                  <li
+                    key={badge.key}
+                    class="metric ci-badge"
+                    data-id="ci-badge"
+                  >
+                    <template lwc:if={badge.failed}>
+                      <a
+                        class="target badge-fallback"
+                        data-id={badge.fallbackId}
+                        href={badge.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        >{badge.label}</a
+                      >
+                    </template>
+                    <template lwc:else>
+                      <a
+                        class="target badge-link"
+                        href={badge.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <img
+                          class="badge"
+                          data-id={badge.imageId}
+                          data-key={badge.key}
+                          src={badge.src}
+                          alt={badge.label}
+                          height="20"
+                          onerror={handleBadgeError}
+                        />
+                      </a>
+                    </template>
+                  </li>
+                </template>
+              </ul>
+            </div>
+          </template>
+          <template lwc:if={platformOpen}>
+            <div
+              class="metric-group"
+              data-group="platform"
+              id="footer-panel-platform"
+              role="region"
+              aria-labelledby="footer-chip-platform"
+            >
+              <ul class="group-list" aria-labelledby="footer-chip-platform">
+                <template lwc:if={graphqlLabel}>
+                  <li class="metric" data-id="graphql">{graphqlLabel}</li>
+                </template>
+                <template lwc:if={snapshotFailed}>
+                  <li class="metric" data-id="snapshot-error">
+                    status unavailable
+                  </li>
+                </template>
+              </ul>
+            </div>
+          </template>
+          <template lwc:if={integrationsOpen}>
+            <div
+              class="metric-group"
+              data-group="integrations"
+              id="footer-panel-integrations"
+              role="region"
+              aria-labelledby="footer-chip-integrations"
+            >
+              <ul class="group-list" aria-labelledby="footer-chip-integrations">
                 <template for:each={providerRows} for:item="row">
                   <li key={row.key} class="metric" data-id="provider">
                     {row.label}
@@ -117,50 +214,44 @@
                   </li>
                 </template>
               </ul>
-            </details>
+            </div>
           </template>
-          <details class="metric-group" data-group="quotas">
-            <summary class="group-summary" data-id="summary-quotas">
-              <span class="group-label" id="footer-group-quotas"
-                >Daily quotas</span
-              >
-              <span class="group-status" data-id="status-quotas"
-                >{quotasStatus}</span
-              >
-            </summary>
-            <ul class="group-list" aria-labelledby="footer-group-quotas">
-              <template lwc:if={showAiRequests}>
-                <li class="metric">
-                  <span
-                    class="target ai-requests"
-                    data-id="ai-requests"
-                    onmouseenter={handleQuotaVisibility}
-                    >AI requests today: {aiRequestsToday}</span
-                  >
-                </li>
-              </template>
-              <template for:each={quotaRows} for:item="row">
-                <li key={row.key} class="metric" data-id="quota">
-                  {row.label}
-                </li>
-              </template>
-            </ul>
-          </details>
-          <template lwc:if={storageLine}>
-            <details
+          <template lwc:if={quotasOpen}>
+            <div
+              class="metric-group"
+              data-group="quotas"
+              id="footer-panel-quotas"
+              role="region"
+              aria-labelledby="footer-chip-quotas"
+            >
+              <ul class="group-list" aria-labelledby="footer-chip-quotas">
+                <template lwc:if={showAiRequests}>
+                  <li class="metric">
+                    <span
+                      class="target ai-requests"
+                      data-id="ai-requests"
+                      onmouseenter={handleQuotaVisibility}
+                      >AI requests today: {aiRequestsToday}</span
+                    >
+                  </li>
+                </template>
+                <template for:each={quotaRows} for:item="row">
+                  <li key={row.key} class="metric" data-id="quota">
+                    {row.label}
+                  </li>
+                </template>
+              </ul>
+            </div>
+          </template>
+          <template lwc:if={storageGroupOpen}>
+            <div
               class="metric-group"
               data-group="storage"
-              onkeydown={handleStorageKeydown}
+              id="footer-panel-storage"
+              role="region"
+              aria-labelledby="footer-chip-storage"
             >
-              <summary class="group-summary" data-id="summary-storage">
-                <span class="group-label" id="footer-group-storage"
-                  >Storage</span
-                >
-                <span class="group-status" data-id="status-storage"
-                  >{storageStatus}</span
-                >
-              </summary>
-              <ul class="group-list" aria-labelledby="footer-group-storage">
+              <ul class="group-list" aria-labelledby="footer-chip-storage">
                 <li class="metric" data-id="storage">
                   <button
                     type="button"
@@ -208,25 +299,33 @@
                   {storageNote} {storageUpdated}
                 </p>
               </div>
-            </details>
+            </div>
           </template>
-          <details class="metric-group" data-group="limits">
-            <summary class="group-summary" data-id="summary-limits">
-              <span class="group-label" id="footer-group-limits"
-                >Request limits</span
-              >
-              <span class="group-status" data-id="status-limits"
-                >{limitsStatus}</span
-              >
-            </summary>
-            <ul class="group-list" aria-labelledby="footer-group-limits">
-              <template for:each={limitRows} for:item="row">
-                <li key={row.key} class="metric" data-id="limit">
-                  {row.label}
-                </li>
-              </template>
-            </ul>
-          </details>
+          <template lwc:if={limitsOpen}>
+            <div
+              class="metric-group"
+              data-group="limits"
+              id="footer-panel-limits"
+              role="region"
+              aria-labelledby="footer-chip-limits"
+            >
+              <ul class="group-list" aria-labelledby="footer-chip-limits">
+                <template for:each={limitRows} for:item="row">
+                  <li key={row.key} class="metric" data-id="limit">
+                    {row.label}
+                  </li>
+                </template>
+              </ul>
+            </div>
+          </template>
+        </div>
+        <template lwc:if={probeConstructor}>
+          <lwc:component
+            lwc:is={probeConstructor}
+            class="graphql-probe"
+            data-id="graphql-probe"
+            onprobe={handleProbe}
+          ></lwc:component>
         </template>
       </div>
 
