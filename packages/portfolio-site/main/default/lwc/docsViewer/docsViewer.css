@@ -16,7 +16,7 @@
 
 .docs {
   max-width: 56rem;
-  margin: 0 auto;
+  margin: 0 auto 0 0;
   padding: var(--pf-space-4, 1rem);
   color: var(--pf-text);
   font-family: var(--pf-font-sans);
@@ -46,6 +46,18 @@
  */
 .docs-build {
   margin: 0 calc(-1 * var(--pf-space-4, 1rem)) var(--pf-space-4, 1rem);
+}
+
+/*
+ * Wide screens: the column starts at the shared left edge, so it carries no side padding. The
+ * build section keeps its negative margin, because its own padding returns its content to
+ * the same edge.
+ */
+@media (min-width: 64.0625em) {
+  .docs {
+    padding-left: 0;
+    padding-right: 0;
+  }
 }
 
 .docs-note,
