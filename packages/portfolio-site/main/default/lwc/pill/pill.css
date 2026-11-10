@@ -1,0 +1,23 @@
+/*
+ * The site's one look for a pill or tag, shared through a CSS import
+ * (@import "c/pill" at the top of a component's CSS). Add the class "pill" to the element.
+ * It is as tall as its 12 px text plus the space tokens, with a line height of 1 so the box
+ * is the same on every line height around it. Next to a line of text it is centred on that
+ * line when that text is 16 px, because the 20 px box then matches the height of the text
+ * box and sits on its bottom edge. A component sets its own colours for a state and keeps
+ * the chip colours otherwise.
+ */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  padding: var(--pf-space-1) var(--pf-space-2);
+  border-radius: var(--pf-radius-sm);
+  background-color: var(--pf-chip);
+  color: var(--pf-chip-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  vertical-align: text-bottom;
+  white-space: nowrap;
+}

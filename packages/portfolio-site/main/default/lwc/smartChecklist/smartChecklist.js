@@ -29,10 +29,10 @@ import { trackEvent, EVENTS } from "c/analyticsService";
 const SHORT_SHA_LENGTH = 7;
 
 const STATES = {
-  PASS: { text: "Passed", className: "state state-pass" },
-  FAIL: { text: "Failed", className: "state state-fail" },
-  STALE: { text: "Out of date", className: "state state-stale" },
-  NO_SIGNAL: { text: "No signal yet", className: "state state-none" }
+  PASS: { text: "Passed", className: "state pill state-pass" },
+  FAIL: { text: "Failed", className: "state pill state-fail" },
+  STALE: { text: "Out of date", className: "state pill state-stale" },
+  NO_SIGNAL: { text: "No signal yet", className: "state pill state-none" }
 };
 
 const ITEM_LABELS = {

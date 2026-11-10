@@ -1,3 +1,5 @@
+@import "c/pill";
+
 :host {
   display: block;
 }
@@ -12,12 +14,12 @@
 }
 
 .eyebrow {
-  margin: 0 0 var(--pf-space-1);
-  font-family: var(--pf-font-mono);
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  margin: 0 0 var(--pf-space-2);
   color: var(--pf-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .heading {
@@ -74,16 +76,14 @@
   border-top: none;
 }
 
+/* The pill spec comes from c/pill. The box is 20 px high, so a top margin of half the
+   difference to the 1.65 line of the label centres it on the first text line. */
 .state {
   flex: 0 0 auto;
+  justify-content: center;
   min-width: 7.5rem;
-  padding: var(--pf-space-1) var(--pf-space-2);
-  border-radius: var(--pf-radius-sm);
-  font-size: 0.8125rem;
-  font-weight: 600;
+  margin-top: calc((1.65 * 1rem - 1.25rem) / 2);
   text-align: center;
-  background: var(--pf-chip);
-  color: var(--pf-chip-text);
 }
 
 .state-pass {
