@@ -50,7 +50,6 @@
 
 .age-label {
   color: var(--pf-muted);
-  font-family: var(--pf-font-mono);
   font-size: 0.875rem;
 }
 
@@ -238,13 +237,15 @@
 .show-all {
   min-height: 44px;
   margin-top: var(--pf-space-2);
-  padding: 0 var(--pf-space-3);
+  padding: 0 var(--pf-space-4);
   border: 1px solid var(--pf-border);
   border-radius: var(--pf-radius-sm);
-  background: var(--pf-chip);
-  color: var(--pf-chip-text);
+  background: transparent;
+  color: var(--pf-text);
   font: inherit;
-  font-size: 0.875rem;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
   cursor: pointer;
 }
 
