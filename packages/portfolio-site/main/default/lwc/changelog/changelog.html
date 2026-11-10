@@ -46,7 +46,7 @@
           <li key={commit.sha} class="commit-item" data-sha={commit.sha}>
             <p class="commit-message">
               <template lwc:if={commit.tag}>
-                <span class="commit-tag" data-id="tag">{commit.tag}</span>
+                <span class="commit-tag pill" data-id="tag">{commit.tag}</span>
               </template>
               <span data-id="message">{commit.message}</span>
             </p>

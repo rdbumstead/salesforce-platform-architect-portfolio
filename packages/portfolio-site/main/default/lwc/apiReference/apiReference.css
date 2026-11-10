@@ -120,8 +120,10 @@
   color: var(--pf-text);
   border: 1px solid var(--pf-border);
   border-radius: var(--pf-radius-sm);
-  padding: 0 var(--pf-space-3);
+  padding: 0 var(--pf-space-4);
   font: inherit;
+  font-weight: 400;
+  line-height: 1.5;
   cursor: pointer;
 }
 
@@ -132,27 +134,7 @@
   font-weight: bold;
 }
 
-.open-reference {
-  min-height: 44px;
-  min-width: 44px;
-  padding: 0 var(--pf-space-5);
-  background-color: var(--pf-btn);
-  color: var(--pf-btn-text);
-  border: 0;
-  border-radius: var(--pf-radius-sm);
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.open-reference:disabled {
-  background-color: var(--pf-chip);
-  color: var(--pf-chip-text);
-  cursor: not-allowed;
-}
-
 .spec-button:focus-visible,
-.open-reference:focus-visible,
 .hosted-link:focus-visible {
   outline: 2px solid var(--pf-accent);
   outline-offset: 2px;
@@ -264,41 +246,6 @@
   margin: 0 0 var(--pf-space-2);
   color: var(--pf-body);
   font-size: 0.875rem;
-}
-
-.collection-download,
-.postman-run {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-}
-
-/*
- * The site's own link rule (a:link and a:visited, outside this component) outranks
- * .nc-button on an anchor and paints it as a text link. These restate the shared look's
- * own tokens for a link styled as a button, and add nothing of their own.
- */
-.postman-actions a.nc-button:link,
-.postman-actions a.nc-button:visited {
-  background-color: var(--pf-btn);
-  color: var(--pf-btn-text);
-}
-
-.postman-actions a.nc-button_secondary:link,
-.postman-actions a.nc-button_secondary:visited {
-  background-color: var(--pf-surface);
-  color: var(--pf-text);
-}
-
-.postman-actions a.nc-button:link:hover,
-.postman-actions a.nc-button:visited:hover {
-  background-color: var(--pf-btn-hover);
-}
-
-.postman-actions a.nc-button_secondary:link:hover,
-.postman-actions a.nc-button_secondary:visited:hover {
-  background-color: var(--pf-subtle);
 }
 
 /* The one line under the version picker while the deprecated version is open. */

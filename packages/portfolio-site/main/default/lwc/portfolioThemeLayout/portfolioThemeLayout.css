@@ -7,8 +7,10 @@
   display: block;
   min-height: 100vh;
 
-  /* The one page width. Every section reads it as var(--portfolio-content-width, 1024px). */
-  --portfolio-content-width: 1024px;
+  /* The one page width. The header bar, the content region and every section read it as
+     var(--portfolio-content-width, 80rem). Custom properties inherit through shadow roots,
+     so the slotted pages and the footer see this value too. */
+  --portfolio-content-width: 80rem;
 
   --pf-bg: #ffffff;
   --pf-surface: #ffffff;
@@ -183,6 +185,13 @@
 .region-content {
   flex: 1 0 auto;
   min-height: 100vh;
+  /* Every page sits in the same centred column as the header bar. The sections inside add the
+     same side gutter the header has, so the brand, the heading and the content share a left
+     edge. Below this width nothing changes. */
+  width: 100%;
+  max-width: var(--portfolio-content-width, 80rem);
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* The focus target for Back to top. It is not a tab stop, so it shows no ring. */
@@ -244,7 +253,7 @@
 }
 
 .site-header__bar {
-  max-width: var(--portfolio-content-width, 1024px);
+  max-width: var(--portfolio-content-width, 80rem);
   margin: 0 auto;
   padding: 10px var(--pf-space-4);
   min-height: 44px;

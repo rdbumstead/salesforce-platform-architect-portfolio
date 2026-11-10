@@ -77,10 +77,12 @@ describe("c-footer on the static site", () => {
 
     const root = element.shadowRoot;
     expect(getSystemSnapshot).toHaveBeenCalledTimes(1);
+    root.querySelector('button[data-key="limits"]').click();
+    await flushPromises();
     expect(root.querySelector('[data-id="limit"]')).not.toBeNull();
     expect(root.querySelector('[data-id="graphql-probe"]')).toBeNull();
     expect(root.querySelector('[data-id="graphql"]')).toBeNull();
-    expect(root.querySelector('[data-group="platform"]')).toBeNull();
+    expect(root.querySelector('button[data-key="platform"]')).toBeNull();
     expect(root.querySelector('[data-id="metrics"]').textContent).not.toMatch(
       /GraphQL/
     );

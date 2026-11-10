@@ -1,3 +1,5 @@
+@import "c/nativeControls";
+
 /*
  * Built on the --pf- site tokens, as contactForm is, so the line follows the light and dark
  * theme. It sits in the shared page width column, left aligned like every other section,
@@ -13,6 +15,14 @@
   max-width: var(--portfolio-content-width, 1024px);
   margin: 48px auto 0;
   padding: 0 var(--pf-space-4);
+}
+
+/* From 64.0625em the section's own gutter is gone, so the content lines up with the header. */
+@media (min-width: 64.0625em) {
+  .contact-call {
+    padding-left: 0;
+    padding-right: 0;
+  }
 }
 
 .contact-call__panel {
@@ -51,36 +61,6 @@
   margin: 4px 0 0;
   font-size: 14px;
   color: var(--pf-muted);
-}
-
-/* The site's a:link rule outranks a plain class and empties the fill, so :link and
-   :visited are matched too. */
-.contact-call__button,
-.contact-call__button:link,
-.contact-call__button:visited {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 0 18px;
-  background-color: var(--pf-btn);
-  color: var(--pf-btn-text);
-  border: 1px solid var(--pf-btn);
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.contact-call__button:hover,
-.contact-call__button:link:hover,
-.contact-call__button:visited:hover {
-  background-color: var(--pf-btn-hover);
-  color: var(--pf-btn-text);
-}
-
-.contact-call__button:focus-visible {
-  outline: 2px solid var(--pf-focus);
-  outline-offset: 2px;
 }
 
 @media (max-width: 559.98px) {

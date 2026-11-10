@@ -1,3 +1,5 @@
+@import "c/nativeControls";
+
 /* Home page hero, built on the --pf- site tokens only. */
 .home {
   max-width: var(--portfolio-content-width, 1024px);
@@ -7,6 +9,15 @@
   font-family: var(--pf-font-sans);
   font-size: 16px;
   line-height: 1.65;
+}
+
+/* At desktop width the layout sets the column. The hero lines up with the header brand,
+   so it takes no side padding of its own. */
+@media (min-width: 64.0625em) {
+  .home {
+    padding-left: 0;
+    padding-right: 0;
+  }
 }
 
 /* The photo sits beside the text, centred on it from top to bottom. */
@@ -32,7 +43,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--pf-space-3);
 }
 
 .hero-meta {
@@ -97,50 +108,42 @@
   font-variant-numeric: tabular-nums;
 }
 
-.btn {
+/* The nc-button look comes from c/nativeControls. These anchors need the flex layout and no
+   underline a button element has by default. The site's link rule in dxp-slds-extensions.css
+   (a:link:not(...), specificity 0,2,2) outranks a plain class rule and empties the button fill,
+   so the colours are repeated on :link and :visited, in both themes. */
+.hero-button {
   display: inline-flex;
+  font-size: 16px;
   align-items: center;
   gap: var(--pf-space-2);
-  min-height: 44px;
-  padding: 0 18px;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
   text-decoration: none;
 }
 
-/* The site's link rule in dxp-slds-extensions.css (a:link:not(...), specificity 0,2,2)
-   outranks a plain class rule and empties the button fill. Matching :link and :visited
-   too puts these rules above it, in both themes. */
-.btn-primary,
-.btn-primary:link,
-.btn-primary:visited {
-  background: var(--pf-btn);
+.hero-button:link,
+.hero-button:visited {
+  background-color: var(--pf-btn);
+  border-color: var(--pf-btn);
   color: var(--pf-btn-text);
 }
 
-.btn-primary:hover,
-.btn-primary:link:hover,
-.btn-primary:visited:hover {
-  background: var(--pf-btn-hover);
-  color: var(--pf-btn-text);
+.hero-button:link:hover,
+.hero-button:visited:hover {
+  background-color: var(--pf-btn-hover);
+  border-color: var(--pf-btn-hover);
 }
 
-/* Secondary: white fill, 1px border from the border token, same height and radius as primary. */
-.btn-secondary,
-.btn-secondary:link,
-.btn-secondary:visited {
-  background: var(--pf-surface);
-  border: 1px solid var(--pf-border);
-  color: var(--pf-text);
-}
-
-.btn-secondary:hover,
-.btn-secondary:link:hover,
-.btn-secondary:visited:hover {
-  background: var(--pf-surface);
+.hero-button.nc-button_secondary:link,
+.hero-button.nc-button_secondary:visited {
+  background-color: var(--pf-surface);
   border-color: var(--pf-muted);
   color: var(--pf-text);
+}
+
+.hero-button.nc-button_secondary:link:hover,
+.hero-button.nc-button_secondary:visited:hover {
+  background-color: var(--pf-subtle);
+  border-color: var(--pf-muted);
 }
 
 /* The panel is as wide as the value sentence above it: the same 58ch at the same 17px, with
@@ -171,7 +174,7 @@
 
 .proof-stats {
   margin: 0;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--pf-font-mono);
   font-size: 13px;
   color: var(--pf-text);
 }
@@ -179,7 +182,7 @@
 .proof-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: var(--pf-space-3);
 }
 
 .profile-links {
@@ -218,7 +221,6 @@
   text-decoration: underline;
 }
 
-.btn:focus-visible,
 .profile-link:focus-visible {
   outline: 2px solid var(--pf-focus);
   outline-offset: 2px;

@@ -1,6 +1,6 @@
 <template>
   <section class="testimonial" aria-labelledby="testimonial-heading">
-    <h2 id="testimonial-heading" class="testimonial-title">Leave a Review</h2>
+    <h2 id="testimonial-heading" class={titleClass}>Leave a Review</h2>
 
     <template lwc:if={isSent}>
       <div class="thanks" data-id="success" tabindex="-1">
@@ -388,7 +388,7 @@
         <div class="actions">
           <button
             type="submit"
-            class="submit-button"
+            class="submit-button nc-button"
             disabled={isSubmitDisabled}
             data-id="submit"
           >

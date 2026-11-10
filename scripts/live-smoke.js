@@ -17,10 +17,10 @@
 // tour's own links and buttons. TOUR below must follow LIVE_PILLARS in c/pillarData, which
 // scripts/check-smoke-routes.js checks.
 //
-// The footer check, once per engine and size: on the home page every footer group has a
-// summary, the groups start closed on the phone size and with only CI open on the desktop
-// size, and pressing each summary opens its group and pressing it again closes it. It runs only
-// when SMOKE_FOOTER_CHECK is "1". It is off by default because the deploy workflow runs this
+// The footer check, once per engine and size: on the home page every footer group has a chip
+// in one row, no group starts open on the phone size and only CI starts open on the desktop
+// size, and pressing each chip opens its group in the panel and pressing it again closes it.
+// It runs only when SMOKE_FOOTER_CHECK is "1". It is off by default because the deploy workflow runs this
 // script against the live site right after the Salesforce deploy, while that site still serves
 // the old footer, and the site build waits on that run. Turn it on once the new footer is live
 // on the apex. With the variable unset no footer rows exist and the row count is unchanged.
@@ -496,8 +496,10 @@ async function checkRow(browser, engine, route, viewport) {
 }
 
 /**
- * The footer's groups on the home page. Their summaries must be there, start in the default
- * state for the size (all closed on a phone, only CI open on a desktop) and toggle when pressed.
+ * The footer's chips on the home page. Each group has a chip (a button with aria-expanded) in
+ * one row, and the open group's readings show in one panel under it. The chips must be there,
+ * start in the default state for the size (none open on a phone, only CI open on a desktop),
+ * open their group in the panel when pressed and close it when pressed again.
  * @param {object} browser the Playwright browser
  * @param {object} viewport one of VIEWPORTS
  * @returns {Promise<object>} the row without its browser name
@@ -514,42 +516,51 @@ async function footerOnce(browser, viewport) {
       waitUntil: "domcontentloaded",
       timeout: NAVIGATION_TIMEOUT_MS
     });
-    const summaries = page.locator("c-footer summary");
-    await summaries
+    const chips = page.locator("c-footer .chips button.chip");
+    await chips
       .first()
       .waitFor({ state: "attached", timeout: COMPONENT_TIMEOUT_MS });
     // The late groups come with the snapshot, so give it a moment, then check what is there.
     await page.waitForTimeout(SETTLE_MS);
-    const count = await summaries.count();
+    const count = await chips.count();
     const problems = [];
+    const keyOf = (chip) => chip.evaluate((el) => el.dataset.key);
+    const isOpen = (chip) =>
+      chip.evaluate((el) => el.getAttribute("aria-expanded") === "true");
+    const regionCount = (key) =>
+      page.locator(`c-footer [data-id="panel"] [data-group="${key}"]`).count();
+    const starts = [];
     for (let i = 0; i < count; i++) {
-      const summary = summaries.nth(i);
-      const group = await summary.evaluate(
-        (el) => el.parentElement.dataset.group
-      );
-      const isOpen = () => summary.evaluate((el) => el.parentElement.open);
+      starts.push(await isOpen(chips.nth(i)));
+    }
+    for (let i = 0; i < count; i++) {
+      const chip = chips.nth(i);
+      const group = await keyOf(chip);
+      const start = starts[i];
       const expectedOpen = viewport.name !== "phone" && group === "ci";
-      const start = await isOpen();
-      await summary.scrollIntoViewIfNeeded();
-      await summary.click();
-      const afterOpen = await isOpen();
-      await summary.click();
-      const afterClose = await isOpen();
-      result.groups[group] = {
-        start,
-        toggled: afterOpen === !start && afterClose === start
-      };
+      await chip.scrollIntoViewIfNeeded();
+      // Settle the group to closed first, so the press below opens it.
+      if (await isOpen(chip)) {
+        await chip.click();
+      }
+      await chip.click();
+      const afterOpen =
+        (await isOpen(chip)) && (await regionCount(group)) === 1;
+      await chip.click();
+      const afterClose =
+        !(await isOpen(chip)) && (await regionCount(group)) === 0;
+      result.groups[group] = { start, toggled: afterOpen && afterClose };
       if (start !== expectedOpen) {
         problems.push(`${group} starts ${start ? "open" : "closed"}`);
       }
       if (!result.groups[group].toggled) {
-        problems.push(`${group} does not toggle`);
+        problems.push(`${group} does not open its panel and close it`);
       }
     }
     if (count === 0) {
-      problems.push("no footer summary");
+      problems.push("no footer chip");
     } else if (!result.groups.ci) {
-      problems.push("no CI group");
+      problems.push("no CI chip");
     }
     if (problems.length) {
       result.problems = problems;

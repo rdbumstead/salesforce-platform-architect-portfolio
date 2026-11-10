@@ -31,22 +31,24 @@
             <p class="proof-stats" data-id="proof-stats">{statsText}</p>
           </template>
           <a
-            class="btn btn-primary tour-link"
+            class="nc-button hero-button tour-link"
             href={tourHref}
             data-id="tour-link"
             onclick={handleTourClick}
             >{tourLabel} <span aria-hidden="true">→</span></a
           >
           <div class="proof-actions">
-            <a class="btn btn-secondary" href={docsHref} data-id="docs-link"
+            <a
+              class="nc-button nc-button_secondary hero-button"
+              href={docsHref}
+              data-id="docs-link"
               >Architecture and decisions <span aria-hidden="true">→</span></a
             >
             <a
-              class="btn btn-secondary"
+              class="nc-button nc-button_secondary hero-button"
               href={guestAccessHref}
               data-id="guest-access-link"
-              >How a request reaches the data
-              <span aria-hidden="true">→</span></a
+              >How a request flows <span aria-hidden="true">→</span></a
             >
           </div>
         </div>
@@ -99,18 +101,20 @@
               <template lwc:if={link.isTrailhead}>
                 <svg
                   aria-hidden="true"
-                  width="14"
+                  width="16.92"
                   height="14"
-                  viewBox="0 -3 24 24"
+                  viewBox="0 0 29 24"
                   fill="none"
                   stroke="currentColor"
-                  stroke-width="2"
+                  stroke-width="1.3333"
                   stroke-linecap="round"
                   stroke-linejoin="round"
                 >
-                  <polyline
-                    points="3 20 9 10 13 16 16 12 21 20 3 20"
-                  ></polyline>
+                  <g transform="translate(-3.5 -7) scale(1.5)">
+                    <polyline
+                      points="3 20 9 10 13 16 16 12 21 20 3 20"
+                    ></polyline>
+                  </g>
                 </svg>
               </template>
               <template lwc:if={link.isResume}>
@@ -134,17 +138,19 @@
               <template lwc:if={link.isApi}>
                 <svg
                   aria-hidden="true"
-                  width="14"
+                  width="16.92"
                   height="14"
-                  viewBox="0 -5 24 24"
+                  viewBox="0 0 29 24"
                   fill="none"
                   stroke="currentColor"
-                  stroke-width="2"
+                  stroke-width="1.4815"
                   stroke-linecap="round"
                   stroke-linejoin="round"
                 >
-                  <polyline points="16 18 22 12 16 6"></polyline>
-                  <polyline points="8 6 2 12 8 18"></polyline>
+                  <g transform="translate(-1.7 -1.3) scale(1.35)">
+                    <polyline points="16 18 22 12 16 6"></polyline>
+                    <polyline points="8 6 2 12 8 18"></polyline>
+                  </g>
                 </svg>
               </template>
               <span class="profile-label">{link.label}</span>

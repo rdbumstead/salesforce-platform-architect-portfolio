@@ -154,12 +154,14 @@ describe("c-site-build-section", () => {
     expect(text(row.querySelector(".card-text"))).toBe("API Lab summary.");
     expect(row.textContent).not.toContain("long name");
     root.querySelectorAll(".card").forEach((c) => {
-      expect(c.querySelectorAll(".btn")).toHaveLength(1);
-      expect(c.querySelector(".btn").classList.contains("btn-secondary")).toBe(
-        true
-      );
+      expect(c.querySelectorAll(".nc-button")).toHaveLength(1);
+      expect(
+        c.querySelector(".nc-button").classList.contains("nc-button_secondary")
+      ).toBe(true);
     });
-    expect(root.querySelectorAll(".btn-primary")).toHaveLength(0);
+    expect(
+      root.querySelectorAll(".nc-button:not(.nc-button_secondary)")
+    ).toHaveLength(0);
   });
 
   it("keeps the guest access link in the intro as a plain text link", () => {
@@ -168,7 +170,7 @@ describe("c-site-build-section", () => {
     expect(link.getAttribute("href")).toBe(
       "/portfolio/docs?doc=sas#3-2-how-a-guest-reaches-apex"
     );
-    expect(link.classList.contains("btn")).toBe(false);
+    expect(link.classList.contains("nc-button")).toBe(false);
     expect(
       element.shadowRoot.querySelector(".section-intro").contains(link)
     ).toBe(true);

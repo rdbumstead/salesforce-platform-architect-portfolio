@@ -16,11 +16,14 @@
   padding: 0 var(--pf-space-3);
   border-radius: var(--pf-radius-sm);
   font: inherit;
-  font-size: 13px;
   cursor: pointer;
 }
 
+/* The same text button as View source: a host can set --view-source-size and
+   --view-source-padding to fit a smaller line, as the footer does. The tap target stays 44 px. */
 .open-button {
+  padding-inline: var(--view-source-padding, var(--pf-space-4));
+  font-size: var(--view-source-size, 1rem);
   background-color: transparent;
   color: var(--pf-text);
   border: 1px solid var(--pf-border);

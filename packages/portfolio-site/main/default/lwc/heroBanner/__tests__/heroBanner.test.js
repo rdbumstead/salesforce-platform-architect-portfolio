@@ -261,13 +261,13 @@ describe("c-hero-banner", () => {
     it("holds every button in the proof panel, the tour first, with no case studies button, and leaves the resume to the profile links", () => {
       const element = render();
       const panel = byId(element, "proof-panel");
-      const buttons = panel.querySelectorAll(".btn");
+      const buttons = panel.querySelectorAll(".nc-button");
       expect(Array.from(buttons).map((a) => a.dataset.id)).toEqual([
         "tour-link",
         "docs-link",
         "guest-access-link"
       ]);
-      expect(element.shadowRoot.querySelectorAll(".btn")).toHaveLength(3);
+      expect(element.shadowRoot.querySelectorAll(".nc-button")).toHaveLength(3);
       expect(element.shadowRoot.querySelector(".hero-actions")).toBeNull();
       expect(byId(element, "case-studies-button")).toBeNull();
       expect(text(element.shadowRoot.querySelector(".hero"))).not.toContain(
@@ -353,36 +353,55 @@ describe("c-hero-banner", () => {
       );
     });
 
-    it("draws every icon with its lowest ink on the bottom edge of its box, and wraps the label so the box can sit on the text baseline", async () => {
+    it("draws every icon at the same optical size, with its lowest ink on the bottom edge of its box and a 2 unit stroke", async () => {
       const element = render();
       getHeader.emit({
         ...HEADER,
         trailheadUrl: "https://www.salesforce.com/trailblazer/example"
       });
       await flush();
-      // The viewBox top moves so each drawing ends on the box bottom. Ink bottom is
-      // the lowest path edge plus half the 2 unit stroke.
-      const inkBottom = {
-        github: 23,
-        linkedin: 22,
-        trailhead: 21,
-        resume: 23,
-        "api-docs": 19
+      // Lowest and highest path y of each drawing in its own 24 unit grid.
+      const drawn = {
+        github: [1, 22],
+        linkedin: [2, 21],
+        trailhead: [10, 20],
+        resume: [2, 22],
+        "api-docs": [6, 18]
       };
       const links = Array.from(
         element.shadowRoot.querySelectorAll(".profile-link")
       );
-      expect(links.map((a) => a.dataset.key)).toEqual(Object.keys(inkBottom));
-      links.forEach((a) => {
-        const [, y, , h] = a
-          .querySelector("svg")
-          .getAttribute("viewBox")
-          .split(" ")
-          .map(Number);
-        expect(y + h).toBe(inkBottom[a.dataset.key]);
+      expect(links.map((a) => a.dataset.key)).toEqual(Object.keys(drawn));
+      const heights = links.map((a) => {
+        const svg = a.querySelector("svg");
+        const [, y, , h] = svg.getAttribute("viewBox").split(" ").map(Number);
+        const group = svg.querySelector("g");
+        const match = group
+          ? /translate\(\S+ (\S+)\)\s+scale\((\S+)\)/.exec(
+              group.getAttribute("transform")
+            )
+          : null;
+        const ty = match ? Number(match[1]) : 0;
+        const scale = match ? Number(match[2]) : 1;
+        // Rendered stroke stays 2 units however much the drawing is scaled.
+        expect(Number(svg.getAttribute("stroke-width")) * scale).toBeCloseTo(
+          2,
+          1
+        );
+        const [low, high] = drawn[a.dataset.key];
+        const inkBottom = high * scale + ty + 1;
+        const inkTop = low * scale + ty - 1;
+        expect(inkBottom).toBeCloseTo(y + h, 1);
         expect(a.querySelector(".profile-label").textContent.trim()).toBe(
           a.textContent.trim()
         );
+        return inkBottom - inkTop;
+      });
+      // The wide drawings (Trailhead, API docs) are drawn smaller than the tall ones, so they
+      // read as the same optical size. Every ink height stays between 17 and 23 units.
+      heights.forEach((h) => {
+        expect(h).toBeGreaterThanOrEqual(17);
+        expect(h).toBeLessThanOrEqual(23);
       });
     });
 
@@ -435,8 +454,8 @@ describe("c-hero-banner", () => {
         "/portfolio/business-architecture"
       );
       expect(text(link)).toBe("Take the 10 minute tour →");
-      expect(link.classList.contains("btn-primary")).toBe(true);
-      expect(link.classList.contains("btn-secondary")).toBe(false);
+      expect(link.classList.contains("nc-button")).toBe(true);
+      expect(link.classList.contains("nc-button_secondary")).toBe(false);
       expect(link.querySelector('[aria-hidden="true"]').textContent).toBe("→");
       expect(byId(element, "proof-panel").contains(link)).toBe(true);
     });
@@ -574,19 +593,21 @@ describe("c-hero-banner", () => {
       expect(text(docs)).toBe("Architecture and decisions →");
       expect(docs.getAttribute("href")).toBe("/portfolio/docs");
       // The arrow is a flex item spaced by the button gap, so no space sits in the text.
-      expect(text(guest)).toMatch(/^How a request reaches the data\s?→$/);
+      expect(text(guest)).toMatch(/^How a request flows\s?→$/);
       expect(guest.getAttribute("href")).toBe(
         "/portfolio/docs?doc=sas#3-2-how-a-guest-reaches-apex"
       );
-      expect(docs.classList.contains("btn-secondary")).toBe(true);
-      expect(guest.classList.contains("btn-secondary")).toBe(true);
+      expect(docs.classList.contains("nc-button_secondary")).toBe(true);
+      expect(guest.classList.contains("nc-button_secondary")).toBe(true);
     });
 
     it("has one primary button only", () => {
       const element = render();
-      expect(element.shadowRoot.querySelectorAll(".btn-primary")).toHaveLength(
-        1
-      );
+      expect(
+        element.shadowRoot.querySelectorAll(
+          ".nc-button:not(.nc-button_secondary)"
+        )
+      ).toHaveLength(1);
     });
   });
 });

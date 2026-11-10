@@ -273,15 +273,17 @@ describe("c-case-study-grid", () => {
     const buttons = Array.from(
       element.shadowRoot.querySelectorAll('[data-id="card-button"]')
     );
-    expect(buttons.map((b) => b.classList.contains("btn-primary"))).toEqual([
-      true,
-      false,
-      false
-    ]);
-    expect(element.shadowRoot.querySelectorAll(".btn-primary")).toHaveLength(1);
-    expect(element.shadowRoot.querySelectorAll(".btn-secondary")).toHaveLength(
-      2
-    );
+    expect(
+      buttons.map((b) => b.classList.contains("nc-button_secondary"))
+    ).toEqual([false, true, true]);
+    expect(
+      element.shadowRoot.querySelectorAll(
+        ".nc-button:not(.nc-button_secondary)"
+      )
+    ).toHaveLength(1);
+    expect(
+      element.shadowRoot.querySelectorAll(".nc-button_secondary")
+    ).toHaveLength(2);
   });
 
   it("sends case_study_link_followed with the card title when a link is used", async () => {
