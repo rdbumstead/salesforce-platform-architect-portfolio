@@ -112,6 +112,46 @@ textarea.nc-control {
   cursor: not-allowed;
 }
 
+/*
+ * A link styled as a button. The site's own link rule (a:link and a:visited, outside the
+ * component) outranks a plain class and paints the anchor as a text link, so :link and
+ * :visited are matched too and carry the same tokens as the button.
+ */
+a.nc-button,
+a.nc-button:link,
+a.nc-button:visited {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--pf-space-2);
+  background-color: var(--pf-btn);
+  color: var(--pf-btn-text);
+  text-decoration: none;
+}
+
+a.nc-button:hover,
+a.nc-button:link:hover,
+a.nc-button:visited:hover {
+  background-color: var(--pf-btn-hover);
+  border-color: var(--pf-btn-hover);
+  color: var(--pf-btn-text);
+}
+
+a.nc-button_secondary,
+a.nc-button_secondary:link,
+a.nc-button_secondary:visited {
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+}
+
+a.nc-button_secondary:hover,
+a.nc-button_secondary:link:hover,
+a.nc-button_secondary:visited:hover {
+  background-color: var(--pf-subtle);
+  border-color: var(--pf-muted);
+  color: var(--pf-text);
+}
+
 /* A label kept for screen readers where the design shows none. */
 .nc-visually-hidden {
   position: absolute;

@@ -1,4 +1,5 @@
 @import "c/sectionHeading";
+@import "c/nativeControls";
 /*
  * Home page testimonials, on the --pf- site tokens only, in heroBanner's section style and the
  * wall's card tones. Every element that sets a background also sets its text colour. The two
@@ -21,6 +22,14 @@
   font-size: 16px;
   line-height: 1.65;
   overflow-wrap: anywhere;
+}
+
+/* From 64.0625em the section's own gutter is gone, so the content lines up with the header. */
+@media (min-width: 64.0625em) {
+  .home-testimonials {
+    padding-left: 0;
+    padding-right: 0;
+  }
 }
 
 .section {
@@ -115,42 +124,4 @@
 
 .wall-action {
   margin: var(--pf-space-4) 0 0;
-}
-
-/* One button look across the three home card sections. The only button here is secondary: a
-   surface fill with a 1px border, the same height and radius as the primary one elsewhere. The
-   site link rule outranks a plain class, so :link and :visited are matched too. */
-.btn,
-.btn:link,
-.btn:visited {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--pf-space-2);
-  min-height: 44px;
-  padding: 0 18px;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-  box-sizing: border-box;
-}
-
-.btn-secondary,
-.btn-secondary:link,
-.btn-secondary:visited {
-  background: var(--pf-surface);
-  color: var(--pf-text);
-  border: 1px solid var(--pf-border);
-}
-
-.btn-secondary:hover,
-.btn-secondary:link:hover,
-.btn-secondary:visited:hover {
-  border-color: var(--pf-accent);
-  color: var(--pf-text);
-}
-
-.btn:focus-visible {
-  outline: 2px solid var(--pf-focus);
-  outline-offset: 2px;
 }

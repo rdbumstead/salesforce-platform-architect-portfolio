@@ -156,7 +156,8 @@ describe("c-api-reference", () => {
   it("uses only token colours apart from the Redoc panel, with 44 px buttons", () => {
     const css = readFileSync(join(__dirname, "..", "apiReference.css"), "utf8");
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}/);
-    expect(css).toMatch(/\.open-reference \{[^}]*min-height: 44px/);
+    expect(css).toMatch(/@import "c\/nativeControls"/);
+    expect(css).not.toMatch(/\.open-reference \{/);
     expect(css).toMatch(/\.spec-button \{[^}]*min-height: 44px/);
   });
 

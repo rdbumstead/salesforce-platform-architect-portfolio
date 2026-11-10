@@ -859,13 +859,23 @@ describe("c-cover-letter-generator", () => {
     });
   });
 
-  it("gives the Generate button a 44 px minimum height", () => {
+  it("gives the Generate button the shared 44 px button look", async () => {
     const css = readFileSync(
       join(__dirname, "..", "coverLetterGenerator.css"),
       "utf8"
     );
-    expect(css).toMatch(/\.generate-button \{[^}]*min-height: 44px/);
+    const shared = readFileSync(
+      join(__dirname, "..", "..", "nativeControls", "nativeControls.css"),
+      "utf8"
+    );
+    expect(css).toMatch(/@import "c\/nativeControls"/);
+    expect(css).not.toMatch(/\.generate-button \{/);
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}/);
+    expect(shared).toMatch(/\.nc-button \{[^}]*min-height: 44px/);
+    const element = createComponent();
+    await flushPromises();
+    const button = query(element, "button.generate-button");
+    expect(button.classList.contains("nc-button")).toBe(true);
   });
 
   describe("the tour's stop D", () => {

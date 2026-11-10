@@ -118,7 +118,8 @@ export default class CaseStudyGrid extends LightningElement {
         // The leading space keeps "$0 software licence cost" apart when read as one line.
         headlineLabel: label ? ` ${label}` : null,
         href,
-        buttonClass: index === 0 ? "btn btn-primary" : "btn btn-secondary",
+        buttonClass:
+          index === 0 ? "nc-button" : "nc-button nc-button_secondary",
         buttonLabel: `Read the case study: ${title}`
       };
     });

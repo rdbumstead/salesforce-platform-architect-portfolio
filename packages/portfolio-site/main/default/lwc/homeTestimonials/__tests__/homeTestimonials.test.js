@@ -219,12 +219,14 @@ describe("c-home-testimonials", () => {
     getHomeTestimonials.emit(QUOTES);
     await flush();
     const root = element.shadowRoot;
-    expect(root.querySelectorAll(".btn")).toHaveLength(1);
-    expect(root.querySelectorAll(".btn-primary")).toHaveLength(0);
+    expect(root.querySelectorAll(".nc-button")).toHaveLength(1);
+    expect(
+      root.querySelectorAll(".nc-button:not(.nc-button_secondary)")
+    ).toHaveLength(0);
     expect(
       root
         .querySelector('[data-id="wall-link"]')
-        .classList.contains("btn-secondary")
+        .classList.contains("nc-button_secondary")
     ).toBe(true);
   });
 });

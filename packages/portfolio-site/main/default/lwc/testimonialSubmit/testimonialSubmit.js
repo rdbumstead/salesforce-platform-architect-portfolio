@@ -251,6 +251,12 @@ export default class TestimonialSubmit extends LightningElement {
     return this.form.vibeMode === VIBE_CASUAL;
   }
 
+  get titleClass() {
+    return this.showForm
+      ? "testimonial-title testimonial-title_lede"
+      : "testimonial-title";
+  }
+
   get showForm() {
     return !this.isSent;
   }
