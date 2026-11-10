@@ -27,9 +27,10 @@
 
 .docs-title {
   color: var(--pf-text);
-  font-size: 2rem;
-  line-height: 1.2;
-  font-weight: 800;
+  font-size: 2.5rem;
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   margin: var(--pf-space-4, 1rem) 0 var(--pf-space-3, 0.75rem);
 }
 
@@ -69,7 +70,7 @@
 
 .doc-list-link {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--pf-space-3, 0.75rem);
   min-height: 44px;
   box-sizing: border-box;
@@ -95,7 +96,7 @@
 }
 
 .doc-group-title {
-  margin: 0 0 var(--pf-space-2, 0.5rem);
+  margin: 0 0 var(--pf-space-3, 0.75rem);
   color: var(--pf-text);
   font-size: 1.125rem;
   font-weight: 700;
@@ -520,7 +521,7 @@ summary:focus-visible,
   }
 
   .docs-title {
-    font-size: 1.625rem;
+    font-size: 2rem;
   }
 
   .docs-build {

@@ -45,7 +45,7 @@ describe("c-pillar-b-story", () => {
 
   it("renders the seven section headings in order", () => {
     const element = createComponent();
-    expect(qa(element, "h2.section-heading").map(text)).toEqual(HEADINGS);
+    expect(qa(element, "h2.story-heading").map(text)).toEqual(HEADINGS);
   });
 
   it("gives both tables a caption and header cells with scope", () => {
