@@ -204,6 +204,15 @@ async function runIdle() {
   }
 }
 
+/** Opens one group in the shared panel, unless it is the open one already. */
+async function openGroup(element, key) {
+  const chip = element.shadowRoot.querySelector(`button[data-key="${key}"]`);
+  if (chip.getAttribute("aria-expanded") !== "true") {
+    chip.click();
+    await flushPromises();
+  }
+}
+
 function q(element, selector) {
   return element.shadowRoot.querySelector(selector);
 }
@@ -362,6 +371,7 @@ describe("c-footer", () => {
     expect(all(element, '[data-id="provider"]')).toHaveLength(0);
 
     await runIdle();
+    await openGroup(element, "quotas");
 
     expect(getSystemSnapshot).toHaveBeenCalledTimes(1);
     expect(q(element, '[data-id="ai-requests"]').textContent).toBe(
@@ -385,6 +395,7 @@ describe("c-footer", () => {
   it("shows Agentforce: off with the flag off, in dispatch order", async () => {
     const element = createComponent();
     await runIdle();
+    await openGroup(element, "integrations");
 
     const rows = all(element, '[data-id="provider"]').map((n) => n.textContent);
     expect(rows).toEqual(["Agentforce: off", "Gemini: on", "Local: on"]);
@@ -400,6 +411,7 @@ describe("c-footer", () => {
     );
     const element = createComponent();
     await runIdle();
+    await openGroup(element, "integrations");
 
     const rows = all(element, '[data-id="provider"]').map((n) => n.textContent);
     expect(rows).toEqual(["TestProvider: test-state"]);
@@ -426,6 +438,7 @@ describe("c-footer", () => {
     );
     const element = createComponent();
     await runIdle();
+    await openGroup(element, "integrations");
 
     expect(q(element, '[data-id="provider"]').textContent).toBe(
       `Gemini: paused until ${formatTime(until)}`
@@ -435,6 +448,7 @@ describe("c-footer", () => {
   it("shows the limits used against their ceilings", async () => {
     const element = createComponent();
     await runIdle();
+    await openGroup(element, "limits");
 
     const rows = all(element, '[data-id="limit"]').map((n) => n.textContent);
     expect(rows).toEqual([
@@ -449,6 +463,7 @@ describe("c-footer", () => {
     const element = createComponent();
     await runIdle();
 
+    await openGroup(element, "platform");
     expect(q(element, '[data-id="snapshot-error"]').textContent).toBe(
       "status unavailable"
     );
@@ -458,6 +473,7 @@ describe("c-footer", () => {
   it("tracks finops_quota_visibility once on hover", async () => {
     const element = createComponent();
     await runIdle();
+    await openGroup(element, "quotas");
 
     const line = q(element, '[data-id="ai-requests"]');
     // Not a tab stop of its own: a keyboard visitor opens the quotas, which sends the event.
@@ -528,6 +544,7 @@ describe("c-footer", () => {
     });
     await flushPromises();
 
+    await openGroup(element, "platform");
     expect(q(element, '[data-id="graphql"]').textContent).toBe(
       "GraphQL: live, 42 ms"
     );
@@ -553,6 +570,7 @@ describe("c-footer", () => {
     );
     await flushPromises();
 
+    await openGroup(element, "platform");
     expect(q(element, '[data-id="graphql"]').textContent).toBe(
       "GraphQL: cached, no request made"
     );
@@ -567,6 +585,7 @@ describe("c-footer", () => {
     );
     await flushPromises();
 
+    await openGroup(element, "platform");
     expect(q(element, '[data-id="graphql"]').textContent).toBe(
       "GraphQL: live, 61 ms"
     );
@@ -579,6 +598,7 @@ describe("c-footer", () => {
     graphql.emit({ errors: [{ message: "denied" }] });
     await flushPromises();
 
+    await openGroup(element, "platform");
     expect(q(element, '[data-id="graphql"]').textContent).toBe(
       "GraphQL: unavailable"
     );
@@ -596,6 +616,7 @@ describe("c-footer", () => {
     );
     const element = createComponent();
     await runIdle();
+    await openGroup(element, "integrations");
 
     const rows = all(element, '[data-id="integration"]').map(
       (n) => n.textContent
@@ -612,6 +633,7 @@ describe("c-footer", () => {
     getSystemSnapshot.mockResolvedValue(snapshot({ orgQuotas: ORG_QUOTAS }));
     const element = createComponent();
     await runIdle();
+    await openGroup(element, "quotas");
 
     const rows = all(element, '[data-id="quota"]').map((n) => n.textContent);
     expect(rows).toEqual([
@@ -632,6 +654,7 @@ describe("c-footer", () => {
     );
     const element = createComponent();
     await runIdle();
+    await openGroup(element, "quotas");
 
     const rows = all(element, '[data-id="quota"]').map((n) => n.textContent);
     expect(rows).toEqual(["API requests today: 739 of 5,000,000"]);
@@ -661,22 +684,29 @@ describe("c-footer", () => {
   });
 
   describe("metric groups", () => {
-    function groups(element) {
-      return all(element, ".metric-group").map((group) => {
-        const label = group.querySelector(".group-label");
-        const list = group.querySelector("ul.group-list");
-        return {
-          group,
-          label: label.textContent.trim(),
-          labelled: list.getAttribute("aria-labelledby") === label.id,
-          ids: Array.from(list.children).map(
-            (li) =>
-              li.dataset.id ||
-              (li.querySelector("[data-id]") || {}).dataset?.id ||
-              li.className
-          )
-        };
-      });
+    const chips = (element) =>
+      all(element, ".chips button.chip").map((chip) => ({
+        chip,
+        key: chip.dataset.key,
+        label: chip.querySelector(".group-label").textContent.trim()
+      }));
+
+    // The ids the open group's list is named by, read from its own panel.
+    async function listIds(element, key) {
+      await openGroup(element, key);
+      const panel = q(element, `[data-group="${key}"]`);
+      const list = panel.querySelector("ul.group-list");
+      const chip = q(element, `button[data-key="${key}"]`);
+      return {
+        panel,
+        labelled: list.getAttribute("aria-labelledby") === chip.id,
+        ids: Array.from(list.children).map(
+          (li) =>
+            li.dataset.id ||
+            (li.querySelector("[data-id]") || {}).dataset?.id ||
+            li.className
+        )
+      };
     }
 
     async function loadEverything() {
@@ -692,41 +722,46 @@ describe("c-footer", () => {
       return element;
     }
 
-    it("shows five labelled groups in order once everything has loaded", async () => {
+    it("shows five labelled chips in order once everything has loaded", async () => {
       const element = await loadEverything();
-      const found = groups(element);
-      expect(found.map((g) => g.label)).toEqual([
+      expect(chips(element).map((c) => c.label)).toEqual([
         "CI",
         "Platform",
         "Integrations",
         "Daily quotas",
         "Request limits"
       ]);
-      found.forEach((g) => {
-        expect(g.labelled).toBe(true);
-        expect(g.group.querySelector(".group-label").id).not.toBe("");
-      });
+      expect(q(element, ".chips").nextElementSibling).toBe(
+        q(element, '[data-id="panel"]')
+      );
     });
 
     it("puts each metric in its group, each one a list item", async () => {
       const element = await loadEverything();
-      const [ci, platform, integrations, quotas, limits] = groups(element);
-      expect(ci.group.querySelector('[data-id="badge"]')).not.toBeNull();
-      expect(ci.group.querySelector('[data-id="badge-smoke"]')).not.toBeNull();
+      const ci = await listIds(element, "ci");
+      expect(ci.panel.querySelector('[data-id="badge"]')).not.toBeNull();
+      expect(ci.panel.querySelector('[data-id="badge-smoke"]')).not.toBeNull();
       expect(
-        ci.group.querySelector('[data-id="badge-postman"]')
+        ci.panel.querySelector('[data-id="badge-postman"]')
       ).not.toBeNull();
       expect(ci.ids).toEqual(["ci-badge", "ci-badge", "ci-badge"]);
-      expect(platform.ids).toEqual(["graphql"]);
-      expect(integrations.ids).toEqual([
+      expect(ci.labelled).toBe(true);
+      expect((await listIds(element, "platform")).ids).toEqual(["graphql"]);
+      expect((await listIds(element, "integrations")).ids).toEqual([
         "provider",
         "provider",
         "provider",
         "integration",
         "integration"
       ]);
-      expect(quotas.ids).toEqual(["ai-requests", "quota", "quota"]);
+      expect((await listIds(element, "quotas")).ids).toEqual([
+        "ai-requests",
+        "quota",
+        "quota"
+      ]);
+      const limits = await listIds(element, "limits");
       expect(limits.ids).toEqual(["limit", "limit", "limit"]);
+      expect(limits.labelled).toBe(true);
       all(element, ".group-list > *").forEach((child) => {
         expect(child.tagName).toBe("LI");
       });
@@ -734,34 +769,38 @@ describe("c-footer", () => {
 
     it("draws the separators in CSS, so no group carries a separator in its text or as an extra list child", async () => {
       const element = await loadEverything();
-      all(element, ".group-list").forEach((list) => {
-        expect(list.textContent).not.toMatch(/[|·•]/);
-        Array.from(list.children).forEach((li) => {
-          expect(li.tagName).toBe("LI");
-          expect(li.classList.contains("metric")).toBe(true);
+      for (const key of ["ci", "integrations", "quotas", "limits"]) {
+        await openGroup(element, key);
+        all(element, ".group-list").forEach((list) => {
+          expect(list.textContent).not.toMatch(/[|·•]/);
+          Array.from(list.children).forEach((li) => {
+            expect(li.tagName).toBe("LI");
+            expect(li.classList.contains("metric")).toBe(true);
+          });
         });
-      });
+      }
     });
 
     it("shows only CI before the page is idle", () => {
       const element = createComponent();
-      expect(groups(element).map((g) => g.label)).toEqual(["CI"]);
+      expect(chips(element).map((c) => c.label)).toEqual(["CI"]);
     });
 
-    it("shows the snapshot error under Platform and no empty group when the call fails", async () => {
+    it("shows the snapshot error under Platform and no empty chip when the call fails", async () => {
       getSystemSnapshot.mockRejectedValue(new Error("boom"));
       const element = createComponent();
       await runIdle();
-      const found = groups(element);
-      expect(found.map((g) => g.label)).toEqual(["CI", "Platform"]);
-      expect(found[1].ids).toEqual(["snapshot-error"]);
+      expect(chips(element).map((c) => c.label)).toEqual(["CI", "Platform"]);
+      expect((await listIds(element, "platform")).ids).toEqual([
+        "snapshot-error"
+      ]);
     });
 
     it("leaves Integrations out when the snapshot has no provider or breaker", async () => {
       getSystemSnapshot.mockResolvedValue(snapshot({ providers: [] }));
       const element = createComponent();
       await runIdle();
-      expect(groups(element).map((g) => g.label)).toEqual([
+      expect(chips(element).map((c) => c.label)).toEqual([
         "CI",
         "Daily quotas",
         "Request limits"
@@ -791,42 +830,50 @@ describe("c-footer", () => {
       return element;
     }
 
-    const openState = (element) =>
+    const expanded = (element) =>
       Object.fromEntries(
-        all(element, "details.metric-group").map((d) => [
-          d.dataset.group,
-          d.open
+        all(element, ".chips button.chip").map((chip) => [
+          chip.dataset.key,
+          chip.getAttribute("aria-expanded")
         ])
+      );
+    const chip = (element, key) => q(element, `button[data-key="${key}"]`);
+    const press = (target, key) =>
+      target.dispatchEvent(
+        new KeyboardEvent("keydown", { key, bubbles: true, composed: true })
       );
 
     it("opens CI only on a desktop", async () => {
       window.matchMedia = jest.fn(() => ({ matches: false }));
       const element = await loaded();
-      expect(openState(element)).toEqual({
-        ci: true,
-        platform: false,
-        integrations: false,
-        quotas: false,
-        storage: false,
-        limits: false
+      expect(expanded(element)).toEqual({
+        ci: "true",
+        platform: "false",
+        integrations: "false",
+        quotas: "false",
+        storage: "false",
+        limits: "false"
       });
+      expect(all(element, ".panel [data-group]")).toHaveLength(1);
+      expect(q(element, ".panel [data-group]").dataset.group).toBe("ci");
     });
 
-    it("starts every group closed on a phone", async () => {
+    it("starts every group closed on a phone, with an empty panel", async () => {
       window.matchMedia = jest.fn(() => ({ matches: true }));
       const element = await loaded();
       expect(window.matchMedia).toHaveBeenCalledWith("(max-width: 767.98px)");
-      expect(Object.values(openState(element))).toEqual([
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
+      expect(Object.values(expanded(element))).toEqual([
+        "false",
+        "false",
+        "false",
+        "false",
+        "false",
+        "false"
       ]);
+      expect(all(element, ".panel [data-group]")).toHaveLength(0);
     });
 
-    it("gives every group a summary with its label and a count or status word", async () => {
+    it("gives every chip its label and a count or status word", async () => {
       const element = await loaded();
       const text = (group) =>
         q(element, `[data-id="status-${group}"]`).textContent.trim();
@@ -836,13 +883,12 @@ describe("c-footer", () => {
       expect(text("quotas")).toBe("3 readings");
       expect(text("storage")).toBe("2 readings");
       expect(text("limits")).toBe("3 readings");
-      all(element, "details.metric-group").forEach((d) => {
-        const summary = d.querySelector(":scope > summary");
-        expect(summary).not.toBeNull();
-        expect(summary.querySelector(".group-label")).not.toBeNull();
-        expect(
-          d.querySelector("ul.group-list").getAttribute("aria-labelledby")
-        ).toBe(summary.querySelector(".group-label").id);
+      all(element, ".chips button.chip").forEach((c) => {
+        expect(c.getAttribute("type")).toBe("button");
+        expect(c.getAttribute("aria-controls")).toContain(
+          `footer-panel-${c.dataset.key}`
+        );
+        expect(c.querySelector(".chip-chevron")).not.toBeNull();
       });
     });
 
@@ -855,34 +901,84 @@ describe("c-footer", () => {
       );
     });
 
-    it("uses no click handler of ours on a summary, so the browser does the toggling", () => {
-      const html = readFileSync(join(__dirname, "..", "footer.html"), "utf8");
-      expect(html).not.toMatch(/<summary[^>]*onclick/);
+    it("opens one group at a time and closes it when its chip is pressed again", async () => {
+      window.matchMedia = jest.fn(() => ({ matches: true }));
+      const element = await loaded();
+      chip(element, "quotas").click();
+      await flushPromises();
+      expect(expanded(element).quotas).toBe("true");
+      expect(q(element, ".panel [data-group]").dataset.group).toBe("quotas");
+      const region = q(element, '[data-group="quotas"]');
+      expect(region.getAttribute("role")).toBe("region");
+      expect(region.getAttribute("aria-labelledby")).toBe(
+        chip(element, "quotas").id
+      );
+
+      chip(element, "limits").click();
+      await flushPromises();
+      expect(expanded(element).quotas).toBe("false");
+      expect(expanded(element).limits).toBe("true");
+      expect(all(element, ".panel [data-group]")).toHaveLength(1);
+
+      chip(element, "limits").click();
+      await flushPromises();
+      expect(Object.values(expanded(element))).not.toContain("true");
+      expect(all(element, ".panel [data-group]")).toHaveLength(0);
     });
 
-    it("leaves Escape on a summary alone, and still closes the storage panel from the toggle", async () => {
+    it("closes on Escape from a chip and from inside the panel, and puts focus on the chip", async () => {
       const element = await loaded();
+      press(chip(element, "ci"), "Escape");
+      await flushPromises();
+      expect(expanded(element).ci).toBe("false");
+
+      chip(element, "quotas").click();
+      await flushPromises();
+      press(q(element, '[data-id="ai-requests"]'), "Escape");
+      await flushPromises();
+      expect(expanded(element).quotas).toBe("false");
+      expect(element.shadowRoot.activeElement).toBe(chip(element, "quotas"));
+    });
+
+    it("uses real buttons, so Enter and Space work with no key handler of ours", () => {
+      const html = readFileSync(join(__dirname, "..", "footer.html"), "utf8");
+      expect(html).not.toMatch(/<summary|<details/);
+      expect(html).not.toMatch(/onkeypress|onkeyup/);
+    });
+
+    it("keeps the storage panel's Escape to itself first, then closes the group", async () => {
+      const element = await loaded();
+      await openGroup(element, "storage");
       q(element, '[data-id="storage-toggle"]').click();
       await flushPromises();
       expect(q(element, '[data-id="storage-panel"]').hidden).toBe(false);
 
-      const summary = q(element, '[data-id="summary-storage"]');
-      summary.dispatchEvent(
-        new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
-      );
+      press(chip(element, "storage"), "Escape");
       await flushPromises();
-      expect(q(element, '[data-id="storage-panel"]').hidden).toBe(false);
+      expect(expanded(element).storage).toBe("false");
 
-      q(element, '[data-id="storage-toggle"]').dispatchEvent(
-        new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
-      );
+      await openGroup(element, "storage");
+      q(element, '[data-id="storage-toggle"]').click();
+      await flushPromises();
+      press(q(element, '[data-id="storage-toggle"]'), "Escape");
       await flushPromises();
       expect(q(element, '[data-id="storage-panel"]').hidden).toBe(true);
+      expect(expanded(element).storage).toBe("true");
+      expect(element.shadowRoot.activeElement).toBe(
+        q(element, '[data-id="storage-toggle"]')
+      );
+    });
+
+    it("styles a chip so its text cannot be selected, with a focus ring", () => {
+      const css = readFileSync(join(__dirname, "..", "footer.css"), "utf8");
+      expect(css).toMatch(/\.chip \{[^}]*user-select: none/);
+      expect(css).toMatch(/\.chip:focus-visible/);
+      expect(css).toMatch(/min-height: 32px/);
     });
 
     it("keeps Back to top last in the tab order", async () => {
       const element = await loaded();
-      const stops = all(element, "summary, a[href], button");
+      const stops = all(element, "button, a[href]");
       expect(stops[stops.length - 1].dataset.id).toBe("back-to-top");
     });
   });
@@ -898,11 +994,12 @@ describe("c-footer", () => {
     );
   });
 
-  it("puts CI first among the readings under the caption, with no row of its own", () => {
+  it("puts the chips first among the readings under the caption, CI chip first, with no row of its own", () => {
     const element = createComponent();
     const readings = q(element, '[data-id="metrics"]');
     expect(q(element, '[data-id="ci-row"]')).toBeNull();
-    expect(readings.firstElementChild.dataset.group).toBe("ci");
+    expect(readings.firstElementChild.dataset.id).toBe("chips");
+    expect(readings.firstElementChild.firstElementChild.dataset.key).toBe("ci");
     expect(
       q(element, '[data-id="metrics-caption"]').compareDocumentPosition(
         readings
@@ -910,7 +1007,7 @@ describe("c-footer", () => {
     ).toBeTruthy();
   });
 
-  it("keeps every group in the one readings block, CI first", async () => {
+  it("keeps every chip in the one chip row, CI first, and one shared panel under it", async () => {
     getSystemSnapshot.mockResolvedValue(
       snapshot({ integrations: INTEGRATIONS, orgQuotas: ORG_QUOTAS })
     );
@@ -918,10 +1015,11 @@ describe("c-footer", () => {
     await runIdle();
     const readings = q(element, '[data-id="metrics"]');
     expect(
-      Array.from(readings.querySelectorAll(".metric-group")).map(
-        (g) => g.dataset.group
+      Array.from(readings.querySelectorAll(".chips button")).map(
+        (b) => b.dataset.key
       )
     ).toEqual(["ci", "integrations", "quotas", "limits"]);
+    expect(readings.querySelectorAll('[data-id="panel"]')).toHaveLength(1);
   });
 
   it("offers View source for the footer beside the caption", () => {
@@ -982,65 +1080,68 @@ describe("c-footer", () => {
     getSystemSnapshot.mockResolvedValue(snapshot({ aiRequestsToday: 12345 }));
     const element = createComponent();
     await runIdle();
+    await openGroup(element, "quotas");
     expect(q(element, '[data-id="ai-requests"]').textContent).toBe(
       "AI requests today: 12,345"
     );
   });
 
-  it("shows the quotas as a native details group, closed until opened", async () => {
+  it("shows the quotas in the shared panel once their chip is pressed", async () => {
     const element = createComponent();
     await runIdle();
-    expect(q(element, "details").tagName).toBe("DETAILS");
-    expect(q(element, 'details[data-group="quotas"]').open).toBe(false);
-    const group = q(element, 'details[data-group="quotas"]');
-    expect(group).not.toBeNull();
-    expect(group.querySelector(".group-label").textContent.trim()).toBe(
-      "Daily quotas"
-    );
+    expect(q(element, '[data-group="quotas"]')).toBeNull();
+    await openGroup(element, "quotas");
+    const group = q(element, '[data-group="quotas"]');
+    expect(group.parentElement).toBe(q(element, '[data-id="panel"]'));
+    expect(
+      q(element, 'button[data-key="quotas"] .group-label').textContent.trim()
+    ).toBe("Daily quotas");
     expect(group.querySelector('[data-id="ai-requests"]')).not.toBeNull();
     expect(group.querySelector('[data-id="limit"]')).toBeNull();
   });
 
-  it("puts storage in a group of its own between the quotas and the limits", async () => {
+  it("puts a storage chip of its own between the quotas and the limits", async () => {
     getSystemSnapshot.mockResolvedValue(snapshot({ storage: STORAGE }));
     const element = createComponent();
     await runIdle();
-    const group = q(element, 'details[data-group="storage"]');
-    expect(group.querySelector(".group-label").textContent.trim()).toBe(
+    const chip = q(element, 'button[data-key="storage"]');
+    expect(chip.querySelector(".group-label").textContent.trim()).toBe(
       "Storage"
     );
+    expect(chip.previousElementSibling.dataset.key).toBe("quotas");
+    expect(chip.nextElementSibling.dataset.key).toBe("limits");
+    await openGroup(element, "storage");
+    const group = q(element, '[data-group="storage"]');
     expect(group.querySelector('[data-id="storage-toggle"]')).not.toBeNull();
     expect(group.querySelector('[data-id="storage-panel"]')).not.toBeNull();
-    expect(
-      q(element, 'details[data-group="quotas"] [data-id="storage"]')
-    ).toBeNull();
-    expect(group.previousElementSibling.dataset.group).toBe("quotas");
-    expect(group.nextElementSibling.dataset.group).toBe("limits");
   });
 
-  it("puts the governor limits in their own Request limits group after the quotas", async () => {
+  it("puts the governor limits in their own Request limits chip after the quotas", async () => {
     const element = createComponent();
     await runIdle();
-    const group = q(element, 'details[data-group="limits"]');
-    expect(group).not.toBeNull();
-    expect(group.querySelector(".group-label").textContent.trim()).toBe(
+    const chip = q(element, 'button[data-key="limits"]');
+    expect(chip.querySelector(".group-label").textContent.trim()).toBe(
       "Request limits"
     );
+    expect(chip.previousElementSibling.dataset.key).toBe("quotas");
+    await openGroup(element, "limits");
     expect(
-      Array.from(group.querySelectorAll('[data-id="limit"]')).map((n) =>
-        n.textContent.trim()
-      )
+      Array.from(
+        q(element, '[data-group="limits"]').querySelectorAll(
+          '[data-id="limit"]'
+        )
+      ).map((n) => n.textContent.trim())
     ).toEqual([
       expect.stringMatching(/^CPU time: /),
       expect.stringMatching(/^Memory: /),
       expect.stringMatching(/^Database queries: /)
     ]);
-    expect(group.previousElementSibling.dataset.group).toBe("quotas");
   });
 
   it("tracks finops_quota_visibility once on hover over AI requests", async () => {
     const element = createComponent();
     await runIdle();
+    await openGroup(element, "quotas");
     expect(trackEvent).not.toHaveBeenCalled();
     const aiRequests = q(element, '[data-id="ai-requests"]');
     aiRequests.dispatchEvent(new CustomEvent("mouseenter"));
@@ -1095,6 +1196,7 @@ describe("c-footer", () => {
     getSystemSnapshot.mockResolvedValue(snapshot({ storage: STORAGE }));
     const element = createComponent();
     await runIdle();
+    await openGroup(element, "storage");
 
     const toggle = q(element, '[data-id="storage-toggle"]');
     expect(toggle.textContent.trim()).toBe("Data 1 of 5 MB, Files 5 of 20 MB");
@@ -1113,6 +1215,7 @@ describe("c-footer", () => {
     );
     const element = createComponent();
     await runIdle();
+    await openGroup(element, "storage");
 
     expect(q(element, '[data-id="storage-toggle"]').textContent.trim()).toBe(
       "Data 1 of 5 MB"
@@ -1123,6 +1226,7 @@ describe("c-footer", () => {
     getSystemSnapshot.mockResolvedValue(snapshot({ storage: STORAGE }));
     const element = createComponent();
     await runIdle();
+    await openGroup(element, "storage");
     const toggle = q(element, '[data-id="storage-toggle"]');
 
     toggle.click();
@@ -1159,11 +1263,12 @@ describe("c-footer", () => {
     getSystemSnapshot.mockResolvedValue(snapshot({ storage: STORAGE }));
     const element = createComponent();
     await runIdle();
+    await openGroup(element, "storage");
     const toggle = q(element, '[data-id="storage-toggle"]');
     toggle.click();
     await flushPromises();
 
-    q(element, '[data-group="storage"]').dispatchEvent(
+    q(element, '[data-id="storage-toggle"]').dispatchEvent(
       new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
     );
     await flushPromises();
@@ -1178,6 +1283,7 @@ describe("c-footer", () => {
     );
     const element = createComponent();
     await runIdle();
+    await openGroup(element, "storage");
     q(element, '[data-id="storage-toggle"]').click();
     await flushPromises();
 
@@ -1188,6 +1294,7 @@ describe("c-footer", () => {
     getSystemSnapshot.mockResolvedValue(snapshot({ storage: STORAGE }));
     const element = createComponent();
     await runIdle();
+    await openGroup(element, "storage");
     q(element, '[data-id="storage-toggle"]').click();
     await flushPromises();
 
@@ -1209,6 +1316,7 @@ describe("c-footer", () => {
     );
     const element = createComponent();
     await runIdle();
+    await openGroup(element, "storage");
     q(element, '[data-id="storage-toggle"]').click();
     await flushPromises();
 
@@ -1235,6 +1343,7 @@ describe("c-footer", () => {
     );
     const element = createComponent();
     await runIdle();
+    await openGroup(element, "storage");
     q(element, '[data-id="storage-toggle"]').click();
     await flushPromises();
 
@@ -1283,8 +1392,10 @@ describe("c-footer", () => {
       expect(q(element, '[data-id="recorded-label"]').textContent).toBe(
         "From Salesforce · captured 1 Nov 2026, 12:00 UTC"
       );
+      await openGroup(element, "integrations");
       expect(all(element, '[data-id="provider"]').length).toBe(3);
       expect(all(element, '[data-id="integration"]').length).toBe(2);
+      await openGroup(element, "quotas");
       expect(all(element, '[data-id="quota"]').length).toBe(2);
       expect(q(element, '[data-id="graphql"]')).toBeNull();
       expect(q(element, '[data-id="metrics"]').textContent).not.toMatch(
@@ -1297,7 +1408,9 @@ describe("c-footer", () => {
       const element = createComponent();
       await runIdle();
 
+      await openGroup(element, "quotas");
       expect(q(element, '[data-id="ai-requests"]')).toBeNull();
+      await openGroup(element, "limits");
       const limits = all(element, '[data-id="limit"]').map((li) =>
         li.textContent.trim()
       );
@@ -1310,7 +1423,9 @@ describe("c-footer", () => {
       const element = createComponent();
       await runIdle();
 
+      await openGroup(element, "quotas");
       expect(q(element, '[data-id="ai-requests"]')).not.toBeNull();
+      await openGroup(element, "limits");
       const limits = all(element, '[data-id="limit"]').map((li) =>
         li.textContent.trim()
       );
@@ -1342,6 +1457,7 @@ describe("c-footer", () => {
         "Live readings from Salesforce and its integrations"
       );
       expect(q(element, '[data-id="recorded-label"]')).toBeNull();
+      await openGroup(element, "platform");
       expect(q(element, '[data-id="graphql"]').textContent).toBe(
         "GraphQL: unavailable"
       );

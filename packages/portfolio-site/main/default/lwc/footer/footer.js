@@ -25,12 +25,15 @@
  *                      the daily org quotas. Request limits holds the governor limits of the
  *                      request that took the reading. They are separate groups, with Storage
  *                      between them, so each fits one row on a wide screen even when every number
- *                      is at its longest. Every number is grouped by thousands. Each group is a native
- *                      details element with a summary that shows the label and a count or one
- *                      status word, for example "3 readings" or "live". On a phone (width up to
- *                      767.98 px, read once when the footer connects, the same width the
- *                      stylesheet uses) every group starts closed. On a desktop only CI starts
- *                      open. The browser does the toggling, so there is no click handler of ours.
+ *                      is at its longest. Every number is grouped by thousands. Each group is a chip, a button in one
+ *                      row, showing the label, a count or one status word (for example "3 readings"
+ *                      or "live") and a chevron. One panel under the row shows the open group's
+ *                      readings, one group at a time, and pressing the open chip closes it. On a
+ *                      phone (width up to 767.98 px, read once when the footer connects, the same
+ *                      width the stylesheet uses) nothing starts open. On a desktop only CI starts
+ *                      open. Each chip has aria-expanded and aria-controls, the open group is a
+ *                      region named by its chip, and Escape in the panel or on a chip closes the
+ *                      group and returns focus to the chip.
  *                      Platform shows once it
  *                      has a line, the last groups once the telemetry from
  *                      FooterController.getSystemSnapshot() has loaded. The snapshot is requested
@@ -241,6 +244,15 @@ function pageViews(day) {
 export const PHONE_QUERY = "(max-width: 767.98px)";
 
 /**
+ * The class list of a group chip.
+ * @param {boolean} open Whether its group is the open one.
+ * @returns {string} The classes.
+ */
+function chipClass(open) {
+  return open ? "chip chip--open" : "chip";
+}
+
+/**
  * A count with its noun, for example "1 reading" or "3 readings".
  * @param {number} count The count.
  * @param {string} noun The singular noun.
@@ -299,6 +311,8 @@ export default class Footer extends LightningElement {
   _storageTracked = false;
   storageOpen = false;
   phone = false;
+  /** The one group whose readings show in the panel, or null. */
+  openGroup = null;
 
   @wire(getLinks)
   wiredLinks({ data }) {
@@ -312,6 +326,7 @@ export default class Footer extends LightningElement {
     this.phone =
       typeof window.matchMedia === "function" &&
       window.matchMedia(PHONE_QUERY).matches;
+    this.openGroup = this.phone ? null : "ci";
     this._cancelDeferred = whenIdleAfterLoad(() => {
       // The static build leaves the probe out on purpose, so it could only fail there.
       if (!IS_STATIC) {
@@ -412,9 +427,77 @@ export default class Footer extends LightningElement {
       : `GraphQL: live, ${this.graphqlMs} ms`;
   }
 
-  /** CI starts open on a desktop and closed on a phone. Every other group starts closed. */
+  /** One group is open at a time. CI starts open on a desktop and nothing starts open on a phone. */
   get ciOpen() {
-    return !this.phone;
+    return this.openGroup === "ci";
+  }
+
+  get platformOpen() {
+    return this.openGroup === "platform";
+  }
+
+  get integrationsOpen() {
+    return this.openGroup === "integrations";
+  }
+
+  get quotasOpen() {
+    return this.openGroup === "quotas";
+  }
+
+  get storageGroupOpen() {
+    return this.openGroup === "storage";
+  }
+
+  get limitsOpen() {
+    return this.openGroup === "limits";
+  }
+
+  get ciExpanded() {
+    return String(this.ciOpen);
+  }
+
+  get platformExpanded() {
+    return String(this.platformOpen);
+  }
+
+  get integrationsExpanded() {
+    return String(this.integrationsOpen);
+  }
+
+  get quotasExpanded() {
+    return String(this.quotasOpen);
+  }
+
+  get storageGroupExpanded() {
+    return String(this.storageGroupOpen);
+  }
+
+  get limitsExpanded() {
+    return String(this.limitsOpen);
+  }
+
+  get ciChipClass() {
+    return chipClass(this.ciOpen);
+  }
+
+  get platformChipClass() {
+    return chipClass(this.platformOpen);
+  }
+
+  get integrationsChipClass() {
+    return chipClass(this.integrationsOpen);
+  }
+
+  get quotasChipClass() {
+    return chipClass(this.quotasOpen);
+  }
+
+  get storageChipClass() {
+    return chipClass(this.storageGroupOpen);
+  }
+
+  get limitsChipClass() {
+    return chipClass(this.limitsOpen);
   }
 
   get ciStatus() {
@@ -647,17 +730,39 @@ export default class Footer extends LightningElement {
     }
   }
 
-  handleStorageKeydown(event) {
-    // Escape on a group summary does nothing of ours, so it never moves focus off the summary.
-    if (
-      event.key !== "Escape" ||
-      !this.storageOpen ||
-      event.target?.closest?.("summary")
-    ) {
+  /** A chip opens its group in the panel, or closes it when it is already the open one. */
+  handleChipClick(event) {
+    const key = event.currentTarget?.dataset?.key;
+    if (!key) {
       return;
     }
     this.storageOpen = false;
-    this.template.querySelector('[data-id="storage-toggle"]')?.focus();
+    this.openGroup = this.openGroup === key ? null : key;
+  }
+
+  /**
+   * Escape closes the storage detail first when it is open, then the open group, and puts
+   * focus back on that group's chip. Every other key is left to the browser.
+   * @param {KeyboardEvent} event The keydown from the readings block.
+   */
+  handleKeydown(event) {
+    if (event.key !== "Escape") {
+      return;
+    }
+    if (
+      this.storageOpen &&
+      event.target?.closest?.('[data-id="storage"], [data-id="storage-panel"]')
+    ) {
+      this.storageOpen = false;
+      this.template.querySelector('[data-id="storage-toggle"]')?.focus();
+      return;
+    }
+    const key = this.openGroup;
+    if (!key) {
+      return;
+    }
+    this.openGroup = null;
+    this.template.querySelector(`button[data-key="${key}"]`)?.focus();
   }
 
   handleBackToTop() {
