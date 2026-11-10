@@ -106,7 +106,7 @@ test('the layout hooks come from the branding set and a missing key stops the bu
   const values = readBranding();
   const css = rootHooksCss(values);
   assert.match(css, /--dxp-s-component-wrapper-spacer-size: 1\.5rem;/);
-  assert.match(css, /--dxp-s-section-columns-max-width: 1800px;/);
+  assert.match(css, /--dxp-s-section-columns-max-width: 1280px;/);
   assert.match(css, /--dxp-s-section-columns-max-width-mobile: none;/);
   assert.match(css, /--dxp-s-body-line-height: 1\.65;/);
   assert.match(css, /--dxp-s-link-text-decoration: none;/);
