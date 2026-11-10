@@ -39,25 +39,6 @@
   margin-left: var(--pf-space-1);
 }
 
-.generate-button {
-  min-height: 44px;
-  min-width: 44px;
-  padding: 0 var(--pf-space-5);
-  background-color: var(--pf-btn);
-  color: var(--pf-btn-text);
-  border: 0;
-  border-radius: var(--pf-radius-sm);
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.generate-button:disabled {
-  background-color: var(--pf-chip);
-  color: var(--pf-chip-text);
-  cursor: not-allowed;
-}
-
-.generate-button:focus-visible,
 .work-toggle:focus-visible {
   outline: 2px solid var(--pf-accent);
   outline-offset: 2px;

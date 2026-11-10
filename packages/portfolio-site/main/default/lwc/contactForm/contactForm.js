@@ -166,6 +166,10 @@ export default class ContactForm extends LightningElement {
     heading.focus();
   }
 
+  get titleClass() {
+    return this.intro ? "contact-title contact-title_lede" : "contact-title";
+  }
+
   get showForm() {
     return !this.isSent;
   }

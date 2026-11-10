@@ -1,4 +1,5 @@
 @import "c/sectionHeading";
+@import "c/nativeControls";
 /*
  * The work timeline under the home hero, on the --pf- site tokens only. One slim track of
  * stops, five to a row at 900 px and up, one column with the line on the left below that.
@@ -17,6 +18,14 @@
   font-family: var(--pf-font-sans);
   font-size: 16px;
   line-height: 1.5;
+}
+
+/* From 64.0625em the section's own gutter is gone, so the content lines up with the header. */
+@media (min-width: 64.0625em) {
+  .career {
+    padding-left: 0;
+    padding-right: 0;
+  }
 }
 
 .section {
@@ -39,53 +48,6 @@
   font-size: 14px;
 }
 
-/* Buttons. Primary is the hero's fill. Secondary is a white fill with a gray border. */
-.btn,
-.btn:link,
-.btn:visited {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 0 18px;
-  border-radius: 10px;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-  box-sizing: border-box;
-}
-
-.btn-primary,
-.btn-primary:link,
-.btn-primary:visited {
-  border: 1px solid transparent;
-  background: var(--pf-btn);
-  color: var(--pf-btn-text);
-}
-
-.btn-primary:hover,
-.btn-primary:link:hover,
-.btn-primary:visited:hover {
-  background: var(--pf-btn-hover);
-  color: var(--pf-btn-text);
-}
-
-.btn-secondary,
-.btn-secondary:link,
-.btn-secondary:visited {
-  border: 1px solid var(--pf-border);
-  background: var(--pf-surface);
-  color: var(--pf-text);
-}
-
-.btn-secondary:hover {
-  background: var(--pf-chip);
-  color: var(--pf-text);
-}
-
-.btn:focus-visible,
 .toggle:focus-visible,
 .panel-link:focus-visible {
   outline: 2px solid var(--pf-focus);
@@ -173,7 +135,7 @@
   color: var(--pf-accent);
   font: inherit;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   text-align: left;
   cursor: pointer;
 }
@@ -319,7 +281,7 @@
 
 /* Phone: the resume button spans the column. */
 @media screen and (max-width: 767.98px) {
-  .career-foot .btn {
+  .career-foot .nc-button {
     width: 100%;
   }
 }

@@ -533,8 +533,13 @@ describe("c-career-line", () => {
     const link = one(element, "resume-link");
     expect(text(link)).toBe("See the full resume →");
     expect(link.getAttribute("href")).toBe("/portfolio/resume");
-    expect(link.classList.contains("btn-primary")).toBe(true);
-    expect(element.shadowRoot.querySelectorAll(".btn-primary")).toHaveLength(1);
+    expect(link.classList.contains("nc-button")).toBe(true);
+    expect(link.classList.contains("nc-button_secondary")).toBe(false);
+    expect(
+      element.shadowRoot.querySelectorAll(
+        "a.nc-button:not(.nc-button_secondary)"
+      )
+    ).toHaveLength(1);
   });
 
   it("renders nothing on an error or with no roles", async () => {
