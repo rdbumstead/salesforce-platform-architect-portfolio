@@ -99,18 +99,20 @@
               <template lwc:if={link.isTrailhead}>
                 <svg
                   aria-hidden="true"
-                  width="14"
+                  width="22.17"
                   height="14"
-                  viewBox="0 -3 24 24"
+                  viewBox="0 0 38 24"
                   fill="none"
                   stroke="currentColor"
-                  stroke-width="2"
+                  stroke-width="1"
                   stroke-linecap="round"
                   stroke-linejoin="round"
                 >
-                  <polyline
-                    points="3 20 9 10 13 16 16 12 21 20 3 20"
-                  ></polyline>
+                  <g transform="translate(-5 -17) scale(2)">
+                    <polyline
+                      points="3 20 9 10 13 16 16 12 21 20 3 20"
+                    ></polyline>
+                  </g>
                 </svg>
               </template>
               <template lwc:if={link.isResume}>
@@ -134,17 +136,19 @@
               <template lwc:if={link.isApi}>
                 <svg
                   aria-hidden="true"
-                  width="14"
+                  width="20.61"
                   height="14"
-                  viewBox="0 -5 24 24"
+                  viewBox="0 0 35.33 24"
                   fill="none"
                   stroke="currentColor"
-                  stroke-width="2"
+                  stroke-width="1.2"
                   stroke-linecap="round"
                   stroke-linejoin="round"
                 >
-                  <polyline points="16 18 22 12 16 6"></polyline>
-                  <polyline points="8 6 2 12 8 18"></polyline>
+                  <g transform="translate(-2.33 -7) scale(1.6667)">
+                    <polyline points="16 18 22 12 16 6"></polyline>
+                    <polyline points="8 6 2 12 8 18"></polyline>
+                  </g>
                 </svg>
               </template>
               <span class="profile-label">{link.label}</span>

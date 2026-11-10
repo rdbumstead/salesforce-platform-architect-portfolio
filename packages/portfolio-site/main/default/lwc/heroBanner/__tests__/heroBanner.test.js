@@ -353,37 +353,53 @@ describe("c-hero-banner", () => {
       );
     });
 
-    it("draws every icon with its lowest ink on the bottom edge of its box, and wraps the label so the box can sit on the text baseline", async () => {
+    it("draws every icon at the same optical height, with its lowest ink on the bottom edge of its box and a 2 unit stroke", async () => {
       const element = render();
       getHeader.emit({
         ...HEADER,
         trailheadUrl: "https://www.salesforce.com/trailblazer/example"
       });
       await flush();
-      // The viewBox top moves so each drawing ends on the box bottom. Ink bottom is
-      // the lowest path edge plus half the 2 unit stroke.
-      const inkBottom = {
-        github: 23,
-        linkedin: 22,
-        trailhead: 21,
-        resume: 23,
-        "api-docs": 19
+      // Lowest and highest path y of each drawing in its own 24 unit grid.
+      const drawn = {
+        github: [1, 22],
+        linkedin: [2, 21],
+        trailhead: [10, 20],
+        resume: [2, 22],
+        "api-docs": [6, 18]
       };
       const links = Array.from(
         element.shadowRoot.querySelectorAll(".profile-link")
       );
-      expect(links.map((a) => a.dataset.key)).toEqual(Object.keys(inkBottom));
-      links.forEach((a) => {
-        const [, y, , h] = a
-          .querySelector("svg")
-          .getAttribute("viewBox")
-          .split(" ")
-          .map(Number);
-        expect(y + h).toBe(inkBottom[a.dataset.key]);
+      expect(links.map((a) => a.dataset.key)).toEqual(Object.keys(drawn));
+      const heights = links.map((a) => {
+        const svg = a.querySelector("svg");
+        const [, y, , h] = svg.getAttribute("viewBox").split(" ").map(Number);
+        const group = svg.querySelector("g");
+        const match = group
+          ? /translate\(\S+ (\S+)\)\s+scale\((\S+)\)/.exec(
+              group.getAttribute("transform")
+            )
+          : null;
+        const ty = match ? Number(match[1]) : 0;
+        const scale = match ? Number(match[2]) : 1;
+        // Rendered stroke stays 2 units however much the drawing is scaled.
+        expect(Number(svg.getAttribute("stroke-width")) * scale).toBeCloseTo(
+          2,
+          1
+        );
+        const [low, high] = drawn[a.dataset.key];
+        const inkBottom = high * scale + ty + 1;
+        const inkTop = low * scale + ty - 1;
+        expect(inkBottom).toBeCloseTo(y + h, 1);
         expect(a.querySelector(".profile-label").textContent.trim()).toBe(
           a.textContent.trim()
         );
+        return inkBottom - inkTop;
       });
+      expect(Math.max(...heights) - Math.min(...heights)).toBeLessThanOrEqual(
+        2
+      );
     });
 
     it("shows no Trailhead link when the URL is missing or unsafe, and fixes a bare domain", async () => {
