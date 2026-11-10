@@ -141,7 +141,7 @@
         "name": "limit",
         "in": "query",
         "required": false,
-        "description": "Maximum number of records to return.",
+        "description": "Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.",
         "schema": {
           "type": "integer",
           "default": 50,
@@ -958,7 +958,7 @@
             "format": "date",
             "example": "2025-12-01",
             "nullable": true,
-            "description": "Completion Date"
+            "description": "Completion Date. Optional. Null until the project has a completion date."
           },
           "heroImageUrl": {
             "type": "string",
@@ -1397,7 +1397,7 @@
             "format": "uri",
             "example": "https://example.com/schedule",
             "nullable": true,
-            "description": "Calendly URL"
+            "description": "Calendly URL. Optional. Null until a scheduling link is set."
           },
           "trailblazerProfileUrl": {
             "type": "string",
@@ -1454,13 +1454,13 @@
             "type": "string",
             "example": "Technology",
             "nullable": true,
-            "description": "Industry"
+            "description": "Industry. Optional. Null for an account with no industry set."
           },
           "abbreviation": {
             "type": "string",
             "example": "SFDC",
             "nullable": true,
-            "description": "Abbreviation"
+            "description": "Abbreviation. Optional. Null for an account with no short name set."
           }
         },
         "additionalProperties": true
@@ -1487,7 +1487,7 @@
             "type": "string",
             "example": "Salesforce Apex",
             "nullable": true,
-            "description": "Display Name"
+            "description": "Display Name. Optional. Null for a skill with no display name set, in which case use name."
           },
           "category": {
             "type": "string",
@@ -1509,13 +1509,15 @@
             "type": "string",
             "example": "M10...",
             "nullable": true,
-            "description": "SVG Path Data"
+            "deprecated": true,
+            "description": "SVG Path Data. Deprecated. It is null on every skill, and it will be removed from v2 after v1 sunsets on 2026-11-29."
           },
           "colorHex": {
             "type": "string",
             "example": "#0070d2",
             "nullable": true,
-            "description": "Category Color Hex"
+            "deprecated": true,
+            "description": "Category Color Hex. Deprecated. Every skill carries the same default colour, and it will be removed from v2 after v1 sunsets on 2026-11-29."
           },
           "categoryOrder": {
             "type": "number",
@@ -2112,7 +2114,7 @@
           "Objects"
         ],
         "summary": "Get Testimonials",
-        "description": "Retrieves received testimonials. Returns only records where Approved__c = true.",
+        "description": "Retrieves received testimonials. Returns only records where Approved__c = true, so the list is empty until a testimonial is approved.",
         "operationId": "getTestimonials",
         "parameters": [
           {

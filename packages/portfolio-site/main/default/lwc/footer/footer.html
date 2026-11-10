@@ -20,8 +20,11 @@
         ></c-view-source>
       </div>
       <div class="metrics" data-id="metrics">
-        <div class="metric-group" data-group="ci">
-          <span class="group-label" id="footer-group-ci">CI</span>
+        <details class="metric-group" data-group="ci" open={ciOpen}>
+          <summary class="group-summary" data-id="summary-ci">
+            <span class="group-label" id="footer-group-ci">CI</span>
+            <span class="group-status" data-id="status-ci">{ciStatus}</span>
+          </summary>
           <ul class="group-list" aria-labelledby="footer-group-ci">
             <template for:each={badgeRows} for:item="badge">
               <li key={badge.key} class="metric ci-badge" data-id="ci-badge">
@@ -56,10 +59,17 @@
               </li>
             </template>
           </ul>
-        </div>
+        </details>
         <template lwc:if={showPlatform}>
-          <div class="metric-group" data-group="platform">
-            <span class="group-label" id="footer-group-platform">Platform</span>
+          <details class="metric-group" data-group="platform">
+            <summary class="group-summary" data-id="summary-platform">
+              <span class="group-label" id="footer-group-platform"
+                >Platform</span
+              >
+              <span class="group-status" data-id="status-platform"
+                >{platformStatus}</span
+              >
+            </summary>
             <ul class="group-list" aria-labelledby="footer-group-platform">
               <template lwc:if={graphqlLabel}>
                 <li class="metric" data-id="graphql">{graphqlLabel}</li>
@@ -70,7 +80,7 @@
                 </li>
               </template>
             </ul>
-          </div>
+          </details>
         </template>
         <template lwc:if={probeConstructor}>
           <lwc:component
@@ -83,10 +93,15 @@
 
         <template lwc:if={snapshotLoaded}>
           <template lwc:if={showIntegrations}>
-            <div class="metric-group" data-group="integrations">
-              <span class="group-label" id="footer-group-integrations"
-                >Integrations</span
-              >
+            <details class="metric-group" data-group="integrations">
+              <summary class="group-summary" data-id="summary-integrations">
+                <span class="group-label" id="footer-group-integrations"
+                  >Integrations</span
+                >
+                <span class="group-status" data-id="status-integrations"
+                  >{integrationsStatus}</span
+                >
+              </summary>
               <ul
                 class="group-list"
                 aria-labelledby="footer-group-integrations"
@@ -102,12 +117,17 @@
                   </li>
                 </template>
               </ul>
-            </div>
+            </details>
           </template>
-          <div class="metric-group" data-group="quotas">
-            <span class="group-label" id="footer-group-quotas"
-              >Daily quotas</span
-            >
+          <details class="metric-group" data-group="quotas">
+            <summary class="group-summary" data-id="summary-quotas">
+              <span class="group-label" id="footer-group-quotas"
+                >Daily quotas</span
+              >
+              <span class="group-status" data-id="status-quotas"
+                >{quotasStatus}</span
+              >
+            </summary>
             <ul class="group-list" aria-labelledby="footer-group-quotas">
               <template lwc:if={showAiRequests}>
                 <li class="metric">
@@ -125,14 +145,21 @@
                 </li>
               </template>
             </ul>
-          </div>
+          </details>
           <template lwc:if={storageLine}>
-            <div
+            <details
               class="metric-group"
               data-group="storage"
               onkeydown={handleStorageKeydown}
             >
-              <span class="group-label" id="footer-group-storage">Storage</span>
+              <summary class="group-summary" data-id="summary-storage">
+                <span class="group-label" id="footer-group-storage"
+                  >Storage</span
+                >
+                <span class="group-status" data-id="status-storage"
+                  >{storageStatus}</span
+                >
+              </summary>
               <ul class="group-list" aria-labelledby="footer-group-storage">
                 <li class="metric" data-id="storage">
                   <button
@@ -181,12 +208,17 @@
                   {storageNote} {storageUpdated}
                 </p>
               </div>
-            </div>
+            </details>
           </template>
-          <div class="metric-group" data-group="limits">
-            <span class="group-label" id="footer-group-limits"
-              >Request limits</span
-            >
+          <details class="metric-group" data-group="limits">
+            <summary class="group-summary" data-id="summary-limits">
+              <span class="group-label" id="footer-group-limits"
+                >Request limits</span
+              >
+              <span class="group-status" data-id="status-limits"
+                >{limitsStatus}</span
+              >
+            </summary>
             <ul class="group-list" aria-labelledby="footer-group-limits">
               <template for:each={limitRows} for:item="row">
                 <li key={row.key} class="metric" data-id="limit">
@@ -194,7 +226,7 @@
                 </li>
               </template>
             </ul>
-          </div>
+          </details>
         </template>
       </div>
 

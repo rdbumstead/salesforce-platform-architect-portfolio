@@ -214,4 +214,117 @@ private class PAPITransformerTest {
       );
     }
   }
+
+  @IsTest
+  static void transformProjectCarriesThePillarLabel() {
+    insert new Project__c(
+      Name = 'Pillar Project',
+      Status__c = 'Live – In Production',
+      Sort_Order__c = 1,
+      Pillar__c = 'B'
+    );
+    Project__c proj = [
+      SELECT
+        Id,
+        Public_Key__c,
+        Name,
+        Challenge__c,
+        Solution__c,
+        Business_Value__c,
+        Status__c,
+        Hero_Image_URL__c,
+        Live_URL__c,
+        Repository_URL__c,
+        Date_Completed__c,
+        Is_Featured__c,
+        Pillar_Label__c
+      FROM Project__c
+      WHERE Name = 'Pillar Project'
+    ];
+
+    Map<String, Object> result = PAPITransformer.transformProject(
+      proj,
+      new List<String>(),
+      new List<Map<String, Object>>()
+    );
+
+    Assert.isTrue(
+      result.containsKey('pillarLabel'),
+      'The key is always written'
+    );
+    Assert.areEqual(
+      'Pillar B: Solution Architecture',
+      result.get('pillarLabel'),
+      'The label is the formula text, not the pillar letter'
+    );
+  }
+
+  @IsTest
+  static void transformProjectLabelsAnUnassignedPillar() {
+    insert new Project__c(
+      Name = 'Loose Project',
+      Status__c = 'Live – In Production',
+      Sort_Order__c = 1
+    );
+    Project__c proj = [
+      SELECT
+        Id,
+        Public_Key__c,
+        Name,
+        Challenge__c,
+        Solution__c,
+        Business_Value__c,
+        Status__c,
+        Hero_Image_URL__c,
+        Live_URL__c,
+        Repository_URL__c,
+        Date_Completed__c,
+        Is_Featured__c,
+        Pillar_Label__c
+      FROM Project__c
+      WHERE Name = 'Loose Project'
+    ];
+
+    Map<String, Object> result = PAPITransformer.transformProject(
+      proj,
+      new List<String>(),
+      new List<Map<String, Object>>()
+    );
+
+    Assert.areEqual(
+      'Unassigned',
+      result.get('pillarLabel'),
+      'A project with no pillar reads Unassigned, as SAPI does'
+    );
+  }
+
+  @IsTest
+  static void transformSkillUsesTheDisplayNameWhenFilled() {
+    Skill__c skill = new Skill__c(
+      Name = 'Apex',
+      Display_Name__c = 'Salesforce Apex'
+    );
+
+    Map<String, Object> result = PAPITransformer.transformSkill(skill);
+
+    Assert.areEqual('Apex', result.get('name'), 'name stays the record name');
+    Assert.areEqual(
+      'Salesforce Apex',
+      result.get('displayName'),
+      'displayName is Display_Name__c when it is filled'
+    );
+  }
+
+  @IsTest
+  static void transformSkillFallsBackToTheNameWhenDisplayNameIsBlank() {
+    Skill__c skill = new Skill__c(Name = 'Apex');
+
+    Map<String, Object> result = PAPITransformer.transformSkill(skill);
+
+    Assert.areEqual(
+      'Apex',
+      result.get('displayName'),
+      'displayName falls back to Name when Display_Name__c is blank'
+    );
+  }
 }

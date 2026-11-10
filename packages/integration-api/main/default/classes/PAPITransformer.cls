@@ -98,6 +98,7 @@ public with sharing class PAPITransformer {
       'solution' => proj.Solution__c,
       'businessValue' => proj.Business_Value__c,
       'status' => proj.Status__c,
+      'pillarLabel' => proj.Pillar_Label__c,
       'heroImageUrl' => proj.Hero_Image_URL__c,
       'liveUrl' => proj.Live_URL__c,
       'repositoryUrl' => proj.Repository_URL__c,
@@ -120,7 +121,7 @@ public with sharing class PAPITransformer {
       'id' => s.Id,
       'key' => s.Public_Key__c,
       'name' => s.Name,
-      'displayName' => s.Name,
+      'displayName' => s.Display_Name__c ?? s.Name,
       'category' => s.Category__c,
       'proficiency' => s.Proficiency__c,
       'iconName' => s.Icon_Name__c
@@ -193,6 +194,7 @@ public with sharing class PAPITransformer {
     'project-skills' => ApiRequestContext.CachePolicy.PUBLIC_300,
     'project-assets' => ApiRequestContext.CachePolicy.PUBLIC_300,
     'certifications' => ApiRequestContext.CachePolicy.PUBLIC_300,
+    'certification-skills' => ApiRequestContext.CachePolicy.PUBLIC_300,
     'education' => ApiRequestContext.CachePolicy.PUBLIC_300
   };
 

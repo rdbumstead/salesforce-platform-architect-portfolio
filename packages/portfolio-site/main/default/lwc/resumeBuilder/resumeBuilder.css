@@ -246,35 +246,6 @@
   list-style: none;
 }
 
-/*
- * Education and certifications sit centred in two equal columns, the same rule the PDF writer
- * follows in resumeFormat.js. A list of one takes the full width. Otherwise the items pair up
- * in order, each centred in its half, and an odd last item keeps a half cell in the middle. The
- * issuer label and the verify link are centred over and under them.
- */
-.centred-list {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  column-gap: var(--resume-column-gap);
-  text-align: center;
-}
-
-.centred-list > li {
-  flex: 0 0 calc((100% - var(--resume-column-gap)) / 2);
-  min-width: 0;
-}
-
-.centred-list > li:only-child {
-  flex-basis: 100%;
-}
-
-.certification-group .issuer-label,
-.verify,
-.retired-title {
-  text-align: center;
-}
-
 .skill-group,
 .earlier-roles,
 .certification,
@@ -350,10 +321,5 @@
 
   .preview-paper {
     padding: var(--pf-space-4);
-  }
-
-  /* Half a phone is too narrow for a certification name, so each item takes a centred row. */
-  .centred-list > li {
-    flex-basis: 100%;
   }
 }

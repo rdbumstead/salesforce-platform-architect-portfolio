@@ -31,37 +31,65 @@ const EXPECTED = [
     "Business Architecture",
     "Business Architecture",
     "/portfolio/business-architecture",
-    false
+    false,
+    "Process and data, education provider"
   ],
   [
     "B",
     "Solution Architecture",
     "Solution Architecture",
     "/portfolio/nonprofit-solutions",
-    false
+    false,
+    "Platform choice, literacy nonprofit"
   ],
   [
     "C",
     "API Lab",
     "Work Experience Verification API",
     "/portfolio/api-lab",
-    false
+    false,
+    "Work Experience Verification API"
   ],
-  ["D", "AI Lab", "AI & Innovation", "/portfolio/ai-lab", false],
-  ["E", "Delivery", "Agile Delivery & DevOps", "/portfolio/delivery", false]
+  [
+    "D",
+    "AI Lab",
+    "AI & Innovation",
+    "/portfolio/ai-lab",
+    false,
+    "AI & Innovation"
+  ],
+  [
+    "E",
+    "Delivery",
+    "Agile Delivery & DevOps",
+    "/portfolio/delivery",
+    false,
+    "Agile Delivery & DevOps"
+  ]
 ];
 
 describe("c/pillarData", () => {
   it("lists the five pillars A to E in order with their route hrefs", () => {
     expect(PILLARS).toHaveLength(5);
     PILLARS.forEach((pillar, index) => {
-      const [letter, pageLabel, sasName, href, inProgress] = EXPECTED[index];
+      const [letter, pageLabel, sasName, href, inProgress, menuNote] =
+        EXPECTED[index];
       expect(pillar.letter).toBe(letter);
       expect(pillar.pageLabel).toBe(pageLabel);
       expect(pillar.sasName).toBe(sasName);
+      expect(pillar.menuNote).toBe(menuNote);
       expect(pillar.href).toBe(href);
       expect(pillar.inProgress).toBe(inProgress);
     });
+  });
+
+  it("never repeats the page name as its menu note, and names no client", () => {
+    PILLARS.forEach((pillar) => {
+      expect(pillar.menuNote.length).toBeGreaterThan(0);
+      expect(pillar.menuNote).not.toBe(pillar.pageLabel);
+    });
+    expect(pillarByLetter("A").menuNote).toMatch(/education provider/);
+    expect(pillarByLetter("B").menuNote).toMatch(/nonprofit/);
   });
 
   it("gives every pillar a summary, a tour line and at least one tag", () => {

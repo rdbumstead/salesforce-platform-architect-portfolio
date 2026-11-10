@@ -244,6 +244,7 @@ global with sharing class PAPIProfile implements QueryDefinitions.Provider {
   ) {
     agg.source('certifications');
     List<Map<String, Object>> transformedCerts = new List<Map<String, Object>>();
+    Map<Id, List<String>> skillsByCert = getCertificationSkills(agg);
     try {
       PAPITransformer.guardSection('certifications');
       for (
@@ -262,7 +263,9 @@ global with sharing class PAPIProfile implements QueryDefinitions.Provider {
             'dateEarned' => c.Earned_Date__c != null
               ? String.valueOf(c.Earned_Date__c)
               : null,
-            'skillsUsed' => new List<String>()
+            'skillsUsed' => skillsByCert.containsKey(c.Id)
+              ? skillsByCert.get(c.Id)
+              : new List<String>()
           }
         );
       }
@@ -368,6 +371,31 @@ global with sharing class PAPIProfile implements QueryDefinitions.Provider {
     };
   }
 
+  /**
+   * @description The skill names linked to each certification, in the order the junction
+   *              read returns them (highest proficiency first). A failed read leaves every
+   *              certification with an empty list and marks the section partial.
+   */
+  private static Map<Id, List<String>> getCertificationSkills(
+    PAPITransformer.Aggregation agg
+  ) {
+    agg.source('certification-skills');
+    Map<Id, List<String>> result = new Map<Id, List<String>>();
+    try {
+      PAPITransformer.guardSection('certification-skills');
+      for (Certification_Skill__c cs : SAPICertificationSkill.allLinks()) {
+        if (!result.containsKey(cs.Certification__c)) {
+          result.put(cs.Certification__c, new List<String>());
+        }
+        result.get(cs.Certification__c).add(cs.Skill__r.Name);
+      }
+    } catch (Exception e) {
+      agg.fail('certification-skills');
+      result.clear();
+    }
+    return result;
+  }
+
   private static Map<Id, List<String>> getExperienceSkills(
     List<Experience__c> experiences,
     PAPITransformer.Aggregation agg
@@ -460,7 +488,7 @@ global with sharing class PAPIProfile implements QueryDefinitions.Provider {
   private static QueryDefinitions.QueryDefault skillsDefault() {
     return new QueryDefinitions.QueryDefault(
         'Skill__c',
-        'Id, Public_Key__c, Name, Category__c, Proficiency__c, Icon_Name__c'
+        'Id, Public_Key__c, Name, Display_Name__c, Category__c, Proficiency__c, Icon_Name__c'
       )
       .orderBy('Proficiency__c DESC, Name ASC')
       .rowLimit(MAX_SKILLS)

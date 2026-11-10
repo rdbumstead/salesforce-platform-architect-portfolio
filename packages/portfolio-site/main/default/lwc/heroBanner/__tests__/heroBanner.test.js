@@ -353,6 +353,39 @@ describe("c-hero-banner", () => {
       );
     });
 
+    it("draws every icon with its lowest ink on the bottom edge of its box, and wraps the label so the box can sit on the text baseline", async () => {
+      const element = render();
+      getHeader.emit({
+        ...HEADER,
+        trailheadUrl: "https://www.salesforce.com/trailblazer/example"
+      });
+      await flush();
+      // The viewBox top moves so each drawing ends on the box bottom. Ink bottom is
+      // the lowest path edge plus half the 2 unit stroke.
+      const inkBottom = {
+        github: 23,
+        linkedin: 22,
+        trailhead: 21,
+        resume: 23,
+        "api-docs": 19
+      };
+      const links = Array.from(
+        element.shadowRoot.querySelectorAll(".profile-link")
+      );
+      expect(links.map((a) => a.dataset.key)).toEqual(Object.keys(inkBottom));
+      links.forEach((a) => {
+        const [, y, , h] = a
+          .querySelector("svg")
+          .getAttribute("viewBox")
+          .split(" ")
+          .map(Number);
+        expect(y + h).toBe(inkBottom[a.dataset.key]);
+        expect(a.querySelector(".profile-label").textContent.trim()).toBe(
+          a.textContent.trim()
+        );
+      });
+    });
+
     it("shows no Trailhead link when the URL is missing or unsafe, and fixes a bare domain", async () => {
       const element = render();
       const keys = () =>
