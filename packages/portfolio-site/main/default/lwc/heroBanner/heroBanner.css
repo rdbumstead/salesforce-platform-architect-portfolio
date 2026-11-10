@@ -11,6 +11,15 @@
   line-height: 1.65;
 }
 
+/* At desktop width the layout sets the column. The hero lines up with the header brand,
+   so it takes no side padding of its own. */
+@media (min-width: 64.0625em) {
+  .home {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
 /* The photo sits beside the text, centred on it from top to bottom. */
 .hero {
   display: grid;

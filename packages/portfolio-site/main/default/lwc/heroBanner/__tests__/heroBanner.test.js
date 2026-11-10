@@ -593,7 +593,7 @@ describe("c-hero-banner", () => {
       expect(text(docs)).toBe("Architecture and decisions →");
       expect(docs.getAttribute("href")).toBe("/portfolio/docs");
       // The arrow is a flex item spaced by the button gap, so no space sits in the text.
-      expect(text(guest)).toMatch(/^How a request reaches the data\s?→$/);
+      expect(text(guest)).toMatch(/^How a request flows\s?→$/);
       expect(guest.getAttribute("href")).toBe(
         "/portfolio/docs?doc=sas#3-2-how-a-guest-reaches-apex"
       );
