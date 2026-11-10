@@ -40,10 +40,113 @@ Every error this API sends itself is one JSON object with `httpStatus`, `errorCo
 ### BAD_REQUEST (400)
 The request was refused before any data was read. The message names the header, parameter or field to change and often shows a working example. It is not retryable, so send a corrected request. Example: `offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.`
 
+Examples:
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
 <a id="error-unauthorized"></a>
 
 ### UNAUTHORIZED (401)
 The caller reached the site address with no token. The answer carries `WWW-Authenticate: Bearer` and names the site's token URL: send `POST` to it with a JSON body holding your `email` and a `purpose`, then call the route on the `instance_url` from that answer with `Authorization: Bearer <access_token>`. A token that has ended is different. The platform answers it before our code runs, with a JSON array and the code `INVALID_SESSION_ID` (see Responses from the platform below).
+
+Example:
+
+```json
+{
+  "httpStatus": 401,
+  "errorCode": "UNAUTHORIZED",
+  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
+}
+```
 
 <a id="error-forbidden"></a>
 
@@ -55,6 +158,41 @@ The caller may not run the class behind the route. The platform refuses it and a
 ### NOT_FOUND (404)
 The route does not exist, a project key in the path matches no project, or the Api_Versionless_Urls switch is off and only the `/v1/` URLs answer. The message names the method and path, the key, or the `/v1/` URL to use. Not retryable.
 
+Examples:
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
 <a id="error-method-not-allowed"></a>
 
 ### METHOD_NOT_ALLOWED (405)
@@ -65,20 +203,110 @@ SAPI takes GET only. The platform refuses any other method before our code runs 
 ### GONE (410)
 API v1, or the old `/v1/` URL spelling, was retired on the date in the message. Send `X-API-Version: v2`, or call the same URL without `/v1/`. Nothing else about the request changes. The token and health routes are exempt and keep answering. Not retryable.
 
+Examples:
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
 <a id="error-rate-limit-exceeded"></a>
 
 ### RATE_LIMIT_EXCEEDED (429)
 One of three limits. The shared limit for the tier is used up, and the message names the tier and the limit. One email asked for too many tokens in the last minute. Or the counter row stayed locked for a moment, and the message says the API is busy. All three carry `Retry-After`, and all three are retryable after that many seconds with no change to the request.
+
+Examples:
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
 
 <a id="error-internal-server-error"></a>
 
 ### INTERNAL_SERVER_ERROR (500)
 Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is ever sent. Retryable: try again in a minute, and if it keeps happening send the id through the contact page.
 
+Example:
+
+```json
+{
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
+}
+```
+
 <a id="error-platform"></a>
 
 ### Responses from the platform
 Two refusals come from the platform before any of our code runs, so they cannot carry our fields or wording. Each is a JSON array holding objects with `errorCode` and `message`. A token that has ended or was never valid is `401` with `[{"message":"Session expired or invalid","errorCode":"INVALID_SESSION_ID"}]`. A user with no access to the class behind a route is `403` with `[{"errorCode":"FORBIDDEN","message":"You do not have access to the Apex class named: ..."}]`. A POST to a SAPI route is `405` with `[{"errorCode":"METHOD_NOT_ALLOWED","message":"HTTP Method 'POST' not allowed. Allowed are GET,HEAD"}]`. An ended token is the usual cause of the first: tokens end after 30 minutes without use, and `POST /papi/auth/token` gives a new one.
+
+Examples:
+
+```json
+[
+  {
+    "errorCode": "INVALID_SESSION_ID",
+    "message": "Session expired or invalid"
+  }
+]
+```
+
+```json
+[
+  {
+    "errorCode": "FORBIDDEN",
+    "message": "You do not have access to the Apex class named: SAPISkill"
+  }
+]
+```
+
+```json
+[
+  {
+    "errorCode": "METHOD_NOT_ALLOWED",
+    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
+  }
+]
+```
 
 Base URLs:
 
@@ -182,212 +410,6 @@ Shallow check: runtime availability, the current transaction's governor-limit sn
 }
 ```
 
-> The request was refused before any data was read. The message names the header, parameter or field to change.
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
-
-```json
-{
-  "httpStatus": 401,
-  "errorCode": "UNAUTHORIZED",
-  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
-}
-```
-
-```json
-[
-  {
-    "errorCode": "INVALID_SESSION_ID",
-    "message": "Session expired or invalid"
-  }
-]
-```
-
-> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
-
-```json
-[
-  {
-    "errorCode": "FORBIDDEN",
-    "message": "You do not have access to the Apex class named: SAPISkill"
-  }
-]
-```
-
-> The route does not exist, or the key in the path matches no record.
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
-
-```json
-[
-  {
-    "errorCode": "METHOD_NOT_ALLOWED",
-    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
-  }
-]
-```
-
-> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
-
-```json
-{
-  "httpStatus": 500,
-  "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
-}
-```
-
 <h3 id="gethealth-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
@@ -401,20 +423,20 @@ Shallow check: runtime availability, the current transaction's governor-limit sn
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
 
+**Errors this operation can return.** Each links to its entry, with examples, in the Errors section above.
+
+- 400 [BAD_REQUEST](#error-bad-request)
+- 401 [UNAUTHORIZED](#error-unauthorized)
+- 401 [INVALID_SESSION_ID](#error-platform), sent by the platform before our code runs
+- 401 [FORBIDDEN](#error-platform), sent by the platform before our code runs
+- 403 [FORBIDDEN](#error-forbidden)
+- 404 [NOT_FOUND](#error-not-found)
+- 404 [METHOD_NOT_ALLOWED](#error-platform), sent by the platform before our code runs
+- 405 [METHOD_NOT_ALLOWED](#error-method-not-allowed)
+- 429 [RATE_LIMIT_EXCEEDED](#error-rate-limit-exceeded)
+- 500 [INTERNAL_SERVER_ERROR](#error-internal-server-error)
+
 <h3 id="gethealth-responseschema">Response Schema</h3>
-
-#### Enumerated Values
-
-|Property|Value|
-|---|---|
-|errorCode|BAD_REQUEST|
-|errorCode|UNAUTHORIZED|
-|errorCode|FORBIDDEN|
-|errorCode|NOT_FOUND|
-|errorCode|METHOD_NOT_ALLOWED|
-|errorCode|GONE|
-|errorCode|RATE_LIMIT_EXCEEDED|
-|errorCode|INTERNAL_SERVER_ERROR|
 
 ### Response Headers
 
@@ -511,236 +533,6 @@ Retrieves the primary contact details for the portfolio owner. Returns only the 
 ]
 ```
 
-> The request was refused before any data was read. The message names the header, parameter or field to change.
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
-
-```json
-{
-  "httpStatus": 401,
-  "errorCode": "UNAUTHORIZED",
-  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
-}
-```
-
-```json
-[
-  {
-    "errorCode": "INVALID_SESSION_ID",
-    "message": "Session expired or invalid"
-  }
-]
-```
-
-> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
-
-```json
-[
-  {
-    "errorCode": "FORBIDDEN",
-    "message": "You do not have access to the Apex class named: SAPISkill"
-  }
-]
-```
-
-> The route does not exist, or the key in the path matches no record.
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
-
-```json
-[
-  {
-    "errorCode": "METHOD_NOT_ALLOWED",
-    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
-  }
-]
-```
-
-> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
-
-```json
-{
-  "httpStatus": 500,
-  "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
-}
-```
-
 <h3 id="getcontacts-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
@@ -754,6 +546,20 @@ Retrieves the primary contact details for the portfolio owner. Returns only the 
 |410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
+
+**Errors this operation can return.** Each links to its entry, with examples, in the Errors section above.
+
+- 400 [BAD_REQUEST](#error-bad-request)
+- 401 [UNAUTHORIZED](#error-unauthorized)
+- 401 [INVALID_SESSION_ID](#error-platform), sent by the platform before our code runs
+- 401 [FORBIDDEN](#error-platform), sent by the platform before our code runs
+- 403 [FORBIDDEN](#error-forbidden)
+- 404 [NOT_FOUND](#error-not-found)
+- 404 [METHOD_NOT_ALLOWED](#error-platform), sent by the platform before our code runs
+- 405 [METHOD_NOT_ALLOWED](#error-method-not-allowed)
+- 410 [GONE](#error-gone)
+- 429 [RATE_LIMIT_EXCEEDED](#error-rate-limit-exceeded)
+- 500 [INTERNAL_SERVER_ERROR](#error-internal-server-error)
 
 <h3 id="getcontacts-responseschema">Response Schema</h3>
 
@@ -769,19 +575,6 @@ Status Code **200**
 |» careerObjective|string¦null|false|none|Short Professional Summary|
 |» linkedIn|string(uri)¦null|false|none|LinkedIn Profile URL|
 |» portfolio|string(uri)¦null|false|none|Portfolio Website URL|
-
-#### Enumerated Values
-
-|Property|Value|
-|---|---|
-|errorCode|BAD_REQUEST|
-|errorCode|UNAUTHORIZED|
-|errorCode|FORBIDDEN|
-|errorCode|NOT_FOUND|
-|errorCode|METHOD_NOT_ALLOWED|
-|errorCode|GONE|
-|errorCode|RATE_LIMIT_EXCEEDED|
-|errorCode|INTERNAL_SERVER_ERROR|
 
 ### Response Headers
 
@@ -883,236 +676,6 @@ Retrieves professional experience history.
 ]
 ```
 
-> The request was refused before any data was read. The message names the header, parameter or field to change.
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
-
-```json
-{
-  "httpStatus": 401,
-  "errorCode": "UNAUTHORIZED",
-  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
-}
-```
-
-```json
-[
-  {
-    "errorCode": "INVALID_SESSION_ID",
-    "message": "Session expired or invalid"
-  }
-]
-```
-
-> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
-
-```json
-[
-  {
-    "errorCode": "FORBIDDEN",
-    "message": "You do not have access to the Apex class named: SAPISkill"
-  }
-]
-```
-
-> The route does not exist, or the key in the path matches no record.
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
-
-```json
-[
-  {
-    "errorCode": "METHOD_NOT_ALLOWED",
-    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
-  }
-]
-```
-
-> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
-
-```json
-{
-  "httpStatus": 500,
-  "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
-}
-```
-
 <h3 id="getexperience-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
@@ -1126,6 +689,20 @@ Retrieves professional experience history.
 |410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
+
+**Errors this operation can return.** Each links to its entry, with examples, in the Errors section above.
+
+- 400 [BAD_REQUEST](#error-bad-request)
+- 401 [UNAUTHORIZED](#error-unauthorized)
+- 401 [INVALID_SESSION_ID](#error-platform), sent by the platform before our code runs
+- 401 [FORBIDDEN](#error-platform), sent by the platform before our code runs
+- 403 [FORBIDDEN](#error-forbidden)
+- 404 [NOT_FOUND](#error-not-found)
+- 404 [METHOD_NOT_ALLOWED](#error-platform), sent by the platform before our code runs
+- 405 [METHOD_NOT_ALLOWED](#error-method-not-allowed)
+- 410 [GONE](#error-gone)
+- 429 [RATE_LIMIT_EXCEEDED](#error-rate-limit-exceeded)
+- 500 [INTERNAL_SERVER_ERROR](#error-internal-server-error)
 
 <h3 id="getexperience-responseschema">Response Schema</h3>
 
@@ -1145,19 +722,6 @@ Status Code **200**
 |» contactKey|string|false|none|Public key of the contact.|
 |» contactName|string|false|none|Contact Name|
 |» sortOrder|number¦null|false|none|Sort Order|
-
-#### Enumerated Values
-
-|Property|Value|
-|---|---|
-|errorCode|BAD_REQUEST|
-|errorCode|UNAUTHORIZED|
-|errorCode|FORBIDDEN|
-|errorCode|NOT_FOUND|
-|errorCode|METHOD_NOT_ALLOWED|
-|errorCode|GONE|
-|errorCode|RATE_LIMIT_EXCEEDED|
-|errorCode|INTERNAL_SERVER_ERROR|
 
 ### Response Headers
 
@@ -1263,236 +827,6 @@ Examples:
 ]
 ```
 
-> The request was refused before any data was read. The message names the header, parameter or field to change.
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
-
-```json
-{
-  "httpStatus": 401,
-  "errorCode": "UNAUTHORIZED",
-  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
-}
-```
-
-```json
-[
-  {
-    "errorCode": "INVALID_SESSION_ID",
-    "message": "Session expired or invalid"
-  }
-]
-```
-
-> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
-
-```json
-[
-  {
-    "errorCode": "FORBIDDEN",
-    "message": "You do not have access to the Apex class named: SAPISkill"
-  }
-]
-```
-
-> The route does not exist, or the key in the path matches no record.
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
-
-```json
-[
-  {
-    "errorCode": "METHOD_NOT_ALLOWED",
-    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
-  }
-]
-```
-
-> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
-
-```json
-{
-  "httpStatus": 500,
-  "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
-}
-```
-
 <h3 id="getexperiencehighlights-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
@@ -1506,6 +840,20 @@ Examples:
 |410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
+
+**Errors this operation can return.** Each links to its entry, with examples, in the Errors section above.
+
+- 400 [BAD_REQUEST](#error-bad-request)
+- 401 [UNAUTHORIZED](#error-unauthorized)
+- 401 [INVALID_SESSION_ID](#error-platform), sent by the platform before our code runs
+- 401 [FORBIDDEN](#error-platform), sent by the platform before our code runs
+- 403 [FORBIDDEN](#error-forbidden)
+- 404 [NOT_FOUND](#error-not-found)
+- 404 [METHOD_NOT_ALLOWED](#error-platform), sent by the platform before our code runs
+- 405 [METHOD_NOT_ALLOWED](#error-method-not-allowed)
+- 410 [GONE](#error-gone)
+- 429 [RATE_LIMIT_EXCEEDED](#error-rate-limit-exceeded)
+- 500 [INTERNAL_SERVER_ERROR](#error-internal-server-error)
 
 <h3 id="getexperiencehighlights-responseschema">Response Schema</h3>
 
@@ -1521,19 +869,6 @@ Status Code **200**
 |» description|string|false|none|Detailed Description|
 |» sortOrder|number|false|none|Sort Order|
 |» personaTag|string|false|none|Semicolon-separated Persona values from the Persona_Tag__c multi-select picklist (Admin, Developer, Architect).|
-
-#### Enumerated Values
-
-|Property|Value|
-|---|---|
-|errorCode|BAD_REQUEST|
-|errorCode|UNAUTHORIZED|
-|errorCode|FORBIDDEN|
-|errorCode|NOT_FOUND|
-|errorCode|METHOD_NOT_ALLOWED|
-|errorCode|GONE|
-|errorCode|RATE_LIMIT_EXCEEDED|
-|errorCode|INTERNAL_SERVER_ERROR|
 
 ### Response Headers
 
@@ -1655,236 +990,6 @@ a Salesforce Id.
 ]
 ```
 
-> The request was refused before any data was read. The message names the header, parameter or field to change.
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
-
-```json
-{
-  "httpStatus": 401,
-  "errorCode": "UNAUTHORIZED",
-  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
-}
-```
-
-```json
-[
-  {
-    "errorCode": "INVALID_SESSION_ID",
-    "message": "Session expired or invalid"
-  }
-]
-```
-
-> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
-
-```json
-[
-  {
-    "errorCode": "FORBIDDEN",
-    "message": "You do not have access to the Apex class named: SAPISkill"
-  }
-]
-```
-
-> The route does not exist, or the key in the path matches no record.
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
-
-```json
-[
-  {
-    "errorCode": "METHOD_NOT_ALLOWED",
-    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
-  }
-]
-```
-
-> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
-
-```json
-{
-  "httpStatus": 500,
-  "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
-}
-```
-
 <h3 id="getprojects-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
@@ -1898,6 +1003,20 @@ a Salesforce Id.
 |410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
+
+**Errors this operation can return.** Each links to its entry, with examples, in the Errors section above.
+
+- 400 [BAD_REQUEST](#error-bad-request)
+- 401 [UNAUTHORIZED](#error-unauthorized)
+- 401 [INVALID_SESSION_ID](#error-platform), sent by the platform before our code runs
+- 401 [FORBIDDEN](#error-platform), sent by the platform before our code runs
+- 403 [FORBIDDEN](#error-forbidden)
+- 404 [NOT_FOUND](#error-not-found)
+- 404 [METHOD_NOT_ALLOWED](#error-platform), sent by the platform before our code runs
+- 405 [METHOD_NOT_ALLOWED](#error-method-not-allowed)
+- 410 [GONE](#error-gone)
+- 429 [RATE_LIMIT_EXCEEDED](#error-rate-limit-exceeded)
+- 500 [INTERNAL_SERVER_ERROR](#error-internal-server-error)
 
 <h3 id="getprojects-responseschema">Response Schema</h3>
 
@@ -1932,19 +1051,6 @@ Status Code **200**
 |status|Active Development|
 |status|On Hold|
 |status|Archived|
-
-#### Enumerated Values
-
-|Property|Value|
-|---|---|
-|errorCode|BAD_REQUEST|
-|errorCode|UNAUTHORIZED|
-|errorCode|FORBIDDEN|
-|errorCode|NOT_FOUND|
-|errorCode|METHOD_NOT_ALLOWED|
-|errorCode|GONE|
-|errorCode|RATE_LIMIT_EXCEEDED|
-|errorCode|INTERNAL_SERVER_ERROR|
 
 ### Response Headers
 
@@ -2041,236 +1147,6 @@ Retrieves assets (images, links) associated with a project. A filter that is not
 ]
 ```
 
-> The request was refused before any data was read. The message names the header, parameter or field to change.
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
-
-```json
-{
-  "httpStatus": 401,
-  "errorCode": "UNAUTHORIZED",
-  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
-}
-```
-
-```json
-[
-  {
-    "errorCode": "INVALID_SESSION_ID",
-    "message": "Session expired or invalid"
-  }
-]
-```
-
-> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
-
-```json
-[
-  {
-    "errorCode": "FORBIDDEN",
-    "message": "You do not have access to the Apex class named: SAPISkill"
-  }
-]
-```
-
-> The route does not exist, or the key in the path matches no record.
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
-
-```json
-[
-  {
-    "errorCode": "METHOD_NOT_ALLOWED",
-    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
-  }
-]
-```
-
-> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
-
-```json
-{
-  "httpStatus": 500,
-  "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
-}
-```
-
 <h3 id="getprojectassets-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
@@ -2284,6 +1160,20 @@ Retrieves assets (images, links) associated with a project. A filter that is not
 |410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
+
+**Errors this operation can return.** Each links to its entry, with examples, in the Errors section above.
+
+- 400 [BAD_REQUEST](#error-bad-request)
+- 401 [UNAUTHORIZED](#error-unauthorized)
+- 401 [INVALID_SESSION_ID](#error-platform), sent by the platform before our code runs
+- 401 [FORBIDDEN](#error-platform), sent by the platform before our code runs
+- 403 [FORBIDDEN](#error-forbidden)
+- 404 [NOT_FOUND](#error-not-found)
+- 404 [METHOD_NOT_ALLOWED](#error-platform), sent by the platform before our code runs
+- 405 [METHOD_NOT_ALLOWED](#error-method-not-allowed)
+- 410 [GONE](#error-gone)
+- 429 [RATE_LIMIT_EXCEEDED](#error-rate-limit-exceeded)
+- 500 [INTERNAL_SERVER_ERROR](#error-internal-server-error)
 
 <h3 id="getprojectassets-responseschema">Response Schema</h3>
 
@@ -2309,19 +1199,6 @@ Status Code **200**
 |type|Video|
 |type|Document|
 |type|Link|
-
-#### Enumerated Values
-
-|Property|Value|
-|---|---|
-|errorCode|BAD_REQUEST|
-|errorCode|UNAUTHORIZED|
-|errorCode|FORBIDDEN|
-|errorCode|NOT_FOUND|
-|errorCode|METHOD_NOT_ALLOWED|
-|errorCode|GONE|
-|errorCode|RATE_LIMIT_EXCEEDED|
-|errorCode|INTERNAL_SERVER_ERROR|
 
 ### Response Headers
 
@@ -2417,236 +1294,6 @@ Retrieves received testimonials. Returns only records where Approved__c = true, 
 ]
 ```
 
-> The request was refused before any data was read. The message names the header, parameter or field to change.
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
-
-```json
-{
-  "httpStatus": 401,
-  "errorCode": "UNAUTHORIZED",
-  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
-}
-```
-
-```json
-[
-  {
-    "errorCode": "INVALID_SESSION_ID",
-    "message": "Session expired or invalid"
-  }
-]
-```
-
-> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
-
-```json
-[
-  {
-    "errorCode": "FORBIDDEN",
-    "message": "You do not have access to the Apex class named: SAPISkill"
-  }
-]
-```
-
-> The route does not exist, or the key in the path matches no record.
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
-
-```json
-[
-  {
-    "errorCode": "METHOD_NOT_ALLOWED",
-    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
-  }
-]
-```
-
-> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
-
-```json
-{
-  "httpStatus": 500,
-  "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
-}
-```
-
 <h3 id="gettestimonials-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
@@ -2660,6 +1307,20 @@ Retrieves received testimonials. Returns only records where Approved__c = true, 
 |410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
+
+**Errors this operation can return.** Each links to its entry, with examples, in the Errors section above.
+
+- 400 [BAD_REQUEST](#error-bad-request)
+- 401 [UNAUTHORIZED](#error-unauthorized)
+- 401 [INVALID_SESSION_ID](#error-platform), sent by the platform before our code runs
+- 401 [FORBIDDEN](#error-platform), sent by the platform before our code runs
+- 403 [FORBIDDEN](#error-forbidden)
+- 404 [NOT_FOUND](#error-not-found)
+- 404 [METHOD_NOT_ALLOWED](#error-platform), sent by the platform before our code runs
+- 405 [METHOD_NOT_ALLOWED](#error-method-not-allowed)
+- 410 [GONE](#error-gone)
+- 429 [RATE_LIMIT_EXCEEDED](#error-rate-limit-exceeded)
+- 500 [INTERNAL_SERVER_ERROR](#error-internal-server-error)
 
 <h3 id="gettestimonials-responseschema">Response Schema</h3>
 
@@ -2688,19 +1349,6 @@ Status Code **200**
 |relationshipType|Fan|
 |vibeMode|Professional|
 |vibeMode|Casual|
-
-#### Enumerated Values
-
-|Property|Value|
-|---|---|
-|errorCode|BAD_REQUEST|
-|errorCode|UNAUTHORIZED|
-|errorCode|FORBIDDEN|
-|errorCode|NOT_FOUND|
-|errorCode|METHOD_NOT_ALLOWED|
-|errorCode|GONE|
-|errorCode|RATE_LIMIT_EXCEEDED|
-|errorCode|INTERNAL_SERVER_ERROR|
 
 ### Response Headers
 
@@ -2793,236 +1441,6 @@ Retrieves related account/employer records.
 ]
 ```
 
-> The request was refused before any data was read. The message names the header, parameter or field to change.
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
-
-```json
-{
-  "httpStatus": 401,
-  "errorCode": "UNAUTHORIZED",
-  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
-}
-```
-
-```json
-[
-  {
-    "errorCode": "INVALID_SESSION_ID",
-    "message": "Session expired or invalid"
-  }
-]
-```
-
-> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
-
-```json
-[
-  {
-    "errorCode": "FORBIDDEN",
-    "message": "You do not have access to the Apex class named: SAPISkill"
-  }
-]
-```
-
-> The route does not exist, or the key in the path matches no record.
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
-
-```json
-[
-  {
-    "errorCode": "METHOD_NOT_ALLOWED",
-    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
-  }
-]
-```
-
-> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
-
-```json
-{
-  "httpStatus": 500,
-  "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
-}
-```
-
 <h3 id="getaccounts-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
@@ -3037,6 +1455,20 @@ Retrieves related account/employer records.
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
 
+**Errors this operation can return.** Each links to its entry, with examples, in the Errors section above.
+
+- 400 [BAD_REQUEST](#error-bad-request)
+- 401 [UNAUTHORIZED](#error-unauthorized)
+- 401 [INVALID_SESSION_ID](#error-platform), sent by the platform before our code runs
+- 401 [FORBIDDEN](#error-platform), sent by the platform before our code runs
+- 403 [FORBIDDEN](#error-forbidden)
+- 404 [NOT_FOUND](#error-not-found)
+- 404 [METHOD_NOT_ALLOWED](#error-platform), sent by the platform before our code runs
+- 405 [METHOD_NOT_ALLOWED](#error-method-not-allowed)
+- 410 [GONE](#error-gone)
+- 429 [RATE_LIMIT_EXCEEDED](#error-rate-limit-exceeded)
+- 500 [INTERNAL_SERVER_ERROR](#error-internal-server-error)
+
 <h3 id="getaccounts-responseschema">Response Schema</h3>
 
 Status Code **200**
@@ -3048,19 +1480,6 @@ Status Code **200**
 |» name|string|false|none|Account Name|
 |» industry|string¦null|false|none|Industry. Optional. Null for an account with no industry set.|
 |» abbreviation|string¦null|false|none|Abbreviation. Optional. Null for an account with no short name set.|
-
-#### Enumerated Values
-
-|Property|Value|
-|---|---|
-|errorCode|BAD_REQUEST|
-|errorCode|UNAUTHORIZED|
-|errorCode|FORBIDDEN|
-|errorCode|NOT_FOUND|
-|errorCode|METHOD_NOT_ALLOWED|
-|errorCode|GONE|
-|errorCode|RATE_LIMIT_EXCEEDED|
-|errorCode|INTERNAL_SERVER_ERROR|
 
 ### Response Headers
 
@@ -3158,236 +1577,6 @@ Retrieves technical skills and proficiency scores.
 ]
 ```
 
-> The request was refused before any data was read. The message names the header, parameter or field to change.
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
-
-```json
-{
-  "httpStatus": 401,
-  "errorCode": "UNAUTHORIZED",
-  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
-}
-```
-
-```json
-[
-  {
-    "errorCode": "INVALID_SESSION_ID",
-    "message": "Session expired or invalid"
-  }
-]
-```
-
-> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
-
-```json
-[
-  {
-    "errorCode": "FORBIDDEN",
-    "message": "You do not have access to the Apex class named: SAPISkill"
-  }
-]
-```
-
-> The route does not exist, or the key in the path matches no record.
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
-
-```json
-[
-  {
-    "errorCode": "METHOD_NOT_ALLOWED",
-    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
-  }
-]
-```
-
-> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
-
-```json
-{
-  "httpStatus": 500,
-  "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
-}
-```
-
 <h3 id="getskills-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
@@ -3401,6 +1590,20 @@ Retrieves technical skills and proficiency scores.
 |410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
+
+**Errors this operation can return.** Each links to its entry, with examples, in the Errors section above.
+
+- 400 [BAD_REQUEST](#error-bad-request)
+- 401 [UNAUTHORIZED](#error-unauthorized)
+- 401 [INVALID_SESSION_ID](#error-platform), sent by the platform before our code runs
+- 401 [FORBIDDEN](#error-platform), sent by the platform before our code runs
+- 403 [FORBIDDEN](#error-forbidden)
+- 404 [NOT_FOUND](#error-not-found)
+- 404 [METHOD_NOT_ALLOWED](#error-platform), sent by the platform before our code runs
+- 405 [METHOD_NOT_ALLOWED](#error-method-not-allowed)
+- 410 [GONE](#error-gone)
+- 429 [RATE_LIMIT_EXCEEDED](#error-rate-limit-exceeded)
+- 500 [INTERNAL_SERVER_ERROR](#error-internal-server-error)
 
 <h3 id="getskills-responseschema">Response Schema</h3>
 
@@ -3418,19 +1621,6 @@ Status Code **200**
 |» svgPathData|string¦null|false|none|SVG Path Data. Deprecated. It is null on every skill, and it will be removed from v2 after v1 sunsets on 2026-11-29.|
 |» colorHex|string¦null|false|none|Category Color Hex. Deprecated. Every skill carries the same default colour, and it will be removed from v2 after v1 sunsets on 2026-11-29.|
 |» categoryOrder|number|false|none|Category Order|
-
-#### Enumerated Values
-
-|Property|Value|
-|---|---|
-|errorCode|BAD_REQUEST|
-|errorCode|UNAUTHORIZED|
-|errorCode|FORBIDDEN|
-|errorCode|NOT_FOUND|
-|errorCode|METHOD_NOT_ALLOWED|
-|errorCode|GONE|
-|errorCode|RATE_LIMIT_EXCEEDED|
-|errorCode|INTERNAL_SERVER_ERROR|
 
 ### Response Headers
 
@@ -3528,236 +1718,6 @@ Retrieves professional certifications.
 ]
 ```
 
-> The request was refused before any data was read. The message names the header, parameter or field to change.
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
-
-```json
-{
-  "httpStatus": 401,
-  "errorCode": "UNAUTHORIZED",
-  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
-}
-```
-
-```json
-[
-  {
-    "errorCode": "INVALID_SESSION_ID",
-    "message": "Session expired or invalid"
-  }
-]
-```
-
-> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
-
-```json
-[
-  {
-    "errorCode": "FORBIDDEN",
-    "message": "You do not have access to the Apex class named: SAPISkill"
-  }
-]
-```
-
-> The route does not exist, or the key in the path matches no record.
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
-
-```json
-[
-  {
-    "errorCode": "METHOD_NOT_ALLOWED",
-    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
-  }
-]
-```
-
-> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
-
-```json
-{
-  "httpStatus": 500,
-  "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
-}
-```
-
 <h3 id="getcertifications-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
@@ -3771,6 +1731,20 @@ Retrieves professional certifications.
 |410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
+
+**Errors this operation can return.** Each links to its entry, with examples, in the Errors section above.
+
+- 400 [BAD_REQUEST](#error-bad-request)
+- 401 [UNAUTHORIZED](#error-unauthorized)
+- 401 [INVALID_SESSION_ID](#error-platform), sent by the platform before our code runs
+- 401 [FORBIDDEN](#error-platform), sent by the platform before our code runs
+- 403 [FORBIDDEN](#error-forbidden)
+- 404 [NOT_FOUND](#error-not-found)
+- 404 [METHOD_NOT_ALLOWED](#error-platform), sent by the platform before our code runs
+- 405 [METHOD_NOT_ALLOWED](#error-method-not-allowed)
+- 410 [GONE](#error-gone)
+- 429 [RATE_LIMIT_EXCEEDED](#error-rate-limit-exceeded)
+- 500 [INTERNAL_SERVER_ERROR](#error-internal-server-error)
 
 <h3 id="getcertifications-responseschema">Response Schema</h3>
 
@@ -3786,19 +1760,6 @@ Status Code **200**
 |» issuerKey|string|false|none|Public key of the issuer.|
 |» issuerName|string|false|none|Issuer Name|
 |» earnedDate|string(date)|false|none|Date Earned|
-
-#### Enumerated Values
-
-|Property|Value|
-|---|---|
-|errorCode|BAD_REQUEST|
-|errorCode|UNAUTHORIZED|
-|errorCode|FORBIDDEN|
-|errorCode|NOT_FOUND|
-|errorCode|METHOD_NOT_ALLOWED|
-|errorCode|GONE|
-|errorCode|RATE_LIMIT_EXCEEDED|
-|errorCode|INTERNAL_SERVER_ERROR|
 
 ### Response Headers
 
@@ -3897,236 +1858,6 @@ Retrieves educational background.
 ]
 ```
 
-> The request was refused before any data was read. The message names the header, parameter or field to change.
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
-
-```json
-{
-  "httpStatus": 401,
-  "errorCode": "UNAUTHORIZED",
-  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
-}
-```
-
-```json
-[
-  {
-    "errorCode": "INVALID_SESSION_ID",
-    "message": "Session expired or invalid"
-  }
-]
-```
-
-> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
-
-```json
-[
-  {
-    "errorCode": "FORBIDDEN",
-    "message": "You do not have access to the Apex class named: SAPISkill"
-  }
-]
-```
-
-> The route does not exist, or the key in the path matches no record.
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
-
-```json
-[
-  {
-    "errorCode": "METHOD_NOT_ALLOWED",
-    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
-  }
-]
-```
-
-> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
-
-```json
-{
-  "httpStatus": 500,
-  "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
-}
-```
-
 <h3 id="geteducation-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
@@ -4140,6 +1871,20 @@ Retrieves educational background.
 |410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
+
+**Errors this operation can return.** Each links to its entry, with examples, in the Errors section above.
+
+- 400 [BAD_REQUEST](#error-bad-request)
+- 401 [UNAUTHORIZED](#error-unauthorized)
+- 401 [INVALID_SESSION_ID](#error-platform), sent by the platform before our code runs
+- 401 [FORBIDDEN](#error-platform), sent by the platform before our code runs
+- 403 [FORBIDDEN](#error-forbidden)
+- 404 [NOT_FOUND](#error-not-found)
+- 404 [METHOD_NOT_ALLOWED](#error-platform), sent by the platform before our code runs
+- 405 [METHOD_NOT_ALLOWED](#error-method-not-allowed)
+- 410 [GONE](#error-gone)
+- 429 [RATE_LIMIT_EXCEEDED](#error-rate-limit-exceeded)
+- 500 [INTERNAL_SERVER_ERROR](#error-internal-server-error)
 
 <h3 id="geteducation-responseschema">Response Schema</h3>
 
@@ -4157,19 +1902,6 @@ Status Code **200**
 |» fieldOfStudy|string|false|none|Field of Study|
 |» graduationDate|string(date)|false|none|Graduation Date|
 |» gpa|number¦null|false|none|GPA|
-
-#### Enumerated Values
-
-|Property|Value|
-|---|---|
-|errorCode|BAD_REQUEST|
-|errorCode|UNAUTHORIZED|
-|errorCode|FORBIDDEN|
-|errorCode|NOT_FOUND|
-|errorCode|METHOD_NOT_ALLOWED|
-|errorCode|GONE|
-|errorCode|RATE_LIMIT_EXCEEDED|
-|errorCode|INTERNAL_SERVER_ERROR|
 
 ### Response Headers
 
@@ -4269,236 +2001,6 @@ Retrieves junction records linking Projects to Skills. A filter that is not a kn
 ]
 ```
 
-> The request was refused before any data was read. The message names the header, parameter or field to change.
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
-
-```json
-{
-  "httpStatus": 401,
-  "errorCode": "UNAUTHORIZED",
-  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
-}
-```
-
-```json
-[
-  {
-    "errorCode": "INVALID_SESSION_ID",
-    "message": "Session expired or invalid"
-  }
-]
-```
-
-> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
-
-```json
-[
-  {
-    "errorCode": "FORBIDDEN",
-    "message": "You do not have access to the Apex class named: SAPISkill"
-  }
-]
-```
-
-> The route does not exist, or the key in the path matches no record.
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
-
-```json
-[
-  {
-    "errorCode": "METHOD_NOT_ALLOWED",
-    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
-  }
-]
-```
-
-> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
-
-```json
-{
-  "httpStatus": 500,
-  "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
-}
-```
-
 <h3 id="getprojectskills-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
@@ -4512,6 +2014,20 @@ Retrieves junction records linking Projects to Skills. A filter that is not a kn
 |410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
+
+**Errors this operation can return.** Each links to its entry, with examples, in the Errors section above.
+
+- 400 [BAD_REQUEST](#error-bad-request)
+- 401 [UNAUTHORIZED](#error-unauthorized)
+- 401 [INVALID_SESSION_ID](#error-platform), sent by the platform before our code runs
+- 401 [FORBIDDEN](#error-platform), sent by the platform before our code runs
+- 403 [FORBIDDEN](#error-forbidden)
+- 404 [NOT_FOUND](#error-not-found)
+- 404 [METHOD_NOT_ALLOWED](#error-platform), sent by the platform before our code runs
+- 405 [METHOD_NOT_ALLOWED](#error-method-not-allowed)
+- 410 [GONE](#error-gone)
+- 429 [RATE_LIMIT_EXCEEDED](#error-rate-limit-exceeded)
+- 500 [INTERNAL_SERVER_ERROR](#error-internal-server-error)
 
 <h3 id="getprojectskills-responseschema">Response Schema</h3>
 
@@ -4527,19 +2043,6 @@ Status Code **200**
 |» skillName|string|false|none|Skill Name|
 |» skillCategory|string|false|none|Skill Category|
 |» skillProficiencyScore|number|false|none|Proficiency Score|
-
-#### Enumerated Values
-
-|Property|Value|
-|---|---|
-|errorCode|BAD_REQUEST|
-|errorCode|UNAUTHORIZED|
-|errorCode|FORBIDDEN|
-|errorCode|NOT_FOUND|
-|errorCode|METHOD_NOT_ALLOWED|
-|errorCode|GONE|
-|errorCode|RATE_LIMIT_EXCEEDED|
-|errorCode|INTERNAL_SERVER_ERROR|
 
 ### Response Headers
 
@@ -4635,236 +2138,6 @@ Retrieves junction records linking Experiences to Skills. A filter that is not a
 ]
 ```
 
-> The request was refused before any data was read. The message names the header, parameter or field to change.
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
-
-```json
-{
-  "httpStatus": 401,
-  "errorCode": "UNAUTHORIZED",
-  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
-}
-```
-
-```json
-[
-  {
-    "errorCode": "INVALID_SESSION_ID",
-    "message": "Session expired or invalid"
-  }
-]
-```
-
-> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
-
-```json
-[
-  {
-    "errorCode": "FORBIDDEN",
-    "message": "You do not have access to the Apex class named: SAPISkill"
-  }
-]
-```
-
-> The route does not exist, or the key in the path matches no record.
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
-
-```json
-[
-  {
-    "errorCode": "METHOD_NOT_ALLOWED",
-    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
-  }
-]
-```
-
-> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
-
-```json
-{
-  "httpStatus": 500,
-  "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
-}
-```
-
 <h3 id="getexperienceskills-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
@@ -4878,6 +2151,20 @@ Retrieves junction records linking Experiences to Skills. A filter that is not a
 |410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
+
+**Errors this operation can return.** Each links to its entry, with examples, in the Errors section above.
+
+- 400 [BAD_REQUEST](#error-bad-request)
+- 401 [UNAUTHORIZED](#error-unauthorized)
+- 401 [INVALID_SESSION_ID](#error-platform), sent by the platform before our code runs
+- 401 [FORBIDDEN](#error-platform), sent by the platform before our code runs
+- 403 [FORBIDDEN](#error-forbidden)
+- 404 [NOT_FOUND](#error-not-found)
+- 404 [METHOD_NOT_ALLOWED](#error-platform), sent by the platform before our code runs
+- 405 [METHOD_NOT_ALLOWED](#error-method-not-allowed)
+- 410 [GONE](#error-gone)
+- 429 [RATE_LIMIT_EXCEEDED](#error-rate-limit-exceeded)
+- 500 [INTERNAL_SERVER_ERROR](#error-internal-server-error)
 
 <h3 id="getexperienceskills-responseschema">Response Schema</h3>
 
@@ -4893,19 +2180,6 @@ Status Code **200**
 |» skillName|string|false|none|Skill Name|
 |» skillCategory|string|false|none|Skill Category|
 |» skillProficiencyScore|number|false|none|Proficiency Score|
-
-#### Enumerated Values
-
-|Property|Value|
-|---|---|
-|errorCode|BAD_REQUEST|
-|errorCode|UNAUTHORIZED|
-|errorCode|FORBIDDEN|
-|errorCode|NOT_FOUND|
-|errorCode|METHOD_NOT_ALLOWED|
-|errorCode|GONE|
-|errorCode|RATE_LIMIT_EXCEEDED|
-|errorCode|INTERNAL_SERVER_ERROR|
 
 ### Response Headers
 
@@ -5001,236 +2275,6 @@ Retrieves junction records linking Certifications to Skills. A filter that is no
 ]
 ```
 
-> The request was refused before any data was read. The message names the header, parameter or field to change.
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
-
-```json
-{
-  "httpStatus": 401,
-  "errorCode": "UNAUTHORIZED",
-  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
-}
-```
-
-```json
-[
-  {
-    "errorCode": "INVALID_SESSION_ID",
-    "message": "Session expired or invalid"
-  }
-]
-```
-
-> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
-
-```json
-[
-  {
-    "errorCode": "FORBIDDEN",
-    "message": "You do not have access to the Apex class named: SAPISkill"
-  }
-]
-```
-
-> The route does not exist, or the key in the path matches no record.
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
-
-```json
-[
-  {
-    "errorCode": "METHOD_NOT_ALLOWED",
-    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
-  }
-]
-```
-
-> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
-
-```json
-{
-  "httpStatus": 500,
-  "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
-}
-```
-
 <h3 id="getcertificationskills-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
@@ -5244,6 +2288,20 @@ Retrieves junction records linking Certifications to Skills. A filter that is no
 |410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
+
+**Errors this operation can return.** Each links to its entry, with examples, in the Errors section above.
+
+- 400 [BAD_REQUEST](#error-bad-request)
+- 401 [UNAUTHORIZED](#error-unauthorized)
+- 401 [INVALID_SESSION_ID](#error-platform), sent by the platform before our code runs
+- 401 [FORBIDDEN](#error-platform), sent by the platform before our code runs
+- 403 [FORBIDDEN](#error-forbidden)
+- 404 [NOT_FOUND](#error-not-found)
+- 404 [METHOD_NOT_ALLOWED](#error-platform), sent by the platform before our code runs
+- 405 [METHOD_NOT_ALLOWED](#error-method-not-allowed)
+- 410 [GONE](#error-gone)
+- 429 [RATE_LIMIT_EXCEEDED](#error-rate-limit-exceeded)
+- 500 [INTERNAL_SERVER_ERROR](#error-internal-server-error)
 
 <h3 id="getcertificationskills-responseschema">Response Schema</h3>
 
@@ -5259,19 +2317,6 @@ Status Code **200**
 |» skillName|string|false|none|Skill Name|
 |» skillCategory|string|false|none|Skill Category|
 |» skillProficiencyScore|number|false|none|Proficiency Score|
-
-#### Enumerated Values
-
-|Property|Value|
-|---|---|
-|errorCode|BAD_REQUEST|
-|errorCode|UNAUTHORIZED|
-|errorCode|FORBIDDEN|
-|errorCode|NOT_FOUND|
-|errorCode|METHOD_NOT_ALLOWED|
-|errorCode|GONE|
-|errorCode|RATE_LIMIT_EXCEEDED|
-|errorCode|INTERNAL_SERVER_ERROR|
 
 ### Response Headers
 
@@ -5367,236 +2412,6 @@ Returns the singleton Global Configuration object (Metadata-driven). Not pageabl
 }
 ```
 
-> The request was refused before any data was read. The message names the header, parameter or field to change.
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-```json
-{
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
-}
-```
-
-> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
-
-```json
-{
-  "httpStatus": 401,
-  "errorCode": "UNAUTHORIZED",
-  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
-}
-```
-
-```json
-[
-  {
-    "errorCode": "INVALID_SESSION_ID",
-    "message": "Session expired or invalid"
-  }
-]
-```
-
-> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
-
-```json
-[
-  {
-    "errorCode": "FORBIDDEN",
-    "message": "You do not have access to the Apex class named: SAPISkill"
-  }
-]
-```
-
-> The route does not exist, or the key in the path matches no record.
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-```json
-{
-  "httpStatus": 404,
-  "errorCode": "NOT_FOUND",
-  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
-}
-```
-
-> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
-
-```json
-[
-  {
-    "errorCode": "METHOD_NOT_ALLOWED",
-    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
-  }
-]
-```
-
-> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-```json
-{
-  "httpStatus": 410,
-  "errorCode": "GONE",
-  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
-}
-```
-
-> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-```json
-{
-  "httpStatus": 429,
-  "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
-}
-```
-
-> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
-
-```json
-{
-  "httpStatus": 500,
-  "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
-}
-```
-
 <h3 id="getportfolioconfig-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
@@ -5611,20 +2426,21 @@ Returns the singleton Global Configuration object (Metadata-driven). Not pageabl
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
 
+**Errors this operation can return.** Each links to its entry, with examples, in the Errors section above.
+
+- 400 [BAD_REQUEST](#error-bad-request)
+- 401 [UNAUTHORIZED](#error-unauthorized)
+- 401 [INVALID_SESSION_ID](#error-platform), sent by the platform before our code runs
+- 401 [FORBIDDEN](#error-platform), sent by the platform before our code runs
+- 403 [FORBIDDEN](#error-forbidden)
+- 404 [NOT_FOUND](#error-not-found)
+- 404 [METHOD_NOT_ALLOWED](#error-platform), sent by the platform before our code runs
+- 405 [METHOD_NOT_ALLOWED](#error-method-not-allowed)
+- 410 [GONE](#error-gone)
+- 429 [RATE_LIMIT_EXCEEDED](#error-rate-limit-exceeded)
+- 500 [INTERNAL_SERVER_ERROR](#error-internal-server-error)
+
 <h3 id="getportfolioconfig-responseschema">Response Schema</h3>
-
-#### Enumerated Values
-
-|Property|Value|
-|---|---|
-|errorCode|BAD_REQUEST|
-|errorCode|UNAUTHORIZED|
-|errorCode|FORBIDDEN|
-|errorCode|NOT_FOUND|
-|errorCode|METHOD_NOT_ALLOWED|
-|errorCode|GONE|
-|errorCode|RATE_LIMIT_EXCEEDED|
-|errorCode|INTERNAL_SERVER_ERROR|
 
 ### Response Headers
 
