@@ -28,6 +28,8 @@
     "ci:local": "node scripts/ci-local.js",
     "docs:api": "node scripts/generate-api-docs.js",
     "docs:counts": "node scripts/check-doc-counts.js",
+    "test:groups": "node scripts/count-test-groups.js",
+    "test:groups:check": "node scripts/count-test-groups.js --check",
     "docs:mermaid-alt": "node scripts/check-mermaid-alt.js",
     "refs:check": "node scripts/check-internal-refs.js packages docs README.md STATUS.md",
     "specs:sync": "node scripts/sync-specs.js",

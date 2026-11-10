@@ -43,6 +43,8 @@ jobs:
         run: |
           npm run scan:secrets
           npm run test:unit
+          node --test scripts/count-test-groups.test.js
+          node scripts/count-test-groups.js --check
           npm run docs:verify
 
       # Fails the PR when a comment, description or help text under packages/, or a line of
