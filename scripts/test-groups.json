@@ -1,0 +1,197 @@
+{
+  "apex": [
+    {
+      "name": "Delivery data and the numbers panel",
+      "classes": [
+        "DeliveryControllerTest",
+        "FooterControllerTest",
+        "PortfolioStatsControllerTest",
+        "StorageSnapshot*",
+        "DataSourceControllerTest",
+        "DecisionMatrixControllerTest",
+        "ProjectCardController*",
+        "SkillGraphControllerTest",
+        "SourceControllerTest",
+        "SourceCacheRefreshJobTest",
+        "SchemaServiceTest"
+      ]
+    },
+    {
+      "name": "REST API endpoints",
+      "classes": [
+        "PAPI*",
+        "SAPIAccountTest",
+        "SAPICertification*",
+        "SAPIContactTest",
+        "SAPIEducationTest",
+        "SAPIExperience*",
+        "SAPIHealthTest",
+        "SAPIPortfolioConfigTest",
+        "SAPIProject*",
+        "SAPIPublicKeyTest",
+        "SAPIRouterTest",
+        "SAPISkillTest",
+        "SAPITestimonialTest",
+        "SAPITransformerTest",
+        "OpenApiDocumentTest",
+        "ApiRoutesTest"
+      ]
+    },
+    {
+      "name": "API Lab and AI cover letters",
+      "classes": [
+        "ApiLabController*",
+        "ApiLabOptionsControllerTest",
+        "ContentGenerationController*",
+        "GeminiServiceTest",
+        "AgentforceService*",
+        "EinsteinPromptTemplateClientTest",
+        "LocalTemplateServiceTest",
+        "PortfolioAgent*",
+        "PortfolioGroundingService*"
+      ]
+    },
+    {
+      "name": "Other site classes",
+      "classes": [
+        "CacheCleanup*",
+        "GithubCacheCleanupBatchTest",
+        "GitHubCacheRefreshJobTest",
+        "GitHubServiceTest",
+        "Jira*",
+        "IntegrationCacheRefreshSchedulerTest",
+        "Governance*",
+        "Lightning*",
+        "CommunitiesSelfRegControllerTest",
+        "PortfolioLogTest",
+        "PortfolioServiceTest",
+        "PortfolioSettingsTest",
+        "SiteActionsResourceTest",
+        "SiteExport*",
+        "ResumeControllerTest"
+      ]
+    },
+    {
+      "name": "Rate limits, tokens and request rules",
+      "classes": [
+        "RateWindowLimiterTest",
+        "TokenExchangeServiceTest",
+        "ApiRequestContextTest",
+        "ApiVersionTest",
+        "ApiPathAliasTest",
+        "ApiRoutingTest",
+        "ApiErrorHandlingTest",
+        "ApiMessagesTest",
+        "ApiLegacyLogicTest",
+        "CircuitBreakerTest",
+        "UsageCounterWriterTest",
+        "RequestUtilTest",
+        "PublicKeyServiceTest",
+        "IntegrationUtilityTest",
+        "SiteEdgeContextTest"
+      ]
+    },
+    {
+      "name": "Query definitions",
+      "classes": [
+        "QueryDefinitionsTest",
+        "SiteQueryDefinitionsTest",
+        "ApiQueryDefinitionsTest",
+        "SAPIQueryDefinitionsTest"
+      ]
+    },
+    {
+      "name": "Testimonials, contact form and leads",
+      "classes": [
+        "TestimonialApprovalSubmitterTest",
+        "TestimonialControllerOwnWordsTest",
+        "TestimonialControllerTest",
+        "ContactForm*",
+        "LeadReminderServiceTest"
+      ]
+    },
+    {
+      "name": "Guest access and form guards",
+      "classes": [
+        "PortfolioGuestAccessTest",
+        "TestimonialGuestAccessTest",
+        "PortfolioStatsControllerGuestTest",
+        "SubmissionGuardTest",
+        "SubmissionBlockActionTest"
+      ]
+    }
+  ],
+  "jest": [
+    {
+      "name": "Page shell, home and navigation",
+      "suites": [
+        "portfolioThemeLayout/*",
+        "tourBar/*",
+        "tourShowMe/*",
+        "heroBanner/*",
+        "footer/*",
+        "careerLine/*",
+        "caseStudyGrid/*",
+        "homeTestimonials/*",
+        "credentialsBand/*",
+        "pageIntro/*",
+        "profileLinks/*",
+        "siteHost/*",
+        "siteBuildSection/*",
+        "externalUrl/*",
+        "messagePage/*",
+        "motionPreference/*",
+        "mediaWatch/*",
+        "sectionHeading/*",
+        "fieldLimit/*",
+        "analyticsEvents/*",
+        "analyticsService/*",
+        "graphqlProbe/*"
+      ]
+    },
+    {
+      "name": "Delivery, docs and pillar pages",
+      "suites": [
+        "byTheNumbers/*",
+        "changelog/*",
+        "roadmapViewer/*",
+        "docsViewer/*",
+        "codeViewer/*",
+        "viewSource/*",
+        "prismHighlighter/*",
+        "dataSource/*",
+        "decisionMatrix/*",
+        "outageCompare/*",
+        "outageSimulation/*",
+        "pillarAWalkthrough/*",
+        "pillarBStory/*",
+        "pillarData/*",
+        "smartChecklist/*",
+        "projectAssetGallery/*"
+      ]
+    },
+    {
+      "name": "Skills, graphs and resume",
+      "suites": [
+        "skillNetwork/*",
+        "graphEngine/*",
+        "schemaVisualizer/*",
+        "resumeBuilder/*",
+        "documentPdf/*"
+      ]
+    },
+    {
+      "name": "API Lab, API reference and AI Lab",
+      "suites": ["apiTester/*", "apiReference/*", "coverLetterGenerator/*"]
+    },
+    {
+      "name": "Contact and testimonial forms",
+      "suites": [
+        "contactForm/*",
+        "contactCall/*",
+        "testimonialSubmit/*",
+        "testimonialWall/*"
+      ]
+    }
+  ]
+}

@@ -48,6 +48,20 @@ const STEPS = [
     commands: [{ ci: "npm run test:unit" }]
   },
   {
+    name: "Test groups are current",
+    paths: [
+      "packages/**/classes/**",
+      "packages/**/lwc/**",
+      "scripts/count-test-groups*",
+      "scripts/test-groups.json"
+    ],
+    commands: [
+      // Local until pr.yml lists the two commands. Then change each `local` to `ci`.
+      { local: "node --test scripts/count-test-groups.test.js" },
+      { local: "node scripts/count-test-groups.js --check" }
+    ]
+  },
+  {
     name: "API docs are current",
     paths: [
       "packages/integration-api/specs/**",
