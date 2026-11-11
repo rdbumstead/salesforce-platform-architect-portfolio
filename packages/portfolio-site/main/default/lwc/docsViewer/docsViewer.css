@@ -49,14 +49,18 @@
 }
 
 /*
- * Wide screens: the column starts at the shared left edge, so it carries no side padding. The
- * build section keeps its negative margin, because its own padding returns its content to
- * the same edge.
+ * Wide screens: the column starts at the shared left edge, so the viewer carries no side padding
+ * and the build section, which carries none either, has nothing to take back.
  */
 @media (min-width: 64.0625em) {
   .docs {
     padding-left: 0;
     padding-right: 0;
+  }
+
+  .docs-build {
+    margin-left: 0;
+    margin-right: 0;
   }
 }
 
