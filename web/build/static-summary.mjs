@@ -14,11 +14,11 @@
  * The summary block and llms.txt both read it.
  */
 export const HOME_SUMMARY = [
-  'Ryan Bumstead is a Salesforce Platform Architect who designs and delivers Education Cloud for universities and nonprofits.',
-  'This site is the working proof, with case studies, a resume, live API and AI labs and the architecture documents, all running on Salesforce.'
+  "Ryan Bumstead is a Salesforce Platform Architect who designs and delivers Education Cloud for universities and nonprofits.",
+  "This site is the working proof, with case studies, a resume, live API and AI labs and the architecture documents, all running on Salesforce."
 ];
 
-export const SUMMARY_ID = 'static-summary';
+export const SUMMARY_ID = "static-summary";
 
 /**
  * Hides the block for browsers that run scripts. A text extractor ignores the rule and reads
@@ -30,10 +30,10 @@ export function summaryCss() {
 
 function escapeHtml(text) {
   return String(text)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 /** Public routes that must carry a description. The error pages have none and need none. */
@@ -43,32 +43,41 @@ export function publicRoutes(routes) {
 
 /** Fails the build when a public route has no description, instead of printing an empty line. */
 export function assertDescriptions(routes) {
-  const missing = publicRoutes(routes).filter((route) => !String(route.description || '').trim());
+  const missing = publicRoutes(routes).filter(
+    (route) => !String(route.description || "").trim()
+  );
   if (missing.length) {
-    throw new Error(`These routes have no description, so the static summary and llms.txt cannot be built: ${missing.map((route) => route.path).join(', ')}`);
+    throw new Error(
+      `These routes have no description, so the static summary and llms.txt cannot be built: ${missing.map((route) => route.path).join(", ")}`
+    );
   }
 }
 
 /** A short name for a route in a link: the title without the site suffix. */
 export function linkLabel(route) {
-  if (route.path === '/') return 'Home';
-  return String(route.title || route.path).split(' | ')[0].trim();
+  if (route.path === "/") return "Home";
+  return String(route.title || route.path)
+    .split(" | ")[0]
+    .trim();
 }
 
 /** The routes in link order: the home page, the resume and the contact page, then the rest. */
 export function orderedRoutes(routes) {
-  const first = ['/', '/resume', '/contact'];
+  const first = ["/", "/resume", "/contact"];
   const pages = publicRoutes(routes);
-  const lead = first.map((path) => pages.find((route) => route.path === path)).filter(Boolean);
+  const lead = first
+    .map((path) => pages.find((route) => route.path === path))
+    .filter(Boolean);
   return [...lead, ...pages.filter((route) => !first.includes(route.path))];
 }
 
 /** A readable name for a profile link. */
 export function profileLabel(url) {
-  const host = new URL(url).hostname.replace(/^www\./, '');
-  if (host.endsWith('linkedin.com')) return 'LinkedIn';
-  if (host.endsWith('github.com')) return 'GitHub';
-  if (host.endsWith('salesforce.com') || host.endsWith('trailhead.com')) return 'Trailhead';
+  const host = new URL(url).hostname.replace(/^www\./, "");
+  if (host.endsWith("linkedin.com")) return "LinkedIn";
+  if (host.endsWith("github.com")) return "GitHub";
+  if (host.endsWith("salesforce.com") || host.endsWith("trailhead.com"))
+    return "Trailhead";
   return host;
 }
 
@@ -78,11 +87,17 @@ export function profileLabel(url) {
  */
 export function summaryBlock({ route, routes, person }) {
   const links = orderedRoutes(routes)
-    .map((entry) => `<li><a href="${escapeHtml(entry.path)}">${escapeHtml(linkLabel(entry))}</a></li>`)
-    .join('');
+    .map(
+      (entry) =>
+        `<li><a href="${escapeHtml(entry.path)}">${escapeHtml(linkLabel(entry))}</a></li>`
+    )
+    .join("");
   const profiles = (person.sameAs || [])
-    .map((url) => `<li><a href="${escapeHtml(url)}">${escapeHtml(profileLabel(url))}</a></li>`)
-    .join('');
+    .map(
+      (url) =>
+        `<li><a href="${escapeHtml(url)}">${escapeHtml(profileLabel(url))}</a></li>`
+    )
+    .join("");
   const parts = [
     `<div id="${SUMMARY_ID}">`,
     `<p><strong>${escapeHtml(person.name)}</strong></p>`,
@@ -90,26 +105,28 @@ export function summaryBlock({ route, routes, person }) {
     `<h1>${escapeHtml(route.title)}</h1>`,
     `<p>${escapeHtml(route.description)}</p>`
   ];
-  if (route.path === '/') HOME_SUMMARY.forEach((line) => parts.push(`<p>${escapeHtml(line)}</p>`));
+  if (route.path === "/")
+    HOME_SUMMARY.forEach((line) => parts.push(`<p>${escapeHtml(line)}</p>`));
   parts.push(`<nav aria-label="Pages"><ul>${links}</ul></nav>`);
-  if (profiles) parts.push(`<nav aria-label="Profiles"><ul>${profiles}</ul></nav>`);
-  parts.push('</div>');
-  return parts.join('\n');
+  if (profiles)
+    parts.push(`<nav aria-label="Profiles"><ul>${profiles}</ul></nav>`);
+  parts.push("</div>");
+  return parts.join("\n");
 }
 
 /** Topics the site shows evidence for. Nothing else goes in knowsAbout. */
 export const KNOWS_ABOUT = [
-  'Salesforce Education Cloud',
-  'Experience Cloud',
-  'Salesforce architecture',
-  'Integration and API design',
-  'Agentforce'
+  "Salesforce Education Cloud",
+  "Experience Cloud",
+  "Salesforce architecture",
+  "Integration and API design",
+  "Agentforce"
 ];
 
 const HTTP_URL = /^https?:\/\//i;
 
 function text(value) {
-  return typeof value === 'string' ? value.trim() : '';
+  return typeof value === "string" ? value.trim() : "";
 }
 
 /**
@@ -123,24 +140,40 @@ function text(value) {
  * @returns {object} the Person object
  */
 export function buildPerson(base, reads = {}) {
-  const timeline = reads['ResumeController.getTimeline'] || {};
-  const header = reads['ResumeController.getHeader'] || {};
+  const timeline = reads["ResumeController.getTimeline"] || {};
+  const header = reads["ResumeController.getHeader"] || {};
   const person = { ...base, knowsAbout: [...KNOWS_ABOUT] };
   const profile = text(header.trailheadUrl);
   const sameAs = [...(base.sameAs || [])];
   if (HTTP_URL.test(profile) && !sameAs.includes(profile)) sameAs.push(profile);
   person.sameAs = sameAs;
-  const credentials = (Array.isArray(timeline.certifications) ? timeline.certifications : [])
+  const credentials = (
+    Array.isArray(timeline.certifications) ? timeline.certifications : []
+  )
     .filter((item) => item && text(item.name))
     .map((item) => {
-      const credential = { '@type': 'EducationalOccupationalCredential', name: text(item.name), credentialCategory: 'certification' };
-      if (text(item.issuer)) credential.recognizedBy = { '@type': 'Organization', name: text(item.issuer) };
-      if (/^\d{4}-\d{2}-\d{2}/.test(text(item.earnedDate))) credential.dateCreated = text(item.earnedDate).slice(0, 10);
+      const credential = {
+        "@type": "EducationalOccupationalCredential",
+        name: text(item.name),
+        credentialCategory: "certification"
+      };
+      if (text(item.issuer))
+        credential.recognizedBy = {
+          "@type": "Organization",
+          name: text(item.issuer)
+        };
+      if (/^\d{4}-\d{2}-\d{2}/.test(text(item.earnedDate)))
+        credential.dateCreated = text(item.earnedDate).slice(0, 10);
       return credential;
     });
   if (credentials.length) person.hasCredential = credentials;
-  const school = text(Array.isArray(timeline.education) && timeline.education[0] ? timeline.education[0].school : '');
-  if (school) person.alumniOf = { '@type': 'EducationalOrganization', name: school };
+  const school = text(
+    Array.isArray(timeline.education) && timeline.education[0]
+      ? timeline.education[0].school
+      : ""
+  );
+  if (school)
+    person.alumniOf = { "@type": "EducationalOrganization", name: school };
   return person;
 }
 
@@ -152,21 +185,32 @@ export function buildPerson(base, reads = {}) {
  */
 export function llmsTxt({ routes, person, origin }) {
   const pages = orderedRoutes(routes);
-  const ordered = [...pages.filter((route) => route.path === '/resume'), ...pages.filter((route) => route.path !== '/resume')];
-  const url = (route) => `${origin}${route.path === '/' ? '/' : route.path}`;
-  const clean = (value) => String(value).replace(/\s+/g, ' ').trim();
+  const ordered = [
+    ...pages.filter((route) => route.path === "/resume"),
+    ...pages.filter((route) => route.path !== "/resume")
+  ];
+  const url = (route) => `${origin}${route.path === "/" ? "/" : route.path}`;
+  const clean = (value) => String(value).replace(/\s+/g, " ").trim();
   const lines = [
     `# ${clean(person.name)}`,
-    '',
-    `> ${clean(person.description)}. ${HOME_SUMMARY.map(clean).join(' ')}`,
-    '',
-    '## Pages',
-    '',
-    ...ordered.map((route) => `- [${clean(linkLabel(route))}](${url(route)}): ${clean(route.description)}`)
+    "",
+    `> ${clean(person.description)}. ${HOME_SUMMARY.map(clean).join(" ")}`,
+    "",
+    "## Pages",
+    "",
+    ...ordered.map(
+      (route) =>
+        `- [${clean(linkLabel(route))}](${url(route)}): ${clean(route.description)}`
+    )
   ];
   const profiles = person.sameAs || [];
   if (profiles.length) {
-    lines.push('', '## Profiles', '', ...profiles.map((profile) => `- [${profileLabel(profile)}](${profile})`));
+    lines.push(
+      "",
+      "## Profiles",
+      "",
+      ...profiles.map((profile) => `- [${profileLabel(profile)}](${profile})`)
+    );
   }
-  return `${lines.join('\n')}\n`;
+  return `${lines.join("\n")}\n`;
 }
