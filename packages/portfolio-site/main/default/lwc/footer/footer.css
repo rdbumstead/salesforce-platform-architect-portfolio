@@ -1,5 +1,6 @@
 /* Glass Box footer. Only --pf- site token names, no literal colors. */
-/* The rule spans the page, the content sits in the header's 1024 px column. */
+/* The footer sits straight in the layout's footer region, so the rule spans the page. The content
+   takes the page column and the same 16 px side gutter as the header brand. */
 .footer {
   margin-top: var(--pf-space-6);
   border-top: 1px solid var(--pf-border);
@@ -145,6 +146,101 @@
   color: var(--pf-muted);
   font-family: var(--pf-font-sans);
   font-size: 12px;
+}
+
+/*
+ * Narrow widths. The three buttons share equal columns: three across from 660 px up to 899 px,
+ * two with the last one on a row of its own from 481 px, and one column on a phone. The host is
+ * a grid so its button fills the column. The chips share equal columns from 899 px down, and a
+ * last chip that would stand alone on its row takes the room of the empty cells beside it.
+ */
+/*
+ * From 900 to 1279 px the captions each take a row of their own and the three buttons share the
+ * row under them at their own widths. Beside the captions the buttons wrapped two and one, and
+ * equal columns this wide would stretch them, so they keep their natural size.
+ */
+@media (min-width: 900px) and (max-width: 1279.98px) {
+  .metrics-head {
+    display: grid;
+    grid-template-columns: repeat(3, max-content);
+    justify-content: start;
+    gap: var(--pf-space-3);
+    align-items: center;
+  }
+
+  .metrics-head > .metrics-caption {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 899.98px) {
+  .metrics-head {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--pf-space-3);
+    align-items: center;
+  }
+
+  .metrics-head > .metrics-caption {
+    grid-column: 1 / -1;
+  }
+
+  .metrics-head > c-view-source,
+  .metrics-head > c-analytics-events {
+    display: grid;
+    margin-inline-start: 0;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 659.98px) {
+  .metrics-head {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metrics-head > :last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 480.98px) {
+  .metrics-head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 899.98px) {
+  .chips {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .chip {
+    justify-content: space-between;
+    min-width: 0;
+  }
+
+  .chip:last-child:nth-child(3n + 1) {
+    grid-column: 1 / -1;
+  }
+
+  .chip:last-child:nth-child(3n + 2) {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 599.98px) {
+  .chips {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .chip:last-child:nth-child(3n + 1),
+  .chip:last-child:nth-child(3n + 2) {
+    grid-column: auto;
+  }
+
+  .chip:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

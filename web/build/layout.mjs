@@ -41,7 +41,9 @@ export const BRANDING_HOOKS = {
 
 /**
  * Section padding. The live site's served branding style sets 1rem for a section on a wide
- * screen and 0.75rem at 64em and below. The branding set in this repo does not hold these.
+ * screen. At 64em and below the sides stay at 1rem, so page content, the brand and the footer
+ * share one 16 px line, and the top and bottom drop to 0.75rem. The branding set holds the side
+ * value as HorizontalRowPaddingMobile, so change the two together.
  */
 export const SECTION_SPACING = {
   '--dxp-s-section-content-spacing-block-start': '1rem',
@@ -49,9 +51,9 @@ export const SECTION_SPACING = {
   '--dxp-s-section-content-spacing-block-end': '1rem',
   '--dxp-s-section-content-spacing-inline-start': '1rem',
   '--dxp-s-section-content-spacing-block-start-mobile': '0.75rem',
-  '--dxp-s-section-content-spacing-inline-end-mobile': '0.75rem',
+  '--dxp-s-section-content-spacing-inline-end-mobile': '1rem',
   '--dxp-s-section-content-spacing-block-end-mobile': '0.75rem',
-  '--dxp-s-section-content-spacing-inline-start-mobile': '0.75rem'
+  '--dxp-s-section-content-spacing-inline-start-mobile': '1rem'
 };
 
 /** The branding set's values. */

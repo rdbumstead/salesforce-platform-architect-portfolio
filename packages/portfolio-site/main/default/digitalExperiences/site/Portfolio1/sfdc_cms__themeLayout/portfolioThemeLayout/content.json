@@ -14,36 +14,8 @@
         {
           "children": [
             {
-              "attributes": {
-                "backgroundImageConfig": "",
-                "backgroundImageOverlay": "rgba(0,0,0,0)",
-                "componentSpacerSize": "",
-                "layoutDirectionDesktop": "row",
-                "layoutDirectionMobile": "column",
-                "layoutDirectionTablet": "column",
-                "maxContentWidth": "",
-                "sectionColumnGutterWidth": "",
-                "sectionConfig": "{\"UUID\":\"5d611bfc-a7e0-4e4b-b60a-788255ba8043\",\"columns\":[{\"UUID\":\"e4662d82-bdcc-4a30-9b9a-b802467098ca\",\"columnName\":\"Theme Footer\",\"columnKey\":\"footerSection\",\"columnWidth\":\"12\",\"seedComponents\":null}]}",
-                "sectionMinHeight": "",
-                "sectionVerticalAlign": "flex-start"
-              },
-              "children": [
-                {
-                  "children": [
-                    {
-                      "definition": "c:footer",
-                      "id": "b051268d-4edc-4e83-bc2c-a75c78c628cd",
-                      "type": "component"
-                    }
-                  ],
-                  "id": "e4662d82-bdcc-4a30-9b9a-b802467098ca",
-                  "name": "footerSection",
-                  "title": "Theme Footer",
-                  "type": "region"
-                }
-              ],
-              "definition": "community_layout:section",
-              "id": "5d611bfc-a7e0-4e4b-b60a-788255ba8043",
+              "definition": "c:footer",
+              "id": "b051268d-4edc-4e83-bc2c-a75c78c628cd",
               "type": "component"
             }
           ],
