@@ -1363,6 +1363,38 @@ describe("grouping by employer and issuer", () => {
     expect(group.roles[0].heading).toBe("Architect, Solo");
   });
 
+  it("adds part time after the employer from the flag, on the page, in the PDF and in the ATS text, and never twice", () => {
+    const model = build([
+      role("p1", "Application Architect", "Freelance", "2021-10-01", null, {
+        isCurrent: true,
+        isPartTime: true
+      }),
+      role("p2", "Coach", "Delta Club (Part Time)", "2019-01-01", null, {
+        isCurrent: true,
+        isPartTime: true
+      }),
+      role("p3", "Lead", "Alpha Works", "2018-01-01", "2020-01-01")
+    ]);
+    const [freelance, delta, alpha] = model.employers;
+    expect(freelance.employer).toBe("Freelance");
+    expect(freelance.roles[0].heading).toBe(
+      "Application Architect, Freelance (part time)"
+    );
+    expect(delta.roles[0].heading).toBe("Coach, Delta Club (Part Time)");
+    expect(alpha.roles[0].heading).toBe("Lead, Alpha Works");
+
+    const doc = fakeDoc();
+    writePdf(doc, model, { family: "Inter" });
+    const drawn = doc.drawn.map((piece) => piece.text).join(" ");
+    expect(drawn).toContain("Application Architect, Freelance (part time)");
+    expect(drawn).not.toContain("(Part Time) (part time)");
+
+    const text = toAtsText(buildLines(model));
+    expect(text).toContain("Application Architect | Freelance (part time) |");
+    expect(text).toContain("Coach | Delta Club (Part Time) |");
+    expect(text).not.toMatch(/part time\) \(part time/i);
+  });
+
   it("keeps highlights under their own title and never merges them", () => {
     const model = build([
       role("e1", "Admin", "Acme", "2020-01-01", "2021-01-01", {

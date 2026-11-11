@@ -6,10 +6,11 @@
  *                      A ribbon at the top draws each employer to scale, newest on the left and
  *                      today at the left edge. The scale starts at the earliest role start. Roles
  *                      that ended before salesforceStartYear fold into one compressed segment at
- *                      the right edge, with a break mark, and into one last row, "Earlier roles".
+ *                      the right edge, drawn hatched, and into one last row, "Earlier roles".
  *                      With no such role, or no usable salesforceStartYear, the scale is plain and
- *                      linear and there is no break and no Earlier roles row. A part time only
- *                      employer sits on a thin lane of its own. An employer that left and came
+ *                      linear and there is no fold and no Earlier roles row. A part time only
+ *                      employer sits on a thin lane of its own, labelled with the employer name
+ *                      as the read sends it. An employer that left and came
  *                      back gets one bar for each stint and still one row. Ticks are computed
  *                      from the same dates, and the earliest year tick hides when it would meet
  *                      another tick. The bars carry no labels, the rows carry everything.
@@ -24,9 +25,8 @@
  *                      link. Any number of rows can be open at once, and all start closed.
  *                      Expand all opens every row and reads Collapse all once all are open.
  *                      Hovering a bar or a row marks its pair. A panel reveals in 220 ms and not
- *                      at all when the system asks for reduced motion.
- *                      The subtitle reads "On Salesforce since <year> · <n> years" from the start
- *                      year and the visitor's clock, and is left out with no usable start year.
+ *                      at all when the system asks for reduced motion. There is no subtitle, since
+ *                      the hero already says when the Salesforce work started.
  *                      Opening a row sends career_role_opened with its position (1 is the
  *                      newest). Expand all and Collapse all send career_timeline_toggled with
  *                      expanded. Renders nothing when the read fails or has no roles.
@@ -207,26 +207,6 @@ export function employerYears(roles) {
     .filter((year) => year)
     .map(Number);
   return starts.length ? `${Math.min(...starts)} to now` : "now";
-}
-
-/**
- * The subtitle: "On Salesforce since 2017 · 9 years". The years are whole years from 1 January
- * of the start year to the visitor's today, rounded down. Empty with no usable start year.
- * The count is left out when it is under one year.
- * @param {number|null} startYear salesforceStartYear when usable
- * @param {Date} now the visitor's clock
- * @returns {string} the subtitle
- */
-export function buildSubtitle(startYear, now) {
-  if (startYear === null) {
-    return "";
-  }
-  const years = now.getFullYear() - startYear;
-  const lead = `On Salesforce since ${startYear}`;
-  if (years < 1) {
-    return lead;
-  }
-  return `${lead} · ${years} ${years === 1 ? "year" : "years"}`;
 }
 
 // When a role was last held. A role with no end date known gives no place.
@@ -570,7 +550,9 @@ function buildRibbon(stops, scale, startYear, today) {
   stops.forEach((stop) => {
     if (stop.isFold) {
       if (scale.compressed) {
-        const left = 1 - scale.share + 2 * BAR_GAP;
+        // Half a gap, like the older edge of every other bar, so the space before the fold
+        // matches the space between any two bars.
+        const left = 1 - scale.share + BAR_GAP / 2;
         mainBars.push({
           key: `${stop.key}-bar`,
           stopKey: stop.key,
@@ -597,9 +579,7 @@ function buildRibbon(stops, scale, startYear, today) {
       };
       if (stop.isPartTime) {
         sideBars.push(bar);
-        bar.sideLabelText = /part time/i.test(stop.employer)
-          ? stop.employer
-          : `${stop.employer}, part time`;
+        bar.sideLabelText = stop.employer;
         bar.sideLabelStyle = `left: ${pct(older)}; max-width: calc(100% - ${pct(older)})`;
       } else {
         mainBars.push(bar);
@@ -614,9 +594,7 @@ function buildRibbon(stops, scale, startYear, today) {
     mainBars,
     sideBars,
     mainLanes,
-    sideLanes,
-    breakStyle: scale.compressed ? `left: ${pct(1 - scale.share)}` : "",
-    hasBreak: scale.compressed
+    sideLanes
   };
 }
 
@@ -652,7 +630,6 @@ export function buildTimeline(data, now = new Date()) {
   const ribbon = buildRibbon(stops, scale, startYear, today);
   return {
     startYear,
-    subtitle: buildSubtitle(startYear, now),
     scale,
     ribbon,
     stops: stops.map((stop, index) => ({
@@ -678,7 +655,7 @@ const EMPTY_TIMELINE = {
   stops: [],
   ribbon: null,
   startYear: null,
-  subtitle: ""
+  scale: null
 };
 
 export default class CareerLine extends LightningElement {
@@ -772,17 +749,9 @@ export default class CareerLine extends LightningElement {
     return this.stops.length > 0;
   }
 
-  get subtitle() {
-    return this.timeline.subtitle;
-  }
-
-  get hasSubtitle() {
-    return this.subtitle !== "";
-  }
-
   get caption() {
-    const ribbon = this.timeline.ribbon;
-    if (ribbon && ribbon.hasBreak) {
+    const scale = this.timeline.scale;
+    if (scale && scale.compressed) {
       return `Newest on the left. Bars are to scale, and years before ${this.timeline.startYear} are compressed.`;
     }
     return "Newest on the left. Bars are to scale.";
@@ -875,9 +844,7 @@ export default class CareerLine extends LightningElement {
       sideBars: ribbon.sideBars.map((bar) => barView(bar, SIDE_LANE_PX)),
       hasSide: ribbon.sideBars.length > 0,
       mainStyle: laneStyle(MAIN_LANE_PX, ribbon.mainLanes),
-      sideStyle: laneStyle(SIDE_LANE_PX, ribbon.sideLanes),
-      hasBreak: ribbon.hasBreak,
-      breakStyle: ribbon.breakStyle
+      sideStyle: laneStyle(SIDE_LANE_PX, ribbon.sideLanes)
     };
   }
 

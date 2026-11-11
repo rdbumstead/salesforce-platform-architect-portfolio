@@ -121,9 +121,17 @@ describe("c-site-build-section", () => {
     const element = render();
     const root = element.shadowRoot;
     expect(text(root.querySelector("h2"))).toBe("How this site is built");
-    expect(text(root.querySelector(".section-intro"))).toContain(
-      "This site runs on a Salesforce org I designed, built and deploy myself."
+    const intro = text(root.querySelector(".section-intro"));
+    expect(intro).toContain(
+      "This site is built from a Salesforce org I designed, built and deploy myself."
     );
+    expect(intro).toContain(
+      "Each build reads its records through an allowlisted API and publishes static pages, and the API Lab and AI Lab call the org live."
+    );
+    expect(intro).toContain(
+      "A technical reviewer can check the work instead of taking my word for it."
+    );
+    expect(intro).not.toContain("Each part below is live");
     expect(root.querySelectorAll(".card")).toHaveLength(5);
     const names = Array.from(root.querySelectorAll(".card-name")).map((node) =>
       text(node)

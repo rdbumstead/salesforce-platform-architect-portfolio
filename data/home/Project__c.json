@@ -32,7 +32,7 @@
       "Home_Title__c": "Designing an employer hub for an education provider",
       "Client_Line__c": "Education provider · design demo",
       "Headline_Metric__c": "9 objects",
-      "Headline_Metric_Label__c": "in the Employer Hub data model, drawn live from the schema on the Pillar A page",
+      "Headline_Metric_Label__c": "in the Employer Hub data model, read from the org's schema at each build",
       "Headline_Metric_Source__c": "Employer Hub objects",
       "Challenge__c": "Several departments at an education provider worked with the same employer partners, each from its own inbox and spreadsheet. Partners repeated themselves, and nobody could see the whole relationship. Leadership had no shared numbers for engagement, investment or hiring.",
       "Solution__c": "A working Employer Hub demo built on Salesforce. Every inquiry is captured once from a web form, matched to the partner's account and routed by the employer's industry. Service requests are fulfilled from the case, and monetary requests run through an opportunity to a contract. Operations and executive dashboards report from the same records.",

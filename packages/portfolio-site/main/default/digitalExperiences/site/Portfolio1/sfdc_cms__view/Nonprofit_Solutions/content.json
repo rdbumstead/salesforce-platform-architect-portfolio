@@ -27,7 +27,7 @@
                       "attributes": {
                         "designLabel": "Read the design",
                         "designUrl": "/docs?doc=sas#5-2-pillar-b-solution-architecture-nonprofit-literacy-platform",
-                        "eyebrow": "Pillar B",
+                        "eyebrow": "",
                         "heading": "Solution Architecture",
                         "lead": "Solution architecture for a literacy nonprofit, from platform choice to build. In pre-sales I ran discovery, a demo and a decision matrix that scored three options, and the nonprofit chose NPSP with the Program Management Module. I then led the paid build, now in user acceptance testing."
                       },
@@ -70,8 +70,8 @@
           "children": [
             {
               "attributes": {
-                "customHeadTags": "<link rel=\"canonical\" href=\"https://ryanbumstead.com/nonprofit-solutions\" />\n<meta property=\"og:title\" content=\"Solution Architecture for a Literacy Nonprofit | Ryan Bumstead\" />\n<meta property=\"og:description\" content=\"Pillar B. Solution architecture for a literacy nonprofit: solution design, decision matrix and cost comparison.\" />\n<meta property=\"og:url\" content=\"https://ryanbumstead.com/nonprofit-solutions\" />\n<meta name=\"twitter:title\" content=\"Solution Architecture for a Literacy Nonprofit | Ryan Bumstead\" />\n<meta name=\"twitter:description\" content=\"Pillar B. Solution architecture for a literacy nonprofit: solution design, decision matrix and cost comparison.\" />",
-                "description": "Pillar B. Solution architecture for a literacy nonprofit: solution design, decision matrix and cost comparison.",
+                "customHeadTags": "<link rel=\"canonical\" href=\"https://ryanbumstead.com/nonprofit-solutions\" />\n<meta property=\"og:title\" content=\"Solution Architecture for a Literacy Nonprofit | Ryan Bumstead\" />\n<meta property=\"og:description\" content=\"Solution architecture for a literacy nonprofit: solution design, decision matrix and cost comparison.\" />\n<meta property=\"og:url\" content=\"https://ryanbumstead.com/nonprofit-solutions\" />\n<meta name=\"twitter:title\" content=\"Solution Architecture for a Literacy Nonprofit | Ryan Bumstead\" />\n<meta name=\"twitter:description\" content=\"Solution architecture for a literacy nonprofit: solution design, decision matrix and cost comparison.\" />",
+                "description": "Solution architecture for a literacy nonprofit: solution design, decision matrix and cost comparison.",
                 "pageTitle": "Solution Architecture for a Literacy Nonprofit | Ryan Bumstead",
                 "recordId": "{!recordId}"
               },

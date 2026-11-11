@@ -6,7 +6,7 @@
  *                      part time employer that overlaps nothing, an employer with two stints, one
  *                      employer only, ten employers with short stints, and today moved to a later
  *                      year. Also the rows (path, Also line, pills, panels),
- *                      the disclosure buttons, Expand all, the subtitle, reduced motion, the two
+ *                      the disclosure buttons, Expand all, no subtitle, reduced motion, the two
  *                      analytics events, the resume button and nothing on an error. Today is
  *                      fixed at 10 November 2026 unless a test moves it.
  * @author            : Ryan Bumstead
@@ -18,7 +18,6 @@ import { createElement } from "@lwc/engine-dom";
 import CareerLine, {
   buildScale,
   buildStops,
-  buildSubtitle,
   buildTimeline,
   employerYears,
   foldYears,
@@ -243,20 +242,6 @@ describe("c-career-line helpers", () => {
     expect(highlightsOf({})).toEqual([]);
   });
 
-  it("writes the subtitle from the start year and the clock", () => {
-    expect(buildSubtitle(2017, TODAY)).toBe(
-      "On Salesforce since 2017 · 9 years"
-    );
-    expect(buildSubtitle(2025, TODAY)).toBe(
-      "On Salesforce since 2025 · 1 year"
-    );
-    expect(buildSubtitle(2026, TODAY)).toBe("On Salesforce since 2026");
-    expect(buildSubtitle(null, TODAY)).toBe("");
-    expect(buildSubtitle(2017, new Date(2028, 5, 1))).toBe(
-      "On Salesforce since 2017 · 11 years"
-    );
-  });
-
   it("puts today at 0 and the earliest January at 1 on a linear scale", () => {
     const scale = buildScale({
       today: utc("2026-11-10"),
@@ -297,9 +282,9 @@ describe("c-career-line timeline from synthetic data", () => {
     ]);
     expect(stops[2].also).toBe("Also Evening Instructor, part time");
     expect(timeline.scale.share).toBe(0.14);
-    expect(timeline.ribbon.hasBreak).toBe(true);
-    expect(timeline.ribbon.breakStyle).toBe("left: 86.000%");
-    expect(timeline.subtitle).toBe("On Salesforce since 2017 · 9 years");
+    expect(timeline.scale.compressed).toBe(true);
+    expect(timeline.ribbon).not.toHaveProperty("hasBreak");
+    expect(timeline).not.toHaveProperty("subtitle");
     expect(tickTexts(timeline)).toEqual([
       "Today · 2026",
       "2023",
@@ -316,7 +301,7 @@ describe("c-career-line timeline from synthetic data", () => {
       position(first, today, startMs) - 0.002,
       6
     );
-    expect(bars[2].left).toBeCloseTo(0.868, 6);
+    expect(bars[2].left).toBeCloseTo(0.862, 6);
     expect(bars[2].left + bars[2].width).toBeCloseTo(1, 9);
     expect(timeline.ribbon.sideBars).toHaveLength(1);
   });
@@ -328,17 +313,15 @@ describe("c-career-line timeline from synthetic data", () => {
     const timeline = buildTimeline({ work, salesforceStartYear: 2017 }, TODAY);
     expect(timeline.stops.some((stop) => stop.isFold)).toBe(false);
     expect(timeline.scale.share).toBe(0);
-    expect(timeline.ribbon.hasBreak).toBe(false);
-    expect(timeline.ribbon.breakStyle).toBe("");
+    expect(timeline.scale.compressed).toBe(false);
     expect(timeline.scale.earliestYear).toBe(2017);
     expect(timeline.scale.position(utc("2017-01-01"))).toBeCloseTo(1, 9);
     expect(tickTexts(timeline)).not.toContain("Earlier roles");
   });
 
-  it("3. no start year: no fold, no compression, no subtitle, every role on the list", () => {
+  it("3. no start year: no fold, no compression, every role on the list", () => {
     const timeline = buildTimeline({ work: WORK }, TODAY);
     expect(timeline.startYear).toBeNull();
-    expect(timeline.subtitle).toBe("");
     expect(timeline.stops.some((stop) => stop.isFold)).toBe(false);
     expect(timeline.stops.map((stop) => stop.employer)).toEqual([
       "Northwind Digital",
@@ -349,7 +332,7 @@ describe("c-career-line timeline from synthetic data", () => {
     ]);
     expect(timeline.scale.share).toBe(0);
     expect(timeline.scale.earliestYear).toBe(2012);
-    expect(timeline.ribbon.hasBreak).toBe(false);
+    expect(timeline.scale.compressed).toBe(false);
     const bad = buildTimeline(
       { work: WORK, salesforceStartYear: "soon" },
       TODAY
@@ -422,7 +405,7 @@ describe("c-career-line timeline from synthetic data", () => {
     const timeline = buildTimeline(data, TODAY);
     expect(timeline.stops).toHaveLength(1);
     expect(timeline.ribbon.mainBars).toHaveLength(1);
-    expect(timeline.ribbon.hasBreak).toBe(false);
+    expect(timeline.scale.compressed).toBe(false);
     expect(timeline.scale.earliestYear).toBe(2019);
     const element = await mount(data);
     expect(all(element, "stop")).toHaveLength(1);
@@ -460,7 +443,6 @@ describe("c-career-line timeline from synthetic data", () => {
     const before = buildTimeline(TIMELINE, TODAY);
     const later = buildTimeline(TIMELINE, new Date(2028, 5, 1));
     expect(tickTexts(later)[0]).toBe("Today · 2028");
-    expect(later.subtitle).toBe("On Salesforce since 2017 · 11 years");
     expect(later.ribbon.mainBars[0].width).toBeGreaterThan(
       before.ribbon.mainBars[0].width
     );
@@ -483,12 +465,11 @@ describe("c-career-line", () => {
     isReduced.mockReturnValue(false);
   });
 
-  it("renders the subtitle, the caption and one row for each employer, newest first", async () => {
+  it("renders the heading with no subtitle, the caption and one row for each employer, newest first", async () => {
     const element = await mount();
     expect(text(one(element, "career-heading"))).toBe("Work");
-    expect(text(one(element, "subtitle"))).toBe(
-      "On Salesforce since 2017 · 9 years"
-    );
+    expect(one(element, "subtitle")).toBeNull();
+    expect(element.shadowRoot.textContent).not.toMatch(/On Salesforce since/);
     expect(text(one(element, "caption"))).toBe(
       "Newest on the left. Bars are to scale, and years before 2017 are compressed."
     );
@@ -507,13 +488,11 @@ describe("c-career-line", () => {
     ]);
   });
 
-  it("leaves out the subtitle and the compression note with no start year", async () => {
+  it("leaves out the compression note with no start year", async () => {
     const element = await mount({ work: WORK });
-    expect(one(element, "subtitle")).toBeNull();
     expect(text(one(element, "caption"))).toBe(
       "Newest on the left. Bars are to scale."
     );
-    expect(one(element, "break")).toBeNull();
   });
 
   it("shows the path ending on the newest full time title, and the Also line", async () => {
@@ -583,16 +562,15 @@ describe("c-career-line", () => {
     expect(link.getAttribute("href")).toBe("/portfolio/resume");
   });
 
-  it("draws the bars, the dot, the break and the lane label, and hides the ribbon from assistive tech", async () => {
+  it("draws the bars, the dot and the lane label with no break mark, and hides the ribbon from assistive tech", async () => {
     const element = await mount();
     expect(one(element, "ribbon").getAttribute("aria-hidden")).toBe("true");
     expect(all(element, "bar")).toHaveLength(4);
     expect(one(element, "now-dot")).not.toBeNull();
-    expect(one(element, "break")).not.toBeNull();
+    expect(one(element, "break")).toBeNull();
+    expect(element.shadowRoot.querySelector(".break")).toBeNull();
     expect(all(element, "tick").map(text)[0]).toBe("Today · 2026");
-    expect(all(element, "side-label").map(text)).toEqual([
-      "Freelance Studio, part time"
-    ]);
+    expect(all(element, "side-label").map(text)).toEqual(["Freelance Studio"]);
   });
 
   it("makes each row head a button with aria-expanded, aria-controls and a labelled region", async () => {
@@ -739,7 +717,7 @@ describe("c-career-line", () => {
     expect(one(element, "track")).toBeNull();
   });
 
-  it("adds part time to the lane label only when the name does not say it", async () => {
+  it("labels the part time lane with the employer name as the read sends it", async () => {
     const work = [
       role("Lead", "Alpha Works", "2023-01-01", null),
       role("Tutor", "Gamma Tutoring", "2021-01-01", null, { isPartTime: true }),
@@ -749,7 +727,7 @@ describe("c-career-line", () => {
     ];
     const element = await mount({ work, salesforceStartYear: 2017 });
     expect(all(element, "side-label").map(text)).toEqual([
-      "Gamma Tutoring, part time",
+      "Gamma Tutoring",
       "Delta Club (Part Time)"
     ]);
   });
