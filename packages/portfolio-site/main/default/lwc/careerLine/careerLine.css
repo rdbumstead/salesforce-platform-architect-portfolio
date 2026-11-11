@@ -72,6 +72,10 @@
   white-space: nowrap;
 }
 
+.tick-hidden {
+  visibility: hidden;
+}
+
 .tick-today,
 .tick-early {
   transform: none;
@@ -93,6 +97,7 @@
 
 .bar {
   position: absolute;
+  overflow: hidden;
   height: 30px;
   border-radius: 6px;
   cursor: pointer;
@@ -155,14 +160,13 @@
 /* The current bar ends in a still dot on the today side. */
 .now-dot {
   position: absolute;
-  left: -5px;
+  left: 6px;
   top: 50%;
   width: 10px;
   height: 10px;
   margin-top: -5px;
   border-radius: 50%;
-  background-color: var(--seg-now);
-  box-shadow: 0 0 0 3px var(--pf-bg);
+  background-color: var(--pf-bg);
 }
 
 .side-label {

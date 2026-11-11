@@ -760,6 +760,82 @@ describe("c-career-line", () => {
     expect(one(element, "track")).toBeNull();
   });
 
+  it("adds part time to the lane label only when the name does not say it", async () => {
+    const work = [
+      role("Lead", "Alpha Works", "2023-01-01", null),
+      role("Tutor", "Gamma Tutoring", "2021-01-01", null, { isPartTime: true }),
+      role("Coach", "Delta Club (Part Time)", "2022-01-01", null, {
+        isPartTime: true
+      })
+    ];
+    const element = await mount({ work, salesforceStartYear: 2017 });
+    expect(all(element, "side-label").map(text)).toEqual([
+      "Gamma Tutoring, part time",
+      "Delta Club (Part Time)"
+    ]);
+  });
+
+  it("keeps the current dot inside its bar", async () => {
+    const element = await mount();
+    const dot = one(element, "now-dot");
+    expect(dot.parentElement.classList.contains("bar-now")).toBe(true);
+  });
+
+  describe("the left edge label measures text, not boxes", () => {
+    const data = {
+      work: [
+        role("Lead", "Alpha Works", "2026-06-01", null),
+        role("Analyst", "Beta Labs", "2021-01-01", "2026-05-15")
+      ],
+      salesforceStartYear: 2017
+    };
+
+    function mockRanges(rectFor) {
+      return jest.spyOn(document, "createRange").mockImplementation(() => {
+        let node = null;
+        return {
+          selectNodeContents(target) {
+            node = target;
+          },
+          getBoundingClientRect() {
+            return rectFor(node.parentElement.dataset.label || "");
+          }
+        };
+      });
+    }
+
+    async function settle(element) {
+      for (let i = 0; i < 4; i += 1) {
+        await flushPromises();
+      }
+      return all(element, "ribbon-label-left")[0];
+    }
+
+    it("stays on the first row when the texts are 12 px apart or more", async () => {
+      const spy = mockRanges((label) => {
+        return label.includes("alpha")
+          ? { left: 0, right: 90 }
+          : { left: 102, right: 200 };
+      });
+      const element = await mount(data);
+      const left = await settle(element);
+      expect(left.getAttribute("style")).toContain("top: 0px");
+      spy.mockRestore();
+    });
+
+    it("drops to the extra row when the texts would meet", async () => {
+      const spy = mockRanges((label) => {
+        return label.includes("alpha")
+          ? { left: 0, right: 90 }
+          : { left: 101, right: 200 };
+      });
+      const element = await mount(data);
+      const left = await settle(element);
+      expect(left.getAttribute("style")).toContain("top: 56px");
+      spy.mockRestore();
+    });
+  });
+
   it("builds the same stops from buildStops as from buildTimeline", () => {
     expect(buildStops(TIMELINE, TODAY).map((stop) => stop.key)).toEqual(
       buildTimeline(TIMELINE, TODAY).stops.map((stop) => stop.key)
