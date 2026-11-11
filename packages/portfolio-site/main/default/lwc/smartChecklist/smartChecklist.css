@@ -1,4 +1,5 @@
 @import "c/pill";
+@import "c/sectionHeading";
 
 :host {
   display: block;
@@ -8,7 +9,7 @@
   background: var(--pf-surface);
   border: 1px solid var(--pf-border);
   border-radius: var(--pf-radius-lg);
-  padding: var(--pf-space-5);
+  padding: var(--pf-space-4);
   color: var(--pf-body);
   font-family: var(--pf-font-sans);
 }
@@ -24,9 +25,6 @@
 
 .heading {
   margin: 0 0 var(--pf-space-4);
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--pf-text);
 }
 
 .items {

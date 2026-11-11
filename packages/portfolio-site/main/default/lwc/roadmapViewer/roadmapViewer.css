@@ -1,3 +1,5 @@
+@import "c/sectionHeading";
+
 /*
  * Colours, fonts, radii and spacing come only from the --pf- design
  * tokens, so the board follows the light and dark themes. Every element that sets a
@@ -35,9 +37,6 @@
 }
 
 .roadmap-title {
-  color: var(--pf-text);
-  font-size: 1.25rem;
-  font-weight: 700;
   margin: 0;
 }
 
