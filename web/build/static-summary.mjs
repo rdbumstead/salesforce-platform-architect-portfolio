@@ -96,3 +96,50 @@ export function summaryBlock({ route, routes, person }) {
   parts.push('</div>');
   return parts.join('\n');
 }
+
+/** Topics the site shows evidence for. Nothing else goes in knowsAbout. */
+export const KNOWS_ABOUT = [
+  'Salesforce Education Cloud',
+  'Experience Cloud',
+  'Salesforce architecture',
+  'Integration and API design',
+  'Agentforce'
+];
+
+const HTTP_URL = /^https?:\/\//i;
+
+function text(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+/**
+ * The Person block the static pages carry, built from the Salesforce site's own block and the
+ * exported data, so it stays current as certifications change. It adds knowsAbout, the Trailhead
+ * profile, one credential per current certification (the read sends current ones only) and the
+ * school the education record names. The job title is the Salesforce block's, unchanged. The
+ * Salesforce site's head markup is never touched, only this copy.
+ * @param {object} base the Person object from the site's head markup
+ * @param {object} reads every exported read, by key
+ * @returns {object} the Person object
+ */
+export function buildPerson(base, reads = {}) {
+  const timeline = reads['ResumeController.getTimeline'] || {};
+  const header = reads['ResumeController.getHeader'] || {};
+  const person = { ...base, knowsAbout: [...KNOWS_ABOUT] };
+  const profile = text(header.trailheadUrl);
+  const sameAs = [...(base.sameAs || [])];
+  if (HTTP_URL.test(profile) && !sameAs.includes(profile)) sameAs.push(profile);
+  person.sameAs = sameAs;
+  const credentials = (Array.isArray(timeline.certifications) ? timeline.certifications : [])
+    .filter((item) => item && text(item.name))
+    .map((item) => {
+      const credential = { '@type': 'EducationalOccupationalCredential', name: text(item.name), credentialCategory: 'certification' };
+      if (text(item.issuer)) credential.recognizedBy = { '@type': 'Organization', name: text(item.issuer) };
+      if (/^\d{4}-\d{2}-\d{2}/.test(text(item.earnedDate))) credential.dateCreated = text(item.earnedDate).slice(0, 10);
+      return credential;
+    });
+  if (credentials.length) person.hasCredential = credentials;
+  const school = text(Array.isArray(timeline.education) && timeline.education[0] ? timeline.education[0].school : '');
+  if (school) person.alumniOf = { '@type': 'EducationalOrganization', name: school };
+  return person;
+}

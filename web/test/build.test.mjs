@@ -197,3 +197,56 @@ test('the head reader returns the Person block as an object', () => {
   assert.equal(person['@type'], 'Person');
   assert.ok(Array.isArray(person.sameAs));
 });
+
+const TIMELINE = {
+  education: [{ school: 'Example College', credential: 'BSc' }],
+  certifications: [
+    { name: 'Salesforce Certified Platform Administrator', issuer: 'Salesforce', earnedDate: '2024-06-19' },
+    { name: 'Other Credential', issuer: '', earnedDate: '' },
+    { name: '  ' }
+  ]
+};
+
+test('the built Person block adds the topics, Trailhead, one credential per certification and the school', async () => {
+  const { buildPerson, KNOWS_ABOUT } = await import('../build/static-summary.mjs');
+  const base = { '@context': 'https://schema.org', '@type': 'Person', name: 'Ada', jobTitle: 'Senior Solution Consultant', sameAs: ['https://github.com/ada'] };
+  const person = buildPerson(base, {
+    'ResumeController.getTimeline': TIMELINE,
+    'ResumeController.getHeader': { trailheadUrl: 'https://www.salesforce.com/trailblazer/ada' }
+  });
+  assert.equal(person.jobTitle, 'Senior Solution Consultant');
+  assert.deepEqual(person.knowsAbout, KNOWS_ABOUT);
+  assert.ok(!person.knowsAbout.some((topic) => /governance/i.test(topic)));
+  assert.deepEqual(person.sameAs, ['https://github.com/ada', 'https://www.salesforce.com/trailblazer/ada']);
+  assert.equal(person.hasCredential.length, 2, 'a certification with no name is dropped');
+  assert.deepEqual(person.hasCredential[0], {
+    '@type': 'EducationalOccupationalCredential',
+    name: 'Salesforce Certified Platform Administrator',
+    credentialCategory: 'certification',
+    recognizedBy: { '@type': 'Organization', name: 'Salesforce' },
+    dateCreated: '2024-06-19'
+  });
+  assert.ok(!('recognizedBy' in person.hasCredential[1]) && !('dateCreated' in person.hasCredential[1]));
+  assert.deepEqual(person.alumniOf, { '@type': 'EducationalOrganization', name: 'Example College' });
+  assert.deepEqual(base.sameAs, ['https://github.com/ada'], 'the input is not changed');
+});
+
+test('the Person block leaves alumniOf and credentials out when the data has none', async () => {
+  const { buildPerson } = await import('../build/static-summary.mjs');
+  const base = { '@type': 'Person', name: 'Ada', sameAs: ['https://github.com/ada'] };
+  [{}, { 'ResumeController.getTimeline': { education: [{ school: ' ' }], certifications: [] } }, { 'ResumeController.getTimeline': { education: [] } }].forEach((reads) => {
+    const person = buildPerson(base, reads);
+    assert.ok(!('alumniOf' in person) && !('hasCredential' in person));
+    assert.deepEqual(person.sameAs, ['https://github.com/ada'], 'a missing or non web Trailhead link adds nothing');
+  });
+  assert.deepEqual(buildPerson(base, { 'ResumeController.getHeader': { trailheadUrl: 'javascript:alert(1)' } }).sameAs, ['https://github.com/ada']);
+});
+
+test('the summary block never names the school', async () => {
+  const { summaryBlock, buildPerson } = await import('../build/static-summary.mjs');
+  const { routes } = readRoutes();
+  const person = buildPerson({ '@type': 'Person', name: 'Ada', description: 'x', sameAs: [] }, { 'ResumeController.getTimeline': TIMELINE });
+  routes.filter((route) => route.path).forEach((route) => {
+    assert.ok(!summaryBlock({ route, routes, person }).includes('Example College'));
+  });
+});

@@ -2,7 +2,7 @@
  * Writes one HTML page per route, the shared stylesheet, the analytics script, the data
  * files, sitemap.xml and robots.txt.
  *
- * The global head tags (icons, link preview image, the Person block) and the GA4 bootstrap
+ * The global head tags (icons, link preview image) and the GA4 bootstrap
  * come from the Salesforce site's own head markup, and each route's title, description and
  * link preview tags from its view, so both hosts read one source until cutover.
  */
@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { SITE_DIR, SITE_ORIGIN } from './routes.mjs';
 import { pageLayoutCss } from './layout.mjs';
-import { assertDescriptions, summaryBlock, summaryCss } from './static-summary.mjs';
+import { assertDescriptions, buildPerson, summaryBlock, summaryCss } from './static-summary.mjs';
 
 /** Reads under this many characters are inlined in the page. Larger ones load on demand. */
 export const INLINE_LIMIT = 12000;
@@ -73,7 +73,7 @@ export function readHeadMarkup(resourceUrls, siteDir = SITE_DIR) {
   }
   // The head markup is this repo's own file, never visitor input. Tag names match in any case.
   const jsonLdMatch = markup.match(/<script\s+type="application\/ld\+json"\s*>([\s\S]*?)<\/script\s*>/i);
-  if (jsonLdMatch) keep.push(jsonLdMatch[0]);
+  // The static build writes its own Person block from export data, so the copy is not kept.
   const person = jsonLdMatch ? JSON.parse(jsonLdMatch[1]) : null;
   const inline = [...markup.matchAll(/<script\s*>([\s\S]*?)<\/script\s*>/gi)].map((m) => m[1]);
   const hidden = [...markup.matchAll(/<x-oasis-script\s+hidden="true"[^>]*>([\s\S]*?)<\/x-oasis-script\s*>/gi)].map((m) => m[1]);
@@ -136,6 +136,7 @@ function page({ route, routes, person, head, styles, scripts, data, analytics, a
   if (route.description) lines.push(`<meta name="description" content="${escapeHtml(route.description)}">`);
   if (route.headTags) lines.push(route.headTags.trim());
   if (route.errorCode) lines.push('<meta name="robots" content="noindex">');
+  lines.push(`<script type="application/ld+json">${scriptJson(person)}</script>`);
   lines.push(...head);
   if (route.path) lines.push(`<style>${summaryCss()}</style>`);
   if (fontPreload) lines.push(`<link rel="preload" href="${fontPreload}" as="font" type="font/woff2" crossorigin>`);
@@ -166,7 +167,8 @@ export function writePages(input) {
   const { routes, scripts, readKeys, reads, manifest, resourceUrls, distDir } = input;
   assertDescriptions(routes);
   const head = readHeadMarkup(resourceUrls);
-  if (!head.person) throw new Error('The site head markup has no Person block to build the static summary from.');
+  if (!head.person) throw new Error('The site head markup has no Person block to build the static pages from.');
+  const person = buildPerson(head.person, reads);
   const styles = writeHashed(distDir, 'site', 'css', pageStylesheet());
   const analytics = head.analytics ? writeHashed(distDir, 'analytics', 'js', head.analytics) : null;
   const fonts = resourceUrls.get('Portfolio_Fonts');
@@ -184,7 +186,7 @@ export function writePages(input) {
     const html = page({
       route,
       routes,
-      person: head.person,
+      person,
       head: head.tags,
       styles,
       scripts: scripts.get(route.key),
