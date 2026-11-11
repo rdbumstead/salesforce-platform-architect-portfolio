@@ -262,7 +262,7 @@ test('llms.txt lists the resume first, then every route with its description, an
   const lines = text.split('\n');
   assert.equal(lines[0], '# Ada Example');
   assert.ok(text.includes(HOME_SUMMARY[0]) && text.includes(HOME_SUMMARY[1]));
-  const items = lines.filter((line) => line.startsWith('- [') && line.includes('https://site.test'));
+  const items = lines.filter((line) => /^- \[[^\]]+\]\(https:\/\/site\.test\//.test(line));
   assert.match(items[0], /^- \[Resume\]\(https:\/\/site\.test\/resume\): /);
   const publicRoutes = routes.filter((route) => route.path);
   assert.equal(items.length, publicRoutes.length);
@@ -272,4 +272,13 @@ test('llms.txt lists the resume first, then every route with its description, an
   });
   assert.ok(!text.includes('Example College'));
   assert.ok(text.endsWith('\n') && !text.includes('\r'));
+});
+
+test('profile labels match the real domain or its subdomains, never a lookalike host', async () => {
+  const { profileLabel } = await import('../build/static-summary.mjs');
+  assert.equal(profileLabel('https://www.linkedin.com/in/ada'), 'LinkedIn');
+  assert.equal(profileLabel('https://github.com/ada'), 'GitHub');
+  assert.equal(profileLabel('https://trailblazer.salesforce.com/ada'), 'Trailhead');
+  assert.equal(profileLabel('https://evillinkedin.com/in/ada'), 'evillinkedin.com');
+  assert.equal(profileLabel('https://github.com.example.net/ada'), 'github.com.example.net');
 });

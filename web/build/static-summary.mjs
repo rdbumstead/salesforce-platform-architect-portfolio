@@ -71,14 +71,19 @@ export function orderedRoutes(routes) {
   return [...lead, ...pages.filter((route) => !first.includes(route.path))];
 }
 
+/** True when the host is the domain itself or one of its subdomains, never a lookalike. */
+function onDomain(host, domain) {
+  return host === domain || host.endsWith(`.${domain}`);
+}
+
 /** A readable name for a profile link. */
 export function profileLabel(url) {
-  const host = new URL(url).hostname.replace(/^www\./, "");
-  if (host.endsWith("linkedin.com")) return "LinkedIn";
-  if (host.endsWith("github.com")) return "GitHub";
-  if (host.endsWith("salesforce.com") || host.endsWith("trailhead.com"))
+  const host = new URL(url).hostname;
+  if (onDomain(host, "linkedin.com")) return "LinkedIn";
+  if (onDomain(host, "github.com")) return "GitHub";
+  if (onDomain(host, "salesforce.com") || onDomain(host, "trailhead.com"))
     return "Trailhead";
-  return host;
+  return host.replace(/^www\./, "");
 }
 
 /**
