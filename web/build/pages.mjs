@@ -1,6 +1,6 @@
 /**
  * Writes one HTML page per route, the shared stylesheet, the analytics script, the data
- * files, sitemap.xml and robots.txt.
+ * files, sitemap.xml, llms.txt and robots.txt.
  *
  * The global head tags (icons, link preview image) and the GA4 bootstrap
  * come from the Salesforce site's own head markup, and each route's title, description and
@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { SITE_DIR, SITE_ORIGIN } from './routes.mjs';
 import { pageLayoutCss } from './layout.mjs';
-import { assertDescriptions, buildPerson, summaryBlock, summaryCss } from './static-summary.mjs';
+import { assertDescriptions, buildPerson, llmsTxt, summaryBlock, summaryCss } from './static-summary.mjs';
 
 /** Reads under this many characters are inlined in the page. Larger ones load on demand. */
 export const INLINE_LIMIT = 12000;
@@ -208,6 +208,7 @@ export function writePages(input) {
     path.join(distDir, 'sitemap.xml'),
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`
   );
+  fs.writeFileSync(path.join(distDir, 'llms.txt'), llmsTxt({ routes, person, origin: SITE_ORIGIN }));
   fs.writeFileSync(path.join(distDir, 'robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: ${SITE_ORIGIN}/sitemap.xml\n`);
   return { styles, analytics, lazyFiles: written.size };
 }

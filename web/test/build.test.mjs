@@ -250,3 +250,26 @@ test('the summary block never names the school', async () => {
     assert.ok(!summaryBlock({ route, routes, person }).includes('Example College'));
   });
 });
+
+test('llms.txt lists the resume first, then every route with its description, and names no school', async () => {
+  const { llmsTxt, HOME_SUMMARY, buildPerson } = await import('../build/static-summary.mjs');
+  const { routes } = readRoutes();
+  const person = buildPerson(
+    { '@type': 'Person', name: 'Ada Example', description: 'A headline', sameAs: ['https://github.com/ada'] },
+    { 'ResumeController.getTimeline': TIMELINE }
+  );
+  const text = llmsTxt({ routes, person, origin: 'https://site.test' });
+  const lines = text.split('\n');
+  assert.equal(lines[0], '# Ada Example');
+  assert.ok(text.includes(HOME_SUMMARY[0]) && text.includes(HOME_SUMMARY[1]));
+  const items = lines.filter((line) => line.startsWith('- [') && line.includes('https://site.test'));
+  assert.match(items[0], /^- \[Resume\]\(https:\/\/site\.test\/resume\): /);
+  const publicRoutes = routes.filter((route) => route.path);
+  assert.equal(items.length, publicRoutes.length);
+  publicRoutes.forEach((route) => {
+    const address = `https://site.test${route.path === '/' ? '/' : route.path}`;
+    assert.ok(items.some((item) => item.includes(`(${address}): ${route.description}`)), `lists ${route.path}`);
+  });
+  assert.ok(!text.includes('Example College'));
+  assert.ok(text.endsWith('\n') && !text.includes('\r'));
+});

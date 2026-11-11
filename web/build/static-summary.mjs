@@ -143,3 +143,30 @@ export function buildPerson(base, reads = {}) {
   if (school) person.alumniOf = { '@type': 'EducationalOrganization', name: school };
   return person;
 }
+
+/**
+ * The llms.txt file: the name, the home summary and a link with its description for every
+ * route, the resume first. It is built from the same route list as the sitemap, so it never
+ * goes stale, and it names no institution.
+ * @param {object} input routes, person (the Person object the pages carry), origin
+ */
+export function llmsTxt({ routes, person, origin }) {
+  const pages = orderedRoutes(routes);
+  const ordered = [...pages.filter((route) => route.path === '/resume'), ...pages.filter((route) => route.path !== '/resume')];
+  const url = (route) => `${origin}${route.path === '/' ? '/' : route.path}`;
+  const clean = (value) => String(value).replace(/\s+/g, ' ').trim();
+  const lines = [
+    `# ${clean(person.name)}`,
+    '',
+    `> ${clean(person.description)}. ${HOME_SUMMARY.map(clean).join(' ')}`,
+    '',
+    '## Pages',
+    '',
+    ...ordered.map((route) => `- [${clean(linkLabel(route))}](${url(route)}): ${clean(route.description)}`)
+  ];
+  const profiles = person.sameAs || [];
+  if (profiles.length) {
+    lines.push('', '## Profiles', '', ...profiles.map((profile) => `- [${profileLabel(profile)}](${profile})`));
+  }
+  return `${lines.join('\n')}\n`;
+}
