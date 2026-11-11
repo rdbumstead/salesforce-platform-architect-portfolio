@@ -154,6 +154,25 @@
  * a grid so its button fills the column. The chips share equal columns from 899 px down, and a
  * last chip that would stand alone on its row takes the room of the empty cells beside it.
  */
+/*
+ * From 900 to 1279 px the captions each take a row of their own and the three buttons share the
+ * row under them at their own widths. Beside the captions the buttons wrapped two and one, and
+ * equal columns this wide would stretch them, so they keep their natural size.
+ */
+@media (min-width: 900px) and (max-width: 1279.98px) {
+  .metrics-head {
+    display: grid;
+    grid-template-columns: repeat(3, max-content);
+    justify-content: start;
+    gap: var(--pf-space-3);
+    align-items: center;
+  }
+
+  .metrics-head > .metrics-caption {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width: 899.98px) {
   .metrics-head {
     display: grid;
