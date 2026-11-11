@@ -111,7 +111,7 @@ test('the layout hooks come from the branding set and a missing key stops the bu
   assert.match(css, /--dxp-s-body-line-height: 1\.65;/);
   assert.match(css, /--dxp-s-link-text-decoration: none;/);
   assert.match(css, /--dxp-s-section-content-spacing-inline-start: 1rem;/);
-  assert.match(css, /--dxp-s-section-content-spacing-inline-start-mobile: 0\.75rem;/);
+  assert.match(css, /--dxp-s-section-content-spacing-inline-start-mobile: 1rem;/);
   assert.equal(Object.keys(SECTION_SPACING).length, 8);
   const missing = { ...values };
   delete missing.ComponentSpacerSizeDesktop;
@@ -227,4 +227,22 @@ test('every component but the last in its column gets the gap class', () => {
   assert.equal(last.has(a), false);
   assert.equal(last.has(loose), false);
   assert.equal(lastInColumn([]).size, 0);
+});
+
+test('the side gutter below 64em is 16 px on both hosts and the footer sits straight in its region', () => {
+  const values = readBranding();
+  assert.equal(values.HorizontalRowPaddingMobile, '1rem');
+  assert.equal(SECTION_SPACING['--dxp-s-section-content-spacing-inline-start-mobile'], values.HorizontalRowPaddingMobile);
+  assert.equal(SECTION_SPACING['--dxp-s-section-content-spacing-inline-end-mobile'], values.HorizontalRowPaddingMobile);
+  const layoutFile = path.join(
+    LWC_DIR,
+    '../digitalExperiences/site/Portfolio1/sfdc_cms__themeLayout/portfolioThemeLayout/content.json'
+  );
+  const layout = JSON.parse(fs.readFileSync(layoutFile, 'utf8')).contentBody.component;
+  const footerRegion = layout.children.find((child) => child.name === 'footer');
+  assert.deepEqual(
+    footerRegion.children.map((child) => [child.type, child.definition]),
+    [['component', 'c:footer']],
+    'no section wraps the footer, so its rule is full bleed'
+  );
 });

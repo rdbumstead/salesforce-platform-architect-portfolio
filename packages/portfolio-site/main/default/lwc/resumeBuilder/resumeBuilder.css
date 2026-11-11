@@ -289,7 +289,9 @@
   margin-inline-start: 0;
 }
 
-@media (min-width: 768px) {
+/* Two columns from 900 px. Below that the settings sit above the preview, one full width
+   column each, so neither is squeezed. */
+@media (min-width: 900px) {
   .builder-grid {
     grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
     align-items: start;
@@ -306,8 +308,9 @@
   }
 }
 
-/* Phones: no outer card, so the resume is not boxed three times. */
-@media (max-width: 767.98px) {
+/* Below 1025 px: no outer card and no side padding, so the settings and the resume sit on
+   the page gutter and are not boxed three times. */
+@media (max-width: 1024.98px) {
   .builder-card {
     --slds-c-card-color-border: transparent;
     --slds-c-card-shadow: none;
@@ -318,8 +321,22 @@
   .builder-body {
     padding: 0;
   }
+}
 
+@media (max-width: 767.98px) {
   .preview-paper {
     padding: var(--pf-space-4);
+  }
+}
+
+/* A narrow paper wraps the contact row. A bullet between two links would then start a line,
+   so the bullets give way to a gap. */
+@media (max-width: 599.98px) {
+  .resume-links {
+    column-gap: var(--pf-space-4);
+  }
+
+  .resume-link + .resume-link::before {
+    display: none;
   }
 }

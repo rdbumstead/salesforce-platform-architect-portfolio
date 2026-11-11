@@ -1,287 +1,667 @@
 @import "c/sectionHeading";
 @import "c/nativeControls";
 /*
- * The work timeline under the home hero, on the --pf- site tokens only. One slim track of
- * stops, five to a row at 900 px and up, one column with the line on the left below that.
- * Every element that sets a background also sets its text colour. A panel reveals with a
- * height change and a fade, and not at all under reduced motion.
+ * The work timeline under the home hero, on the --pf- site tokens only. A time to scale ribbon
+ * with newest on the left, over a full width list of employer rows that each open to their
+ * roles. Every element that sets a background also sets its text colour. A panel reveals with a
+ * height change and not at all under reduced motion. The segment colours are scoped here and
+ * built from the site tokens, so light and dark mode both follow.
  */
 :host {
   display: block;
 }
 
 .career {
+  --seg-now: var(--pf-accent);
+  --seg-1: color-mix(in srgb, var(--pf-accent) 24%, var(--pf-bg));
+  --seg-2: color-mix(in srgb, var(--pf-accent) 52%, var(--pf-bg));
+  --seg-early: var(--pf-chip);
+  --seg-early-line: var(--pf-border);
+  --seg-ring: color-mix(in srgb, var(--pf-accent) 30%, transparent);
   max-width: var(--portfolio-content-width, 1024px);
   margin: 0 auto;
-  padding: 0 var(--pf-space-4);
+  padding: 0;
   color: var(--pf-text);
   font-family: var(--pf-font-sans);
   font-size: 16px;
   line-height: 1.5;
 }
 
-/* From 64.0625em the section's own gutter is gone, so the content lines up with the header. */
-@media (min-width: 64.0625em) {
-  .career {
-    padding-left: 0;
-    padding-right: 0;
-  }
-}
+/* The timeline carries no side padding. The layout sets the outer gutter. */
 
+/* Every home section has the same top and bottom padding. */
 .section {
-  padding: var(--pf-space-5) 0 var(--pf-space-2);
+  padding: 32px 0;
 }
 
-.intro-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--pf-space-2) var(--pf-space-3);
-  /* Room above so Expand all does not touch the data marker at the end of the heading row. */
-  margin: var(--pf-space-3) 0 var(--pf-space-4);
-}
-
-.intro {
-  margin: 0;
+.subtitle {
+  margin: 4px 0 0;
   color: var(--pf-body);
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .toggle:focus-visible,
-.panel-link:focus-visible {
+.row-head:focus-visible,
+.text-link:focus-visible {
   outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
+  border-radius: 6px;
 }
 
-/* The track: five columns at 900 px and up. Columns may shrink, so nothing scrolls sideways. */
-.track {
+/* The ribbon: ticks, an optional thin part time lane and the main lane. */
+.ribbon {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  margin-top: var(--pf-space-5);
+  user-select: none;
+}
+
+.ticks {
+  position: relative;
+  height: 18px;
+  color: var(--pf-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.tick-hidden {
+  visibility: hidden;
+}
+
+.tick-today,
+.tick-early {
+  transform: none;
+}
+
+.tick-today {
+  color: var(--pf-text);
+  font-weight: 600;
+}
+
+.tick-start {
+  color: var(--pf-accent);
+  font-weight: 600;
+}
+
+.lane {
+  position: relative;
+}
+
+.bar {
+  position: absolute;
+  overflow: hidden;
+  height: 30px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    box-shadow 160ms ease,
+    filter 160ms ease;
+}
+
+.lane[data-id="lane-side"] .bar {
+  height: 10px;
+}
+
+.lane[data-id="lane-main"] .bar {
+  height: 30px;
+}
+
+.bar-1 {
+  background-color: var(--seg-1);
+}
+
+.bar-2 {
+  background-color: var(--seg-2);
+}
+
+.bar-now {
+  background-color: var(--seg-now);
+}
+
+.bar-early {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      var(--seg-early-line) 0 1px,
+      transparent 1px 7px
+    ),
+    var(--seg-early);
+}
+
+.bar-side {
+  border-radius: 999px;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      var(--seg-now) 0 3px,
+      transparent 3px 7px
+    ),
+    var(--seg-1);
+}
+
+.bar.is-hot {
+  box-shadow: 0 0 0 3px var(--seg-ring);
+}
+
+.bar.is-open {
+  box-shadow:
+    0 0 0 2px var(--pf-bg),
+    0 0 0 4px var(--pf-accent);
+}
+
+/* The current bar ends in a still dot on the today side. */
+.now-dot {
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background-color: var(--pf-bg);
+}
+
+.side-label {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  padding-left: 8px;
+  overflow: hidden;
+  color: var(--pf-muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.break {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 8px;
+  transform: translateX(-50%);
+  background-color: var(--pf-bg);
+}
+
+.break::before,
+.break::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 1.5px;
+  background-color: var(--pf-border);
+  transform: skewX(-14deg);
+}
+
+.break::before {
+  left: 1px;
+}
+
+.break::after {
+  right: 1px;
+}
+
+/* The list: a caption and Expand all, then one row for each employer. */
+.list-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pf-space-3);
+  margin: var(--pf-space-5) 0 var(--pf-space-3);
+}
+
+.list-bar small {
+  color: var(--pf-muted);
+  font-size: 13px;
+}
+
+.rows {
   list-style: none;
   margin: 0;
   padding: 0;
+  border-top: 1px solid var(--pf-border);
+}
+
+.row {
+  border-bottom: 1px solid var(--pf-border);
+  transition: background-color 160ms ease;
+}
+
+.row-head {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: var(--pf-space-4) var(--pf-space-3);
+  grid-template-columns: 112px minmax(0, 1fr) auto;
+  gap: 4px 20px;
   align-items: start;
+  width: 100%;
+  margin: 0;
+  padding: 16px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--pf-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
-.stop {
-  position: relative;
+.years {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 2px;
+  color: var(--pf-muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.swatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.swatch-1 {
+  background-color: var(--seg-1);
+}
+
+.swatch-2 {
+  background-color: var(--seg-2);
+}
+
+.swatch-now {
+  background-color: var(--seg-now);
+}
+
+.swatch-early {
+  background-color: var(--seg-early-line);
+}
+
+.swatch-side {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--seg-now) 0 2px,
+    var(--seg-1) 2px 4px
+  );
+}
+
+.who {
+  display: grid;
+  gap: 3px;
   min-width: 0;
-  padding-top: 22px;
 }
 
-/* The rule through the dots, drawn per stop so it runs the full row. */
-.stop::before {
+.employer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.pill-now {
+  background-color: var(--pf-accent);
+  color: var(--pf-btn-text);
+}
+
+.pill-now::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: currentcolor;
+}
+
+.pill-part {
+  border: 1px solid var(--pf-border);
+  background-color: var(--pf-bg);
+  color: var(--pf-body);
+}
+
+.path {
+  color: var(--pf-body);
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.path .step,
+.path .arrow {
+  color: var(--pf-muted);
+}
+
+.path .arrow {
+  padding: 0 6px;
+}
+
+.path .lead {
+  color: var(--pf-text);
+  font-weight: 500;
+}
+
+.also {
+  color: var(--pf-muted);
+  font-size: 13px;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 1px;
+  color: var(--pf-muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.chev {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--pf-border);
+  border-radius: 8px;
+  background-color: var(--pf-bg);
+  color: var(--pf-text);
+  transition: transform 200ms ease;
+}
+
+.row.is-open .chev {
+  transform: rotate(180deg);
+}
+
+.row-early .employer {
+  color: var(--pf-body);
+}
+
+/* The panel opens full width under its row. Collapsed it is hidden from every reader. */
+.panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 220ms ease;
+}
+
+.row.is-open .panel {
+  grid-template-rows: 1fr;
+}
+
+.panel-clip {
+  min-height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  transition: visibility 0s linear 220ms;
+}
+
+.row.is-open .panel-clip {
+  visibility: visible;
+  transition: visibility 0s;
+}
+
+.panel-body {
+  padding: 0 0 20px 132px;
+}
+
+.roles {
+  position: relative;
+  display: grid;
+  gap: 18px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.roles.has-many::before {
   content: "";
   position: absolute;
-  top: 6px;
-  left: 0;
-  right: calc(-1 * var(--pf-space-3));
-  height: 1px;
+  left: 4px;
+  top: 10px;
+  bottom: 10px;
+  width: 1px;
   background-color: var(--pf-border);
 }
 
-.dot {
+.role {
+  position: relative;
+  display: grid;
+  gap: 4px;
+}
+
+.roles.has-many .role {
+  padding-left: 22px;
+}
+
+.roles.has-many .role::before {
+  content: "";
   position: absolute;
-  top: 1px;
   left: 0;
-  width: 11px;
-  height: 11px;
+  top: 7px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   border: 2px solid var(--pf-accent);
   background-color: var(--pf-bg);
   box-sizing: border-box;
 }
 
-.dot-current {
-  background-color: var(--pf-accent);
-}
-
-.dot-fold {
+.roles.has-many .role.is-part::before {
+  border-style: dashed;
   border-color: var(--pf-muted);
 }
 
-.stop-head {
+.role-top {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
 }
 
-.stop-employer {
+.role-title {
+  font-size: 15px;
   font-weight: 600;
-  overflow-wrap: anywhere;
 }
 
-.stop-span {
+.role-years {
   color: var(--pf-muted);
   font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
 
-.stop-title {
-  font-size: 14px;
+.hl {
+  display: grid;
+  gap: 3px;
+  list-style: none;
+  margin: 2px 0 0;
+  padding: 0;
+}
+
+.highlight {
+  position: relative;
+  max-width: 62ch;
+  padding-left: 16px;
+  color: var(--pf-body);
+  font-size: 14.5px;
+  line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
-.toggle {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--pf-accent);
-  font: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  text-align: left;
-  cursor: pointer;
+.highlight::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.66em;
+  width: 6px;
+  height: 1.5px;
+  background-color: var(--pf-muted);
 }
 
-.toggle:hover {
-  text-decoration: underline;
-}
-
-/* The panel. Collapsed it has no height and is hidden from the keyboard and screen readers. */
-.panel {
+.early-list {
   display: grid;
-  grid-template-rows: 0fr;
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    grid-template-rows 180ms ease,
-    opacity 180ms ease,
-    visibility 0s linear 180ms;
-}
-
-.panel-open {
-  grid-template-rows: 1fr;
-  opacity: 1;
-  visibility: visible;
-  transition:
-    grid-template-rows 180ms ease,
-    opacity 180ms ease,
-    visibility 0s;
-}
-
-.panel-clip {
-  min-height: 0;
-  overflow: hidden;
-}
-
-.roles,
-.earlier,
-.highlights {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.role {
-  padding: var(--pf-space-2) 0;
+.early-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 8px 0;
   border-top: 1px solid var(--pf-border);
-  font-size: 13px;
+  color: var(--pf-body);
+  font-size: 14px;
+  overflow-wrap: anywhere;
 }
 
-.role-title {
-  display: block;
+.early-line:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.early-line span:last-child {
+  color: var(--pf-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.early-line b {
+  color: var(--pf-text);
   font-weight: 600;
 }
 
-.role-years {
-  display: block;
-  color: var(--pf-muted);
-}
-
-.highlights {
-  margin-top: var(--pf-space-1);
-}
-
-/* A bullet wraps, and the marker hangs so wrapped lines sit under the text, not the dot. */
-.highlight {
-  position: relative;
-  padding-left: 12px;
-  line-height: 1.4;
-  overflow-wrap: anywhere;
-  color: var(--pf-body);
-}
-
-.highlight::before {
-  content: "•";
-  position: absolute;
-  left: 0;
-}
-
-.earlier-line {
-  padding: var(--pf-space-1) 0;
-  border-top: 1px solid var(--pf-border);
-  font-size: 13px;
-  line-height: 1.4;
-  overflow-wrap: anywhere;
-}
-
-.panel-link,
-.panel-link:link,
-.panel-link:visited {
+.text-link,
+.text-link:link,
+.text-link:visited {
   display: inline-flex;
-  align-items: center;
   min-height: 44px;
+  align-items: center;
+  margin-top: 4px;
   color: var(--pf-accent);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   text-decoration: none;
 }
 
-.panel-link:hover {
+.text-link:hover {
   text-decoration: underline;
 }
 
 .career-foot {
   display: flex;
-  margin-top: var(--pf-space-4);
+  margin-top: var(--pf-space-5);
+}
+
+/* From 1025px the rows and their hover tint carry a little inner space. Below it the content sits
+   on the column edge, because the layout sets the gutter. */
+@media (min-width: 64.0625em) {
+  .row.is-hot,
+  .row.is-open {
+    background-color: var(--pf-subtle);
+  }
+
+  .row-head {
+    padding-inline: 14px;
+  }
+
+  .panel-body {
+    padding-left: 146px;
+  }
+}
+
+/* Under 860px the minor ticks go, so the ticks never touch. */
+@media (max-width: 860px) {
+  .tick-minor {
+    display: none;
+  }
+}
+
+/* Phones: the part time label goes, and the row head stacks. */
+@media (max-width: 640px) {
+  .side-label {
+    display: none;
+  }
+
+  .row-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .years {
+    grid-column: 1;
+    grid-row: 1;
+    padding-top: 0;
+  }
+
+  .who {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .meta {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+
+  .meta .count {
+    display: none;
+  }
+
+  .employer {
+    font-size: 16px;
+  }
+
+  .path {
+    font-size: 14.5px;
+  }
+
+  .panel-body {
+    padding-left: 0;
+  }
+
+  .list-bar small {
+    display: none;
+  }
+
+  .career-foot .nc-button {
+    width: 100%;
+  }
 }
 
 /* Reduced motion: from the motion preference the class mirrors, or the system setting. */
 .career-still .panel,
-.career-still .panel-open {
+.career-still .panel-clip,
+.career-still .chev,
+.career-still .bar,
+.career-still .row {
   transition: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .panel,
-  .panel-open {
+  .panel-clip,
+  .chev,
+  .bar,
+  .row {
     transition: none;
-  }
-}
-
-/* Tablet and phone: one column, the line on the left, each panel under its stop. */
-@media screen and (max-width: 899.98px) {
-  .track {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0;
-    border-left: 1px solid var(--pf-border);
-    margin-left: 5px;
-  }
-
-  .stop {
-    padding: 0 0 var(--pf-space-4) var(--pf-space-4);
-  }
-
-  .stop::before {
-    display: none;
-  }
-
-  .dot {
-    top: 4px;
-    left: -6px;
-  }
-}
-
-/* Phone: the resume button spans the column. */
-@media screen and (max-width: 767.98px) {
-  .career-foot .nc-button {
-    width: 100%;
   }
 }

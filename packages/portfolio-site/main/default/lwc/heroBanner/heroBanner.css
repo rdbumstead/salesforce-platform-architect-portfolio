@@ -4,21 +4,15 @@
 .home {
   max-width: var(--portfolio-content-width, 1024px);
   margin: 0 auto;
-  padding: 64px var(--pf-space-4) 0;
+  padding: 64px 0 0;
   color: var(--pf-text);
   font-family: var(--pf-font-sans);
   font-size: 16px;
   line-height: 1.65;
 }
 
-/* At desktop width the layout sets the column. The hero lines up with the header brand,
-   so it takes no side padding of its own. */
-@media (min-width: 64.0625em) {
-  .home {
-    padding-left: 0;
-    padding-right: 0;
-  }
-}
+/* The hero takes no side padding of its own. The layout sets the outer gutter, so the hero
+   lines up with the header brand at every width. */
 
 /* The photo sits beside the text, centred on it from top to bottom. */
 .hero {
@@ -26,7 +20,7 @@
   grid-template-columns: 132px minmax(0, 1fr);
   gap: 28px;
   align-items: center;
-  padding-bottom: 56px;
+  padding-bottom: 32px;
   border-bottom: 1px solid var(--pf-border);
 }
 
@@ -224,6 +218,38 @@
 .profile-link:focus-visible {
   outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
+}
+
+/* From 900px the text sits on the left and the proof box on the right. The box spans the
+   rows beside the text, so the name, line, sentence, chips and links keep the left edge. */
+@media (min-width: 900px) {
+  .hero-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 25rem);
+    column-gap: var(--pf-space-6);
+    row-gap: var(--pf-space-3);
+    align-content: start;
+  }
+
+  .hero-body > * {
+    grid-column: 1;
+  }
+
+  .hero-body > .proof-panel {
+    grid-column: 2;
+    grid-row: 1 / span 6;
+    align-self: start;
+    max-width: none;
+    margin-top: 0;
+  }
+}
+
+/* Under 900px the photo stacks above the name and the box sits under the chips. */
+@media (max-width: 899.98px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--pf-space-4);
+  }
 }
 
 /* Phones: the photo moves above the name, smaller, so the buttons stay near the top. */

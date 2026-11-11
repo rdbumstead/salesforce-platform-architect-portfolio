@@ -524,6 +524,30 @@ async function footerOnce(browser, viewport) {
     await page.waitForTimeout(SETTLE_MS);
     const count = await chips.count();
     const problems = [];
+    // The footer text shares the brand's left edge and its top rule runs the full width, on both
+    // hosts and at every width.
+    const brandBox = await page.locator(".site-brand").first().boundingBox();
+    const copyBox = await page
+      .locator("c-footer .copyright")
+      .first()
+      .boundingBox();
+    const ruleBox = await page
+      .locator("c-footer .footer")
+      .first()
+      .boundingBox();
+    if (brandBox && copyBox && Math.abs(brandBox.x - copyBox.x) > 1) {
+      problems.push(
+        `footer text starts at ${Math.round(copyBox.x)}, the brand at ${Math.round(brandBox.x)}`
+      );
+    }
+    if (
+      ruleBox &&
+      (ruleBox.x > 1 || Math.abs(ruleBox.width - viewport.width) > 1)
+    ) {
+      problems.push(
+        `footer rule is not full width: ${Math.round(ruleBox.x)} and ${Math.round(ruleBox.width)}`
+      );
+    }
     const keyOf = (chip) => chip.evaluate((el) => el.dataset.key);
     const isOpen = (chip) =>
       chip.evaluate((el) => el.getAttribute("aria-expanded") === "true");

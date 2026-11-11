@@ -300,7 +300,7 @@ describe("c-by-the-numbers", () => {
     expect(text(element, "p.note")).toBe(
       "Each number is counted from Salesforce records. No record, name or message is sent to this page."
     );
-    expect(text(element, ".eyebrow")).toBe("Counted from records");
+    expect(element.shadowRoot.querySelector(".eyebrow")).toBeNull();
   });
 
   describe("testimonials table", () => {

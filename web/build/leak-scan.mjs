@@ -8,6 +8,9 @@
  *   - any term in SITE_DENYLIST (comma or newline separated, held as a secret, never in the repo),
  *     matched as a whole word in any text value, so a short term such as an acronym does not
  *     catch the middle of an ordinary word or a surname
+ *   - the same denylist, matched against the text of every page (the head, the static summary and
+ *     any other markup, with the data block left to the data checks above) and against every .txt
+ *     file in the build, llms.txt included
  * A fixture build skips the denylist with a notice, because it holds sample data only.
  */
 import fs from 'node:fs';
@@ -98,6 +101,30 @@ export function builtData(distDir) {
   return blocks;
 }
 
+/** The built site's text files, with their names. */
+export function builtTextFiles(distDir) {
+  return [...files(distDir, (f) => f.endsWith('.txt'))].map((file) => ({ file, text: fs.readFileSync(file, 'utf8') }));
+}
+
+const NAMED_ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
+
+/** Decodes the entities a page writer may have used, so an entity never hides a word edge. */
+export function decodeEntities(text) {
+  return String(text).replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (all, body) => {
+    if (body[0] === '#') {
+      const code = body[1].toLowerCase() === 'x' ? parseInt(body.slice(2), 16) : parseInt(body.slice(1), 10);
+      return Number.isFinite(code) && code <= 0x10ffff ? String.fromCodePoint(code) : all;
+    }
+    const named = NAMED_ENTITIES[body.toLowerCase()];
+    return named === undefined ? all : named;
+  });
+}
+
+/** A page's markup without its data block, which the data checks read as parsed JSON. */
+export function pageMarkup(html) {
+  return decodeEntities(String(html).replace(/<script type="application\/json" id="site-data">[\s\S]*?<\/script>/, ' '));
+}
+
 function terms(raw) {
   return String(raw || '')
     .split(/[\n,]/)
@@ -161,6 +188,17 @@ export function scan(distDir, options = {}) {
         problems.push(`${relative} contains a denylisted term`);
       }
     }
+    if (file.endsWith('.html')) {
+      const markup = pageMarkup(text);
+      if (denylist.some((matcher) => matcher.test(markup))) problems.push(`${relative} contains a denylisted term in its page text`);
+    }
+  });
+  builtTextFiles(distDir).forEach(({ file, text }) => {
+    const relative = path.relative(distDir, file);
+    SECRET_PATTERNS.forEach(([label, pattern]) => {
+      if (pattern.test(text)) problems.push(`${relative} contains ${label}`);
+    });
+    if (denylist.some((matcher) => matcher.test(text))) problems.push(`${relative} contains a denylisted term`);
   });
   return { problems: [...new Set(problems)], notices };
 }

@@ -123,31 +123,33 @@
               GitHub.
             </p>
           </template>
-          <template lwc:if={hasToc}>
-            <details class="toc" open={tocOpen} ontoggle={handleTocToggle}>
-              <summary class="toc-summary">Contents</summary>
-              <nav lwc:if={tocOpen} class="toc-nav" aria-label="Contents">
-                <ul class="toc-list">
-                  <template for:each={tocItems} for:item="item">
-                    <li key={item.id} class={item.className}>
-                      <a
-                        class="toc-link"
-                        href={item.href}
-                        data-id={item.id}
-                        onclick={handleTocClick}
-                        >{item.text}</a
-                      >
-                    </li>
-                  </template>
-                </ul>
-              </nav>
-            </details>
-          </template>
-          <div
-            class="doc-body"
-            lwc:dom="manual"
-            onclick={handleBodyClick}
-          ></div>
+          <div class="doc-layout">
+            <template lwc:if={hasToc}>
+              <details class="toc" open={tocOpen} ontoggle={handleTocToggle}>
+                <summary class="toc-summary">Contents</summary>
+                <nav lwc:if={tocOpen} class="toc-nav" aria-label="Contents">
+                  <ul class="toc-list">
+                    <template for:each={tocItems} for:item="item">
+                      <li key={item.id} class={item.className}>
+                        <a
+                          class="toc-link"
+                          href={item.href}
+                          data-id={item.id}
+                          onclick={handleTocClick}
+                          >{item.text}</a
+                        >
+                      </li>
+                    </template>
+                  </ul>
+                </nav>
+              </details>
+            </template>
+            <div
+              class="doc-body"
+              lwc:dom="manual"
+              onclick={handleBodyClick}
+            ></div>
+          </div>
         </template>
       </template>
     </template>

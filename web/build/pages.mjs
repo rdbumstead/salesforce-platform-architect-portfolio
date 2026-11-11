@@ -1,8 +1,8 @@
 /**
  * Writes one HTML page per route, the shared stylesheet, the analytics script, the data
- * files, sitemap.xml and robots.txt.
+ * files, sitemap.xml, llms.txt and robots.txt.
  *
- * The global head tags (icons, link preview image, the Person block) and the GA4 bootstrap
+ * The global head tags (icons, link preview image) and the GA4 bootstrap
  * come from the Salesforce site's own head markup, and each route's title, description and
  * link preview tags from its view, so both hosts read one source until cutover.
  */
@@ -11,6 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { SITE_DIR, SITE_ORIGIN } from './routes.mjs';
 import { pageLayoutCss } from './layout.mjs';
+import { assertDescriptions, buildPerson, llmsTxt, summaryBlock, summaryCss } from './static-summary.mjs';
 
 /** Reads under this many characters are inlined in the page. Larger ones load on demand. */
 export const INLINE_LIMIT = 12000;
@@ -71,12 +72,13 @@ export function readHeadMarkup(resourceUrls, siteDir = SITE_DIR) {
     keep.push(resourcePath(tag, resourceUrls).replace(SALESFORCE_SITE, SITE_ORIGIN));
   }
   // The head markup is this repo's own file, never visitor input. Tag names match in any case.
-  const jsonLd = (markup.match(/<script\s+type="application\/ld\+json"\s*>[\s\S]*?<\/script\s*>/i) || [])[0];
-  if (jsonLd) keep.push(jsonLd);
+  const jsonLdMatch = markup.match(/<script\s+type="application\/ld\+json"\s*>([\s\S]*?)<\/script\s*>/i);
+  // The static build writes its own Person block from export data, so the copy is not kept.
+  const person = jsonLdMatch ? JSON.parse(jsonLdMatch[1]) : null;
   const inline = [...markup.matchAll(/<script\s*>([\s\S]*?)<\/script\s*>/gi)].map((m) => m[1]);
   const hidden = [...markup.matchAll(/<x-oasis-script\s+hidden="true"[^>]*>([\s\S]*?)<\/x-oasis-script\s*>/gi)].map((m) => m[1]);
   const loader = (markup.match(/<x-oasis-script\s+async\s+src="([^"]+)"/i) || [])[1] || null;
-  return { tags: keep, analytics: [...hidden, ...inline].join('\n'), analyticsLoader: loader };
+  return { tags: keep, person, analytics: [...hidden, ...inline].join('\n'), analyticsLoader: loader };
 }
 
 /** The site's global stylesheet, with its font addresses moved to /sr. */
@@ -122,7 +124,7 @@ export function pageData(keys, reads, distDir, written) {
   return { inline, lazy };
 }
 
-function page({ route, head, styles, scripts, data, analytics, analyticsLoader, fontPreload }) {
+function page({ route, routes, person, head, styles, scripts, data, analytics, analyticsLoader, fontPreload }) {
   const lines = [
     '<!doctype html>',
     '<html lang="en">',
@@ -134,7 +136,9 @@ function page({ route, head, styles, scripts, data, analytics, analyticsLoader, 
   if (route.description) lines.push(`<meta name="description" content="${escapeHtml(route.description)}">`);
   if (route.headTags) lines.push(route.headTags.trim());
   if (route.errorCode) lines.push('<meta name="robots" content="noindex">');
+  lines.push(`<script type="application/ld+json">${scriptJson(person)}</script>`);
   lines.push(...head);
+  if (route.path) lines.push(`<style>${summaryCss()}</style>`);
   if (fontPreload) lines.push(`<link rel="preload" href="${fontPreload}" as="font" type="font/woff2" crossorigin>`);
   lines.push(`<link rel="stylesheet" href="${styles}">`);
   scripts.slice(1).forEach((chunk) => lines.push(`<link rel="modulepreload" href="${chunk}">`));
@@ -144,7 +148,8 @@ function page({ route, head, styles, scripts, data, analytics, analyticsLoader, 
   lines.push(
     '</head>',
     '<body>',
-    '<div id="site-root"><noscript><p>This site needs JavaScript to show its sections.</p></noscript></div>',
+    `<div id="site-root">${route.path ? `${summaryBlock({ route, routes, person })}
+` : ''}<noscript><p>This site needs JavaScript to show its sections.</p></noscript></div>`,
     `<script type="application/json" id="site-data">${scriptJson(data)}</script>`,
     `<script type="module" src="${scripts[0]}"></script>`,
     '</body>',
@@ -160,7 +165,10 @@ function page({ route, head, styles, scripts, data, analytics, analyticsLoader, 
  */
 export function writePages(input) {
   const { routes, scripts, readKeys, reads, manifest, resourceUrls, distDir } = input;
+  assertDescriptions(routes);
   const head = readHeadMarkup(resourceUrls);
+  if (!head.person) throw new Error('The site head markup has no Person block to build the static pages from.');
+  const person = buildPerson(head.person, reads);
   const styles = writeHashed(distDir, 'site', 'css', pageStylesheet());
   const analytics = head.analytics ? writeHashed(distDir, 'analytics', 'js', head.analytics) : null;
   const fonts = resourceUrls.get('Portfolio_Fonts');
@@ -177,6 +185,8 @@ export function writePages(input) {
     const { inline, lazy } = pageData(readKeys.get(route.key) || [], reads, distDir, written);
     const html = page({
       route,
+      routes,
+      person,
       head: head.tags,
       styles,
       scripts: scripts.get(route.key),
@@ -198,6 +208,7 @@ export function writePages(input) {
     path.join(distDir, 'sitemap.xml'),
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`
   );
+  fs.writeFileSync(path.join(distDir, 'llms.txt'), llmsTxt({ routes, person, origin: SITE_ORIGIN }));
   fs.writeFileSync(path.join(distDir, 'robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: ${SITE_ORIGIN}/sitemap.xml\n`);
   return { styles, analytics, lazyFiles: written.size };
 }

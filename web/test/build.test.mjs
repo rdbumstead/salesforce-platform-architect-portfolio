@@ -153,3 +153,132 @@ test('values placed in generated code cannot close a script element and round tr
     assert.deepEqual(new Function(`return ${text}`)(), value);
   }
 });
+
+const PERSON = { name: 'Ada Example', description: 'A <b>headline</b> & more', sameAs: ['https://www.linkedin.com/in/ada', 'https://github.com/ada'] };
+
+test('every public route has a description, and a missing one fails the build', async () => {
+  const { assertDescriptions } = await import('../build/static-summary.mjs');
+  const { routes } = readRoutes();
+  assert.doesNotThrow(() => assertDescriptions(routes));
+  assert.doesNotThrow(() => assertDescriptions([{ path: null, description: '' }]), 'an error page needs none');
+  assert.throws(() => assertDescriptions([{ path: '/x', description: '  ' }]), /\/x/);
+  assert.throws(() => assertDescriptions([{ path: '/x' }]));
+});
+
+test('the summary block holds the name, the route text, links to every route and the profiles', async () => {
+  const { summaryBlock, HOME_SUMMARY } = await import('../build/static-summary.mjs');
+  const { routes } = readRoutes();
+  const home = routes.find((route) => route.path === '/');
+  const resume = routes.find((route) => route.path === '/resume');
+  const block = summaryBlock({ route: home, routes, person: PERSON });
+  assert.match(block, /<div id="static-summary">/);
+  assert.ok(block.includes('<strong>Ada Example</strong>'));
+  assert.ok(block.includes('A &lt;b&gt;headline&lt;/b&gt; &amp; more'), 'person text is escaped');
+  assert.ok(block.includes(`<h1>${home.title}</h1>`));
+  assert.ok(block.includes(home.description));
+  HOME_SUMMARY.forEach((line) => assert.ok(block.includes(line)));
+  routes.filter((route) => route.path).forEach((route) => assert.ok(block.includes(`<a href="${route.path}">`), `links to ${route.path}`));
+  assert.ok(block.indexOf('href="/resume"') < block.indexOf('href="/skills"'), 'the resume comes early');
+  assert.ok(block.includes('<a href="https://github.com/ada">GitHub</a>'));
+  assert.ok(!block.includes('<script'));
+  const other = summaryBlock({ route: resume, routes, person: PERSON });
+  assert.ok(!other.includes(HOME_SUMMARY[0]), 'the home summary is for the home page only');
+  assert.ok(other.includes(`<h1>${resume.title}</h1>`));
+});
+
+test('the summary is hidden for browsers that run scripts, by a rule in the head', async () => {
+  const { summaryCss } = await import('../build/static-summary.mjs');
+  assert.match(summaryCss(), /@media \(scripting: enabled\)\{#static-summary\{display:none\}\}/);
+});
+
+test('the head reader returns the Person block as an object', () => {
+  const urls = new Map([...resourceIndex()].map(([name, resource]) => [name, resource.url]));
+  const { person } = readHeadMarkup(urls);
+  assert.equal(person['@type'], 'Person');
+  assert.ok(Array.isArray(person.sameAs));
+});
+
+const TIMELINE = {
+  education: [{ school: 'Example College', credential: 'BSc' }],
+  certifications: [
+    { name: 'Salesforce Certified Platform Administrator', issuer: 'Salesforce', earnedDate: '2024-06-19' },
+    { name: 'Other Credential', issuer: '', earnedDate: '' },
+    { name: '  ' }
+  ]
+};
+
+test('the built Person block adds the topics, Trailhead, one credential per certification and the school', async () => {
+  const { buildPerson, KNOWS_ABOUT } = await import('../build/static-summary.mjs');
+  const base = { '@context': 'https://schema.org', '@type': 'Person', name: 'Ada', jobTitle: 'Senior Solution Consultant', sameAs: ['https://github.com/ada'] };
+  const person = buildPerson(base, {
+    'ResumeController.getTimeline': TIMELINE,
+    'ResumeController.getHeader': { trailheadUrl: 'https://www.salesforce.com/trailblazer/ada' }
+  });
+  assert.equal(person.jobTitle, 'Senior Solution Consultant');
+  assert.deepEqual(person.knowsAbout, KNOWS_ABOUT);
+  assert.ok(!person.knowsAbout.some((topic) => /governance/i.test(topic)));
+  assert.deepEqual(person.sameAs, ['https://github.com/ada', 'https://www.salesforce.com/trailblazer/ada']);
+  assert.equal(person.hasCredential.length, 2, 'a certification with no name is dropped');
+  assert.deepEqual(person.hasCredential[0], {
+    '@type': 'EducationalOccupationalCredential',
+    name: 'Salesforce Certified Platform Administrator',
+    credentialCategory: 'certification',
+    recognizedBy: { '@type': 'Organization', name: 'Salesforce' },
+    dateCreated: '2024-06-19'
+  });
+  assert.ok(!('recognizedBy' in person.hasCredential[1]) && !('dateCreated' in person.hasCredential[1]));
+  assert.deepEqual(person.alumniOf, { '@type': 'EducationalOrganization', name: 'Example College' });
+  assert.deepEqual(base.sameAs, ['https://github.com/ada'], 'the input is not changed');
+});
+
+test('the Person block leaves alumniOf and credentials out when the data has none', async () => {
+  const { buildPerson } = await import('../build/static-summary.mjs');
+  const base = { '@type': 'Person', name: 'Ada', sameAs: ['https://github.com/ada'] };
+  [{}, { 'ResumeController.getTimeline': { education: [{ school: ' ' }], certifications: [] } }, { 'ResumeController.getTimeline': { education: [] } }].forEach((reads) => {
+    const person = buildPerson(base, reads);
+    assert.ok(!('alumniOf' in person) && !('hasCredential' in person));
+    assert.deepEqual(person.sameAs, ['https://github.com/ada'], 'a missing or non web Trailhead link adds nothing');
+  });
+  assert.deepEqual(buildPerson(base, { 'ResumeController.getHeader': { trailheadUrl: 'javascript:alert(1)' } }).sameAs, ['https://github.com/ada']);
+});
+
+test('the summary block never names the school', async () => {
+  const { summaryBlock, buildPerson } = await import('../build/static-summary.mjs');
+  const { routes } = readRoutes();
+  const person = buildPerson({ '@type': 'Person', name: 'Ada', description: 'x', sameAs: [] }, { 'ResumeController.getTimeline': TIMELINE });
+  routes.filter((route) => route.path).forEach((route) => {
+    assert.ok(!summaryBlock({ route, routes, person }).includes('Example College'));
+  });
+});
+
+test('llms.txt lists the resume first, then every route with its description, and names no school', async () => {
+  const { llmsTxt, HOME_SUMMARY, buildPerson } = await import('../build/static-summary.mjs');
+  const { routes } = readRoutes();
+  const person = buildPerson(
+    { '@type': 'Person', name: 'Ada Example', description: 'A headline', sameAs: ['https://github.com/ada'] },
+    { 'ResumeController.getTimeline': TIMELINE }
+  );
+  const text = llmsTxt({ routes, person, origin: 'https://site.test' });
+  const lines = text.split('\n');
+  assert.equal(lines[0], '# Ada Example');
+  assert.ok(text.includes(HOME_SUMMARY[0]) && text.includes(HOME_SUMMARY[1]));
+  const items = lines.filter((line) => /^- \[[^\]]+\]\(https:\/\/site\.test\//.test(line));
+  assert.match(items[0], /^- \[Resume\]\(https:\/\/site\.test\/resume\): /);
+  const publicRoutes = routes.filter((route) => route.path);
+  assert.equal(items.length, publicRoutes.length);
+  publicRoutes.forEach((route) => {
+    const address = `https://site.test${route.path === '/' ? '/' : route.path}`;
+    assert.ok(items.some((item) => item.includes(`(${address}): ${route.description}`)), `lists ${route.path}`);
+  });
+  assert.ok(!text.includes('Example College'));
+  assert.ok(text.endsWith('\n') && !text.includes('\r'));
+});
+
+test('profile labels match the real domain or its subdomains, never a lookalike host', async () => {
+  const { profileLabel } = await import('../build/static-summary.mjs');
+  assert.equal(profileLabel('https://www.linkedin.com/in/ada'), 'LinkedIn');
+  assert.equal(profileLabel('https://github.com/ada'), 'GitHub');
+  assert.equal(profileLabel('https://trailblazer.salesforce.com/ada'), 'Trailhead');
+  assert.equal(profileLabel('https://evillinkedin.com/in/ada'), 'evillinkedin.com');
+  assert.equal(profileLabel('https://github.com.example.net/ada'), 'github.com.example.net');
+});
