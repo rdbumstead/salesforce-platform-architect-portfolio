@@ -46,7 +46,6 @@
 
 .wait-note {
   margin-top: var(--pf-space-2);
-  text-align: right;
 }
 
 .fallback-note {
@@ -291,14 +290,17 @@
   }
 }
 
-/* Phones: more of the width for the letter, and the note under Generate reads from the left. */
+/* Phones: more of the width for the letter. */
 @media (max-width: 767.98px) {
   .letter-sheet {
     padding: var(--pf-space-4);
   }
+}
 
-  .wait-note {
-    text-align: left;
+/* Below 1025 px: no card box and no side padding, so the form sits on the page gutter. */
+@media (max-width: 1024.98px) {
+  .generator {
+    padding-inline: 0;
   }
 }
 
