@@ -10,8 +10,8 @@
  */
 /**
  * The two line summary on the home page. This is visitor copy and it is a DRAFT until the
- * owner approves the exact text. Swap the approved text in here, in this one place. The
- * summary block and llms.txt both read it.
+ * site's author approves the exact text. Swap the approved text in here, in this one place.
+ * The summary block and llms.txt both read it.
  */
 export const HOME_SUMMARY = [
   'Ryan Bumstead is a Salesforce Platform Architect who designs and delivers Education Cloud for universities and nonprofits.',
