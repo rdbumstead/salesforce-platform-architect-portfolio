@@ -161,6 +161,11 @@ export default class CredentialsBand extends LightningElement {
     );
   }
 
+  /** The tile count, for the one row layout on wide screens. */
+  get certGridStyle() {
+    return `--cert-count: ${Math.max(this.certTiles.length, 1)}`;
+  }
+
   get hasEducation() {
     return this.degrees.length > 0;
   }
