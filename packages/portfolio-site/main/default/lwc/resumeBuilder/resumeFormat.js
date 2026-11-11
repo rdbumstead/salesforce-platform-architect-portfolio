@@ -24,6 +24,8 @@
  *                      few months after a full time one in the same years sits under it, not
  *                      above it, on the page, in the PDF and in the ATS text. The part time
  *                      flag is isPartTime on each role from getResume, false when missing.
+ *                      A part time role's line and ATS line add "(part time)" after the
+ *                      employer, unless the employer name already says part time.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -208,27 +210,45 @@ function certificationGroupsByIssuer(list) {
   return groups;
 }
 
+/**
+ * The employer as a role line shows it. A part time role adds "(part time)" after the name,
+ * unless the name already says part time, so the resume page, the PDF and the ATS text keep
+ * saying it while the employer record carries the plain name. Empty with no employer.
+ * @param {string} employer the cleaned employer name
+ * @param {boolean} isPartTime the role's part time flag
+ * @returns {string} the employer label
+ */
+export function employerLabel(employer, isPartTime) {
+  if (!employer || !isPartTime || /part[\s-]?time/i.test(employer)) {
+    return employer;
+  }
+  return `${employer} (${RESUME_LAYOUT.labels.partTime})`;
+}
+
 function toRole(role, roleIndex) {
   const dateRange = formatDateRange(role);
   const isRemote = role.isRemote === true;
+  const isPartTime = role.isPartTime === true;
   const datesText = isRemote
     ? `${dateRange} | ${RESUME_LAYOUT.labels.remote}`
     : dateRange;
+  const employer = clean(role.employer);
+  const employerText = employerLabel(employer, isPartTime);
   return {
     key: role.id || `role-${roleIndex}`,
     title: clean(role.title),
-    employer: clean(role.employer),
-    heading: [clean(role.title), clean(role.employer)]
+    employer,
+    heading: [clean(role.title), employerText]
       .filter((part) => part)
       .join(", "),
     dateRange,
     datesText,
     isRemote,
-    isPartTime: role.isPartTime === true,
+    isPartTime,
     isCurrent: role.isCurrent === true,
     startDate: role.startDate ? String(role.startDate) : "",
     endDate: role.endDate ? String(role.endDate) : "",
-    atsLine: [clean(role.title), clean(role.employer), datesText]
+    atsLine: [clean(role.title), employerText, datesText]
       .filter((part) => part)
       .join(" | "),
     yearRange: formatYearRange(role),

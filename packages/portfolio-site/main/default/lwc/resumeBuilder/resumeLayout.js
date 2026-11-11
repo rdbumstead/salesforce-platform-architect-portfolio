@@ -38,7 +38,8 @@ export const RESUME_LAYOUT = Object.freeze({
     earlierRoles: "Earlier roles",
     retired: "Retired",
     verify: "Verify on Trailhead",
-    remote: "Remote"
+    remote: "Remote",
+    partTime: "part time"
   })
 });
 

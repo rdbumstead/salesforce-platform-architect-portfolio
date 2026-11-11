@@ -15,9 +15,6 @@
             class="card-source heading-badge-end"
           ></c-data-source>
         </div>
-        <template lwc:if={hasSubtitle}>
-          <p class="subtitle" data-id="subtitle">{subtitle}</p>
-        </template>
 
         <div class="ribbon" aria-hidden="true" data-id="ribbon">
           <div class="ticks" data-id="ticks">
@@ -72,13 +69,6 @@
                   <span class="now-dot" data-id="now-dot"></span>
                 </template>
               </div>
-            </template>
-            <template lwc:if={ribbonData.hasBreak}>
-              <span
-                class="break"
-                style={ribbonData.breakStyle}
-                data-id="break"
-              ></span>
             </template>
           </div>
         </div>

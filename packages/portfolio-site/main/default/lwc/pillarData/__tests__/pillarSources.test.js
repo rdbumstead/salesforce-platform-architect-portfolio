@@ -111,10 +111,12 @@ describe("pillar names agree across sources", () => {
   );
 
   it.each(PILLARS.map((p) => [p.letter, p.pageLabel]))(
-    "opens pillar %s's page description with its own letter",
+    "keeps the internal pillar letter out of pillar %s's page description",
     (letter, pageLabel) => {
       const view = views().find((v) => v.title === pageLabel);
-      expect(view.description.startsWith(`Pillar ${letter}. `)).toBe(true);
+      const own = new RegExp(`\\bpillar\\s+${letter}\\b`, "i");
+      expect(view.description).not.toMatch(own);
+      expect(view.description.trim()).not.toBe("");
     }
   );
 

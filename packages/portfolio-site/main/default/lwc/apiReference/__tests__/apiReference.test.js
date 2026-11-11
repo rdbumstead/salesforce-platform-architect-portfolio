@@ -445,7 +445,7 @@ describe("c-api-reference", () => {
     expect(loadScript).not.toHaveBeenCalled();
   });
 
-  it("carries the page's only heading, a Pillar C eyebrow and the one line intro on its own page", async () => {
+  it("carries the page's only heading, no eyebrow and the one line intro on its own page", async () => {
     const element = createElement("c-api-reference", { is: ApiReference });
     element.fullWidth = true;
     element.openOnLoad = true;
@@ -462,7 +462,8 @@ describe("c-api-reference", () => {
       /^\s*Every endpoint, parameter and response behind the\s+API Lab\.\s*$/
     );
     expect(intro).not.toMatch(/loads only when you open it/);
-    expect(query(element, ".reference-eyebrow").textContent).toBe("Pillar C");
+    expect(query(element, ".reference-eyebrow")).toBeNull();
+    expect(element.shadowRoot.textContent).not.toMatch(/Pillar/);
     expect(query(element, "a.inline-link").getAttribute("href")).toBe(
       "/portfolio/api-lab"
     );

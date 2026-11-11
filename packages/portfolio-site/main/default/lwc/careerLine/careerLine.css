@@ -34,12 +34,6 @@
   padding: 32px 0;
 }
 
-.subtitle {
-  margin: 4px 0 0;
-  color: var(--pf-body);
-  font-size: 15px;
-}
-
 .toggle:focus-visible,
 .row-head:focus-visible,
 .text-link:focus-visible {
@@ -179,34 +173,6 @@
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.break {
-  position: absolute;
-  top: -3px;
-  bottom: -3px;
-  width: 8px;
-  transform: translateX(-50%);
-  background-color: var(--pf-bg);
-}
-
-.break::before,
-.break::after {
-  content: "";
-  position: absolute;
-  top: 2px;
-  bottom: 2px;
-  width: 1.5px;
-  background-color: var(--pf-border);
-  transform: skewX(-14deg);
-}
-
-.break::before {
-  left: 1px;
-}
-
-.break::after {
-  right: 1px;
 }
 
 /* The list: a caption and Expand all, then one row for each employer. */
