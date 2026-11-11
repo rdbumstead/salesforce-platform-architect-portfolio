@@ -23,7 +23,7 @@
 .changelog-header {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: var(--pf-space-2);
   margin-bottom: var(--pf-space-3);

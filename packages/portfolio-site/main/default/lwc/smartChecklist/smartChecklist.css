@@ -14,15 +14,6 @@
   font-family: var(--pf-font-sans);
 }
 
-.eyebrow {
-  margin: 0 0 var(--pf-space-2);
-  color: var(--pf-muted);
-  font-size: 0.875rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
 .heading {
   margin: 0 0 var(--pf-space-4);
 }

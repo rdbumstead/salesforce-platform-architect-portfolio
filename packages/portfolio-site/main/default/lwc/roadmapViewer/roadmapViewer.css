@@ -22,7 +22,7 @@
 .roadmap-title-row {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: baseline;
   gap: var(--pf-space-2);
   margin-bottom: var(--pf-space-2);
 }

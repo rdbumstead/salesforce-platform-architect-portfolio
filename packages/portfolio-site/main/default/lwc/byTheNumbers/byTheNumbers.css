@@ -15,15 +15,6 @@
   font-family: var(--pf-font-sans);
 }
 
-.eyebrow {
-  margin: 0 0 var(--pf-space-2);
-  color: var(--pf-muted);
-  font-size: 0.875rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
 /* Holds the loaded tiles' space while the counts load, unseen and unread. */
 .stats-pending {
   visibility: hidden;
@@ -237,7 +228,7 @@
 .title-row {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: baseline;
   gap: var(--pf-space-2) var(--pf-space-4);
   margin: 0 0 var(--pf-space-4);
 }
