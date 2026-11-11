@@ -55,6 +55,42 @@ test('a denylist term matches whole words only', () => {
   });
 });
 
+test('a denylisted word in a page text outside the data block fails the scan', () => {
+  const denylist = 'acme widgets';
+  const clean = site({ 'ResumeController.getHeader': { heroLine: 'Architect' } }, '<p>Built for a university.</p>');
+  assert.deepEqual(scan(clean, { denylist }).problems, []);
+  [
+    '<p>Built for Acme Widgets.</p>',
+    '<p>Built for Acme&nbsp;Widgets.</p>',
+    '<img alt="Acme Widgets" src="/x.png">',
+    '<meta name="description" content="Acme &amp; Acme Widgets">'
+  ].forEach((extra) => {
+    const dir = site({ 'ResumeController.getHeader': { heroLine: 'Architect' } }, extra);
+    const { problems } = scan(dir, { denylist });
+    assert.ok(problems.some((problem) => problem.includes('page text')), `caught: ${extra}`);
+    assert.ok(!problems.some((problem) => problem.toLowerCase().includes('acme')), 'a match is never printed');
+  });
+});
+
+test('a denylisted word in a .txt file fails the scan, and a clean .txt file passes', () => {
+  const dir = site({ 'ResumeController.getHeader': { heroLine: 'Architect' } });
+  fs.writeFileSync(path.join(dir, 'llms.txt'), '# Ryan\n\n- [Resume](https://example.com/resume): a resume\n');
+  assert.deepEqual(scan(dir, { denylist: 'acme widgets' }).problems, []);
+  fs.writeFileSync(path.join(dir, 'llms.txt'), '# Ryan\n\nBuilt for Acme Widgets.\n');
+  fs.mkdirSync(path.join(dir, 'sr'));
+  fs.writeFileSync(path.join(dir, 'sr', 'notes.txt'), 'Acme Widgets');
+  const { problems } = scan(dir, { denylist: 'acme widgets' });
+  assert.ok(problems.includes('llms.txt contains a denylisted term'));
+  assert.ok(problems.some((problem) => problem.endsWith('notes.txt contains a denylisted term')));
+  assert.ok(!problems.some((problem) => problem.toLowerCase().includes('acme')));
+});
+
+test('a secret in a .txt file fails the scan', () => {
+  const dir = site({ 'ResumeController.getHeader': { heroLine: 'Architect' } });
+  fs.writeFileSync(path.join(dir, 'llms.txt'), '-----BEGIN PRIVATE KEY-----');
+  assert.ok(scan(dir, { denylist: 'zzzz' }).problems.some((problem) => problem.includes('private key')));
+});
+
 test('an allowed entry that starts with @ allows that exact domain only', () => {
   const allowedEmails = '@owner.test, one@other.test';
   const ok = site({ 'ResumeController.getHeader': { heroLine: 'a@owner.test b@owner.test one@other.test' } });
