@@ -9,9 +9,9 @@
  * the profile links. It never names an institution.
  */
 /**
- * The two line summary on the home page. This is visitor copy and it is a DRAFT until the
- * site's author approves the exact text. Swap the approved text in here, in this one place.
- * The summary block and llms.txt both read it.
+ * The two line summary on the home page. This is visitor copy, approved by the site's author
+ * word for word. Change it only here, with the author's approval. The summary block and
+ * llms.txt both read it.
  */
 export const HOME_SUMMARY = [
   "Ryan Bumstead is a Salesforce Platform Architect who designs and delivers Education Cloud for universities and nonprofits.",
