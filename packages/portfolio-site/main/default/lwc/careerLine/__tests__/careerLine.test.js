@@ -4,8 +4,8 @@
  *                      and prove nothing is fixed in the code: the fixture timeline, no roles
  *                      before the start year, no start year, two current full time employers, a
  *                      part time employer that overlaps nothing, an employer with two stints, one
- *                      employer only, ten employers with short stints (label hiding), and today
- *                      moved to a later year. Also the rows (path, Also line, pills, panels),
+ *                      employer only, ten employers with short stints, and today moved to a later
+ *                      year. Also the rows (path, Also line, pills, panels),
  *                      the disclosure buttons, Expand all, the subtitle, reduced motion, the two
  *                      analytics events, the resume button and nothing on an error. Today is
  *                      fixed at 10 November 2026 unless a test moves it.
@@ -408,10 +408,6 @@ describe("c-career-line timeline from synthetic data", () => {
     expect(delta.roleCount).toBe(2);
     expect(delta.stints).toHaveLength(2);
     expect(timeline.ribbon.mainBars).toHaveLength(3);
-    const years = timeline.ribbon.labels
-      .filter((label) => label.name === "Delta Group")
-      .map((label) => label.years);
-    expect(years).toEqual(["2018 to 2019", "2023 to 2024"]);
     const gap = timeline.ribbon.mainBars
       .filter((bar) => bar.stopKey === delta.key)
       .sort((a, b) => a.left - b.left);
@@ -433,7 +429,7 @@ describe("c-career-line timeline from synthetic data", () => {
     expect(one(element, "expand-all")).not.toBeNull();
   });
 
-  it("8. ten employers with short stints: a label that does not fit moves to the left edge or hides", async () => {
+  it("8. ten employers with short stints: one bar each on one lane, ticks apart, no labels", async () => {
     const work = [];
     for (let index = 0; index < 10; index += 1) {
       const year = 2026 - index;
@@ -449,32 +445,15 @@ describe("c-career-line timeline from synthetic data", () => {
     const data = { work, salesforceStartYear: 2017 };
     const timeline = buildTimeline(data, TODAY);
     expect(timeline.stops).toHaveLength(10);
-    expect(timeline.ribbon.labels.every((label) => label.short)).toBe(true);
-    const scroll = jest
-      .spyOn(Element.prototype, "scrollHeight", "get")
-      .mockReturnValue(100);
-    const client = jest
-      .spyOn(Element.prototype, "clientHeight", "get")
-      .mockReturnValue(20);
+    expect(timeline.ribbon.mainBars).toHaveLength(10);
+    expect(timeline.ribbon.mainLanes).toBe(1);
+    const at = timeline.ribbon.ticks.map((tick) => tick.at);
+    at.slice(1).forEach((value, index) => {
+      expect(value - at[index]).toBeGreaterThanOrEqual(0.06);
+    });
     const element = await mount(data);
-    await flushPromises();
-    const left = all(element, "ribbon-label-left");
-    expect(left).toHaveLength(1);
-    expect(text(left[0])).toContain("Employer Number 0 Ltd");
-    const ghosts = all(element, "ribbon-label").filter((el) =>
-      el.classList.contains("is-ghost")
-    );
-    expect(ghosts).toHaveLength(10);
-    scroll.mockRestore();
-    client.mockRestore();
-    const fits = await mount(data);
-    await flushPromises();
-    expect(all(fits, "ribbon-label-left")).toHaveLength(1);
-    expect(
-      all(fits, "ribbon-label").filter((el) =>
-        el.classList.contains("is-ghost")
-      )
-    ).toHaveLength(1);
+    expect(all(element, "bar")).toHaveLength(10);
+    expect(one(element, "ribbon-label")).toBeNull();
   });
 
   it("9. today moved to a later year moves the bars and the Today tick with no code change", () => {
@@ -604,7 +583,7 @@ describe("c-career-line", () => {
     expect(link.getAttribute("href")).toBe("/portfolio/resume");
   });
 
-  it("draws bars and labels the ribbon hides from assistive tech", async () => {
+  it("draws the bars, the dot, the break and the lane label, and hides the ribbon from assistive tech", async () => {
     const element = await mount();
     expect(one(element, "ribbon").getAttribute("aria-hidden")).toBe("true");
     expect(all(element, "bar")).toHaveLength(4);
@@ -779,61 +758,6 @@ describe("c-career-line", () => {
     const element = await mount();
     const dot = one(element, "now-dot");
     expect(dot.parentElement.classList.contains("bar-now")).toBe(true);
-  });
-
-  describe("the left edge label measures text, not boxes", () => {
-    const data = {
-      work: [
-        role("Lead", "Alpha Works", "2026-06-01", null),
-        role("Analyst", "Beta Labs", "2021-01-01", "2026-05-15")
-      ],
-      salesforceStartYear: 2017
-    };
-
-    function mockRanges(rectFor) {
-      return jest.spyOn(document, "createRange").mockImplementation(() => {
-        let node = null;
-        return {
-          selectNodeContents(target) {
-            node = target;
-          },
-          getBoundingClientRect() {
-            return rectFor(node.parentElement.dataset.label || "");
-          }
-        };
-      });
-    }
-
-    async function settle(element) {
-      for (let i = 0; i < 4; i += 1) {
-        await flushPromises();
-      }
-      return all(element, "ribbon-label-left")[0];
-    }
-
-    it("stays on the first row when the texts are 12 px apart or more", async () => {
-      const spy = mockRanges((label) => {
-        return label.includes("alpha")
-          ? { left: 0, right: 90 }
-          : { left: 102, right: 200 };
-      });
-      const element = await mount(data);
-      const left = await settle(element);
-      expect(left.getAttribute("style")).toContain("top: 0px");
-      spy.mockRestore();
-    });
-
-    it("drops to the extra row when the texts would meet", async () => {
-      const spy = mockRanges((label) => {
-        return label.includes("alpha")
-          ? { left: 0, right: 90 }
-          : { left: 101, right: 200 };
-      });
-      const element = await mount(data);
-      const left = await settle(element);
-      expect(left.getAttribute("style")).toContain("top: 56px");
-      spy.mockRestore();
-    });
   });
 
   it("builds the same stops from buildStops as from buildTimeline", () => {

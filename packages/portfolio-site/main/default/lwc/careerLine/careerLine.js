@@ -11,9 +11,8 @@
  *                      linear and there is no break and no Earlier roles row. A part time only
  *                      employer sits on a thin lane of its own. An employer that left and came
  *                      back gets one bar for each stint and still one row. Ticks are computed
- *                      from the same dates. A label under a bar is measured after it renders. One
- *                      that does not fit its bar moves to the left edge when that is free and the
- *                      segment is short, and otherwise hides, because the rows carry everything.
+ *                      from the same dates, and the earliest year tick hides when it would meet
+ *                      another tick. The bars carry no labels, the rows carry everything.
  *                      Under the ribbon is a list of employer rows, newest first as the read
  *                      sends them. A row shows its years, the employer, a Now pill for a current
  *                      one, a Part time pill for a part time only one ("alongside" only when it
@@ -49,8 +48,6 @@ const FOLD_TITLE = "Earlier roles";
 const MAX_HIGHLIGHTS = 3;
 // Share of the ribbon the compressed early segment takes.
 const EARLY_SHARE = 0.14;
-// A segment narrower than this share gets its label at the left edge.
-const SHORT_SEGMENT = 0.2;
 // Space between neighbouring bars, split across both.
 const BAR_GAP = 0.004;
 // The least width a bar is drawn at, so a short stint stays visible.
@@ -59,8 +56,6 @@ const MIN_BAR = 0.006;
 const TICK_GAP = 0.065;
 // The share of the ribbon the Today label takes at the left edge (about 80 px at 390 px wide).
 const TODAY_ZONE = 0.23;
-// The least space, in px, between the texts of two ribbon labels on one row.
-const LABEL_TEXT_GAP = 12;
 // The earliest year tick hides when its text sits closer than this, in px, to another tick.
 const TICK_TEXT_GAP = 12;
 // The share the earliest year label takes at the right edge.
@@ -68,8 +63,7 @@ const EARLY_ZONE = 0.06;
 // Roles that overlap, or sit this close, read as one stint.
 const STINT_JOIN_MS = 31 * 86400000;
 const DAY_MS = 86400000;
-// Height of a label row and of the lanes, in px, and the gap between lanes.
-const LABEL_ROW_PX = 56;
+// Height of the lanes, in px, and the gap between lanes.
 const MAIN_LANE_PX = 30;
 const SIDE_LANE_PX = 10;
 const LANE_GAP_PX = 4;
@@ -328,34 +322,6 @@ export function buildScale({ today, earliest, startYear, hasFold }) {
   };
 }
 
-// The box the visible text of a label fills. The text is right aligned in a box that spans its
-// bar, so the box is wider than the text. Falls back to the box where ranges have no geometry.
-function textExtent(el) {
-  const box = el.getBoundingClientRect();
-  let left = Infinity;
-  let right = -Infinity;
-  if (typeof document.createRange === "function") {
-    [el.querySelector("strong"), el.querySelector("span")].forEach((part) => {
-      if (!part) {
-        return;
-      }
-      const range = document.createRange();
-      range.selectNodeContents(part);
-      if (typeof range.getBoundingClientRect !== "function") {
-        return;
-      }
-      const rect = range.getBoundingClientRect();
-      if (rect.right > rect.left) {
-        left = Math.min(left, rect.left);
-        right = Math.max(right, rect.right);
-      }
-    });
-  }
-  return left === Infinity
-    ? { left: box.left, right: box.right }
-    : { left, right };
-}
-
 function overlaps(a, b) {
   return a.first <= b.last && b.first <= a.last;
 }
@@ -384,15 +350,6 @@ function stintsOf(roles, today) {
     }
   });
   return stints;
-}
-
-function stintYears(stint) {
-  const start = new Date(stint.first).getUTCFullYear();
-  if (stint.held) {
-    return `${start} to now`;
-  }
-  const end = new Date(stint.last).getUTCFullYear();
-  return start === end ? String(start) : `${start} to ${end}`;
 }
 
 function toRole(role, index, allPart) {
@@ -583,7 +540,6 @@ function buildTicks(scale, startYear, nowYear) {
 function buildRibbon(stops, scale, startYear, today) {
   const mainBars = [];
   const sideBars = [];
-  const labels = [];
   const fullStints = stops
     .filter((stop) => !stop.isFold && !stop.isPartTime)
     .flatMap((stop) => stop.stints);
@@ -623,15 +579,6 @@ function buildRibbon(stops, scale, startYear, today) {
           width: 1 - left,
           held: false
         });
-        labels.push({
-          key: `${stop.key}-label`,
-          stopKey: stop.key,
-          name: FOLD_TITLE,
-          years: stop.span,
-          left: 1 - scale.share,
-          width: scale.share,
-          held: false
-        });
       }
       return;
     }
@@ -640,8 +587,6 @@ function buildRibbon(stops, scale, startYear, today) {
       const older = scale.position(stint.first);
       const left = newer + (stint.held ? 0 : BAR_GAP / 2);
       const right = older - BAR_GAP / 2;
-      // A label box matches its bar, so neighbours that overlap by days do not share a row.
-      const labelLeft = left;
       const bar = {
         key: `${stop.key}-bar-${at}`,
         stopKey: stop.key,
@@ -658,49 +603,18 @@ function buildRibbon(stops, scale, startYear, today) {
         bar.sideLabelStyle = `left: ${pct(older)}; max-width: calc(100% - ${pct(older)})`;
       } else {
         mainBars.push(bar);
-        labels.push({
-          key: `${stop.key}-label-${at}`,
-          stopKey: stop.key,
-          name: stop.employer,
-          years: stop.stints.length > 1 ? stintYears(stint) : stop.span,
-          left: labelLeft,
-          width: Math.max(older - BAR_GAP / 2 - labelLeft, 0.001),
-          held: stint.held
-        });
       }
     });
   });
   const mainLanes = assignLanes(mainBars);
   const sideLanes = assignLanes(sideBars);
-  // Label rows: the first row where the box meets no other box.
-  const rows = [];
-  [...labels]
-    .sort((a, b) => a.left - b.left)
-    .forEach((label) => {
-      const end = label.left + label.width;
-      let row = rows.findIndex((boxes) =>
-        boxes.every(
-          (box) => label.left >= box.right - 1e-9 || end <= box.left + 1e-9
-        )
-      );
-      if (row === -1) {
-        row = rows.length;
-        rows.push([]);
-      }
-      rows[row].push({ left: label.left, right: end });
-      label.row = row;
-      label.short = label.width < SHORT_SEGMENT;
-    });
   const nowYear = new Date(today).getUTCFullYear();
   return {
     ticks: buildTicks(scale, startYear, nowYear),
     mainBars,
     sideBars,
-    labels,
     mainLanes,
     sideLanes,
-    labelRows: Math.max(rows.length, 1),
-    hasShort: labels.some((label) => label.short),
     breakStyle: scale.compressed ? `left: ${pct(1 - scale.share)}` : "",
     hasBreak: scale.compressed
   };
@@ -708,8 +622,8 @@ function buildRibbon(stops, scale, startYear, today) {
 
 /**
  * The rows and the ribbon from a getTimeline result. Each row has a position (1 is the newest)
- * and the ids of its head and panel. The ribbon has the ticks, the bars, the lanes and the
- * labels, all as shares of the width.
+ * and the ids of its head and panel. The ribbon has the ticks, the bars and the lanes, all as
+ * shares of the width.
  * @param {object} data the Timeline
  * @param {Date} now the visitor's clock
  * @returns {object} the start year, the scale, the ribbon and the stops
@@ -771,8 +685,6 @@ export default class CareerLine extends LightningElement {
   timeline = EMPTY_TIMELINE;
   openKeys = [];
   hotKey = null;
-  labelStates = {};
-  leftRows = {};
   earlyHidden = false;
   reduced = false;
   stopMotionListener = null;
@@ -782,8 +694,6 @@ export default class CareerLine extends LightningElement {
   wiredTimeline({ data, error }) {
     if (data) {
       this.timeline = buildTimeline(data, new Date());
-      this.labelStates = {};
-      this.leftRows = {};
       this.openKeys = this.openKeys.filter((key) =>
         this.timeline.stops.some((stop) => stop.key === key)
       );
@@ -808,13 +718,13 @@ export default class CareerLine extends LightningElement {
       !this.resizeObserver &&
       typeof ResizeObserver === "function"
     ) {
-      this.resizeObserver = new ResizeObserver(() => this.measureLabels());
+      this.resizeObserver = new ResizeObserver(() => this.measureTicks());
       this.resizeObserver.observe(ribbon);
       if (document.fonts && document.fonts.ready) {
-        document.fonts.ready.then(() => this.measureLabels());
+        document.fonts.ready.then(() => this.measureTicks());
       }
     }
-    this.measureLabels();
+    this.measureTicks();
   }
 
   disconnectedCallback() {
@@ -825,92 +735,6 @@ export default class CareerLine extends LightningElement {
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
       this.resizeObserver = null;
-    }
-  }
-
-  // Measure each label in its own bar. One that does not fit moves to the left edge when it is
-  // a short segment and that spot is free, and otherwise hides. A short current segment takes
-  // the left edge first. The in place label is always rendered, so this reads the same thing
-  // whatever state the label is in.
-  measureLabels() {
-    const ribbon = this.timeline.ribbon;
-    if (!ribbon || !ribbon.labels.length) {
-      return;
-    }
-    const fits = {};
-    this.template.querySelectorAll('[data-id="ribbon-label"]').forEach((el) => {
-      const name = el.querySelector("strong");
-      const years = el.querySelector("span");
-      fits[el.dataset.label] =
-        Boolean(name) &&
-        name.scrollHeight <= name.clientHeight + 1 &&
-        years.scrollWidth <= years.clientWidth + 1;
-    });
-    const next = {};
-    let leftTaken = false;
-    const ordered = [...ribbon.labels].sort((a, b) => a.left - b.left);
-    ordered
-      .filter((label) => label.short && label.held)
-      .forEach((label) => {
-        if (!leftTaken) {
-          next[label.key] = "left";
-          leftTaken = true;
-        }
-      });
-    ordered.forEach((label) => {
-      if (next[label.key]) {
-        return;
-      }
-      if (fits[label.key] !== false) {
-        next[label.key] = "ok";
-      } else if (label.short && !leftTaken) {
-        next[label.key] = "left";
-        leftTaken = true;
-      } else {
-        next[label.key] = "hidden";
-      }
-    });
-    if (JSON.stringify(next) !== JSON.stringify(this.labelStates)) {
-      this.labelStates = next;
-    }
-    this.placeLeftLabels(ordered, next);
-    this.measureTicks();
-  }
-
-  // A label at the left edge stays on the first label row it does not meet. It meets a label when
-  // the visible texts come within LABEL_TEXT_GAP px, not when the boxes do. With no such row it
-  // takes the extra row under the others.
-  placeLeftLabels(ordered, states) {
-    const rowsUsed = this.timeline.ribbon.labelRows;
-    const rows = {};
-    ordered
-      .filter((label) => states[label.key] === "left")
-      .forEach((label) => {
-        const copy = this.template.querySelector(
-          `[data-id="ribbon-label-left"][data-label="${label.key}"]`
-        );
-        rows[label.key] = rowsUsed;
-        if (!copy) {
-          return;
-        }
-        const mine = textExtent(copy);
-        for (let row = 0; row < rowsUsed; row += 1) {
-          const clear = ordered
-            .filter((other) => other.row === row && states[other.key] === "ok")
-            .every((other) => {
-              const el = this.template.querySelector(
-                `[data-id="ribbon-label"][data-label="${other.key}"]`
-              );
-              return !el || textExtent(el).left - mine.right >= LABEL_TEXT_GAP;
-            });
-          if (clear) {
-            rows[label.key] = row;
-            return;
-          }
-        }
-      });
-    if (JSON.stringify(rows) !== JSON.stringify(this.leftRows)) {
-      this.leftRows = rows;
     }
   }
 
@@ -1038,29 +862,6 @@ export default class CareerLine extends LightningElement {
         showNow: bar.held && bar.tone === "now"
       };
     };
-    const rowsUsed = ribbon.labelRows;
-    let extraRow = false;
-    const labels = ribbon.labels.map((label) => {
-      const state =
-        this.labelStates[label.key] ||
-        (label.short && label.held ? "left" : "ok");
-      const leftRow =
-        this.leftRows[label.key] === undefined
-          ? rowsUsed
-          : this.leftRows[label.key];
-      if (state === "left" && leftRow >= rowsUsed) {
-        extraRow = true;
-      }
-      return {
-        ...label,
-        showPlace: state === "ok",
-        showLeft: state === "left",
-        labelClass: `blabel${state === "ok" ? "" : " is-ghost"}${this.hotKey === label.stopKey ? " is-hot" : ""}`,
-        labelStyle: `left: ${pct(label.left)}; width: ${pct(label.width)}; top: ${label.row * LABEL_ROW_PX}px`,
-        leftClass: `blabel blabel-left${this.hotKey === label.stopKey ? " is-hot" : ""}`,
-        leftStyle: `top: ${leftRow * LABEL_ROW_PX}px`
-      };
-    });
     const ticks = ribbon.ticks.map((tick) => ({
       ...tick,
       className:
@@ -1075,9 +876,6 @@ export default class CareerLine extends LightningElement {
       hasSide: ribbon.sideBars.length > 0,
       mainStyle: laneStyle(MAIN_LANE_PX, ribbon.mainLanes),
       sideStyle: laneStyle(SIDE_LANE_PX, ribbon.sideLanes),
-      labels,
-      leftLabels: labels.filter((label) => label.showLeft),
-      labelsStyle: `height: ${(rowsUsed + (extraRow ? 1 : 0)) * LABEL_ROW_PX}px`,
       hasBreak: ribbon.hasBreak,
       breakStyle: ribbon.breakStyle
     };

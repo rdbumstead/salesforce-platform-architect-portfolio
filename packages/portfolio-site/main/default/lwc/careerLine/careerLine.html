@@ -81,40 +81,6 @@
               ></span>
             </template>
           </div>
-          <div class="labels" style={ribbonData.labelsStyle} data-id="labels">
-            <template for:each={ribbonData.labels} for:item="label">
-              <div
-                key={label.key}
-                class={label.labelClass}
-                style={label.labelStyle}
-                data-id="ribbon-label"
-                data-label={label.key}
-                data-key={label.stopKey}
-                onmouseenter={handleHot}
-                onmouseleave={handleCool}
-                onclick={handleBarClick}
-              >
-                <strong>{label.name}</strong>
-                <span>{label.years}</span>
-              </div>
-            </template>
-            <template for:each={ribbonData.leftLabels} for:item="label">
-              <div
-                key={label.key}
-                class={label.leftClass}
-                style={label.leftStyle}
-                data-id="ribbon-label-left"
-                data-label={label.key}
-                data-key={label.stopKey}
-                onmouseenter={handleHot}
-                onmouseleave={handleCool}
-                onclick={handleBarClick}
-              >
-                <strong>{label.name}</strong>
-                <span>{label.years}</span>
-              </div>
-            </template>
-          </div>
         </div>
 
         <div class="list-bar">

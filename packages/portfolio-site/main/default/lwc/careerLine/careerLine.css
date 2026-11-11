@@ -48,7 +48,7 @@
   border-radius: 6px;
 }
 
-/* The ribbon: ticks, an optional thin part time lane, the main lane and the labels. */
+/* The ribbon: ticks, an optional thin part time lane and the main lane. */
 .ribbon {
   position: relative;
   display: grid;
@@ -207,64 +207,6 @@
 
 .break::after {
   right: 1px;
-}
-
-/* A label spans its bar, text on the right, with a rule on its right edge. */
-.labels {
-  position: relative;
-}
-
-.blabel {
-  position: absolute;
-  box-sizing: border-box;
-  height: 52px;
-  padding: 0 8px 0 0;
-  border-right: 1px solid var(--pf-border);
-  overflow: hidden;
-  font-size: 12.5px;
-  line-height: 1.35;
-  text-align: right;
-  cursor: pointer;
-}
-
-.blabel strong {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  overflow-wrap: anywhere;
-  color: var(--pf-text);
-  font-weight: 600;
-}
-
-.blabel span {
-  display: block;
-  overflow: hidden;
-  color: var(--pf-muted);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-/* A label measured to not fit its bar stays in place, unseen, so it can be measured again. */
-.blabel.is-ghost {
-  visibility: hidden;
-  pointer-events: none;
-}
-
-.blabel-left {
-  left: 0;
-  width: auto;
-  max-width: 100%;
-}
-
-.blabel-left strong {
-  display: block;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.blabel.is-hot strong {
-  color: var(--pf-accent);
 }
 
 /* The list: a caption and Expand all, then one row for each employer. */
@@ -646,21 +588,16 @@
   }
 }
 
-/* Under 860px the minor ticks go, so the labels never touch. */
+/* Under 860px the minor ticks go, so the ticks never touch. */
 @media (max-width: 860px) {
   .tick-minor {
     display: none;
   }
 }
 
-/* Phones: the labels and the part time label go, and the row head stacks. */
+/* Phones: the part time label goes, and the row head stacks. */
 @media (max-width: 640px) {
-  .blabel,
   .side-label {
-    display: none;
-  }
-
-  .labels {
     display: none;
   }
 
