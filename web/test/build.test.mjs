@@ -153,3 +153,47 @@ test('values placed in generated code cannot close a script element and round tr
     assert.deepEqual(new Function(`return ${text}`)(), value);
   }
 });
+
+const PERSON = { name: 'Ada Example', description: 'A <b>headline</b> & more', sameAs: ['https://www.linkedin.com/in/ada', 'https://github.com/ada'] };
+
+test('every public route has a description, and a missing one fails the build', async () => {
+  const { assertDescriptions } = await import('../build/static-summary.mjs');
+  const { routes } = readRoutes();
+  assert.doesNotThrow(() => assertDescriptions(routes));
+  assert.doesNotThrow(() => assertDescriptions([{ path: null, description: '' }]), 'an error page needs none');
+  assert.throws(() => assertDescriptions([{ path: '/x', description: '  ' }]), /\/x/);
+  assert.throws(() => assertDescriptions([{ path: '/x' }]));
+});
+
+test('the summary block holds the name, the route text, links to every route and the profiles', async () => {
+  const { summaryBlock, HOME_SUMMARY } = await import('../build/static-summary.mjs');
+  const { routes } = readRoutes();
+  const home = routes.find((route) => route.path === '/');
+  const resume = routes.find((route) => route.path === '/resume');
+  const block = summaryBlock({ route: home, routes, person: PERSON });
+  assert.match(block, /<div id="static-summary">/);
+  assert.ok(block.includes('<strong>Ada Example</strong>'));
+  assert.ok(block.includes('A &lt;b&gt;headline&lt;/b&gt; &amp; more'), 'person text is escaped');
+  assert.ok(block.includes(`<h1>${home.title}</h1>`));
+  assert.ok(block.includes(home.description));
+  HOME_SUMMARY.forEach((line) => assert.ok(block.includes(line)));
+  routes.filter((route) => route.path).forEach((route) => assert.ok(block.includes(`<a href="${route.path}">`), `links to ${route.path}`));
+  assert.ok(block.indexOf('href="/resume"') < block.indexOf('href="/skills"'), 'the resume comes early');
+  assert.ok(block.includes('<a href="https://github.com/ada">GitHub</a>'));
+  assert.ok(!block.includes('<script'));
+  const other = summaryBlock({ route: resume, routes, person: PERSON });
+  assert.ok(!other.includes(HOME_SUMMARY[0]), 'the home summary is for the home page only');
+  assert.ok(other.includes(`<h1>${resume.title}</h1>`));
+});
+
+test('the summary is hidden for browsers that run scripts, by a rule in the head', async () => {
+  const { summaryCss } = await import('../build/static-summary.mjs');
+  assert.match(summaryCss(), /@media \(scripting: enabled\)\{#static-summary\{display:none\}\}/);
+});
+
+test('the head reader returns the Person block as an object', () => {
+  const urls = new Map([...resourceIndex()].map(([name, resource]) => [name, resource.url]));
+  const { person } = readHeadMarkup(urls);
+  assert.equal(person['@type'], 'Person');
+  assert.ok(Array.isArray(person.sameAs));
+});
