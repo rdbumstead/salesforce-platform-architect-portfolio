@@ -13,16 +13,8 @@
 .contact-call {
   box-sizing: border-box;
   max-width: var(--portfolio-content-width, 1024px);
-  margin: 48px auto 0;
-  padding: 0 var(--pf-space-4);
-}
-
-/* From 64.0625em the section's own gutter is gone, so the content lines up with the header. */
-@media (min-width: 64.0625em) {
-  .contact-call {
-    padding-left: 0;
-    padding-right: 0;
-  }
+  margin: 0 auto;
+  padding: 32px 0;
 }
 
 .contact-call__panel {

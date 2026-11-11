@@ -175,6 +175,12 @@ describe("c-credentials-band", () => {
       ]);
     });
 
+    it("hands the tile count to the grid so every tile fits on one row", async () => {
+      const element = await renderWith();
+      const grid = element.shadowRoot.querySelector(".cert-tiles");
+      expect(grid.getAttribute("style")).toContain("--cert-count: 7");
+    });
+
     it("builds the caption from the issuer and the year", async () => {
       const element = await renderWith();
       const captions = many(element, "cert-caption").map(text);
@@ -263,6 +269,12 @@ describe("c-credentials-band", () => {
   });
 
   describe("rendering", () => {
+    it("puts the source badge at the end of the certifications row", async () => {
+      const element = await renderWith();
+      const badge = element.shadowRoot.querySelector(".card-source");
+      expect(badge.classList.contains("heading-badge-end")).toBe(true);
+    });
+
     it("keeps both headings in the band", async () => {
       const element = await renderWith();
       expect(text(one(element, "education-heading"))).toBe("Education");

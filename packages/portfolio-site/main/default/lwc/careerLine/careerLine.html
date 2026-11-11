@@ -15,11 +15,76 @@
             class="card-source heading-badge-end"
           ></c-data-source>
         </div>
+        <template lwc:if={hasSubtitle}>
+          <p class="subtitle" data-id="subtitle">{subtitle}</p>
+        </template>
 
-        <div class="intro-row">
-          <p class="intro">
-            Open any employer to see each role. Several can be open at once.
-          </p>
+        <div class="ribbon" aria-hidden="true" data-id="ribbon">
+          <div class="ticks" data-id="ticks">
+            <template for:each={ribbonData.ticks} for:item="tick">
+              <span
+                key={tick.key}
+                class={tick.className}
+                style={tick.style}
+                data-id="tick"
+                >{tick.text}</span
+              >
+            </template>
+          </div>
+          <template lwc:if={ribbonData.hasSide}>
+            <div class="lane" style={ribbonData.sideStyle} data-id="lane-side">
+              <template for:each={ribbonData.sideBars} for:item="bar">
+                <div
+                  key={bar.key}
+                  class={bar.barClass}
+                  style={bar.barStyle}
+                  data-id="bar"
+                  data-key={bar.stopKey}
+                  onmouseenter={handleHot}
+                  onmouseleave={handleCool}
+                  onclick={handleBarClick}
+                ></div>
+              </template>
+              <template for:each={ribbonData.sideBars} for:item="bar">
+                <span
+                  key={bar.key}
+                  class="side-label"
+                  style={bar.sideLabelStyle}
+                  data-id="side-label"
+                  >{bar.sideLabelText}</span
+                >
+              </template>
+            </div>
+          </template>
+          <div class="lane" style={ribbonData.mainStyle} data-id="lane-main">
+            <template for:each={ribbonData.mainBars} for:item="bar">
+              <div
+                key={bar.key}
+                class={bar.barClass}
+                style={bar.barStyle}
+                data-id="bar"
+                data-key={bar.stopKey}
+                onmouseenter={handleHot}
+                onmouseleave={handleCool}
+                onclick={handleBarClick}
+              >
+                <template lwc:if={bar.showNow}>
+                  <span class="now-dot" data-id="now-dot"></span>
+                </template>
+              </div>
+            </template>
+            <template lwc:if={ribbonData.hasBreak}>
+              <span
+                class="break"
+                style={ribbonData.breakStyle}
+                data-id="break"
+              ></span>
+            </template>
+          </div>
+        </div>
+
+        <div class="list-bar">
+          <small data-id="caption">{caption}</small>
           <button
             type="button"
             class="nc-button nc-button_secondary"
@@ -30,88 +95,147 @@
           </button>
         </div>
 
-        <ol class="track" data-id="track" aria-labelledby="career-heading">
+        <ol class="rows" data-id="track" aria-label="Employers, newest first">
           <template for:each={trackStops} for:item="stop">
             <li
               key={stop.key}
-              class={stop.stopClass}
+              class={stop.rowClass}
               data-id="stop"
               data-key={stop.key}
+              onmouseenter={handleHot}
+              onmouseleave={handleCool}
             >
-              <span class={stop.dotClass} aria-hidden="true"></span>
-              <div class="stop-head">
-                <span class="stop-employer" data-id="stop-employer"
-                  >{stop.employer}</span
-                >
-                <span class="stop-span" data-id="stop-span">{stop.span}</span>
-                <template lwc:if={stop.hasTitle}>
-                  <span class="stop-title" data-id="stop-title"
-                    >{stop.title}</span
-                  >
-                </template>
-              </div>
               <button
                 type="button"
-                class="toggle"
+                id={stop.headId}
+                class="row-head"
                 data-id="toggle"
                 data-key={stop.key}
                 aria-expanded={stop.expanded}
                 aria-controls={stop.panelId}
                 onclick={handleToggle}
               >
-                {stop.countText} · {stop.toggleText}
-              </button>
-              <div id={stop.panelId} class={stop.panelClass} data-id="panel">
-                <div class="panel-clip">
+                <span class="years" data-id="stop-years">
+                  <span class={stop.swatchClass}></span>
+                  {stop.span}
+                </span>
+                <span class="who">
+                  <span class="employer">
+                    <span data-id="stop-employer">{stop.employer}</span>
+                    <template lwc:if={stop.showNow}>
+                      <span class="pill pill-now" data-id="pill-now">Now</span>
+                    </template>
+                    <template lwc:if={stop.showPartPill}>
+                      <span class="pill pill-part" data-id="pill-part"
+                        >{stop.partPill}</span
+                      >
+                    </template>
+                  </span>
                   <template lwc:if={stop.isFold}>
-                    <ul class="earlier">
-                      <template for:each={stop.roles} for:item="role">
-                        <li
-                          key={role.key}
-                          class="earlier-line"
-                          data-id="earlier-role"
-                        >
-                          {role.line}
-                        </li>
-                      </template>
-                    </ul>
-                    <a
-                      class="panel-link"
-                      href={resumeHref}
-                      data-id="fold-resume-link"
-                      >See the full resume →</a
-                    >
+                    <span class="path" data-id="stop-path">{stop.summary}</span>
                   </template>
                   <template lwc:else>
-                    <ul class="roles">
-                      <template for:each={stop.roles} for:item="role">
-                        <li key={role.key} class="role" data-id="role">
-                          <span class="role-title" data-id="role-title"
-                            >{role.title}</span
-                          >
-                          <span class="role-years" data-id="role-years"
-                            >{role.yearsText}</span
-                          >
-                          <template lwc:if={role.hasHighlights}>
-                            <ul class="highlights">
-                              <template
-                                for:each={role.highlights}
-                                for:item="highlight"
-                              >
-                                <li
-                                  key={highlight.id}
-                                  class="highlight"
-                                  data-id="highlight"
-                                >
-                                  {highlight.text}
-                                </li>
-                              </template>
-                            </ul>
+                    <span class="path" data-id="stop-path">
+                      <template for:each={stop.path} for:item="step">
+                        <span key={step.key}>
+                          <template lwc:if={step.hasArrow}>
+                            <span class="arrow" aria-hidden="true">→</span>
                           </template>
-                        </li>
+                          <span class={step.stepClass}>{step.text}</span>
+                        </span>
                       </template>
-                    </ul>
+                    </span>
                   </template>
+                  <template lwc:if={stop.hasAlso}>
+                    <span class="also" data-id="stop-also">{stop.also}</span>
+                  </template>
+                </span>
+                <span class="meta">
+                  <template lwc:if={stop.showCount}>
+                    <span class="count" data-id="stop-count"
+                      >{stop.countText}</span
+                    >
+                  </template>
+                  <span class="chev" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 14 14">
+                      <path
+                        d="M3 5l4 4 4-4"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      ></path>
+                    </svg>
+                  </span>
+                </span>
+              </button>
+              <div
+                id={stop.panelId}
+                class="panel"
+                role="region"
+                aria-labelledby={stop.headId}
+                data-id="panel"
+              >
+                <div class="panel-clip">
+                  <div class="panel-body">
+                    <template lwc:if={stop.isFold}>
+                      <ul class="early-list">
+                        <template for:each={stop.roles} for:item="role">
+                          <li
+                            key={role.key}
+                            class="early-line"
+                            data-id="earlier-role"
+                          >
+                            <span><b>{role.title}</b>, {role.employer}</span>
+                            <span>{role.years}</span>
+                          </li>
+                        </template>
+                      </ul>
+                      <a
+                        class="text-link"
+                        href={resumeHref}
+                        data-id="fold-resume-link"
+                        >See the full resume →</a
+                      >
+                    </template>
+                    <template lwc:else>
+                      <ol class={stop.rolesClass}>
+                        <template for:each={stop.roles} for:item="role">
+                          <li
+                            key={role.key}
+                            class={role.roleClass}
+                            data-id="role"
+                          >
+                            <div class="role-top">
+                              <span class="role-title" data-id="role-title"
+                                >{role.title}</span
+                              >
+                              <span class="role-years" data-id="role-years"
+                                >{role.yearsText}</span
+                              >
+                            </div>
+                            <template lwc:if={role.hasHighlights}>
+                              <ul class="hl">
+                                <template
+                                  for:each={role.highlights}
+                                  for:item="highlight"
+                                >
+                                  <li
+                                    key={highlight.id}
+                                    class="highlight"
+                                    data-id="highlight"
+                                  >
+                                    {highlight.text}
+                                  </li>
+                                </template>
+                              </ul>
+                            </template>
+                          </li>
+                        </template>
+                      </ol>
+                    </template>
+                  </div>
                 </div>
               </div>
             </li>
