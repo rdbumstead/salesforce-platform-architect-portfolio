@@ -15,9 +15,9 @@
 }
 
 .docs {
-  max-width: 56rem;
-  margin: 0 auto 0 0;
-  padding: var(--pf-space-4, 1rem);
+  max-width: none;
+  margin: 0;
+  padding: var(--pf-space-4, 1rem) 0;
   color: var(--pf-text);
   font-family: var(--pf-font-sans);
   line-height: 1.6;
@@ -40,28 +40,9 @@
   margin: 0 0 var(--pf-space-5, 1.5rem);
 }
 
-/*
- * The build section keeps its own side padding, so the box takes back the viewer's, and the
- * cards line up with the title above and the document list below.
- */
+/* The build section and the lists carry no side padding of their own, so they sit on the column. */
 .docs-build {
-  margin: 0 calc(-1 * var(--pf-space-4, 1rem)) var(--pf-space-4, 1rem);
-}
-
-/*
- * Wide screens: the column starts at the shared left edge, so the viewer carries no side padding
- * and the build section, which carries none either, has nothing to take back.
- */
-@media (min-width: 64.0625em) {
-  .docs {
-    padding-left: 0;
-    padding-right: 0;
-  }
-
-  .docs-build {
-    margin-left: 0;
-    margin-right: 0;
-  }
+  margin: 0 0 var(--pf-space-4, 1rem);
 }
 
 .docs-note,
@@ -263,6 +244,37 @@ summary:focus-visible,
 
 .doc-body {
   min-width: 0;
+}
+
+/* The text keeps a readable measure. From 64em the Contents box sits in the space on its right
+   and stays in view while the text scrolls. Below that it stacks above the text. */
+.doc-layout {
+  min-width: 0;
+}
+
+@media (min-width: 64em) {
+  .doc-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 52rem) minmax(14rem, 20rem);
+    justify-content: space-between;
+    gap: var(--pf-space-5, 1.5rem);
+    align-items: start;
+  }
+
+  .doc-layout > .doc-body {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .doc-layout > .toc {
+    grid-column: 2;
+    grid-row: 1;
+    position: sticky;
+    top: 5rem;
+    max-height: calc(100vh - 6rem);
+    overflow-y: auto;
+    margin: 0;
+  }
 }
 
 .doc-body .doc-heading {
@@ -533,16 +545,11 @@ summary:focus-visible,
 
 @media (max-width: 47.99em) {
   .docs {
-    padding: var(--pf-space-3, 0.75rem);
+    padding: var(--pf-space-3, 0.75rem) 0;
   }
 
   .docs-title {
     font-size: 2rem;
-  }
-
-  .docs-build {
-    margin-left: calc(-1 * var(--pf-space-3, 0.75rem));
-    margin-right: calc(-1 * var(--pf-space-3, 0.75rem));
   }
 
   .doc-body h2 {

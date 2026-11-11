@@ -12,20 +12,12 @@
 .build {
   max-width: var(--portfolio-content-width, 1024px);
   margin: 0 auto;
-  padding: 0 var(--pf-space-4) 48px;
+  padding: 0 0 48px;
   color: var(--pf-text);
   font-family: var(--pf-font-sans);
   font-size: 16px;
   line-height: 1.6;
   overflow-wrap: anywhere;
-}
-
-/* From 64.0625em the section's own gutter is gone, so the content lines up with the header. */
-@media (min-width: 64.0625em) {
-  .build {
-    padding-left: 0;
-    padding-right: 0;
-  }
 }
 
 .section {
@@ -49,9 +41,40 @@
   gap: var(--pf-space-4);
 }
 
+/* Two columns from 640px, and the odd fifth card takes the whole second row so no slot is empty. */
+@media (min-width: 40em) and (max-width: 979px) {
+  .cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .card:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Three then two from 980px, on six tracks so the second row fills the width. Five across from 1280px. */
 @media (min-width: 980px) {
   .cards {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .card {
+    grid-column: span 2;
+  }
+
+  .card:nth-child(n + 4) {
+    grid-column: span 3;
+  }
+}
+
+@media (min-width: 80em) {
+  .cards {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .card,
+  .card:nth-child(n + 4) {
+    grid-column: span 1;
   }
 }
 
@@ -110,7 +133,7 @@
     margin-bottom: 8px;
   }
 
-  .card-title {
+  .card-body > .card-title {
     grid-row: 2;
     margin-bottom: 8px;
   }
