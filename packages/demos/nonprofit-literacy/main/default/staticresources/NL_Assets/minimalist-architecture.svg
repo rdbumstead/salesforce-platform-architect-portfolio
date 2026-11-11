@@ -28,7 +28,8 @@
   <text class="group" x="284" y="94">Program Management Module</text>
   <rect class="frame" x="790" y="70" width="190" height="362" rx="12"/>
   <text class="group" x="804" y="94">Volunteers for Salesforce</text>
-  <text class="note" x="804" y="420">Deferred at first</text>
+  <text class="note" x="804" y="408">Deferred</text>
+  <text class="note" x="804" y="422">at first</text>
 
   <rect class="box" x="40" y="110" width="170" height="48" rx="8"/>
   <text class="name" x="125" y="131">Account</text>
