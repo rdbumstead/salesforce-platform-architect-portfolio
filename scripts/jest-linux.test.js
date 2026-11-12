@@ -5,7 +5,10 @@ const {
   main,
   dockerArgs,
   containerScript,
-  dockerRunning
+  dockerRunning,
+  ciNodeMajor,
+  IMAGE,
+  INSTALL_FAILED
 } = require("./jest-linux.js");
 
 /** A docker stub. info answers per `up`, and run answers with the given status. */
@@ -59,14 +62,37 @@ test("a thrown docker call counts as not running", () => {
   assert.strictEqual(code, 2);
 });
 
-test("runs node:22 with 2 CPUs and the repo mounted read only", () => {
+test("the image is the Node major pr.yml installs, with a fallback", () => {
+  const prYml = require("fs").readFileSync(
+    require("path").join(__dirname, "..", ".github", "workflows", "pr.yml"),
+    "utf8"
+  );
+  const ci = prYml.match(/node[_-]version:\s*["']?(\d+)/)[1];
+  assert.strictEqual(IMAGE, `node:${ci}`);
+  assert.strictEqual(
+    ciNodeMajor(() => 'node_version: "30"\n'),
+    "30"
+  );
+  assert.strictEqual(
+    ciNodeMajor(() => "no version here"),
+    "26"
+  );
+  assert.strictEqual(
+    ciNodeMajor(() => {
+      throw new Error("ENOENT");
+    }),
+    "26"
+  );
+});
+
+test("runs CI's Node image with 2 CPUs and the repo mounted read only", () => {
   const s = stub();
   const code = main([], s.run, () => {});
   assert.strictEqual(code, 0);
   const args = s.calls[1];
   assert.strictEqual(args[0], "run");
   assert.strictEqual(args[args.indexOf("--cpus") + 1], "2");
-  assert.ok(args.includes("node:22"));
+  assert.ok(args.includes(IMAGE));
   const mount = args[args.indexOf("-v") + 1];
   assert.ok(mount.endsWith(":/repo:ro"), mount);
 });
@@ -98,6 +124,16 @@ test("exit 1 when Jest fails, 2 when docker run cannot start", () => {
     main([], stub({ status: null, error: new Error("x") }).run, () => {}),
     2
   );
+});
+
+test("a failed npm ci exits 3 and says Jest did not run", () => {
+  assert.match(containerScript([]), /\|\| exit 3; \}/);
+  const lines = [];
+  const code = main([], stub({ status: INSTALL_FAILED }).run, (l) =>
+    lines.push(l)
+  );
+  assert.strictEqual(code, 3);
+  assert.match(lines[lines.length - 1], /npm ci failed .* Jest did not run/);
 });
 
 test("an argument without -- is refused before docker is touched", () => {

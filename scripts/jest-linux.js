@@ -6,23 +6,44 @@
 //   node scripts/jest-linux.js [-- <extra sfdx-lwc-jest arguments>]
 //
 // Jest on Windows can pass where CI's Linux run fails (case sensitive paths, line endings,
-// path separators). This runs `npx sfdx-lwc-jest` in a node:22 container limited to 2 CPUs.
-// The repo is mounted read only at /repo. The container copies the sources (not node_modules,
-// .git or web) into its own /work folder, installs with `npm ci`, and runs Jest there, so
-// nothing in the checkout changes and the Windows node_modules are never used.
+// path separators). This runs `npx sfdx-lwc-jest` in a Node container limited to 2 CPUs.
+// The image is the Node major CI's quality-check job installs, read from pr.yml, because the
+// npm that ships with each Node major reads the lockfile's overrides differently, and npm 10
+// refuses a lockfile npm 11 accepts. The repo is mounted read only at /repo. The container
+// copies the sources (not node_modules, .git or web) into its own /work folder, installs with
+// `npm ci`, and runs Jest there, so nothing in the checkout changes and the Windows
+// node_modules are never used.
 //
 // It needs Docker running. When it is not, the script says so and exits 2, instead of
 // letting `docker run` fail with a pipe error.
 //
-// Exit codes: 0 Jest passed, 1 Jest failed, 2 Docker is not available.
+// Exit codes: 0 Jest passed, 1 Jest failed, 2 Docker is not available, 3 `npm ci` failed in
+// the container, so Jest never ran.
 // Not part of ci:local on purpose. It is slow, so it runs once on a branch's head.
 
+const fs = require("fs");
 const path = require("path");
 const { spawnSync } = require("child_process");
 
 const ROOT = path.resolve(__dirname, "..");
-const IMAGE = "node:22";
+const FALLBACK_NODE = "26";
+const INSTALL_FAILED = 3;
 const CPUS = "2";
+
+/** The Node major CI's quality-check job uses, from pr.yml, or the fallback when unreadable. */
+function ciNodeMajor(read = (file) => fs.readFileSync(file, "utf8")) {
+  try {
+    const match = read(path.join(ROOT, ".github", "workflows", "pr.yml")).match(
+      /node[_-]version:\s*["']?(\d+)/
+    );
+    if (match) return match[1];
+  } catch (error) {
+    // Fall through to the fallback.
+  }
+  return FALLBACK_NODE;
+}
+
+const IMAGE = `node:${ciNodeMajor()}`;
 
 /** The shell line the container runs. extra is the list of Jest arguments after --. */
 function containerScript(extra) {
@@ -35,7 +56,7 @@ function containerScript(extra) {
     "cd /repo",
     "tar --exclude=./node_modules --exclude=./.git --exclude=./web --exclude=./.lighthouseci -cf - . | tar -xf - -C /work",
     "cd /work",
-    "npm ci --ignore-scripts --no-audit --no-fund",
+    `{ npm ci --ignore-scripts --no-audit --no-fund || exit ${INSTALL_FAILED}; }`,
     `npx sfdx-lwc-jest${jestArgs ? ` -- ${jestArgs}` : ""}`
   ].join(" && ");
 }
@@ -104,6 +125,12 @@ function main(argv, run = realRun, log = console.log) {
     );
     return 2;
   }
+  if (res.status === INSTALL_FAILED) {
+    log(
+      `jest-linux: npm ci failed inside ${IMAGE}, so Jest did not run. Read the npm error above.`
+    );
+    return INSTALL_FAILED;
+  }
   log(
     res.status === 0
       ? "jest-linux: Jest passed on Linux"
@@ -121,6 +148,8 @@ module.exports = {
   dockerArgs,
   containerScript,
   dockerRunning,
+  ciNodeMajor,
   IMAGE,
+  INSTALL_FAILED,
   CPUS
 };
