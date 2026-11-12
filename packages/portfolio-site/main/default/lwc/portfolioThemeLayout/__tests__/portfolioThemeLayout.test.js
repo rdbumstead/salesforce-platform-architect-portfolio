@@ -1869,11 +1869,9 @@ describe("c-portfolio-theme-layout", () => {
       ).toBe(false);
     });
 
-    it("gives the main region an id so the skip link has a target", () => {
+    it("puts the skip link target id on the host, where the audit tools look", () => {
       const element = render();
-      const main = element.shadowRoot.querySelector("main");
-      // The platform may suffix the id, so check the start of it.
-      expect(main.getAttribute("id")).toMatch(/^main-content/);
+      expect(element.getAttribute("id")).toBe("main-content");
       const link = element.shadowRoot.querySelector(".skip-link");
       expect(link.getAttribute("href")).toMatch(/#main-content$/);
     });
