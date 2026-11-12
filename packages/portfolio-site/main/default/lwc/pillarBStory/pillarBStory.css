@@ -53,6 +53,12 @@
   margin-bottom: var(--pf-space-4);
 }
 
+.facts a,
+.decisions a,
+.not-built a {
+  text-decoration: underline;
+}
+
 .facts li,
 .decisions li,
 .not-built li {
