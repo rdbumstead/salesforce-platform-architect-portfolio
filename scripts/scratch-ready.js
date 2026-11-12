@@ -112,8 +112,25 @@ function parseArgs(argv) {
   return options;
 }
 
+/**
+ * Quotes one argument for the cmd.exe line spawnSync builds on Windows (shell true, so sf.cmd
+ * can run). cmd.exe flips its quoted state at every double quote, escaped or not, and expands
+ * %NAME% even inside quotes, so an argument holding either could reach the shell. No argument
+ * this script passes needs them, so they are refused rather than escaped. Inside double quotes
+ * cmd.exe passes spaces, < > & | ^ ( ) literally. Backslashes before the closing quote are
+ * doubled, so the argument parser on the far side does not read them as escaping it.
+ */
 function quote(arg) {
-  return /[\s"'<>&|^%]/.test(arg) ? `"${arg.replace(/"/g, '\\"')}"` : arg;
+  const value = String(arg);
+  if (/["%\r\n]/.test(value)) {
+    throw new Error(
+      `scratch-ready: refusing an sf argument with a double quote, a percent sign or a line break: ${value}`
+    );
+  }
+  if (value !== "" && !/[\s'<>&|^()]/.test(value)) {
+    return value;
+  }
+  return `"${value.replace(/(\\+)$/, "$1$1")}"`;
 }
 
 /** Runs sf for real. Returns the parsed --json body, or throws if there is none. */
@@ -565,6 +582,7 @@ module.exports = {
   docPaths,
   splitContent,
   siteBase,
+  quote,
   StepError,
   STEPS,
   PRODUCTION_ORG_ID,

@@ -11,6 +11,7 @@ const {
   docPaths,
   splitContent,
   siteBase,
+  quote,
   StepError,
   STEPS,
   PRODUCTION_ORG_ID
@@ -332,4 +333,32 @@ test("siteBase turns the publish address into the path prefix live-smoke needs",
     siteBase("https://x.test/portfolio"),
     "https://x.test/portfolio"
   );
+});
+
+test("quote leaves plain arguments alone and wraps ones cmd.exe would split", () => {
+  assert.strictEqual(quote("r22-org"), "r22-org");
+  assert.strictEqual(quote("--target-org"), "--target-org");
+  assert.strictEqual(
+    quote("SELECT GuestUserId FROM Site WHERE Name = 'Portfolio1'"),
+    "\"SELECT GuestUserId FROM Site WHERE Name = 'Portfolio1'\""
+  );
+  assert.strictEqual(quote("a&b|c"), '"a&b|c"');
+  assert.strictEqual(quote(""), '""');
+});
+
+test("quote doubles backslashes before the closing quote only", () => {
+  assert.strictEqual(
+    quote(String.raw`C:\My Data\plan.json`),
+    String.raw`"C:\My Data\plan.json"`
+  );
+  assert.strictEqual(
+    quote(String.raw`C:\My Data\\`),
+    String.raw`"C:\My Data\\\\"`
+  );
+});
+
+test("quote refuses a double quote, a percent sign or a line break", () => {
+  for (const bad of ['a"b', "%PATH%", "a\nb", "a\rb"]) {
+    assert.throws(() => quote(bad), /refusing an sf argument/);
+  }
 });
