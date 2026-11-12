@@ -24,6 +24,7 @@ jobs:
       (github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'))
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       # A workflow_run checks out the default branch head by default. The deployed commit is
       # the one to sync, so a later push cannot slip in between.
