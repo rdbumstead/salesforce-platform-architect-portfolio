@@ -99,6 +99,7 @@ jobs:
     needs: [smoke]
     if: failure() && (inputs.site_base == '' || inputs.site_base == 'https://ryanbumstead.com')
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Sign In For The Failure Event
         continue-on-error: true

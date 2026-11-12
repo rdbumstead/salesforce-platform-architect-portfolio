@@ -37,6 +37,8 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # A full mode deploy waits up to 60 minutes inside sf, so the cap sits above that.
+    timeout-minutes: 90
     outputs:
       deployed: ${{ steps.execute.outputs.deployed }}
     steps:
@@ -294,6 +296,7 @@ jobs:
     needs: [deploy]
     if: github.event_name == 'push' && needs.deploy.result == 'success'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -381,6 +384,7 @@ jobs:
     if: always()
     needs: [deploy, smoke]
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Generate Deployment Summary
         run: |

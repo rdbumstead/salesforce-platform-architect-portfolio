@@ -16,9 +16,9 @@ name: Static Site (Cloudflare Pages)
 #
 # On main the deploy goes to the Pages production branch. Before cutover that is only the
 # *.pages.dev address. A pull request deploys a preview under pr-<number>, runs the live
-# smoke against it in this job, and writes the preview address and Lighthouse medians to the
-# job summary. A preview behind Cloudflare Access is reached with a service token kept as an
-# environment secret of site-preview.
+# smoke against it in the smoke job, and writes the preview address and Lighthouse medians to
+# the job summaries. A preview behind Cloudflare Access is reached with a service token kept
+# as an environment secret of site-preview.
 
 on:
   workflow_call:
@@ -55,7 +55,7 @@ jobs:
   build:
     name: Build and deploy
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     environment:
       name: ${{ github.event_name == 'pull_request' && 'site-preview' || 'site-production' }}
       url: ${{ steps.deploy.outputs.deployment-url }}
@@ -186,19 +186,71 @@ jobs:
             if [ -n "$URL" ]; then echo "- Deployed to: $URL (branch \`$BRANCH\`)"; else echo "- Not deployed: no Pages token, or the deploy did not run."; fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # The smoke and Lighthouse run in this job, so the Access service token stays an
-      # environment secret of this job (site-preview), which pull requests from forks never get.
-      # The smoke sends the token only to the preview's own host.
-      - name: Smoke the deployed site
-        if: steps.deploy.outcome == 'success'
+      # Lighthouse stays in this job because it drives the runner's Google Chrome, which the
+      # Playwright image does not have. The Access service token is an environment secret of
+      # this job (site-preview), which pull requests from forks never get.
+      # Report only. Behind Access, one request trades the service token for the
+      # CF_Authorization cookie, which is masked, and web/build/lhci-access.cjs sets it for the
+      # preview's own host only. No other host receives the token or the cookie.
+      - name: Lighthouse, three mobile runs per main page
+        if: always() && steps.deploy.outcome == 'success'
+        continue-on-error: true
         env:
-          SITE_BASE: ${{ steps.deploy.outputs.deployment-url }}
+          TARGET_URL: ${{ steps.deploy.outputs.deployment-url }}
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-          PLAYWRIGHT_VERSION: "1.64.0"
         run: |
-          npm install --prefix "$RUNNER_TEMP/pw" --no-save --no-audit --no-fund "playwright@$PLAYWRIGHT_VERSION"
-          "$RUNNER_TEMP/pw/node_modules/.bin/playwright" install --with-deps chromium webkit
+          if [ -n "$CF_ACCESS_CLIENT_ID" ] && [ -n "$CF_ACCESS_CLIENT_SECRET" ]; then
+            COOKIE="$(node web/build/access-cookie.mjs "$TARGET_URL/")"
+            if [ -n "$COOKIE" ]; then echo "::add-mask::$COOKIE"; export CF_ACCESS_COOKIE="$COOKIE"; fi
+          fi
+          npm install --prefix "$RUNNER_TEMP/lh" --no-save --no-audit --no-fund @lhci/cli@0.15.1 puppeteer@25.16.0
+          CHROME_PATH="$(command -v google-chrome)" NODE_PATH="$RUNNER_TEMP/lh/node_modules" "$RUNNER_TEMP/lh/node_modules/.bin/lhci" collect --config=./config/lighthouserc.cjs --puppeteerScript=./web/build/lhci-access.cjs --settings.disableStorageReset=true
+          {
+            echo "## Lighthouse, mobile, median of 3 runs"
+            echo ""
+            echo "Report only. LCP target 2.5 s."
+            echo ""
+            node web/build/lighthouse-summary.mjs .lighthouseci
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # The smoke runs in the Playwright image, the same one the Live Smoke Test uses. The image
+  # carries the browsers and their system libraries, so nothing here installs packages from
+  # the Ubuntu mirror. On 2026-11-11 a mirror outage stalled "playwright install --with-deps"
+  # for over 30 minutes, twice. The Access service token is an environment secret of the same
+  # environment as the build, and the smoke sends it only to the preview's own host.
+  # deployment: false gives this job the environment's secrets without recording a second
+  # deployment, so the build stays the one deployment per run. It would fail at once if the
+  # environment ever gets a custom deployment protection rule, which needs a deployment.
+  smoke:
+    name: Smoke the deployed site
+    needs: [build]
+    if: needs.build.outputs.deployed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.0-noble
+    environment:
+      name: ${{ github.event_name == 'pull_request' && 'site-preview' || 'site-production' }}
+      deployment: false
+    env:
+      SITE_BASE: ${{ needs.build.outputs.url }}
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+      PLAYWRIGHT_VERSION: "1.64.0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Only the npm package. The browsers come with the image, in its PLAYWRIGHT_BROWSERS_PATH.
+      - name: Install Playwright
+        run: npm install --prefix "$RUNNER_TEMP/pw" --no-save --no-audit --no-fund "playwright@$PLAYWRIGHT_VERSION"
+
+      # A healthy smoke takes about three minutes. The step timeout turns a hang into a
+      # failure, so the report job still publishes a Failure event for it.
+      - name: Smoke the deployed site
+        timeout-minutes: 12
+        run: |
           set +e
           NODE_PATH="$RUNNER_TEMP/pw/node_modules" SMOKE_JSON=smoke.json node scripts/live-smoke.js > smoke.out
           CODE=$?
@@ -227,48 +279,40 @@ jobs:
           exit $CODE
 
       - name: Upload smoke result
-        if: always() && steps.deploy.outcome == 'success'
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: site-smoke
           path: smoke.json
           if-no-files-found: ignore
 
-      # Report only. Behind Access, one request trades the service token for the
-      # CF_Authorization cookie, which is masked, and web/build/lhci-access.cjs sets it for the
-      # preview's own host only. No other host receives the token or the cookie.
-      - name: Lighthouse, three mobile runs per main page
-        if: always() && steps.deploy.outcome == 'success'
-        continue-on-error: true
-        env:
-          TARGET_URL: ${{ steps.deploy.outputs.deployment-url }}
-          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-        run: |
-          if [ -n "$CF_ACCESS_CLIENT_ID" ] && [ -n "$CF_ACCESS_CLIENT_SECRET" ]; then
-            COOKIE="$(node web/build/access-cookie.mjs "$TARGET_URL/")"
-            if [ -n "$COOKIE" ]; then echo "::add-mask::$COOKIE"; export CF_ACCESS_COOKIE="$COOKIE"; fi
-          fi
-          npm install --prefix "$RUNNER_TEMP/lh" --no-save --no-audit --no-fund @lhci/cli@0.15.1 puppeteer@25.16.0
-          CHROME_PATH="$(command -v google-chrome)" NODE_PATH="$RUNNER_TEMP/lh/node_modules" "$RUNNER_TEMP/lh/node_modules/.bin/lhci" collect --config=./config/lighthouserc.cjs --puppeteerScript=./web/build/lhci-access.cjs --settings.disableStorageReset=true
-          {
-            echo "## Lighthouse, mobile, median of 3 runs"
-            echo ""
-            echo "Report only. LCP target 2.5 s."
-            echo ""
-            node web/build/lighthouse-summary.mjs .lighthouseci
-          } >> "$GITHUB_STEP_SUMMARY"
+  # Outside the container, so the Salesforce sign in runs where it always has. It reports the
+  # build and the smoke as one result, the way the single job did before the split. Success
+  # needs a deploy and a passing smoke. A failure in either job is a Failure. A cancelled run,
+  # or a run that deployed nothing, publishes nothing.
+  report:
+    name: Publish the site event
+    needs: [build, smoke]
+    if: always() && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      HAS_BUILD_USER: ${{ secrets.SFDX_SITE_BUILD_USERNAME != '' }}
+      STATUS: ${{ (needs.build.result == 'failure' || needs.smoke.result == 'failure') && 'Failure' || ((needs.build.result == 'success' && needs.build.outputs.deployed == 'true' && needs.smoke.result == 'success') && 'Success' || '') }}
+    steps:
+      - name: Setup Salesforce CLI as the site build user
+        if: env.HAS_BUILD_USER == 'true' && env.STATUS != ''
+        uses: rdbumstead/setup-salesforce-action@v2
+        with:
+          jwt_key: ${{ secrets.SFDX_JWT_KEY }}
+          client_id: ${{ secrets.SFDX_CLIENT_ID }}
+          username: ${{ secrets.SFDX_SITE_BUILD_USERNAME }}
+          alias: "site-build"
+          node_version: "26"
 
       - name: Publish Governance Event
-        if: success() && github.event_name != 'pull_request' && env.HAS_BUILD_USER == 'true' && steps.deploy.outcome == 'success'
+        if: env.HAS_BUILD_USER == 'true' && env.STATUS != ''
         continue-on-error: true
         run: |
-          VALUES="Workflow__c=site Status__c=Success Run_Id__c=${{ github.run_id }} Run_Url__c=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} Commit_Sha__c=${{ github.sha }} Completed_At__c=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          sf data create record --sobject Governance_Event__e --values "$VALUES" --target-org site-build
-
-      - name: Publish Failure Event
-        if: failure() && github.event_name != 'pull_request' && env.HAS_BUILD_USER == 'true'
-        continue-on-error: true
-        run: |
-          VALUES="Workflow__c=site Status__c=Failure Run_Id__c=${{ github.run_id }} Run_Url__c=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} Commit_Sha__c=${{ github.sha }} Completed_At__c=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          VALUES="Workflow__c=site Status__c=$STATUS Run_Id__c=${{ github.run_id }} Run_Url__c=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} Commit_Sha__c=${{ github.sha }} Completed_At__c=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           sf data create record --sobject Governance_Event__e --values "$VALUES" --target-org site-build
