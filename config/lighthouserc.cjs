@@ -21,11 +21,14 @@ module.exports = {
       url: routes.map((route) => `${base}${route}`),
       numberOfRuns: 3
     },
+    // Accessibility is the only error, so `lhci assert` fails a pull request on accessibility
+    // under 100 and nothing else. It stays the same from run to run. Performance and LCP move
+    // with the runner, so they only warn and are reported in the job summary.
     assert: {
       assertions: {
         "categories:performance": ["warn", { minScore: 0.8 }],
         "categories:accessibility": ["error", { minScore: 1 }],
-        "largest-contentful-paint": ["error", { maxNumericValue: 2500 }]
+        "largest-contentful-paint": ["warn", { maxNumericValue: 2500 }]
       }
     },
     upload: {

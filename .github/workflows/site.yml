@@ -189,7 +189,8 @@ jobs:
       # Lighthouse stays in this job because it drives the runner's Google Chrome, which the
       # Playwright image does not have. The Access service token is an environment secret of
       # this job (site-preview), which pull requests from forks never get.
-      # Report only. Behind Access, one request trades the service token for the
+      # This step only collects and reports. The gate after it fails a pull request on
+      # accessibility. Behind Access, one request trades the service token for the
       # CF_Authorization cookie, which is masked, and web/build/lhci-access.cjs sets it for the
       # preview's own host only. No other host receives the token or the cookie.
       - name: Lighthouse, three mobile runs per main page
@@ -209,10 +210,25 @@ jobs:
           {
             echo "## Lighthouse, mobile, median of 3 runs"
             echo ""
-            echo "Report only. LCP target 2.5 s."
+            echo "Performance and LCP are report only. LCP target 2.5 s. Accessibility under 100 fails a pull request."
             echo ""
             node web/build/lighthouse-summary.mjs .lighthouseci
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # Accessibility under 100 on any audited page fails a pull request. lhci assert reads the
+      # assertions in config/lighthouserc.cjs, where accessibility is the only error. On main the
+      # site is already deployed when this runs, so the gate is for pull requests only. When the
+      # collect step left no results, accessibility was not checked, and the gate fails rather
+      # than pass quietly.
+      - name: Accessibility gate, 100 on every audited page
+        if: always() && github.event_name == 'pull_request' && steps.deploy.outcome == 'success'
+        run: |
+          LHCI="$RUNNER_TEMP/lh/node_modules/.bin/lhci"
+          if [ ! -x "$LHCI" ] || ! ls .lighthouseci/lhr-*.json > /dev/null 2>&1; then
+            echo "::error::No Lighthouse results to check. The collect step failed, so accessibility was not checked."
+            exit 1
+          fi
+          NODE_PATH="$RUNNER_TEMP/lh/node_modules" "$LHCI" assert --config=./config/lighthouserc.cjs
 
   # The smoke runs in the Playwright image, the same one the Live Smoke Test uses. The image
   # carries the browsers and their system libraries, so nothing here installs packages from
