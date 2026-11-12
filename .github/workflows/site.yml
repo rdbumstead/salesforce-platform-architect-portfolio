@@ -189,8 +189,12 @@ jobs:
       # The smoke and Lighthouse run in this job, so the Access service token stays an
       # environment secret of this job (site-preview), which pull requests from forks never get.
       # The smoke sends the token only to the preview's own host.
+      # A healthy smoke takes about three minutes. The step timeout stops a slow apt mirror
+      # inside "playwright install --with-deps" from using up the whole job, which happened
+      # twice on 2026-11-11 and left no time for Lighthouse.
       - name: Smoke the deployed site
         if: steps.deploy.outcome == 'success'
+        timeout-minutes: 15
         env:
           SITE_BASE: ${{ steps.deploy.outputs.deployment-url }}
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
