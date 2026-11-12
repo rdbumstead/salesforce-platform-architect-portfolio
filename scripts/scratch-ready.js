@@ -39,7 +39,8 @@ const SEED_PLANS = Object.freeze([
   "data/home/plan.json",
   "data/delivery/plan.json",
   "data/pillars/plan-a.json",
-  "data/pillars/plan-b.json"
+  "data/pillars/plan-b.json",
+  "data/footer/plan.json"
 ]);
 const SITE_NAME = "Portfolio";
 const SITE_ENTRY = "Portfolio1";

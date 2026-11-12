@@ -142,13 +142,14 @@ test("main runs the steps in order and prints the URL and Id", () => {
     (c) => c[0] === "data" && c[1] === "import"
   );
   assert.deepStrictEqual(
-    imports.slice(0, 5).map((c) => c[c.indexOf("--plan") + 1]),
+    imports.slice(0, 6).map((c) => c[c.indexOf("--plan") + 1]),
     [
       "data/site/plan.json",
       "data/home/plan.json",
       "data/delivery/plan.json",
       "data/pillars/plan-a.json",
-      "data/pillars/plan-b.json"
+      "data/pillars/plan-b.json",
+      "data/footer/plan.json"
     ]
   );
 });

@@ -1,0 +1,8 @@
+[
+  {
+    "sobject": "Storage_Snapshot__c",
+    "saveRefs": false,
+    "resolveRefs": false,
+    "files": ["Storage_Snapshot__c.json"]
+  }
+]
