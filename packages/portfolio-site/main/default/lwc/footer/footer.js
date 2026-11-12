@@ -3,9 +3,10 @@
  *                      two rows of status, and the footer links (Contact, Docs, then the profile
  *                      links from getLinks()) with Back to top. Skills and Testimonials are in the
  *                      header, not here.
- *                      Row one is CI, one labelled group of workflow badges: the production deploy
- *                      badge, the Live Smoke Test badge and the Postman Sync badge, each linking to
- *                      its Actions page with a text link fallback when the image fails. The badges
+ *                      Row one is CI, one labelled group of workflow badges in pipeline order: the
+ *                      production deploy badge, the static site build badge, the Live Smoke Test
+ *                      badge and the Postman Sync badge, each linking to its Actions page with a
+ *                      text link fallback when the image fails. The badges
  *                      come from the CI_BADGES array, so another is one more entry. GitHub issues a
  *                      badge per workflow, which is why the Postman sync is its own workflow.
  *                      Row two is the live readings. One caption sits over it, with View source
@@ -90,6 +91,8 @@ const REPO_URL =
   "https://github.com/rdbumstead/salesforce-platform-architect-portfolio";
 export const BADGE_URL = `${REPO_URL}/actions/workflows/deploy.yml/badge.svg?branch=main`;
 export const ACTIONS_URL = `${REPO_URL}/actions/workflows/deploy.yml`;
+export const SITE_BADGE_URL = `${REPO_URL}/actions/workflows/site.yml/badge.svg?branch=main`;
+export const SITE_ACTIONS_URL = `${REPO_URL}/actions/workflows/site.yml`;
 export const SMOKE_BADGE_URL = `${REPO_URL}/actions/workflows/smoke.yml/badge.svg`;
 export const SMOKE_ACTIONS_URL = `${REPO_URL}/actions/workflows/smoke.yml`;
 export const POSTMAN_BADGE_URL = `${REPO_URL}/actions/workflows/postman-sync.yml/badge.svg`;
@@ -107,6 +110,14 @@ export const CI_BADGES = [
     href: ACTIONS_URL,
     imageId: "badge",
     fallbackId: "badge-fallback"
+  },
+  {
+    key: "site",
+    label: "Static site build status",
+    src: SITE_BADGE_URL,
+    href: SITE_ACTIONS_URL,
+    imageId: "badge-site",
+    fallbackId: "badge-fallback-site"
   },
   {
     key: "smoke",

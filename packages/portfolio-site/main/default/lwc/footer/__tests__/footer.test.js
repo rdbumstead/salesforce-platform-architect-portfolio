@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for the Glass Box footer: the CI row with its two badges, the
+ * @description       : Unit tests for the Glass Box footer: the CI row with its four badges, the
  *                      readings row with its caption and View source, the metric groups in plain
  *                      words, and the links.
  *                      getLinks is a
@@ -22,6 +22,8 @@ import Footer, {
   CI_BADGES,
   POSTMAN_ACTIONS_URL,
   POSTMAN_BADGE_URL,
+  SITE_ACTIONS_URL,
+  SITE_BADGE_URL,
   SMOKE_ACTIONS_URL,
   SMOKE_BADGE_URL,
   formatNumber,
@@ -286,6 +288,24 @@ describe("c-footer", () => {
     expect(badge.getAttribute("height")).toBe("20");
     const link = badge.closest("a");
     expect(link.getAttribute("href")).toBe(ACTIONS_URL);
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("rel")).toBe("noopener noreferrer");
+  });
+
+  it("shows the static site build badge for main with its link", () => {
+    const element = createComponent();
+    const badge = q(element, '[data-id="badge-site"]');
+    expect(SITE_BADGE_URL).toBe(
+      "https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/site.yml/badge.svg?branch=main"
+    );
+    expect(badge.getAttribute("src")).toBe(SITE_BADGE_URL);
+    expect(badge.getAttribute("alt")).toBe("Static site build status");
+    expect(badge.getAttribute("height")).toBe("20");
+    const link = badge.closest("a");
+    expect(link.getAttribute("href")).toBe(SITE_ACTIONS_URL);
+    expect(SITE_ACTIONS_URL).toBe(
+      "https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/site.yml"
+    );
     expect(link.getAttribute("target")).toBe("_blank");
     expect(link.getAttribute("rel")).toBe("noopener noreferrer");
   });
@@ -740,11 +760,12 @@ describe("c-footer", () => {
       const element = await loadEverything();
       const ci = await listIds(element, "ci");
       expect(ci.panel.querySelector('[data-id="badge"]')).not.toBeNull();
+      expect(ci.panel.querySelector('[data-id="badge-site"]')).not.toBeNull();
       expect(ci.panel.querySelector('[data-id="badge-smoke"]')).not.toBeNull();
       expect(
         ci.panel.querySelector('[data-id="badge-postman"]')
       ).not.toBeNull();
-      expect(ci.ids).toEqual(["ci-badge", "ci-badge", "ci-badge"]);
+      expect(ci.ids).toEqual(["ci-badge", "ci-badge", "ci-badge", "ci-badge"]);
       expect(ci.labelled).toBe(true);
       expect((await listIds(element, "platform")).ids).toEqual(["graphql"]);
       expect((await listIds(element, "integrations")).ids).toEqual([
@@ -877,7 +898,7 @@ describe("c-footer", () => {
       const element = await loaded();
       const text = (group) =>
         q(element, `[data-id="status-${group}"]`).textContent.trim();
-      expect(text("ci")).toBe("3 workflows");
+      expect(text("ci")).toBe("4 workflows");
       expect(text("platform")).toBe("live");
       expect(text("integrations")).toBe("5 services");
       expect(text("quotas")).toBe("3 readings");
