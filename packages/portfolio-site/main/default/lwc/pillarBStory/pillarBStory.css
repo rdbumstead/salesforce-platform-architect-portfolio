@@ -53,6 +53,17 @@
   margin-bottom: var(--pf-space-4);
 }
 
+/* The site link rule outside this component sets no underline and outranks a plain class rule,
+   so the rule is repeated on :link and :visited. */
+.facts a:link,
+.facts a:visited,
+.decisions a:link,
+.decisions a:visited,
+.not-built a:link,
+.not-built a:visited {
+  text-decoration: underline;
+}
+
 .facts li,
 .decisions li,
 .not-built li {

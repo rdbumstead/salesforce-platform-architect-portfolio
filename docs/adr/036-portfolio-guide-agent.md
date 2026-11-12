@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Accepted
+- **Build:** Designed. The agent is in source and ships inactive, with no page or channel using it.
+
 Accepted (2026-10-27). Checked against the merged metadata: the bot, the planner bundle, the topics and functions, `PortfolioAgentCareer`, `PortfolioAgentProjects`, `PortfolioAgentCredentials`, `PortfolioAgentText` and the `Portfolio_Guide_Agent_Actions` permission set.
 
 ## Context

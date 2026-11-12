@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/integration-api/main/default/classes/ApiVersionTest.cls), also [ApiRequestContext](../../packages/integration-api/main/default/classes/ApiRequestContext.cls)
+
 Accepted. Amended 2026-10-01; header rules corrected to the implementation 2026-10-20 and 2026-10-21 (see below).
 
 ## Context

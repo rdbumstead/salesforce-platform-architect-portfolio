@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/integration-api/main/default/classes/TokenExchangeService.cls), also [TokenExchangeServiceTest](../../packages/integration-api/main/default/classes/TokenExchangeServiceTest.cls)
+
 Accepted (2026-10-01). Depends on [ADR-027](027-platform-native-api-authentication.md). Amended twice on 2026-10-21 (see below).
 
 ## Context

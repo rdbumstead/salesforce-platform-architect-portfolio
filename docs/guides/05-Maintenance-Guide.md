@@ -28,7 +28,7 @@
   - [4.4 Scenario: Token Vending Abuse](#44-scenario-token-vending-abuse)
   - [4.5 Scenario: Contact Form Abuse](#45-scenario-contact-form-abuse)
 - [5. Observability & Monitoring](#5-observability--monitoring)
-  - [5.1 Quota Monitoring (Not Built)](#51-quota-monitoring-not-built)
+  - [5.1 Quota Monitoring (Designed)](#51-quota-monitoring-designed)
   - [5.2 Logging](#52-logging)
 
 ---
@@ -150,12 +150,14 @@ To prevent "Commit Shame" (failing pipelines after pushing), developers must exe
 - **`npm run specs:sync`** and **`npm run specs:check`**: regenerate every copy of the API specs from `packages/integration-api/specs`, or fail when a copy differs (`scripts/sync-specs.js`). Edit the YAML there, never a copy. The pre-commit hook runs the sync, the API docs and the Postman collection for a staged spec and stages what they write (`scripts/regenerate-spec-outputs.js`, section 3.9).
 - **`npm run docs:counts`**: fails when the ADR count in README or STATUS, or an ADR link in the indexes, disagrees with `docs/adr` (`scripts/check-doc-counts.js`).
 - **`npm run refs:check`**: fails when a comment, metadata description or help text under `packages/`, or any text in `docs/`, `README.md` or `STATUS.md`, names a build process code. It scans the same paths as CI, and the pre-commit hook runs it on staged files there. It reads only prose and skips vendored bundles. Exceptions go in `scripts/internal-refs-allowlist.json` with a reason ([Technical Guide §3.1](./04-Technical-Guide.md#31-key-verification-items)).
-- **`npm run ci:local`**: the "before you push" command. It runs on your machine every check the `quality-check` job in `pr.yml` runs, in the same order and with the same arguments (`scripts/ci-local.js`). The checks are the secret scan, Jest, the API docs check, internal references, smoke routes, the Postman collection, Mermaid diagrams and the Code Analyzer. By default it runs only the steps whose files changed against `origin/main` (the merge base, plus staged, unstaged and new files). `npm run ci:local -- --all` runs every step and `npm run ci:local -- --list` prints the steps and which would run. Every selected step runs even after one fails, so one pass shows every failure, and the exit code is 1 if any failed.
+- **`npm run ci:local`**: the "before you push" command. It runs on your machine every check the `quality-check` job in `pr.yml` runs, in the same order and with the same arguments (`scripts/ci-local.js`). The checks are the secret scan, Jest, the test group counts, the API docs check, internal references, build status words, smoke routes, the Postman collection, Mermaid diagrams and the Code Analyzer. By default it runs only the steps whose files changed against `origin/main` (the merge base, plus staged, unstaged and new files). `npm run ci:local -- --all` runs every step and `npm run ci:local -- --list` prints the steps and which would run. Every selected step runs even after one fails, so one pass shows every failure, and the exit code is 1 if any failed.
   - _Pre-push hook:_ `.husky/pre-push` runs `node scripts/ci-local.js --changed` and blocks the push when a step fails. The `--no-verify` flag on the push skips it, for an emergency, and that call belongs to the owner.
   - _Skips:_ a few commands need something a machine may lack, so the runner says SKIPPED and lists each skip again in the summary. A skip is not a pass. The Postman check needs the pinned `openapi-to-postmanv2` dev dependency (run `npm install`). The Postman probe needs the network. The Mermaid render needs `MERMAID_CLI_DIR` (the one line install is in `pr.yml`) and a Chrome or Edge, which the runner looks for through `PUPPETEER_EXECUTABLE_PATH` and the usual Windows paths. The Mermaid tests and the alt text check always run.
   - _Drift test:_ `node --test scripts/ci-local.test.js` reads `quality-check` in `pr.yml` and fails when a command there has no step in `ci-local.js`. Add the step in the same change as the workflow edit.
   - _Git worktrees:_ the hooks live in `.husky/_`, which `npx husky` generates and git does not track, so a new worktree has none and git runs no hooks there at all. Run `npx husky` once in each new worktree. In a worktree with no org pinned (no local `sf config set target-org`), the pre-commit hook skips the Salesforce validate step and says so, because the integration deploy and CI validate backend changes. The main checkout validates as before.
 - **`npm run pre-launch-check -- --target-org <alias>`**: the release checks in one command ([Technical Guide §3](./04-Technical-Guide.md#3-quality-assurance-checklist)).
+- **`npm run scratch:ready -- --alias <alias> --days 14`**: makes a scratch org ready to walk in one command (`scripts/scratch-ready.js`). It checks the Dev Hub has at least two free scratch slots, creates the org from `config/project-scratch-def-ai.json`, deploys `packages`, gives the admin `Portfolio_Admin` and the Portfolio1 guest user `Portfolio_Guest`, loads the seed plans in `data/`, adds the docs cache rows, draws the docs diagrams when it finds a Chrome (set `CHROME_PATH`), publishes the site, and prints the site URL, the `SITE_BASE` for the live smoke test and the org Id. It stops at the first step that fails and names it. It refuses the production org by alias and by Id. When the diagram step cannot run it is skipped with a message, and the docs page then shows each diagram's source and WebKit logs a 404 for the diagram manifest.
+- **`npm run test:linux`**: runs the LWC Jest suite in a Linux container on the Node major CI uses (read from `pr.yml`), with 2 CPUs and the repo mounted read only (`scripts/jest-linux.js`), the closest local match to CI's Linux run. It needs Docker running and says so when it is not. It is not part of `ci:local`.
 
 ### 3.2 Pipeline Triggers
 
@@ -277,7 +279,8 @@ The static front end ([ADR-041](../adr/041-headless-static-front-end-on-cloudfla
 
 **The workflow.**
 
-- **Triggers.** See section 3.2. A pull request deploys a preview under `pr-<number>`, runs the live smoke test against it, and writes the preview address and Lighthouse medians (report only) to the job summary. A run on `main` deploys to the Pages production branch.
+- **Triggers.** See section 3.2. A pull request deploys a preview under `pr-<number>`, runs the live smoke test against it, and writes the preview address and Lighthouse medians to the job summary. A run on `main` deploys to the Pages production branch.
+- **Lighthouse.** Six routes, three mobile runs each, with Google Analytics blocked so audits never count as visits. On a pull request it audits the same build on the runner through `wrangler pages dev`, because every `*.ryanbumstead.pages.dev` address is behind Cloudflare Access and Access gives a service token no cookie. Strict service token authentication is on and this Zero Trust organization cannot turn it off. Accessibility under 100 on any route fails the pull request. Performance and LCP there are the runner's numbers and only report. On `main` it audits `https://ryanbumstead.com` after the deploy, which gives Cloudflare's numbers.
 - **GitHub secrets it reads.** `SFDX_JWT_KEY` and `SFDX_CLIENT_ID` (the existing JWT app), `SFDX_SITE_BUILD_USERNAME` (the build user, `site-build@ryanbumstead.com`), `CLOUDFLARE_PAGES_TOKEN` (else `CLOUDFLARE_API_TOKEN`) and `SITE_DENYLIST` (comma separated terms the leak scan refuses). With no build user secret the build uses the sample fixtures and says so. With no Pages token the deploy is skipped and says so. The leak scan fails a real data build when `SITE_DENYLIST` is missing.
 - **After the build.** It publishes a `Governance_Event__e` for the workflow `site` on success or failure, and the Delivery checklist's "Static site build green" row reads it.
 - **A failed build.** The Pages project keeps serving the last good deployment. Read the job summary, fix the cause and run the workflow by hand.
@@ -336,9 +339,9 @@ If Apex classes fail with "You can bypass this error by allowing deployments wit
 
 ## 5. Observability & Monitoring
 
-### 5.1 Quota Monitoring (Not Built)
+### 5.1 Quota Monitoring (Designed)
 
-The design was a scheduled job that read a Gemini usage counter from a Platform Cache partition (`local.AIMetrics`) and emailed me above a threshold. **It is not built:** the org has no Platform Cache partition, and no class keeps such a counter. What exists today:
+The design was a scheduled job that read a Gemini usage counter from a Platform Cache partition (`local.AIMetrics`) and emailed me above a threshold. **Nothing of it is built:** the org has no Platform Cache partition, and no class keeps such a counter. What exists today:
 
 - The Gemini API key's own limits for Gemini 2.5 Flash, as recorded on 2026-10-20 (AI Studio): 5 requests per minute and 20 requests per day. Read the current figures before relying on them. Past them, `/papi/ai/generate` falls back to the local template for cover letters and answers 503 `ALL_PROVIDERS_UNAVAILABLE` otherwise.
 - The `papi-ai` rate tier, 10 requests per minute (`RateWindowLimiter`). The site cover letter has its own bucket, `papi-ai:site-cover-letter`, shared by every site visitor. `/papi/ai/generate` keys by session, and every evaluator token is the same session, so evaluators share one bucket too.

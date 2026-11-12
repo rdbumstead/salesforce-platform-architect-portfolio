@@ -19,13 +19,21 @@ module.exports = {
   ci: {
     collect: {
       url: routes.map((route) => `${base}${route}`),
-      numberOfRuns: 3
+      numberOfRuns: 3,
+      // Each page loads Google Analytics. Blocking it keeps audit runs out of the visitor
+      // numbers, at the cost of leaving its script out of the performance score.
+      settings: {
+        blockedUrlPatterns: ["*googletagmanager.com*", "*google-analytics.com*"]
+      }
     },
+    // Accessibility is the only error, so `lhci assert` fails a pull request on accessibility
+    // under 100 and nothing else. It stays the same from run to run. Performance and LCP move
+    // with the runner, so they only warn and are reported in the job summary.
     assert: {
       assertions: {
         "categories:performance": ["warn", { minScore: 0.8 }],
         "categories:accessibility": ["error", { minScore: 1 }],
-        "largest-contentful-paint": ["error", { maxNumericValue: 2500 }]
+        "largest-contentful-paint": ["warn", { maxNumericValue: 2500 }]
       }
     },
     upload: {

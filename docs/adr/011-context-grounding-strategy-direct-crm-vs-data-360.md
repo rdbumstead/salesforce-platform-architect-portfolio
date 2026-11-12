@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Deferred (2026-10-22, see the amendment below).
+- **Build:** Designed. Grounding stays in Apex and nothing reads Data 360.
+
 Deferred (2026-10-22, see the amendment below). Originally Accepted.
 
 ## Context

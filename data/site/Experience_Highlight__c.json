@@ -109,6 +109,34 @@
       "Admin_Sort_Order__c": 2,
       "Developer_Sort_Order__c": 2,
       "Architect_Sort_Order__c": 2
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedConsultSharedHighlightRef"
+      },
+      "Name": "Seed Consulting shared highlight",
+      "Experience__c": "@SeedRoleConsultRef",
+      "Description__c": "Seed highlight for the consulting role.",
+      "Timeline_Text__c": "Seed consulting highlight",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 1,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 1
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedRetailSharedHighlightRef"
+      },
+      "Name": "Seed Retail shared highlight",
+      "Experience__c": "@SeedRoleRetailRef",
+      "Description__c": "Seed highlight for the part time role.",
+      "Timeline_Text__c": "Seed part time highlight",
+      "Persona_Tag__c": "Admin",
+      "Sort_Order__c": 1,
+      "Lock_Sort_Across_Personas__c": false,
+      "Admin_Sort_Order__c": 1
     }
   ]
 }

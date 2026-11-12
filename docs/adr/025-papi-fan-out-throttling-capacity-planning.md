@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/integration-api/main/default/classes/RateWindowLimiter.cls), also [RateWindowLimiterTest](../../packages/integration-api/main/default/classes/RateWindowLimiterTest.cls)
+
 Accepted. Amended 2026-10-01, 2026-10-21 and 2026-10-28 (see below). The 2026-10-28 amendment corrects the Context and Rationale: PAPI was never built to call SAPI over HTTP, so the "~8 upstream calls" below are eight data reads in one transaction, not eight requests.
 
 ## Context

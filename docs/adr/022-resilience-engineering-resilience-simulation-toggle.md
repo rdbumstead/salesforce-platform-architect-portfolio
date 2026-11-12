@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/portfolio-site/main/default/lwc/outageSimulation), also [CircuitBreakerTest](../../packages/portfolio-site/main/default/classes/CircuitBreakerTest.cls)
+
 Accepted. Amended 2026-10-21, 2026-10-29 and 2026-10-30 (see below).
 
 ## Context

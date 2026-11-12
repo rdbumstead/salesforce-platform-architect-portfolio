@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted
+- **Decision:** Accepted
+- **Build:** [Live](../../.github/workflows/deploy.yml)
 
 ## Context
 

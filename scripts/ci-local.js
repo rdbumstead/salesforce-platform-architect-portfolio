@@ -87,6 +87,19 @@ const STEPS = [
     ]
   },
   {
+    name: "Build status words",
+    paths: [
+      "docs/**/*.md",
+      "README.md",
+      "STATUS.md",
+      "scripts/check-build-status*"
+    ],
+    commands: [
+      { ci: "node --test scripts/check-build-status.test.js" },
+      { ci: "node scripts/check-build-status.js" }
+    ]
+  },
+  {
     name: "Smoke routes",
     paths: [
       "packages/**/digitalExperiences/**",

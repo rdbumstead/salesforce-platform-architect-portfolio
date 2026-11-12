@@ -136,26 +136,16 @@ test('the coverage gate catches an uncovered import, an unused allowlist entry a
   assert.ok(!problems.some((problem) => problem.includes('getSystemSnapshot is imported')), 'request time calls are not exported');
 });
 
-test('only the CF_Authorization cookie value is taken from the Access answer', async () => {
-  const { cookieFrom } = await import('../build/access-cookie.mjs');
-  assert.equal(cookieFrom(['other=1; Path=/', 'CF_Authorization=abc.def; Path=/; Secure; HttpOnly']), 'abc.def');
-  assert.equal(cookieFrom(['other=1']), '');
-  assert.equal(cookieFrom(undefined), '');
-});
-
-test('the Lighthouse setup sets the cookie for the preview host only', async () => {
-  const { createRequire } = await import('node:module');
-  const setup = createRequire(import.meta.url)('../build/lhci-access.cjs');
-  const set = [];
-  const browser = { newPage: async () => ({ setCookie: async (cookie) => set.push(cookie), close: async () => {} }) };
-  process.env.CF_ACCESS_COOKIE = 'abc';
-  try {
-    await setup(browser, { url: 'https://pr-3.ryanbumstead.pages.dev/resume' });
-    await setup(browser, { url: 'https://ryanbumstead.com/' });
-  } finally {
-    delete process.env.CF_ACCESS_COOKIE;
-  }
-  assert.equal(set.length, 1);
-  assert.equal(set[0].domain, 'pr-3.ryanbumstead.pages.dev');
-  assert.equal(set[0].name, 'CF_Authorization');
+test('the host check flags a run that ended on the Access login page', async () => {
+  const { offTarget } = await import('../build/lighthouse-hosts.mjs');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lhr-hosts-'));
+  const write = (name, finalDisplayedUrl) =>
+    fs.writeFileSync(path.join(dir, name), JSON.stringify({ finalDisplayedUrl }));
+  write('lhr-1.json', 'https://7da5.ryanbumstead.pages.dev/resume');
+  write('lhr-2.json', 'https://team.cloudflareaccess.com/cdn-cgi/access/login/7da5.ryanbumstead.pages.dev');
+  fs.writeFileSync(path.join(dir, 'manifest.json'), '[]');
+  const misses = offTarget(dir, 'https://7da5.ryanbumstead.pages.dev');
+  assert.equal(misses.length, 1);
+  assert.equal(misses[0].file, 'lhr-2.json');
+  assert.deepEqual(offTarget(dir, 'https://team.cloudflareaccess.com').map((m) => m.file), ['lhr-1.json']);
 });

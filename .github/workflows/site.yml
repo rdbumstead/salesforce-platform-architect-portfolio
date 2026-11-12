@@ -17,8 +17,9 @@ name: Static Site (Cloudflare Pages)
 # On main the deploy goes to the Pages production branch. Before cutover that is only the
 # *.pages.dev address. A pull request deploys a preview under pr-<number>, runs the live
 # smoke against it in the smoke job, and writes the preview address and Lighthouse medians to
-# the job summaries. A preview behind Cloudflare Access is reached with a service token kept
-# as an environment secret of site-preview.
+# the job summaries. The smoke reaches a preview behind Cloudflare Access with a service token
+# kept as an environment secret of site-preview. Lighthouse audits a local copy of the build
+# instead (see that step).
 
 on:
   workflow_call:
@@ -187,32 +188,68 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       # Lighthouse stays in this job because it drives the runner's Google Chrome, which the
-      # Playwright image does not have. The Access service token is an environment secret of
-      # this job (site-preview), which pull requests from forks never get.
-      # Report only. Behind Access, one request trades the service token for the
-      # CF_Authorization cookie, which is masked, and web/build/lhci-access.cjs sets it for the
-      # preview's own host only. No other host receives the token or the cookie.
+      # Playwright image does not have. This step only collects and reports. The gate after it
+      # fails a pull request on accessibility.
+      # Every *.ryanbumstead.pages.dev address sits behind Cloudflare Access, and Access gives a
+      # service token no cookie (strict service token authentication, which this Zero Trust
+      # organization cannot turn off), so Lighthouse cannot reach a preview. On a pull request
+      # it audits the same dist on this runner instead, served by `wrangler pages dev`, which
+      # runs the Pages Functions and _headers. Accessibility does not depend on the host, but
+      # the performance and LCP numbers are the runner's. The smoke job still checks the real
+      # preview. On main it audits ryanbumstead.com after the deploy, which is not behind
+      # Access, so those are Cloudflare's numbers.
       - name: Lighthouse, three mobile runs per main page
         if: always() && steps.deploy.outcome == 'success'
         continue-on-error: true
         env:
-          TARGET_URL: ${{ steps.deploy.outputs.deployment-url }}
-          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          TARGET_URL: ${{ github.event_name == 'pull_request' && 'http://127.0.0.1:8788' || 'https://ryanbumstead.com' }}
+          WRANGLER_SEND_METRICS: "false"
         run: |
-          if [ -n "$CF_ACCESS_CLIENT_ID" ] && [ -n "$CF_ACCESS_CLIENT_SECRET" ]; then
-            COOKIE="$(node web/build/access-cookie.mjs "$TARGET_URL/")"
-            if [ -n "$COOKIE" ]; then echo "::add-mask::$COOKIE"; export CF_ACCESS_COOKIE="$COOKIE"; fi
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            (cd web && nohup npx wrangler pages dev dist --ip 127.0.0.1 --port 8788 > "$RUNNER_TEMP/wrangler.log" 2>&1 &)
+            for i in $(seq 1 60); do
+              curl -sf -o /dev/null "$TARGET_URL/" && break
+              sleep 1
+            done
+            if ! curl -sf -o /dev/null "$TARGET_URL/"; then
+              tail -n 40 "$RUNNER_TEMP/wrangler.log"
+              echo "::error::The local copy of the site did not start, so Lighthouse did not run."
+              exit 1
+            fi
           fi
-          npm install --prefix "$RUNNER_TEMP/lh" --no-save --no-audit --no-fund @lhci/cli@0.15.1 puppeteer@25.16.0
-          CHROME_PATH="$(command -v google-chrome)" NODE_PATH="$RUNNER_TEMP/lh/node_modules" "$RUNNER_TEMP/lh/node_modules/.bin/lhci" collect --config=./config/lighthouserc.cjs --puppeteerScript=./web/build/lhci-access.cjs --settings.disableStorageReset=true
+          npm install --prefix "$RUNNER_TEMP/lh" --no-save --no-audit --no-fund @lhci/cli@0.15.1
+          CHROME_PATH="$(command -v google-chrome)" "$RUNNER_TEMP/lh/node_modules/.bin/lhci" collect --config=./config/lighthouserc.cjs
           {
             echo "## Lighthouse, mobile, median of 3 runs"
             echo ""
-            echo "Report only. LCP target 2.5 s."
+            if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+              echo "Audited a local copy of this build on the runner, so performance and LCP are the runner's, not Cloudflare's."
+            else
+              echo "Audited $TARGET_URL after the deploy."
+            fi
+            echo "Performance and LCP are report only. LCP target 2.5 s. Accessibility under 100 fails a pull request."
             echo ""
             node web/build/lighthouse-summary.mjs .lighthouseci
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # Accessibility under 100 on any audited page fails a pull request. lhci assert reads the
+      # assertions in config/lighthouserc.cjs, where accessibility is the only error. On main the
+      # site is already deployed when this runs, so the gate is for pull requests only. When the
+      # collect step left no results, accessibility was not checked, and the gate fails rather
+      # than pass quietly. When a run ended on another page, its scores are not the site's, so
+      # the gate says so before it asserts anything.
+      - name: Accessibility gate, 100 on every audited page
+        if: always() && github.event_name == 'pull_request' && steps.deploy.outcome == 'success'
+        env:
+          TARGET_URL: http://127.0.0.1:8788
+        run: |
+          LHCI="$RUNNER_TEMP/lh/node_modules/.bin/lhci"
+          if [ ! -x "$LHCI" ] || ! ls .lighthouseci/lhr-*.json > /dev/null 2>&1; then
+            echo "::error::No Lighthouse results to check. The collect step failed, so accessibility was not checked."
+            exit 1
+          fi
+          node web/build/lighthouse-hosts.mjs .lighthouseci "$TARGET_URL"
+          "$LHCI" assert --config=./config/lighthouserc.cjs
 
   # The smoke runs in the Playwright image, the same one the Live Smoke Test uses. The image
   # carries the browsers and their system libraries, so nothing here installs packages from

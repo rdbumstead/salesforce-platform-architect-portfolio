@@ -112,16 +112,26 @@ async function loadData(args, routes, reachable) {
   return { ...data, plans };
 }
 
-/** The rule that keeps a preview build out of search results. Production never gets it. */
-export const NOINDEX_RULE = '# Preview build: keep every path out of search results.\n/*\n  X-Robots-Tag: noindex\n';
+/** The header that keeps a preview build out of search results. Production never gets it. */
+export const NOINDEX_HEADER = '  X-Robots-Tag: noindex';
 
 /** True for a build that is not the production build: --preview, or SITE_PREVIEW=true. */
 export function isPreviewBuild(args = new Set(), env = process.env) {
   return args.has('--preview') || String(env.SITE_PREVIEW || '').toLowerCase() === 'true';
 }
 
+/**
+ * Adds noindex to a preview's headers inside the existing rule for every path. A second rule
+ * for every path would work on Cloudflare, which joins the two, but `wrangler pages dev` keeps
+ * only the later one and drops the CSP, and the pull request audit runs on wrangler.
+ */
 export function headersFor(text, preview) {
-  return preview ? `${text.trimEnd()}\n\n${NOINDEX_RULE}` : text;
+  if (!preview) return text;
+  const lines = text.split('\n');
+  const all = lines.findIndex((line) => line.trim() === '/*');
+  if (all === -1) return `${text.trimEnd()}\n\n/*\n${NOINDEX_HEADER}\n`;
+  lines.splice(all + 1, 0, `${NOINDEX_HEADER}${lines[all].endsWith('\r') ? '\r' : ''}`);
+  return lines.join('\n');
 }
 
 function writeHostFiles(redirectLines, preview) {

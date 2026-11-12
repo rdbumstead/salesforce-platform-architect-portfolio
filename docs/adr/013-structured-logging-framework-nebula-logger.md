@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/integration-api/main/default/classes/PortfolioLog.cls)
+
 Accepted. Amended 2026-10-21 (see below).
 
 ## Context

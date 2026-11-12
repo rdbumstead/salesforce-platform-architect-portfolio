@@ -159,6 +159,23 @@
  * row under them at their own widths. Beside the captions the buttons wrapped two and one, and
  * equal columns this wide would stretch them, so they keep their natural size.
  */
+/*
+ * Six chips across 900 to 1065 px do not fit one row, and a plain wrap leaves the sixth alone.
+ * They share three equal columns instead, so the rows are three and three. The static site never
+ * has six chips, so its single row is untouched.
+ */
+@media (min-width: 900px) and (max-width: 1065.98px) {
+  .chips--six {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .chips--six .chip {
+    justify-content: space-between;
+    min-width: 0;
+  }
+}
+
 @media (min-width: 900px) and (max-width: 1279.98px) {
   .metrics-head {
     display: grid;

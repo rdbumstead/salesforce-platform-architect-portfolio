@@ -22,6 +22,28 @@
       "Issuer__c": "@SeedInstituteRef",
       "Earned_Date__c": "2020-07-22",
       "Is_Retired__c": true
+    },
+    {
+      "attributes": {
+        "type": "Certification__c",
+        "referenceId": "SeedCertArchitectRef"
+      },
+      "Name": "Seed Application Architect",
+      "Contact__c": "@SeedOwnerRef",
+      "Issuer__c": "@SeedInstituteRef",
+      "Earned_Date__c": "2022-09-15",
+      "Is_Retired__c": false
+    },
+    {
+      "attributes": {
+        "type": "Certification__c",
+        "referenceId": "SeedCertDataRef"
+      },
+      "Name": "Seed Data Consultant",
+      "Contact__c": "@SeedOwnerRef",
+      "Issuer__c": "@SeedInstituteRef",
+      "Earned_Date__c": "2024-03-10",
+      "Is_Retired__c": false
     }
   ]
 }

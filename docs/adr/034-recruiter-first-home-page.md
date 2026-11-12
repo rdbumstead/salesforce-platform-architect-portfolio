@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/portfolio-site/main/default/lwc/heroBanner), also [caseStudyGrid](../../packages/portfolio-site/main/default/lwc/caseStudyGrid)
+
 Accepted (2026-10-26), amended on 2026-10-26, 2026-10-27 and three times on 2026-10-30 (see the amendment sections, the last of which moves "How this site is built" to the Docs page and makes the tour the primary hero button). Checked against the merged home page: the view's component order, `ProjectCardController.getHomeCaseStudies`, the `Project__c` and `Contact` fields, the proof strip list, the credentials strip, the header and footer, and the head markup. The case study text, the title line and the value sentence are records I load with scripts after the deploy, so until then the cards and the value sentence stay hidden by design.
 
 ## Context

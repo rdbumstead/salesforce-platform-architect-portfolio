@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/portfolio-site/main/default/lwc/nativeControls)
+
 Accepted (2026-10-27). Checked against the merged code: `lwc/nativeControls/nativeControls.css`, `config/jest.config.js`, and the `.html` of `apiTester`, `coverLetterGenerator`, `resumeBuilder` and `codeViewer`.
 
 ## Context

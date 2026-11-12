@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/portfolio-site/main/default/classes/QueryDefinitions.cls), also [QueryDefinitionsTest](../../packages/portfolio-site/main/default/classes/QueryDefinitionsTest.cls)
+
 Accepted (2026-10-24).
 
 ## Context

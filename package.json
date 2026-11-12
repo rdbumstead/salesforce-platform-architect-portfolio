@@ -30,6 +30,8 @@
     "docs:counts": "node scripts/check-doc-counts.js",
     "test:groups": "node scripts/count-test-groups.js",
     "test:groups:check": "node scripts/count-test-groups.js --check",
+    "test:linux": "node scripts/jest-linux.js",
+    "scratch:ready": "node scripts/scratch-ready.js",
     "docs:mermaid-alt": "node scripts/check-mermaid-alt.js",
     "refs:check": "node scripts/check-internal-refs.js packages docs README.md STATUS.md",
     "specs:sync": "node scripts/sync-specs.js",

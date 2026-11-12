@@ -374,6 +374,12 @@ export default class PortfolioThemeLayout extends LightningElement {
   }
 
   connectedCallback() {
+    // The audit tools look the skip link target up with document.getElementById, which does not
+    // reach into a shadow root. The host sits in the page, so it carries the id the link points at.
+    // The click handler still moves focus to the main region.
+    if (!this.hasAttribute("id")) {
+      this.setAttribute("id", "main-content");
+    }
     this._query = darkQuery();
     this.systemDark = Boolean(this._query && this._query.matches);
     if (this._query && typeof this._query.addEventListener === "function") {
