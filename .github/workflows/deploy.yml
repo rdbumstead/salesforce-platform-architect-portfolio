@@ -34,6 +34,17 @@ on:
 permissions:
   contents: read
 
+# One production deploy at a time. A second push to main waits for the first run to finish
+# and is never cancelled, because cancelling a job does not stop a Salesforce deploy it has
+# already submitted. Each push deploys its own delta from github.event.before, so every
+# pending run has to survive. The default queue keeps only one pending run and cancels the
+# older one, which would drop that push's changes, so queue: max keeps them all in order.
+# GitHub refuses queue together with cancel-in-progress, and leaving cancel-in-progress out
+# means false. The group name differs from site.yml's, which this workflow calls.
+concurrency:
+  group: deploy-production
+  queue: max
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
