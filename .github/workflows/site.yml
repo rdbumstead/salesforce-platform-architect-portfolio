@@ -219,6 +219,9 @@ jobs:
   # the Ubuntu mirror. On 2026-11-11 a mirror outage stalled "playwright install --with-deps"
   # for over 30 minutes, twice. The Access service token is an environment secret of the same
   # environment as the build, and the smoke sends it only to the preview's own host.
+  # deployment: false gives this job the environment's secrets without recording a second
+  # deployment, so the build stays the one deployment per run. It would fail at once if the
+  # environment ever gets a custom deployment protection rule, which needs a deployment.
   smoke:
     name: Smoke the deployed site
     needs: [build]
@@ -229,6 +232,7 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.64.0-noble
     environment:
       name: ${{ github.event_name == 'pull_request' && 'site-preview' || 'site-production' }}
+      deployment: false
     env:
       SITE_BASE: ${{ needs.build.outputs.url }}
       CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
