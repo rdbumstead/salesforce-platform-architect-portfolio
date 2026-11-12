@@ -17,7 +17,10 @@
     --pf-seg-1,
     color-mix(in srgb, var(--pf-accent) 24%, var(--pf-bg))
   );
-  --seg-2: color-mix(in srgb, var(--pf-accent) 52%, var(--pf-bg));
+  --seg-2: var(
+    --pf-seg-2,
+    color-mix(in srgb, var(--pf-accent) 52%, var(--pf-bg))
+  );
   --seg-early: var(--pf-seg-early, var(--pf-chip));
   --seg-early-line: var(--pf-seg-early-line, var(--pf-border));
   --seg-ring: color-mix(in srgb, var(--pf-accent) 30%, transparent);
