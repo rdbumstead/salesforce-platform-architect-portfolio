@@ -150,12 +150,63 @@ test('the Lighthouse setup sets the cookie for the preview host only', async () 
   const browser = { newPage: async () => ({ setCookie: async (cookie) => set.push(cookie), close: async () => {} }) };
   process.env.CF_ACCESS_COOKIE = 'abc';
   try {
-    await setup(browser, { url: 'https://pr-3.ryanbumstead.pages.dev/resume' });
-    await setup(browser, { url: 'https://ryanbumstead.com/' });
+    await setup(browser, { url: 'https://pr-3.ryanbumstead.pages.dev/resume' }, () => {});
+    await setup(browser, { url: 'https://ryanbumstead.com/' }, () => {});
   } finally {
     delete process.env.CF_ACCESS_COOKIE;
   }
   assert.equal(set.length, 1);
   assert.equal(set[0].domain, 'pr-3.ryanbumstead.pages.dev');
   assert.equal(set[0].name, 'CF_Authorization');
+});
+
+test('the Lighthouse setup sets the cookie on the browser when Puppeteer offers it', async () => {
+  const { createRequire } = await import('node:module');
+  const setup = createRequire(import.meta.url)('../build/lhci-access.cjs');
+  const set = [];
+  const browser = {
+    setCookie: async (cookie) => set.push(cookie),
+    newPage: async () => {
+      throw new Error('no page should be opened');
+    }
+  };
+  const lines = [];
+  process.env.CF_ACCESS_COOKIE = 'abc';
+  try {
+    await setup(browser, { url: 'https://pr-3.ryanbumstead.pages.dev/' }, (line) => lines.push(line));
+  } finally {
+    delete process.env.CF_ACCESS_COOKIE;
+  }
+  assert.equal(set.length, 1);
+  assert.equal(set[0].domain, 'pr-3.ryanbumstead.pages.dev');
+  assert.match(lines[0], /cookie set for pr-3\.ryanbumstead\.pages\.dev/);
+  assert.ok(!lines.join(' ').includes('abc'), 'the cookie value is never logged');
+});
+
+test('the Lighthouse setup says so when there is no cookie, and sets nothing', async () => {
+  const { createRequire } = await import('node:module');
+  const setup = createRequire(import.meta.url)('../build/lhci-access.cjs');
+  const browser = {
+    setCookie: async () => {
+      throw new Error('nothing should be set');
+    }
+  };
+  const lines = [];
+  delete process.env.CF_ACCESS_COOKIE;
+  await setup(browser, { url: 'https://pr-3.ryanbumstead.pages.dev/' }, (line) => lines.push(line));
+  assert.match(lines[0], /no Access cookie .* Access login page/);
+});
+
+test('the host check flags a run that ended on the Access login page', async () => {
+  const { offTarget } = await import('../build/lighthouse-hosts.mjs');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lhr-hosts-'));
+  const write = (name, finalDisplayedUrl) =>
+    fs.writeFileSync(path.join(dir, name), JSON.stringify({ finalDisplayedUrl }));
+  write('lhr-1.json', 'https://7da5.ryanbumstead.pages.dev/resume');
+  write('lhr-2.json', 'https://team.cloudflareaccess.com/cdn-cgi/access/login/7da5.ryanbumstead.pages.dev');
+  fs.writeFileSync(path.join(dir, 'manifest.json'), '[]');
+  const misses = offTarget(dir, 'https://7da5.ryanbumstead.pages.dev');
+  assert.equal(misses.length, 1);
+  assert.equal(misses[0].file, 'lhr-2.json');
+  assert.deepEqual(offTarget(dir, 'https://team.cloudflareaccess.com').map((m) => m.file), ['lhr-1.json']);
 });

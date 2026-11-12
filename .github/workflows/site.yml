@@ -203,7 +203,13 @@ jobs:
         run: |
           if [ -n "$CF_ACCESS_CLIENT_ID" ] && [ -n "$CF_ACCESS_CLIENT_SECRET" ]; then
             COOKIE="$(node web/build/access-cookie.mjs "$TARGET_URL/")"
-            if [ -n "$COOKIE" ]; then echo "::add-mask::$COOKIE"; export CF_ACCESS_COOKIE="$COOKIE"; fi
+            if [ -n "$COOKIE" ]; then
+              echo "::add-mask::$COOKIE"
+              export CF_ACCESS_COOKIE="$COOKIE"
+              echo "Access cookie: received for the preview"
+            else
+              echo "::warning::Access cookie: none came back for the preview, so Lighthouse will reach the Access login page"
+            fi
           fi
           npm install --prefix "$RUNNER_TEMP/lh" --no-save --no-audit --no-fund @lhci/cli@0.15.1 puppeteer@25.16.0
           CHROME_PATH="$(command -v google-chrome)" NODE_PATH="$RUNNER_TEMP/lh/node_modules" "$RUNNER_TEMP/lh/node_modules/.bin/lhci" collect --config=./config/lighthouserc.cjs --puppeteerScript=./web/build/lhci-access.cjs --settings.disableStorageReset=true
@@ -219,15 +225,19 @@ jobs:
       # assertions in config/lighthouserc.cjs, where accessibility is the only error. On main the
       # site is already deployed when this runs, so the gate is for pull requests only. When the
       # collect step left no results, accessibility was not checked, and the gate fails rather
-      # than pass quietly.
+      # than pass quietly. When a run ended on another page, such as the Access login page,
+      # its scores are not the site's, so the gate says so before it asserts anything.
       - name: Accessibility gate, 100 on every audited page
         if: always() && github.event_name == 'pull_request' && steps.deploy.outcome == 'success'
+        env:
+          TARGET_URL: ${{ steps.deploy.outputs.deployment-url }}
         run: |
           LHCI="$RUNNER_TEMP/lh/node_modules/.bin/lhci"
           if [ ! -x "$LHCI" ] || ! ls .lighthouseci/lhr-*.json > /dev/null 2>&1; then
             echo "::error::No Lighthouse results to check. The collect step failed, so accessibility was not checked."
             exit 1
           fi
+          node web/build/lighthouse-hosts.mjs .lighthouseci "$TARGET_URL"
           NODE_PATH="$RUNNER_TEMP/lh/node_modules" "$LHCI" assert --config=./config/lighthouserc.cjs
 
   # The smoke runs in the Playwright image, the same one the Live Smoke Test uses. The image
