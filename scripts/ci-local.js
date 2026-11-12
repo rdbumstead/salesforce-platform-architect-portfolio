@@ -87,6 +87,21 @@ const STEPS = [
     ]
   },
   {
+    name: "Build status words",
+    paths: [
+      "docs/**/*.md",
+      "README.md",
+      "STATUS.md",
+      "scripts/check-build-status*"
+    ],
+    commands: [
+      // Not in pr.yml yet. Add both lines to the quality-check job and change these two from
+      // local to ci so the drift test keeps them in step.
+      { local: "node --test scripts/check-build-status.test.js" },
+      { local: "node scripts/check-build-status.js" }
+    ]
+  },
+  {
     name: "Smoke routes",
     paths: [
       "packages/**/digitalExperiences/**",
