@@ -242,6 +242,11 @@ function buildDocsPlan(outDir, root = ROOT, now = new Date()) {
   return { plan, count: records.length };
 }
 
+/** The path prefix live-smoke wants. A publish names the .../portfoliovforcesite address. */
+function siteBase(url) {
+  return url.replace(/\/portfoliovforcesite\/?$/, "/portfolio");
+}
+
 function preflight(deps, options) {
   const limits = call(deps, "preflight", [
     "limits",
@@ -536,6 +541,7 @@ function main(argv, deps = realDeps(), log = console.log) {
 
   const siteUrl = (published && published.url) || "";
   log(`site URL: ${siteUrl}`);
+  log(`SITE_BASE for live-smoke: ${siteBase(siteUrl)}`);
   log(`org Id: ${display.id}`);
   return { siteUrl, orgId: display.id, steps: done };
 }
@@ -557,6 +563,7 @@ module.exports = {
   buildDocsPlan,
   docPaths,
   splitContent,
+  siteBase,
   StepError,
   STEPS,
   PRODUCTION_ORG_ID,

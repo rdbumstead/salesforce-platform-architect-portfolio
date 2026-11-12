@@ -10,6 +10,7 @@ const {
   buildDocsPlan,
   docPaths,
   splitContent,
+  siteBase,
   StepError,
   STEPS,
   PRODUCTION_ORG_ID
@@ -319,4 +320,15 @@ test("buildDocsPlan writes one cache row per doc, with parts for a long one", ()
   assert.ok(!rows.some((r) => r.Path__c.includes("missing")));
   assert.ok(rows.every((r) => r.Last_Status__c === "200"));
   assert.strictEqual(buildDocsPlan(path.join(root, "o2"), os.tmpdir()), null);
+});
+
+test("siteBase turns the publish address into the path prefix live-smoke needs", () => {
+  assert.strictEqual(
+    siteBase("https://x.scratch.my.site.com/portfoliovforcesite"),
+    "https://x.scratch.my.site.com/portfolio"
+  );
+  assert.strictEqual(
+    siteBase("https://x.test/portfolio"),
+    "https://x.test/portfolio"
+  );
 });
