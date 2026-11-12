@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/portfolio-site/main/default/lwc/testimonialSubmit), also [TestimonialControllerTest](../../packages/portfolio-site/main/default/classes/TestimonialControllerTest.cls)
+
 Accepted, amended 2026-10-23 (see the amendment below).
 
 ## Context

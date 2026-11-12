@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/portfolio-site/main/default/objects/Experience__c), also [Experience_Highlight\_\_c](../../packages/portfolio-site/main/default/objects/Experience_Highlight__c)
 
 ## Context
 

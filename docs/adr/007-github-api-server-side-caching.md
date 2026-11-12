@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/portfolio-site/main/default/classes/GitHubCacheRefreshJob.cls), also [DeliveryControllerTest](../../packages/portfolio-site/main/default/classes/DeliveryControllerTest.cls)
+
 Accepted. Amended 2026-10-21 (see below).
 
 ## Context

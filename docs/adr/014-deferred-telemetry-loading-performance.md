@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/portfolio-site/main/default/lwc/footer), also [FooterControllerTest](../../packages/portfolio-site/main/default/classes/FooterControllerTest.cls)
 
 ## Context
 

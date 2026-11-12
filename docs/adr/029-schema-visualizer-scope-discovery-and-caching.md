@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/portfolio-site/main/default/classes/SchemaService.cls), also [SchemaServiceTest](../../packages/portfolio-site/main/default/classes/SchemaServiceTest.cls)
+
 Accepted (2026-10-22).
 
 ## Context

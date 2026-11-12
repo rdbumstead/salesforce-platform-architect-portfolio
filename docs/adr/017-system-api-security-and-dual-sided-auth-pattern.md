@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Superseded by [ADR-027](027-platform-native-api-authentication.md) on 2026-10-01.
+- **Build:** [Live](../../packages/portfolio-site/main/default/externalCredentials/Portfolio_API_Auth.externalCredential-meta.xml) through ADR-027, which replaced the custom metadata header check. Also [Integration_Access](../../packages/portfolio-site/main/default/permissionsets/Integration_Access.permissionset-meta.xml)
+
 Superseded by [ADR-027](027-platform-native-api-authentication.md) on 2026-10-01. The custom-metadata header validation described below was a stand-in for a MuleSoft policy enforcement point; with MuleSoft removed from the architecture, authentication moved to platform-native OAuth 2.0 (External Client App + Named Credential). The read-only constraint is carried forward unchanged. Amended 2026-10-20 (see below).
 
 ## Context

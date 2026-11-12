@@ -2,7 +2,10 @@
 
 ## Status
 
-Accepted, and cut over on 2026-11-09. The static site builds in CI, deploys a preview of each pull request to the Cloudflare Pages project `ryanbumstead`, and serves `ryanbumstead.com`. The Experience Cloud site stays up and is kept out of search. Sections 1 to 3 of the cutover runbook ([docs/guides/cutover-runbook.md](../guides/cutover-runbook.md)) ran on 2026-11-09. This ADR becomes Built on 2026-11-23 if the two weeks after the cutover pass with no rollback.
+- **Decision:** Accepted.
+- **Build:** [Live](../../docs/guides/cutover-runbook.md) since the cutover on 2026-11-09, also [site.yml](../../.github/workflows/site.yml) and [the Pages Functions](../../web/functions/api/contact.js). The two weeks after the cutover end on 2026-11-23, and a rollback before then would change this field.
+
+Accepted, and cut over on 2026-11-09. The static site builds in CI, deploys a preview of each pull request to the Cloudflare Pages project `ryanbumstead`, and serves `ryanbumstead.com`. The Experience Cloud site stays up and is kept out of search. Sections 1 to 3 of the cutover runbook ([docs/guides/cutover-runbook.md](../guides/cutover-runbook.md)) ran on 2026-11-09. The two weeks after the cutover end on 2026-11-23. If they pass with no rollback, the Build field stays Live. A rollback before then reopens it.
 
 ## Context
 

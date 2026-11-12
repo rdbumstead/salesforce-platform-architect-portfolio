@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/integration-api/specs/salesforce-sapi.yaml), also [portfolio-papi.yaml](../../packages/integration-api/specs/portfolio-papi.yaml)
+
 Accepted, amended 2026-10-23 (see the amendment below): the MuleSoft parity rationale is gone. Contract first stays.
 
 ## Context

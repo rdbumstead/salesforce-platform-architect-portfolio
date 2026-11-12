@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/portfolio-site/main/default/classes/JiraService.cls), also [JiraCacheRefreshJobTest](../../packages/portfolio-site/main/default/classes/JiraCacheRefreshJobTest.cls)
 
 ## Context
 

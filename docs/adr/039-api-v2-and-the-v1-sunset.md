@@ -2,7 +2,10 @@
 
 ## Status
 
-Accepted and built (2026-10-29). In the integration scratch org `RunLocalTests` passed 1322 of 1322 with 97% org wide coverage, the existing SAPI and PAPI tests among them. A guest call to `/openapi?spec=sapi&version=v2` returned SAPI 2.0.0, `version=v1` returned 1.4.0, and `version=v9` returned 400. Both v1 dates ship blank, so nothing is deprecated or retired in production until I set them after the deploy.
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/integration-api/main/default/classes/ApiVersionTest.cls), also [OpenApiDocument](../../packages/integration-api/main/default/classes/OpenApiDocument.cls)
+
+Accepted (2026-10-29), built and tested. In the integration scratch org `RunLocalTests` passed 1322 of 1322 with 97% org wide coverage, the existing SAPI and PAPI tests among them. A guest call to `/openapi?spec=sapi&version=v2` returned SAPI 2.0.0, `version=v1` returned 1.4.0, and `version=v9` returned 400. Both v1 dates ship blank, so nothing is deprecated or retired in production until I set them after the deploy.
 
 ## Context
 

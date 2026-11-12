@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/portfolio-site/main/default/classes/ContentGenerationController.cls), also [ContentGenerationControllerTest](../../packages/portfolio-site/main/default/classes/ContentGenerationControllerTest.cls)
+
 Accepted. Amended 2026-10-20, three times on 2026-10-21, and twice on 2026-10-26 (see below). The deferral of Agentforce was lifted on 2026-10-26.
 
 ## Context

@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/portfolio-site/main/default/classes/ContactFormController.cls), also [ContactFormControllerTest](../../packages/portfolio-site/main/default/classes/ContactFormControllerTest.cls)
+
 Accepted (2026-10-23). I chose a native form on 2026-10-22, and the platform event step was added on 2026-10-23 after a scratch org proof.
 
 ## Context

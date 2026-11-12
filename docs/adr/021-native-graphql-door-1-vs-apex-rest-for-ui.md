@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/portfolio-site/main/default/lwc/graphqlProbe), also [skillNetwork](../../packages/portfolio-site/main/default/lwc/skillNetwork)
+
 Accepted, with its scope narrowed (2026-10-23, see the amendment below). GraphQL is used by three components, not for core frontend orchestration. Amended 2026-10-30: the gallery's read moved into a lazy child.
 
 ## Context

@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/portfolio-site/main/default/externalCredentials/Portfolio_API_Auth.externalCredential-meta.xml), also [Integration_Access](../../packages/portfolio-site/main/default/permissionsets/Integration_Access.permissionset-meta.xml)
+
 Accepted (2026-10-01). Supersedes [ADR-017](017-system-api-security-and-dual-sided-auth-pattern.md). Amended 2026-10-20 and 2026-10-21 (see below).
 
 ## Context
