@@ -1869,6 +1869,13 @@ describe("c-portfolio-theme-layout", () => {
       ).toBe(false);
     });
 
+    it("puts the skip link target id on the host, where the audit tools look", () => {
+      const element = render();
+      expect(element.getAttribute("id")).toBe("main-content");
+      const link = element.shadowRoot.querySelector(".skip-link");
+      expect(link.getAttribute("href")).toMatch(/#main-content$/);
+    });
+
     it("moves focus to the main region when the skip link is activated", async () => {
       const element = render();
       const link = element.shadowRoot.querySelector(".skip-link");
