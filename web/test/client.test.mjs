@@ -6,7 +6,7 @@ import { createRequestHandler, labKey, ALL_RECORDED, MESSAGES } from '../src/shi
 import { apexMethod, setRequestHandler } from '../src/shims/apex.js';
 import { setSiteData } from '../src/shims/site-data.js';
 import { swapRecordedForms, FALLBACK_LINKS } from '../src/shims/recorded-forms.js';
-import { headersFor, isPreviewBuild, NOINDEX_RULE } from '../build/build.mjs';
+import { headersFor, isPreviewBuild, NOINDEX_HEADER } from '../build/build.mjs';
 import { WEB_DIR } from '../build/site-plugin.mjs';
 
 const LIVE = { contact: 'live', testimonial: 'live', coverLetter: 'live', apiLab: 'live', liveReads: 'live' };
@@ -184,12 +184,14 @@ test('a form whose switch reads recorded is paused with the profile links, a liv
 });
 
 test('a preview build sends noindex on every path and a production build does not', () => {
-  const production = fs.readFileSync(path.join(WEB_DIR, 'public/_headers'), 'utf8');
+  const production = fs.readFileSync(path.join(WEB_DIR, 'public/_headers'), 'utf8').replace(/\r\n/g, '\n');
+  assert.equal(headersFor('/*\r\n  A: b\r\n', true), `/*\r\n${NOINDEX_HEADER}\r\n  A: b\r\n`, 'a CRLF file keeps its line endings');
   assert.ok(!/X-Robots-Tag/i.test(headersFor(production, false)), 'production sends no noindex');
   const preview = headersFor(production, true);
-  assert.match(preview, /\n\/\*\n {2}X-Robots-Tag: noindex\n$/);
-  assert.ok(preview.includes(NOINDEX_RULE));
-  assert.ok(preview.startsWith(production.trimEnd()), 'the existing rules are kept');
+  assert.match(preview, /^\/\*\n {2}X-Robots-Tag: noindex\n {2}Content-Security-Policy: /m, 'noindex joins the rule for every path');
+  assert.equal(preview.match(/^\/\*$/gm).length, 1, 'no second rule for every path, which wrangler would let replace the first');
+  assert.equal(preview.replace(`${NOINDEX_HEADER}\n`, ''), production, 'the existing rules are kept');
+  assert.equal(headersFor('/assets/*\n  Cache-Control: x\n', true), `/assets/*\n  Cache-Control: x\n\n/*\n${NOINDEX_HEADER}\n`);
   assert.equal(isPreviewBuild(new Set(['--preview']), {}), true);
   assert.equal(isPreviewBuild(new Set(), { SITE_PREVIEW: 'true' }), true);
   assert.equal(isPreviewBuild(new Set(), {}), false);

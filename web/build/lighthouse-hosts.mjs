@@ -1,8 +1,9 @@
 /**
- * Checks that every Lighthouse run audited the page it was sent to. A preview behind
- * Cloudflare Access redirects to the Access login page when the cookie does not get through,
- * and Lighthouse then scores that page instead. Prints one line per run that ended on another
- * host and exits 1 when there is any, so the gate never reports a score for the wrong page.
+ * Checks that every Lighthouse run audited the page it was sent to. A redirect, such as the
+ * Cloudflare Access login page in front of a preview, makes Lighthouse score that other page
+ * instead. Every pull request audit before 2026-11-12 scored the Access login page this way.
+ * Prints one line per run that ended on another host and exits 1 when there is any, so the
+ * gate never reports a score for the wrong page.
  *   node build/lighthouse-hosts.mjs <.lighthouseci folder> <target url>
  */
 import fs from 'node:fs';
@@ -38,7 +39,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
         return 'an unknown page';
       }
     })();
-    console.log(`::error::Lighthouse audited ${where}, not the preview (${miss.file}). The Access cookie did not get through, so these scores are not the site's.`);
+    console.log(`::error::Lighthouse audited ${where}, not ${new URL(targetUrl).hostname} (${miss.file}), so these scores are not the site's.`);
   }
   if (misses.length) process.exit(1);
   console.log(`Every Lighthouse run audited ${new URL(targetUrl).hostname}.`);
