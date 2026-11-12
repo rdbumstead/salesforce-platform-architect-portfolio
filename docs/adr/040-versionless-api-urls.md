@@ -2,7 +2,10 @@
 
 ## Status
 
-Accepted and built (2026-10-31). Amends [ADR-026](026-header-based-api-versioning-strategy.md) and [ADR-039](039-api-v2-and-the-v1-sunset.md). In the integration scratch org `RunLocalTests` passed **TESTS_PASSED** of **TESTS_RAN** with **COVERAGE**% org wide coverage. Both new date settings ship blank, so no `/v1/` URL is deprecated or retired in production until I set them after the deploy.
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/integration-api/main/default/classes/ApiRouting.cls), also [ApiRoutes](../../packages/integration-api/main/default/classes/ApiRoutes.cls)
+
+Accepted (2026-10-31), built and tested. Amends [ADR-026](026-header-based-api-versioning-strategy.md) and [ADR-039](039-api-v2-and-the-v1-sunset.md). In the integration scratch org `RunLocalTests` passed **TESTS_PASSED** of **TESTS_RAN** with **COVERAGE**% org wide coverage. Both new date settings ship blank, so no `/v1/` URL is deprecated or retired in production until I set them after the deploy.
 
 ## Context
 

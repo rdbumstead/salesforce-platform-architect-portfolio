@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Superseded by the d3-force engine ([ADR-020 amendment](020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-matrix-first-the-graph-on-open-d3-force-as-the-engine)).
+- **Build:** [Live](../../packages/portfolio-site/main/default/lwc/graphEngine) through the d3-force engine that replaced it. The AntV engine named here was used for a while and then removed. Also [D3_Library](../../packages/portfolio-site/main/default/staticresources/D3_Library.js)
+
 Superseded by the d3-force engine (2026-10-22, [ADR-020 amendment](020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-matrix-first-the-graph-on-open-d3-force-as-the-engine)). Originally Accepted. The Decision below records the original choice of the AntV graph library, which no longer holds: see the note at the end.
 
 ## Context

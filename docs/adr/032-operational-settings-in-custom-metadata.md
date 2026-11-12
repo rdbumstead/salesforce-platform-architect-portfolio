@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/portfolio-site/main/default/classes/PortfolioSettings.cls), also [PortfolioSettingsTest](../../packages/portfolio-site/main/default/classes/PortfolioSettingsTest.cls)
+
 Accepted (2026-10-23).
 
 ## Context

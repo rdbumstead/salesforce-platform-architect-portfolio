@@ -2,7 +2,10 @@
 
 ## Status
 
-Accepted and built (2026-10-28). In a scratch org `PublicKeyServiceTest`, `SAPIPublicKeyTest` and `PAPIPublicKeyTest` passed 55 of 55, and every local test, the existing SAPI and PAPI tests among them, passed 1292 of 1292. Rows that existed before the field get their keys when `scripts/backfill-public-keys.apex` runs once in production.
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/portfolio-site/main/default/classes/PublicKeyServiceTest.cls), also [SAPIPublicKeyTest](../../packages/integration-api/main/default/classes/SAPIPublicKeyTest.cls)
+
+Accepted (2026-10-28), built and tested. In a scratch org `PublicKeyServiceTest`, `SAPIPublicKeyTest` and `PAPIPublicKeyTest` passed 55 of 55, and every local test, the existing SAPI and PAPI tests among them, passed 1292 of 1292. Rows that existed before the field get their keys when `scripts/backfill-public-keys.apex` runs once in production.
 
 ## Context
 

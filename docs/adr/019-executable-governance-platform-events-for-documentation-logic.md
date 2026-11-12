@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/portfolio-site/main/default/classes/GovernanceController.cls), also [GovernanceControllerTest](../../packages/portfolio-site/main/default/classes/GovernanceControllerTest.cls)
+
 Accepted. Amended 2026-10-21 (see below).
 
 ## Context

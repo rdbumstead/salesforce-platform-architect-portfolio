@@ -2,11 +2,14 @@
 
 ## Status
 
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/portfolio-site/main/default/lwc/documentPdf)
+
 Accepted (Transitionary)
 
 ## Context
 
-The Resume Builder requires PDF export, but server-side generation is deferred to Phase 8.
+The Resume Builder requires PDF export, but server-side generation is Designed for Phase 8.
 
 ## Decision
 
@@ -26,4 +29,4 @@ jsPDF stays, in one click with no print dialog. What changed is the layout. The 
 
 The PDF embeds Inter (the regular and bold weights, as TTF files in the `Portfolio_Fonts` static resource, loaded only on the first download, with a fallback font when they cannot be fetched), centres the header with clickable links side by side, drops the "Summary" heading, puts a role's title and dates on one row, and groups certifications as the preview does: current ones newest first with the verify link, then the retired ones. The text stays selectable and in reading order for tracking systems.
 
-Rejected: printing the preview (a print dialog), showing the PDF itself as the preview (a large viewer library, and the preview stops being page content), drawing the page into the PDF with jsPDF's `html()` (it turns the text into an image, which tracking systems cannot read), and a server render (it needs the serverless work below, which is not built). The move to a serverless renderer remains the later plan.
+Rejected: printing the preview (a print dialog), showing the PDF itself as the preview (a large viewer library, and the preview stops being page content), drawing the page into the PDF with jsPDF's `html()` (it turns the text into an image, which tracking systems cannot read), and a server render (it needs the serverless work below, which is Designed only). The move to a serverless renderer remains the later plan.

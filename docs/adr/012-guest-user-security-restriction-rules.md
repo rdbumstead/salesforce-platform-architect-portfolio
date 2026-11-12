@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/portfolio-site/main/default/restrictionRules/Block_Unapproved_Testimonials.rule-meta.xml), also [TestimonialGuestAccessTest](../../packages/portfolio-site/main/default/classes/TestimonialGuestAccessTest.cls)
+
 Accepted, made real on 2026-10-23 (see the amendment below).
 
 ## Context

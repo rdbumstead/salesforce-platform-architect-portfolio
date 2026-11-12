@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/integration-api/main/default/classes/SAPIRouter.cls), also [SAPIRouterTest](../../packages/integration-api/main/default/classes/SAPIRouterTest.cls)
 
 ## Context
 

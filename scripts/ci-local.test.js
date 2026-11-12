@@ -80,6 +80,34 @@ test("a docs only change selects neither Jest nor the analyzer", () => {
   assert.ok(names.includes("Secret scan"));
 });
 
+test("a docs change selects the build status words step", () => {
+  const names = selectSteps([
+    "docs/adr/041-headless-static-front-end-on-cloudflare-pages.md"
+  ]).map((s) => s.name);
+  assert.ok(names.includes("Build status words"));
+  assert.ok(
+    selectSteps(["README.md"]).some((s) => s.name === "Build status words")
+  );
+  assert.ok(
+    selectSteps(["STATUS.md"]).some((s) => s.name === "Build status words")
+  );
+  assert.ok(
+    !selectSteps(["packages/portfolio-core/main/default/classes/Foo.cls"]).some(
+      (s) => s.name === "Build status words"
+    )
+  );
+});
+
+test("the build status words step runs its test and then the check", () => {
+  const step = STEPS.find((s) => s.name === "Build status words");
+  assert.ok(step, "ci-local.js has no Build status words step");
+  const commands = step.commands.map((c) => c.ci || c.local);
+  assert.deepStrictEqual(commands, [
+    "node --test scripts/check-build-status.test.js",
+    "node scripts/check-build-status.js"
+  ]);
+});
+
 test("a class change selects the analyzer", () => {
   const names = selectSteps([
     "packages/portfolio-core/main/default/classes/Foo.cls"

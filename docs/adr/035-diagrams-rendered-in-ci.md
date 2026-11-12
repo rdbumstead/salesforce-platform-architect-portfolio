@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Accepted
+- **Build:** [Live](../../scripts/render-mermaid.js), also [render-mermaid.test.js](../../scripts/render-mermaid.test.js)
+
 Accepted (2026-10-26). Checked against the merged code: `scripts/render-mermaid.js`, `lwc/docsViewer/diagramHash.js`, `docsRenderer.drawing`, `.github/workflows/pr.yml` and `deploy.yml`.
 
 ## Context

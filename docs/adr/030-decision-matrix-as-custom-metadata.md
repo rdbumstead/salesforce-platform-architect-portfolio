@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/portfolio-site/main/default/classes/DecisionMatrixController.cls), also [DecisionMatrixControllerTest](../../packages/portfolio-site/main/default/classes/DecisionMatrixControllerTest.cls)
+
 Accepted (2026-10-22). Note added 2026-10-22 on whose weights these are.
 
 ## Context

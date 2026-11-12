@@ -29,7 +29,7 @@
 - [6. Front-End Architecture (Experience Cloud)](#6-front-end-architecture-experience-cloud)
   - [6.1 Technology Stack](#61-technology-stack)
   - [6.2 Lightning Web Components (LWC)](#62-lightning-web-components-lwc)
-  - [6.3 Headless Static Front End (cutover pending)](#63-headless-static-front-end-cutover-pending)
+  - [6.3 Headless Static Front End](#63-headless-static-front-end)
 - [7. Architectural Decision Records (ADRs)](#7-architectural-decision-records-adrs)
 - [8. Contingency & Rollback Plans](#8-contingency--rollback-plans)
   - [8.1 Deployment Failure](#81-deployment-failure)
@@ -117,7 +117,7 @@ graph LR
 ```
 
 > [!TIP]
-> **Scalability Escape Hatch:** While this system is constrained to the Free Tier (Developer Edition), the architecture is designed to scale. If traffic exceeded limits, the **Phase 8** design moves the heavy lifting (Resume Generation, API Gateway) to AWS Serverless equivalents, allowing the Salesforce Core to remain a lightweight orchestration layer. This ensures the system could handle enterprise-scale traffic with minimal refactoring.
+> **Scalability Escape Hatch:** While this system is constrained to the Free Tier (Developer Edition), the architecture is designed to scale. If traffic exceeded limits, the **Phase 8** design (Designed, nothing built) moves the heavy lifting (Resume Generation, API Gateway) to AWS Serverless equivalents, allowing the Salesforce Core to remain a lightweight orchestration layer. This ensures the system could handle enterprise-scale traffic with minimal refactoring.
 
 **Architecture Implementation Status (MVP – Q1 2027 Launch)**
 
@@ -128,11 +128,11 @@ Live MVP (Door 1)
 - Apex REST services (the SAPI and PAPI), for outside callers and the API Lab
 - Direct integrations (GitHub, Jira via Named Credentials)
 
-Phase 8 – 2027-2028 (Design Complete)
+Phase 8, 2027-2028 (Designed)
 
-| Phase       | Status                                         | Rationale                                                               |
-| :---------- | :--------------------------------------------- | :---------------------------------------------------------------------- |
-| **Phase 8** | **Design Complete • Implementation 2027-2028** | Fully architected to prove "Scale Up" capability, but deferred for MVP. |
+| Phase       | Status                  | Rationale                                                                                    |
+| :---------- | :---------------------- | :------------------------------------------------------------------------------------------- |
+| **Phase 8** | **Designed, 2027-2028** | Architected to prove "Scale Up" capability, and left out of the MVP. Nothing of it is built. |
 
 - AWS Lambda Polyglot Gateway (Function URL), "Door 2"
 - Enterprise API governance layer
@@ -228,11 +228,11 @@ Refer to **[Guardrails & Executable Governance: Quality Gates & DevOps Disciplin
 
 The architecture is designed to operate within the specific limits of the Salesforce Developer Edition.
 
-- **Storage Limits:** 5MB Data Storage / 20MB File Storage limit requires strict data hygiene. Images ship as static resources, and cleanup batches keep the cache and rate window objects small. Off-platform storage in AWS is a design only and is not built.
+- **Storage Limits:** 5MB Data Storage / 20MB File Storage limit requires strict data hygiene. Images ship as static resources, and cleanup batches keep the cache and rate window objects small. Off-platform storage in AWS is Designed only.
 - **API Limits:** 15,000 API requests/24hr requires caching strategies for high-traffic external integrations.
 - **Guest User:** the guest gets no object permission on standard objects, so the portfolio data lives in a custom schema, and the few standard records a page needs are read by Apex in system mode (section 4.6).
 - **No Shield:** Lack of Event Monitoring requires custom telemetry implementation for analytics.
-- **Middleware Constraints:** Heroku and paid AWS resources are unavailable. The AWS Free Tier proxy and storage patterns are a Phase 8 design and are not built. The services outside Salesforce that run today are the Cloudflare Pages static site and its Functions, the front door since 2026-11-09 (section 6.3), and the zone's www redirect and rate limit. The `portfolio-cache-warmer` Worker was retired at cutover ([Technical Guide §2.13](./04-Technical-Guide.md#213-cloudflare-cache-warmer-worker)).
+- **Middleware Constraints:** Heroku and paid AWS resources are unavailable. The AWS Free Tier proxy and storage patterns are a Phase 8 design and are Designed only. The services outside Salesforce that run today are the Cloudflare Pages static site and its Functions, the front door since 2026-11-09 (section 6.3), and the zone's www redirect and rate limit. The `portfolio-cache-warmer` Worker was retired at cutover ([Technical Guide §2.13](./04-Technical-Guide.md#213-cloudflare-cache-warmer-worker)).
 
 ## 3. Risk & Security Architecture
 
@@ -390,7 +390,7 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 - **Page:** `/nonprofit-solutions`. `c-pillar-b-story` tells the story in seven sections (the client, discovery, the decision matrix, ROI and cost, solution design, the outcome, what I would revisit), then `c-decision-matrix`, then `c-project-asset-gallery` for the Pillar B media, which renders nothing while Pillar B has no published assets.
 - **Comparative Decision Matrix:** three-way, NPSP with the Program Management Module, Education Cloud, and Nonprofit Cloud. The client's own two-way decision (NPSP and PMM against Education Cloud, which chose NPSP and PMM) is the dated baseline. The starting weights are mine, set from what the client said mattered most. Options, criteria and scores are Custom Metadata in the `nonprofit-literacy` package, read once by `DecisionMatrixController.getMatrix()`. The visitor moves labelled weight sliders, and the browser recomputes the ranking and a sensitivity line naming the single weight change that would swap the top two. "Reset to the starting weights" restores them ([ADR-030](../adr/030-decision-matrix-as-custom-metadata.md)).
 - **ROI analysis:** a cost and effort table built from public licence facts only, with a source per row. Effort is a relative band, and no client rates or totals appear.
-- **Solution design:** the minimalist object model redrawn from public object names (`NL_Assets` static resource), one line per architecture decision, and what was deliberately not built.
+- **Solution design:** the minimalist object model redrawn from public object names (`NL_Assets` static resource), one line per architecture decision, and what was deliberately left out.
 - **No video prototype.** I recorded none (my decision, 2026-10-22), so the page has no video section and no video row is loaded.
 - **Framing of the comparison:** pre-sales, then a build. The comparison came from an unpaid pre-sales cycle of discovery, a demo and the matrix, before the nonprofit chose a platform. A paid engagement followed in which I led the build, and the page says both at the start of the discovery section.
 
@@ -408,7 +408,7 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 > [!NOTE]
 > **Agentforce is built and its switch ships on** (the deferral of 2026-10-02 is lifted, [ADR-015 amendment of 2026-10-26](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-26-agentforce-is-built-and-the-deferral-is-lifted)). `AgentforceService` runs the Prompt Builder template `Portfolio_Cover_Letter`. `ContentGenerationController.dispatch` consults Agentforce only when the `Agentforce` record of `AI_Provider_Config__mdt` is switched on, and never in process for a site guest, who reaches it through the API. Grounding is built in Apex and reads the CRM directly (`PortfolioGroundingService.build`, section 5.4.1). Data 360 grounding is deferred ([ADR-011 amendment, 2026-10-22](../adr/011-context-grounding-strategy-direct-crm-vs-data-360.md#amendment-2026-10-22-deferred)), and nothing in the site or the API reads Data 360.
 
-- **Objective:** Demonstrate grounded generation with a visible fallback chain. The original objective, hybrid search (vector and keyword) over Data 360, is deferred with ADR-011.
+- **Objective:** Demonstrate grounded generation with a visible fallback chain. The original objective, hybrid search (vector and keyword) over Data 360, is Designed only, with the decision of ADR-011 Deferred.
 - **Mechanism as built:** `PortfolioGroundingService.build` ranks featured `Project__c` rows and `Experience_Highlight__c` text by keywords from the job title and description and passes them to the prompt as JSON (section 5.4.1).
 - **Data 360 today:** the production org has 14 data streams, one per portfolio object, fed by the CRM connector. It has no search index and no retriever, so no prompt is grounded on Data 360 (read-only queries on `DataStream` and `DataSemanticSearch`, 2026-10-22).
 - **What would reopen it:** a need to search text that keyword ranking cannot reach (ADR-011 amendment). The Agentforce provider ADR-011 waited for now exists, so the open question is the search need alone.
@@ -493,12 +493,12 @@ sequenceDiagram
 
 - **Privacy:** Inputs are processed transiently and never stored in Salesforce. The prompt shown to the visitor holds only what they typed and public portfolio facts.
 
-#### 5.4.2 Optional Edge Layer Integration (Future Scope)
+#### 5.4.2 Optional Edge Layer Integration (Designed)
 
 Cloudflare Workers provides a fourth path for content generation. The Worker acts as an AI proxy and edge cache that reduces total cost, decreases latency, and shields Salesforce from external API rate limits. Integration uses the same IAIGenerationService interface with a new CloudflareService provider class.
 
 > [!NOTE]
-> **An edge layer exists now, and it is a different one.** [ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md) added Cloudflare Pages Functions that carry the static site's forms, cover letter, API Lab and live readings to Salesforce. That layer does not call Gemini and does not cache letters. The AI proxy described in this section is still future scope ([ADR-016 amendment](../adr/016-cloudflare-worker-as-edge-ai-proxy.md#amendment-2026-11-02-an-edge-layer-now-exists-and-it-is-not-this-one)).
+> **An edge layer exists now, and it is a different one.** [ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md) added Cloudflare Pages Functions that carry the static site's forms, cover letter, API Lab and live readings to Salesforce. That layer does not call Gemini and does not cache letters. The AI proxy described in this section is still Designed only ([ADR-016 amendment](../adr/016-cloudflare-worker-as-edge-ai-proxy.md#amendment-2026-11-02-an-edge-layer-now-exists-and-it-is-not-this-one)).
 
 ### 5.5 Pillar E: Agile Delivery & DevOps (Roadmap)
 
@@ -551,7 +551,7 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 - **`c-docs-viewer`:** Thirty-two documents at `/docs`, the Executive Overview, the SAS, the Program Charter, the Technical Guide, Guardrails and Executable Governance, then the 27 full ADRs, from the source cache that refreshes daily and after a push that changes the docs (on the static site, read from that cache at build time), rendered without parsing any HTML ([Technical Guide §2.17](./04-Technical-Guide.md#217-docs-page-c-docs-viewer)).
 - **`c-page-intro`:** The opening of each of the five pillar pages: the pillar, the page's one heading, a lead paragraph and a "Read the design" link to its section of this document ([Technical Guide §2.18](./04-Technical-Guide.md#218-page-intro-c-page-intro)).
 - **`c-code-viewer`:** Shows one source file highlighted by `c/prismHighlighter`. It fetches nothing itself.
-- **`c-data-source`:** The live data marker on every data driven section. On the Salesforce site it says the section is rebuilt from Salesforce records on each load. On the static site (deployed at its `*.pages.dev` address, cutover pending), it reads "From Salesforce, built <time>" and says the section was read when the site was built. Both give the sources and counts from `DataSourceController` ([Technical Guide §2.24](./04-Technical-Guide.md#224-live-data-marker-c-data-source)).
+- **`c-data-source`:** The live data marker on every data driven section. On the Salesforce site it says the section is rebuilt from Salesforce records on each load. On the static site (deployed at its `ryanbumstead.com` since the cutover on 2026-11-09), it reads "From Salesforce, built <time>" and says the section was read when the site was built. Both give the sources and counts from `DataSourceController` ([Technical Guide §2.24](./04-Technical-Guide.md#224-live-data-marker-c-data-source)).
 - **`c-view-source`:** The View source button and dialog on the showcase components. It reads cached GitHub source through `SourceController.getSourceFiles` and never calls GitHub ([Technical Guide §2.14](./04-Technical-Guide.md#214-view-source-c-view-source)). Each tab shows the file's type and a line above the code names the component, and a "How it's built" link opens the matching Technical Guide section.
 - **`c-analytics-events`:** The "Analytics events (N)" button in the footer's caption row and its dialog. It lists the last 100 events this visit has sent, live, with how each one left the page, from `c/analyticsService` ([Technical Guide §2.8](./04-Technical-Guide.md#28-analytics-instrumentation-ga4)).
 - **`c-outage-compare`:** The before and after that the roadmap and Latest Updates show above their content while the "Simulate an outage" switch is on and the feed is `SIMULATED`. A labelled illustration of a panel with no saved copy and no circuit breaker sits beside a three step trace of what the panel really does ([ADR-022 amendment of 2026-10-29](../adr/022-resilience-engineering-resilience-simulation-toggle.md#amendment-2026-10-29-the-before-and-after-for-the-outage-switch)). The failure threshold and the open minutes in that trace come from the `Circuit_Failure_Threshold` and `Circuit_Open_Minutes` settings through the feed, so a change to either setting changes the text. When one is missing the step reads without that number ([ADR-022 amendment of 2026-10-30](../adr/022-resilience-engineering-resilience-simulation-toggle.md#amendment-2026-10-30-the-outage-text-reads-the-settings)).
@@ -567,9 +567,9 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 > [!TIP]
 > **Technical Implementation:** For detailed performance strategies (lazy-loading), mobile fallbacks, and accessibility patterns for these components, please refer to the **[Technical Guide: Frontend Component Logic](./04-Technical-Guide.md#2-frontend-lwr-component-logic)**.
 
-### 6.3 Headless Static Front End (cutover pending)
+### 6.3 Headless Static Front End
 
-The same components also compile into a static site ([ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)). The org stays the source of truth. A GitHub Actions build reads the org through an allowlisted export, compiles the components with LWC OSS, and deploys the pages to Cloudflare Pages. A section that needs a request at view time goes through a Pages Function to a second Apex REST endpoint, and from there to the same controllers the Salesforce site uses.
+[Live](./cutover-runbook.md) since the cutover on 2026-11-09. The same components also compile into a static site ([ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)). The org stays the source of truth. A GitHub Actions build reads the org through an allowlisted export, compiles the components with LWC OSS, and deploys the pages to Cloudflare Pages. A section that needs a request at view time goes through a Pages Function to a second Apex REST endpoint, and from there to the same controllers the Salesforce site uses.
 
 > _What This Diagram Shows: the headless flow. The build reads the org as the build user and publishes static pages. The browser loads those pages and, for the forms and labs, calls a Pages Function that calls the org as the edge user._
 
@@ -627,49 +627,49 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 <details>
 <summary>Click to view full list of Architectural Decision Records (ADRs)</summary>
 
-| ID                                                                                     | Title                                                           | Status                    |
-| :------------------------------------------------------------------------------------- | :-------------------------------------------------------------- | :------------------------ |
-| [ADR-001](../adr/001-experience-cloud-lwr-vs-aura.md)                                  | Experience Cloud (LWR) vs. Aura                                 | Accepted                  |
-| [ADR-002](../adr/002-custom-objects-vs-standard-objects.md)                            | Custom Objects vs. Standard Objects                             | Accepted                  |
-| [ADR-003](../adr/003-apex-rest-vs-external-service.md)                                 | Apex REST vs. External Service                                  | Accepted                  |
-| [ADR-004](../adr/004-static-resource-code-rendering.md)                                | Static Resource Code Rendering                                  | Accepted                  |
-| [ADR-005](../adr/005-gamified-testimonial-ui.md)                                       | Gamified Testimonial UI                                         | Accepted                  |
-| [ADR-006](../adr/006-jwt-bearer-flow-for-ci-cd.md)                                     | JWT Bearer Flow for CI/CD                                       | Accepted                  |
-| [ADR-007](../adr/007-github-api-server-side-caching.md)                                | GitHub API Server-Side Caching                                  | Accepted                  |
-| [ADR-008](../adr/008-jira-integration-vs-agile-accelerator.md)                         | Jira Integration vs. Agile Accelerator                          | Accepted                  |
-| [ADR-009](../adr/009-granular-resume-data-model.md)                                    | Granular Resume Data Model                                      | Accepted                  |
-| [ADR-010](../adr/010-visualization-engine-vis-js-vs-antv-g6.md)                        | Visualization Engine (Vis.js vs. the AntV Graph Library)        | Superseded by d3-force    |
-| [ADR-011](../adr/011-context-grounding-strategy-direct-crm-vs-data-360.md)             | Context Grounding Strategy (Direct CRM vs. Data 360)            | Deferred (2026-10-22)     |
-| [ADR-012](../adr/012-guest-user-security-restriction-rules.md)                         | Guest User Security (Restriction Rules)                         | Accepted                  |
-| [ADR-013](../adr/013-structured-logging-framework-nebula-logger.md)                    | Structured Logging Framework (Nebula Logger)                    | Accepted                  |
-| [ADR-014](../adr/014-deferred-telemetry-loading-performance.md)                        | Deferred Telemetry Loading (Performance)                        | Accepted                  |
-| [ADR-015](../adr/015-strategy-pattern-for-generative-ai.md)                            | Strategy Pattern for Generative AI                              | Accepted                  |
-| [ADR-016](../adr/016-cloudflare-worker-as-edge-ai-proxy.md)                            | Cloudflare Worker as Edge AI Proxy                              | Deferred to V2.0          |
-| [ADR-017](../adr/017-system-api-security-and-dual-sided-auth-pattern.md)               | System API Security & Dual-Sided Auth Pattern                   | Superseded (ADR-027)      |
-| [ADR-018](../adr/018-finops-constraint-aws-lambda-function-urls-vs-api-gateway.md)     | FinOps Constraint – AWS Lambda Function URLs vs. API Gateway    | Deferred (2026-10-23)     |
-| [ADR-019](../adr/019-executable-governance-platform-events-for-documentation-logic.md) | Executable Governance – Platform Events for Documentation Logic | Accepted                  |
-| [ADR-020](../adr/020-mobile-performance-static-svg-fallback-strategy.md)               | Mobile Performance – Static SVG Fallback Strategy               | Amended 2026-10-30        |
-| [ADR-021](../adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md)                     | Native GraphQL (Door 1) vs. Apex REST for UI                    | Amended 2026-10-30        |
-| [ADR-022](../adr/022-resilience-engineering-resilience-simulation-toggle.md)           | Resilience Engineering – Resilience Simulation Toggle           | Accepted                  |
-| [ADR-023](../adr/023-client-side-pdf-generation-jspdf-for-mvp.md)                      | Client-Side PDF Generation (jsPDF) for MVP                      | Accepted (Transitionary)  |
-| [ADR-024](../adr/024-twin-api-pattern-contract-first-parity.md)                        | Twin API Pattern – Contract-First Parity                        | Amended 2026-10-23        |
-| [ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md)                     | PAPI Fan-Out Throttling (Capacity Planning)                     | Accepted (Amended)        |
-| [ADR-026](../adr/026-header-based-api-versioning-strategy.md)                          | Header-Based API Versioning Strategy                            | Accepted (Amended)        |
-| [ADR-027](../adr/027-platform-native-api-authentication.md)                            | Platform-Native API Authentication (ECA + Named Credential)     | Accepted                  |
-| [ADR-028](../adr/028-evaluator-access-via-token-vending.md)                            | Evaluator Access via Token Vending                              | Accepted                  |
-| [ADR-029](../adr/029-schema-visualizer-scope-discovery-and-caching.md)                 | Schema Visualizer Scope, Discovery and Caching                  | Accepted (2026-10-22)     |
-| [ADR-030](../adr/030-decision-matrix-as-custom-metadata.md)                            | Decision Matrix as Custom Metadata                              | Accepted (2026-10-22)     |
-| [ADR-031](../adr/031-native-contact-form.md)                                           | Native Contact Form                                             | Accepted (2026-10-23)     |
-| [ADR-032](../adr/032-operational-settings-in-custom-metadata.md)                       | Operational Settings in Custom Metadata                         | Accepted (2026-10-23)     |
-| [ADR-033](../adr/033-queries-in-custom-metadata.md)                                    | Queries in Custom Metadata                                      | Accepted (2026-10-24)     |
-| [ADR-034](../adr/034-recruiter-first-home-page.md)                                     | A Recruiter First Home Page                                     | Accepted (2026-10-26)     |
-| [ADR-035](../adr/035-diagrams-rendered-in-ci.md)                                       | Diagrams Rendered in CI                                         | Accepted (2026-10-26)     |
-| [ADR-036](../adr/036-portfolio-guide-agent.md)                                         | The Portfolio Guide Agent                                       | Accepted (2026-10-27)     |
-| [ADR-037](../adr/037-native-form-controls-site-wide.md)                                | Native Form Controls Site Wide                                  | Amended 2026-10-30        |
-| [ADR-038](../adr/038-stable-public-keys-in-the-api.md)                                 | Stable Public Keys in the API                                   | Accepted (2026-10-28)     |
-| [ADR-039](../adr/039-api-v2-and-the-v1-sunset.md)                                      | API v2 and the v1 Sunset                                        | Accepted (2026-10-29)     |
-| [ADR-040](../adr/040-versionless-api-urls.md)                                          | Versionless API URLs                                            | Accepted (2026-10-31)     |
-| [ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)                 | Headless Static Front End on Cloudflare Pages                   | Accepted, cutover pending |
+| ID                                                                                     | Title                                                           | Decision           | Build                                                                                                                 |
+| :------------------------------------------------------------------------------------- | :-------------------------------------------------------------- | :----------------- | :-------------------------------------------------------------------------------------------------------------------- |
+| [ADR-001](../adr/001-experience-cloud-lwr-vs-aura.md)                                  | Experience Cloud (LWR) vs. Aura                                 | Superseded in part | [Live](../../packages/portfolio-site/main/default/digitalExperiences)                                                 |
+| [ADR-002](../adr/002-custom-objects-vs-standard-objects.md)                            | Custom Objects vs. Standard Objects                             | Accepted           | [Live](../../packages/portfolio-site/main/default/objects/Project__c)                                                 |
+| [ADR-003](../adr/003-apex-rest-vs-external-service.md)                                 | Apex REST vs. External Service                                  | Accepted           | [Live](../../packages/integration-api/main/default/classes/SAPIRouter.cls)                                            |
+| [ADR-004](../adr/004-static-resource-code-rendering.md)                                | Static Resource Code Rendering                                  | Accepted           | [Live](../../packages/portfolio-site/main/default/lwc/codeViewer)                                                     |
+| [ADR-005](../adr/005-gamified-testimonial-ui.md)                                       | Gamified Testimonial UI                                         | Accepted           | [Live](../../packages/portfolio-site/main/default/lwc/testimonialSubmit)                                              |
+| [ADR-006](../adr/006-jwt-bearer-flow-for-ci-cd.md)                                     | JWT Bearer Flow for CI/CD                                       | Accepted           | [Live](../../.github/workflows/deploy.yml)                                                                            |
+| [ADR-007](../adr/007-github-api-server-side-caching.md)                                | GitHub API Server-Side Caching                                  | Accepted           | [Live](../../packages/portfolio-site/main/default/classes/GitHubCacheRefreshJob.cls)                                  |
+| [ADR-008](../adr/008-jira-integration-vs-agile-accelerator.md)                         | Jira Integration vs. Agile Accelerator                          | Accepted           | [Live](../../packages/portfolio-site/main/default/classes/JiraService.cls)                                            |
+| [ADR-009](../adr/009-granular-resume-data-model.md)                                    | Granular Resume Data Model                                      | Accepted           | [Live](../../packages/portfolio-site/main/default/objects/Experience__c)                                              |
+| [ADR-010](../adr/010-visualization-engine-vis-js-vs-antv-g6.md)                        | Visualization Engine (Vis.js vs. the AntV Graph Library)        | Superseded         | [Live](../../packages/portfolio-site/main/default/lwc/graphEngine)                                                    |
+| [ADR-011](../adr/011-context-grounding-strategy-direct-crm-vs-data-360.md)             | Context Grounding Strategy (Direct CRM vs. Data 360)            | Deferred           | Designed                                                                                                              |
+| [ADR-012](../adr/012-guest-user-security-restriction-rules.md)                         | Guest User Security (Restriction Rules)                         | Accepted           | [Live](../../packages/portfolio-site/main/default/restrictionRules/Block_Unapproved_Testimonials.rule-meta.xml)       |
+| [ADR-013](../adr/013-structured-logging-framework-nebula-logger.md)                    | Structured Logging Framework (Nebula Logger)                    | Accepted           | [Live](../../packages/integration-api/main/default/classes/PortfolioLog.cls)                                          |
+| [ADR-014](../adr/014-deferred-telemetry-loading-performance.md)                        | Deferred Telemetry Loading (Performance)                        | Accepted           | [Live](../../packages/portfolio-site/main/default/lwc/footer)                                                         |
+| [ADR-015](../adr/015-strategy-pattern-for-generative-ai.md)                            | Strategy Pattern for Generative AI                              | Accepted           | [Live](../../packages/portfolio-site/main/default/classes/ContentGenerationController.cls)                            |
+| [ADR-016](../adr/016-cloudflare-worker-as-edge-ai-proxy.md)                            | Cloudflare Worker as Edge AI Proxy                              | Deferred           | Designed                                                                                                              |
+| [ADR-017](../adr/017-system-api-security-and-dual-sided-auth-pattern.md)               | System API Security & Dual-Sided Auth Pattern                   | Superseded         | [Live](../../packages/portfolio-site/main/default/externalCredentials/Portfolio_API_Auth.externalCredential-meta.xml) |
+| [ADR-018](../adr/018-finops-constraint-aws-lambda-function-urls-vs-api-gateway.md)     | FinOps Constraint – AWS Lambda Function URLs vs. API Gateway    | Deferred           | Designed                                                                                                              |
+| [ADR-019](../adr/019-executable-governance-platform-events-for-documentation-logic.md) | Executable Governance – Platform Events for Documentation Logic | Accepted           | [Live](../../packages/portfolio-site/main/default/classes/GovernanceController.cls)                                   |
+| [ADR-020](../adr/020-mobile-performance-static-svg-fallback-strategy.md)               | Mobile Performance – Static SVG Fallback Strategy               | Accepted           | [Live](../../packages/portfolio-site/main/default/lwc/skillNetwork)                                                   |
+| [ADR-021](../adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md)                     | Native GraphQL (Door 1) vs. Apex REST for UI                    | Accepted           | [Live](../../packages/portfolio-site/main/default/lwc/graphqlProbe)                                                   |
+| [ADR-022](../adr/022-resilience-engineering-resilience-simulation-toggle.md)           | Resilience Engineering – Resilience Simulation Toggle           | Accepted           | [Live](../../packages/portfolio-site/main/default/lwc/outageSimulation)                                               |
+| [ADR-023](../adr/023-client-side-pdf-generation-jspdf-for-mvp.md)                      | Client-Side PDF Generation (jsPDF) for MVP                      | Accepted           | [Live](../../packages/portfolio-site/main/default/lwc/documentPdf)                                                    |
+| [ADR-024](../adr/024-twin-api-pattern-contract-first-parity.md)                        | Twin API Pattern – Contract-First Parity                        | Accepted           | [Live](../../packages/integration-api/specs/salesforce-sapi.yaml)                                                     |
+| [ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md)                     | PAPI Fan-Out Throttling (Capacity Planning)                     | Accepted           | [Live](../../packages/integration-api/main/default/classes/RateWindowLimiter.cls)                                     |
+| [ADR-026](../adr/026-header-based-api-versioning-strategy.md)                          | Header-Based API Versioning Strategy                            | Accepted           | [Live](../../packages/integration-api/main/default/classes/ApiVersionTest.cls)                                        |
+| [ADR-027](../adr/027-platform-native-api-authentication.md)                            | Platform-Native API Authentication (ECA + Named Credential)     | Accepted           | [Live](../../packages/portfolio-site/main/default/externalCredentials/Portfolio_API_Auth.externalCredential-meta.xml) |
+| [ADR-028](../adr/028-evaluator-access-via-token-vending.md)                            | Evaluator Access via Token Vending                              | Accepted           | [Live](../../packages/integration-api/main/default/classes/TokenExchangeService.cls)                                  |
+| [ADR-029](../adr/029-schema-visualizer-scope-discovery-and-caching.md)                 | Schema Visualizer Scope, Discovery and Caching                  | Accepted           | [Live](../../packages/portfolio-site/main/default/classes/SchemaService.cls)                                          |
+| [ADR-030](../adr/030-decision-matrix-as-custom-metadata.md)                            | Decision Matrix as Custom Metadata                              | Accepted           | [Live](../../packages/portfolio-site/main/default/classes/DecisionMatrixController.cls)                               |
+| [ADR-031](../adr/031-native-contact-form.md)                                           | Native Contact Form                                             | Accepted           | [Live](../../packages/portfolio-site/main/default/classes/ContactFormController.cls)                                  |
+| [ADR-032](../adr/032-operational-settings-in-custom-metadata.md)                       | Operational Settings in Custom Metadata                         | Accepted           | [Live](../../packages/portfolio-site/main/default/classes/PortfolioSettings.cls)                                      |
+| [ADR-033](../adr/033-queries-in-custom-metadata.md)                                    | Queries in Custom Metadata                                      | Accepted           | [Live](../../packages/portfolio-site/main/default/classes/QueryDefinitions.cls)                                       |
+| [ADR-034](../adr/034-recruiter-first-home-page.md)                                     | A Recruiter First Home Page                                     | Accepted           | [Live](../../packages/portfolio-site/main/default/lwc/heroBanner)                                                     |
+| [ADR-035](../adr/035-diagrams-rendered-in-ci.md)                                       | Diagrams Rendered in CI                                         | Accepted           | [Live](../../scripts/render-mermaid.js)                                                                               |
+| [ADR-036](../adr/036-portfolio-guide-agent.md)                                         | The Portfolio Guide Agent                                       | Accepted           | Designed                                                                                                              |
+| [ADR-037](../adr/037-native-form-controls-site-wide.md)                                | Native Form Controls Site Wide                                  | Accepted           | [Live](../../packages/portfolio-site/main/default/lwc/nativeControls)                                                 |
+| [ADR-038](../adr/038-stable-public-keys-in-the-api.md)                                 | Stable Public Keys in the API                                   | Accepted           | [Live](../../packages/portfolio-site/main/default/classes/PublicKeyServiceTest.cls)                                   |
+| [ADR-039](../adr/039-api-v2-and-the-v1-sunset.md)                                      | API v2 and the v1 Sunset                                        | Accepted           | [Live](../../packages/integration-api/main/default/classes/ApiVersionTest.cls)                                        |
+| [ADR-040](../adr/040-versionless-api-urls.md)                                          | Versionless API URLs                                            | Accepted           | [Live](../../packages/integration-api/main/default/classes/ApiRouting.cls)                                            |
+| [ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)                 | Headless Static Front End on Cloudflare Pages                   | Accepted           | [Live](../../docs/guides/cutover-runbook.md)                                                                          |
 
 </details>
 
@@ -741,7 +741,7 @@ The footer (`c-footer`) shows its telemetry under one caption in labelled groups
 - **A.4 GitHub API Integration:** Uses Named Credential `GitHub_API`. Caches commits to the `Github_Cache__c` custom object, and the source files that View source shows to `Source_Cache__c` (one row per path, each read at most once a day by `SourceCacheRefreshJob`, and the docs again after a push that changes them). Refreshed every 15 minutes by `GitHubCacheRefreshJob` (Queueable, enqueued by `IntegrationCacheRefreshScheduler`).
 - **A.5 Hero Banner Navigation:** (Refer to UI specs).
 - **A.6 Agentforce Configuration:** the Portfolio Guide Agent is in source with four topics and three read only actions, ships to production inactive and is not on the site ([ADR-036](../adr/036-portfolio-guide-agent.md)). It reads through `QueryDefinitions` and has no search index behind it. The cover letter provider runs a Prompt Builder template, not this agent (section 5.4). The "Show your work" panel (section 5.4) replaces the Mirror Mode system instruction, so no instruction asks a model to reveal its prompt.
-- **A.7 Architecture Diagram Hosting:** not built. No C4 diagram is exported or uploaded as a static resource. The architecture diagrams are the Mermaid blocks in these guides, and the live data model is drawn by `c-schema-visualizer` (section 5.1).
+- **A.7 Architecture Diagram Hosting:** Designed. No C4 diagram is exported or uploaded as a static resource. The architecture diagrams are the Mermaid blocks in these guides, and the live data model is drawn by `c-schema-visualizer` (section 5.1).
 - **A.8 Jira Integration:** Endpoint: ryanbumstead.atlassian.net. Auth: Basic Auth with Named Credential.
 - **A.9 Advanced Visualization Strategy:**
   - **Mobile Guardrail:** on `FORM_FACTOR` `Small` or a viewport under 768 px the skills page shows its matrix and the ERD its accessible list, and neither requests the graph engine.
@@ -920,7 +920,7 @@ The `/testimonials/feed` endpoint applies business logic (`PAPITestimonialFeed.q
 
 **Performance:** no page load, payload or Time to Interactive comparison between the PAPI and the SAPI has been measured, so none is claimed. The site itself does not load through the PAPI.
 
-**Future Enhancements (Documented for Phase 8):**
+**Designed enhancements (documented for Phase 8):**
 
 - Server-side PDF generation (eliminating client-side jsPDF dependency)
 - GraphQL query language support for selective field fetching
@@ -1274,11 +1274,11 @@ Browser → Akamai CDN → LWR Runtime → Apex Controller → DB.
 
 Apex → Named Credential → External APIs (Jira/GitHub).
 
-**Static front end (cutover pending, [ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)).** Browser → Cloudflare Pages (static files) for the pages. Browser → Cloudflare Pages Function → My Domain `/services/apexrest/site/actions/*` → Apex Controller → DB for the forms, labs and live readings. GitHub Actions (`site.yml`) → My Domain `/services/apexrest/site/export` → Cloudflare Pages for the build. Section 6.3 draws the flow.
+**Static front end ([Live](./cutover-runbook.md) since 2026-11-09, [ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)).** Browser → Cloudflare Pages (static files) for the pages. Browser → Cloudflare Pages Function → My Domain `/services/apexrest/site/actions/*` → Apex Controller → DB for the forms, labs and live readings. GitHub Actions (`site.yml`) → My Domain `/services/apexrest/site/export` → Cloudflare Pages for the build. Section 6.3 draws the flow.
 
 ### Appendix I: Org & Package Structure
 
-A monorepo of five package directories, declared in `sfdx-project.json` and deployed as source (`sf project deploy start --source-dir packages`, or a delta manifest). They are not built as unlocked packages: the project has no `packageAliases`, and the declared dependencies form a cycle, because `portfolio-site` declares `integration-api` while `integration-api` calls `ContentGenerationController` in `portfolio-site` (`PAPIAiGenerate`, `ApiLabController`). Packaging them would first need that cycle broken.
+A monorepo of five package directories, declared in `sfdx-project.json` and deployed as source (`sf project deploy start --source-dir packages`, or a delta manifest). They are not packaged as unlocked packages: the project has no `packageAliases`, and the declared dependencies form a cycle, because `portfolio-site` declares `integration-api` while `integration-api` calls `ContentGenerationController` in `portfolio-site` (`PAPIAiGenerate`, `ApiLabController`). Packaging them would first need that cycle broken.
 
 - `/packages/portfolio-site`: Configurations, declarative, and programmatic resources focused on adding features to the Salesforce Architect Portfolio. Every pillar component and class lives here too (`SchemaService`, `DecisionMatrixController`, `c-schema-visualizer`, `c-project-asset-gallery`, `c-decision-matrix`, `c-pillar-b-story`), because Jest runs only on this package.
 - `/packages/integration-api`: the OpenAPI specifications (`specs/`), the Apex REST classes for the SAPI and PAPI, and the integration user's profile.
@@ -1308,7 +1308,7 @@ A monorepo of five package directories, declared in `sfdx-project.json` and depl
 
 | Feature               | Door 1: Native Salesforce GraphQL (lightning/uiGraphQLApi)                                                                                                                                                       | Door 2: AWS Lambda Polyglot BFF (Function URL)          |
 | :-------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------ |
-| **Timeline**          | Live                                                                                                                                                                                                             | Phase 8, 2027 to 2028 (design only, not built)          |
+| **Timeline**          | Live                                                                                                                                                                                                             | Phase 8, 2027 to 2028 (Designed)                        |
 | **Primary Consumers** | Three components: `c-skill-network`, `c-project-asset-gallery-data` (the gallery's lazy child) and the footer's `c-graphql-probe`. Every other component reads through `@AuraEnabled` Apex, the roadmap included | Future API Lab mode and mobile apps (none built)        |
 | **Technology**        | lightning/uiGraphQLApi wire adapter                                                                                                                                                                              | Single Lambda Function URL + in-function governance     |
 | **Latency**           | Lowest possible (LDS + UI cache)                                                                                                                                                                                 | Single external round-trip                              |
@@ -1316,4 +1316,4 @@ A monorepo of five package directories, declared in `sfdx-project.json` and depl
 | **Governance**        | Platform-managed                                                                                                                                                                                                 | Full enterprise policies (keys, rate limits, analytics) |
 | **Payload Reduction** | Platform-optimized                                                                                                                                                                                               | Not measured, since nothing is built                    |
 | **Cost**              | $0                                                                                                                                                                                                               | $0.00 forever (no API Gateway, no VPC)                  |
-| **Current Status**    | Live on the three components above ([ADR-021 amendments](../adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md#amendment-2026-10-30-the-galleries-read-moved-to-a-lazy-child))                                 | Designed, not built. Activation in Phase 8              |
+| **Current Status**    | Live on the three components above ([ADR-021 amendments](../adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md#amendment-2026-10-30-the-galleries-read-moved-to-a-lazy-child))                                 | Designed. Activation in Phase 8                         |

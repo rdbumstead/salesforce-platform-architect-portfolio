@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/portfolio-site/main/default/lwc/codeViewer), also [Source_Cache\_\_c](../../packages/portfolio-site/main/default/objects/Source_Cache__c)
+
 Amended 2026-10-23 (see the amendment below): built, with the source read from GitHub into an org cache, not from a static resource. Originally Accepted.
 
 ## Context

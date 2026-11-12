@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Accepted
+- **Build:** [Live](../../packages/portfolio-site/main/default/lwc/skillNetwork), also [graphEngine](../../packages/portfolio-site/main/default/lwc/graphEngine)
+
 Accepted. Amended 2026-10-22, see the amendment below. Note added 2026-10-22 on the Lighthouse claim, and a second note on 2026-10-30.
 
 ## Context

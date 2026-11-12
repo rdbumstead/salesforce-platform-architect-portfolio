@@ -2,6 +2,9 @@
 
 ## Status
 
+- **Decision:** Deferred (2026-10-23), like [ADR-016](016-cloudflare-worker-as-edge-ai-proxy.md).
+- **Build:** Designed. No AWS code exists in the repository.
+
 Deferred (2026-10-23), like [ADR-016](016-cloudflare-worker-as-edge-ai-proxy.md). Originally Accepted. No AWS code exists in the repository and no Lambda function serves the portfolio. The decision stands as the Phase 8 design and takes effect only if Phase 8 is built.
 
 ## Context
