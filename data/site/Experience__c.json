@@ -28,6 +28,36 @@
       "Is_Remote__c": false,
       "Is_Part_Time__c": true,
       "Sort_Order__c": 2
+    },
+    {
+      "attributes": {
+        "type": "Experience__c",
+        "referenceId": "SeedRoleConsultRef"
+      },
+      "Name": "Seed Integration Consultant",
+      "Employer__c": "@SeedConsultingRef",
+      "Contact__c": "@SeedOwnerRef",
+      "Start_Date__c": "2015-03-01",
+      "End_Date__c": "2018-12-31",
+      "Is_Current_Role__c": false,
+      "Is_Remote__c": false,
+      "Is_Part_Time__c": false,
+      "Sort_Order__c": 3
+    },
+    {
+      "attributes": {
+        "type": "Experience__c",
+        "referenceId": "SeedRoleRetailRef"
+      },
+      "Name": "Seed Support Analyst",
+      "Employer__c": "@SeedRetailRef",
+      "Contact__c": "@SeedOwnerRef",
+      "Start_Date__c": "2012-06-01",
+      "End_Date__c": "2015-02-28",
+      "Is_Current_Role__c": false,
+      "Is_Remote__c": false,
+      "Is_Part_Time__c": true,
+      "Sort_Order__c": 4
     }
   ]
 }
