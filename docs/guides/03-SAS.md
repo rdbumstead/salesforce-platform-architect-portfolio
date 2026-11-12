@@ -89,7 +89,7 @@ graph LR
     AI[AI dispatch<br/>Gemini, Local]
     Jira[Jira Cloud API]
     GitHub[GitHub API]
-    Lambda[AWS Lambda<br/>Phase 8]
+    Lambda[AWS Lambda<br/>Designed, Phase 8]
 
     %% ========= FLOWS =========
     User --> LWR
@@ -101,8 +101,8 @@ graph LR
     Apex --> GitHub
 
     %% ========= FUTURE =========
-    LWR -.-> Lambda
-    Lambda -.-> Apex
+    LWR -.->|Designed| Lambda
+    Lambda -.->|Designed| Apex
 
     %% ========= APPLY STYLES =========
     class User user;
@@ -110,7 +110,7 @@ graph LR
     class DB data;
     class Jira jira;
     class GitHub github;
-    class Lambda aws;
+    class Lambda future;
 
     %% ========= CRITICAL PATH =========
     linkStyle 0,1,2 stroke:#2ECC71,stroke-width:3px;
