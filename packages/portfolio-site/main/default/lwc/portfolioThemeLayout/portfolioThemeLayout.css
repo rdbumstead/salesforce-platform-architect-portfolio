@@ -116,6 +116,9 @@
     --pf-alert-caution: #f85149;
     --pf-focus: #60a5fa;
     --pf-color-scheme: dark;
+    --pf-seg-1: color-mix(in srgb, var(--pf-accent) 66%, var(--pf-bg));
+    --pf-seg-early: color-mix(in srgb, var(--pf-muted) 60%, var(--pf-bg));
+    --pf-seg-early-line: var(--pf-muted);
     --pf-glass: rgba(11, 15, 23, 0.9);
     --pf-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
     --shell-raise-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.7);
@@ -150,6 +153,9 @@
   --pf-alert-caution: #f85149;
   --pf-focus: #60a5fa;
   --pf-color-scheme: dark;
+  --pf-seg-1: color-mix(in srgb, var(--pf-accent) 66%, var(--pf-bg));
+  --pf-seg-early: color-mix(in srgb, var(--pf-muted) 60%, var(--pf-bg));
+  --pf-seg-early-line: var(--pf-muted);
   --pf-glass: rgba(11, 15, 23, 0.9);
   --pf-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
   --shell-raise-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.7);

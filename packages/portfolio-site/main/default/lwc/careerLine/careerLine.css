@@ -13,10 +13,13 @@
 
 .career {
   --seg-now: var(--pf-accent);
-  --seg-1: color-mix(in srgb, var(--pf-accent) 24%, var(--pf-bg));
+  --seg-1: var(
+    --pf-seg-1,
+    color-mix(in srgb, var(--pf-accent) 24%, var(--pf-bg))
+  );
   --seg-2: color-mix(in srgb, var(--pf-accent) 52%, var(--pf-bg));
-  --seg-early: var(--pf-chip);
-  --seg-early-line: var(--pf-border);
+  --seg-early: var(--pf-seg-early, var(--pf-chip));
+  --seg-early-line: var(--pf-seg-early-line, var(--pf-border));
   --seg-ring: color-mix(in srgb, var(--pf-accent) 30%, transparent);
   max-width: var(--portfolio-content-width, 1024px);
   margin: 0 auto;
@@ -289,7 +292,7 @@
 }
 
 .pill-now {
-  background-color: var(--pf-accent);
+  background-color: var(--pf-btn);
   color: var(--pf-btn-text);
 }
 
