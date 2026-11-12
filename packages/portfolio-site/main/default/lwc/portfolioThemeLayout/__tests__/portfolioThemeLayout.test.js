@@ -1869,6 +1869,15 @@ describe("c-portfolio-theme-layout", () => {
       ).toBe(false);
     });
 
+    it("gives the main region an id so the skip link has a target", () => {
+      const element = render();
+      const main = element.shadowRoot.querySelector("main");
+      // The platform may suffix the id, so check the start of it.
+      expect(main.getAttribute("id")).toMatch(/^main-content/);
+      const link = element.shadowRoot.querySelector(".skip-link");
+      expect(link.getAttribute("href")).toMatch(/#main-content$/);
+    });
+
     it("moves focus to the main region when the skip link is activated", async () => {
       const element = render();
       const link = element.shadowRoot.querySelector(".skip-link");
