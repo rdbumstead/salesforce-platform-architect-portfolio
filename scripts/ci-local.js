@@ -95,10 +95,8 @@ const STEPS = [
       "scripts/check-build-status*"
     ],
     commands: [
-      // Not in pr.yml yet. Add both lines to the quality-check job and change these two from
-      // local to ci so the drift test keeps them in step.
-      { local: "node --test scripts/check-build-status.test.js" },
-      { local: "node scripts/check-build-status.js" }
+      { ci: "node --test scripts/check-build-status.test.js" },
+      { ci: "node scripts/check-build-status.js" }
     ]
   },
   {

@@ -56,6 +56,14 @@ jobs:
           node --test scripts/check-internal-refs.test.js
           node scripts/check-internal-refs.js packages docs README.md STATUS.md
 
+      # Fails the PR when the guides, ADRs, README.md or STATUS.md use a build status word other
+      # than Live, In progress and Designed, or an ADR has no Decision and Build lines. The
+      # generated API pages in docs/api are not read. The gate's own tests run first.
+      - name: Check Build Status Words
+        run: |
+          node --test scripts/check-build-status.test.js
+          node scripts/check-build-status.js
+
       # Fails the PR when the live smoke test's route list no longer matches the site: a
       # component the smoke expects that its page no longer places, or a page it skips.
       # Reads files only, so it needs no browser and no org.
