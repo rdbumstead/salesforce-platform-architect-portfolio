@@ -117,7 +117,7 @@
     --pf-focus: #60a5fa;
     --pf-color-scheme: dark;
     --pf-seg-1: color-mix(in srgb, var(--pf-accent) 62%, var(--pf-bg));
-    --pf-seg-2: color-mix(in srgb, var(--pf-accent) 62%, var(--pf-bg));
+    --pf-seg-2: color-mix(in srgb, var(--pf-accent) 78%, var(--pf-bg));
     --pf-seg-early: color-mix(in srgb, var(--pf-muted) 56%, var(--pf-bg));
     --pf-seg-early-line: var(--pf-muted);
     --pf-glass: rgba(11, 15, 23, 0.9);
@@ -155,7 +155,7 @@
   --pf-focus: #60a5fa;
   --pf-color-scheme: dark;
   --pf-seg-1: color-mix(in srgb, var(--pf-accent) 62%, var(--pf-bg));
-  --pf-seg-2: color-mix(in srgb, var(--pf-accent) 62%, var(--pf-bg));
+  --pf-seg-2: color-mix(in srgb, var(--pf-accent) 78%, var(--pf-bg));
   --pf-seg-early: color-mix(in srgb, var(--pf-muted) 56%, var(--pf-bg));
   --pf-seg-early-line: var(--pf-muted);
   --pf-glass: rgba(11, 15, 23, 0.9);
