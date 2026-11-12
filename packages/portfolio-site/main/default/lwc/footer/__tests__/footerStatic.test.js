@@ -83,6 +83,7 @@ describe("c-footer on the static site", () => {
     expect(root.querySelector('[data-id="graphql-probe"]')).toBeNull();
     expect(root.querySelector('[data-id="graphql"]')).toBeNull();
     expect(root.querySelector('button[data-key="platform"]')).toBeNull();
+    expect(root.querySelector(".chips.chips--six")).toBeNull();
     expect(root.querySelector('[data-id="metrics"]').textContent).not.toMatch(
       /GraphQL/
     );

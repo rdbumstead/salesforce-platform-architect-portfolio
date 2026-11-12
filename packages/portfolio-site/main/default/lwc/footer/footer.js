@@ -487,6 +487,36 @@ export default class Footer extends LightningElement {
     return String(this.limitsOpen);
   }
 
+  /**
+   * How many chips the template renders: CI always, Platform when it has a reading, and the
+   * rest once the snapshot has loaded. Keep in step with the chips in footer.html.
+   */
+  get chipCount() {
+    let count = 1;
+    if (this.showPlatform) {
+      count += 1;
+    }
+    if (this.snapshotLoaded) {
+      count += 2;
+      if (this.showIntegrations) {
+        count += 1;
+      }
+      if (this.storageLine) {
+        count += 1;
+      }
+    }
+    return count;
+  }
+
+  /**
+   * The chips row. Six chips (only the Salesforce site gets the Platform chip, the static site
+   * has at most five) get a modifier that lays them in two rows of three from 900 to 1065 px,
+   * where a plain wrap leaves one chip alone on a second row.
+   */
+  get chipsClass() {
+    return this.chipCount === 6 ? "chips chips--six" : "chips";
+  }
+
   get ciChipClass() {
     return chipClass(this.ciOpen);
   }

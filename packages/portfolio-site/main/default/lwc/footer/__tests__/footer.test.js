@@ -756,6 +756,30 @@ describe("c-footer", () => {
       );
     });
 
+    it("marks the chips row as six when all six chips show", async () => {
+      getSystemSnapshot.mockResolvedValue(
+        snapshot({
+          integrations: INTEGRATIONS,
+          orgQuotas: ORG_QUOTAS,
+          storage: STORAGE
+        })
+      );
+      const element = createComponent();
+      await runIdle();
+      graphql.emit({
+        data: { uiapi: { query: { Skill__c: { edges: [] } } } }
+      });
+      await flushPromises();
+      expect(chips(element)).toHaveLength(6);
+      expect(q(element, ".chips").classList.contains("chips--six")).toBe(true);
+    });
+
+    it("leaves the chips row plain with five chips", async () => {
+      const element = await loadEverything();
+      expect(chips(element)).toHaveLength(5);
+      expect(q(element, ".chips").classList.contains("chips--six")).toBe(false);
+    });
+
     it("puts each metric in its group, each one a list item", async () => {
       const element = await loadEverything();
       const ci = await listIds(element, "ci");
