@@ -28,7 +28,7 @@
   - [4.4 Scenario: Token Vending Abuse](#44-scenario-token-vending-abuse)
   - [4.5 Scenario: Contact Form Abuse](#45-scenario-contact-form-abuse)
 - [5. Observability & Monitoring](#5-observability--monitoring)
-  - [5.1 Quota Monitoring (Not Built)](#51-quota-monitoring-not-built)
+  - [5.1 Quota Monitoring (Designed)](#51-quota-monitoring-designed)
   - [5.2 Logging](#52-logging)
 
 ---
@@ -336,9 +336,9 @@ If Apex classes fail with "You can bypass this error by allowing deployments wit
 
 ## 5. Observability & Monitoring
 
-### 5.1 Quota Monitoring (Not Built)
+### 5.1 Quota Monitoring (Designed)
 
-The design was a scheduled job that read a Gemini usage counter from a Platform Cache partition (`local.AIMetrics`) and emailed me above a threshold. **It is not built:** the org has no Platform Cache partition, and no class keeps such a counter. What exists today:
+The design was a scheduled job that read a Gemini usage counter from a Platform Cache partition (`local.AIMetrics`) and emailed me above a threshold. **Nothing of it is built:** the org has no Platform Cache partition, and no class keeps such a counter. What exists today:
 
 - The Gemini API key's own limits for Gemini 2.5 Flash, as recorded on 2026-10-20 (AI Studio): 5 requests per minute and 20 requests per day. Read the current figures before relying on them. Past them, `/papi/ai/generate` falls back to the local template for cover letters and answers 503 `ALL_PROVIDERS_UNAVAILABLE` otherwise.
 - The `papi-ai` rate tier, 10 requests per minute (`RateWindowLimiter`). The site cover letter has its own bucket, `papi-ai:site-cover-letter`, shared by every site visitor. `/papi/ai/generate` keys by session, and every evaluator token is the same session, so evaluators share one bucket too.

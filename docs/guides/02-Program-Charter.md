@@ -52,10 +52,10 @@ This is not a static website. It is a live, observable platform governed by prod
 - Skill Graph and Project Gallery use the native GraphQL wire adapter. The Roadmap and Changelog read cached Jira and GitHub data through Apex (`DeliveryController`), because the cache is one JSON row per refresh, not one record per item (my decision, 2026-10-21)
 - External services the site depends on: the Gemini API for cover letters (with a local template when it fails), GitHub and Jira for the Delivery page (read by scheduled jobs into caches, never by a visitor), and Google Analytics 4 for events. No middleware, server or database outside Salesforce is required
 
-#### Target Enterprise State, Phase 8 (planned for 2027 to 2028): _designed, not built_
+#### Target Enterprise State, Phase 8 (2027 to 2028): Designed
 
 - Plan: an AWS Lambda Polyglot Gateway (Function URL), "Door 2", designed in SAS section 1.1 and Appendix M. The repository holds no AWS code.
-- Deferred so the launch does not wait on it
+- Left out of the launch, so the launch does not wait on it
 - Because nothing of it is built, it adds no cost and no load to the live site
 
 ## 2. Governance Model & Scope
@@ -74,7 +74,7 @@ This is not a static website. It is a live, observable platform governed by prod
 - **Automated CI/CD Pipeline** with Static Analysis, Unit Testing gates, and a results step summary on every PR run ("PR Validation Results" in `pr.yml`).
 - **External API Integration (GitHub):** the portfolio repository's recent commits on the site, read by a scheduled job into a cache.
 - **External API Integration (Jira):** the portfolio roadmap's Epics and Stories, read by a scheduled job into a cache.
-- **Planned for Phase 8 (2027 to 2028), designed and not built:** multi-cloud integration patterns on the AWS free tier (a Lambda Function URL, object storage and CloudFront).
+- **Phase 8 (2027 to 2028), Designed:** multi-cloud integration patterns on the AWS free tier (a Lambda Function URL, object storage and CloudFront). Nothing of it is built.
 - **Advanced Visualization:** a skills matrix with "years used" from linked roles, and a D3.js force graph that loads only when a visitor opens it ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md)).
 - **Dynamic ERD Visualizer:** an Entity Relationship Diagram drawn from the org's own schema through the Apex Schema class and the same D3.js engine, in place of a static architecture diagram.
 - **Executable Governance:** LWC-based documentation that verifies its own success criteria from pipeline evidence. CI publishes a platform event, an Apex trigger persists it, and the checklist reads the result when viewed (for example, ticking "production deploy green" with the commit and the run behind it).
@@ -155,33 +155,33 @@ The delivery is organized into four parallel tracks:
 
 ### 3.2 Program Milestones
 
-- **Milestone 1 (Foundation):** Schema deployed, Baseline API contracts (OAS) defined. (Completed)
-- **Milestone 2 (Core Interactions):** LWR Site active, Navigation functional, Resume logic validated. (Completed)
-- **Milestone 3 (Integration):** External services (Jira/GitHub) connected, Security scanning active. (Completed)
-- **Milestone 4 (Intelligence):** Grounded generation in Apex with a visible fallback chain, "Vibe-Gate" logic tested. Agentforce is built as a Prompt Builder template ([ADR-015](../adr/015-strategy-pattern-for-generative-ai.md), 2026-10-26). Data 360 grounding is deferred ([ADR-011](../adr/011-context-grounding-strategy-direct-crm-vs-data-360.md), 2026-10-22). (Completed)
-- **Milestone 5 (Go-Live):** Planned for Q1 2027: the public launch and a telemetry review. The `ryanbumstead.com` domain already redirects to the site.
+- **Milestone 1 (Foundation):** Schema deployed, Baseline API contracts (OAS) defined. ([Live](../../packages/integration-api/specs/salesforce-sapi.yaml))
+- **Milestone 2 (Core Interactions):** LWR Site active, Navigation functional, Resume logic validated. ([Live](../../packages/portfolio-site/main/default/digitalExperiences))
+- **Milestone 3 (Integration):** External services (Jira/GitHub) connected, Security scanning active. ([Live](../../.github/workflows/pr.yml))
+- **Milestone 4 (Intelligence):** Grounded generation in Apex with a visible fallback chain, "Vibe-Gate" logic tested. Agentforce is built as a Prompt Builder template ([ADR-015](../adr/015-strategy-pattern-for-generative-ai.md), 2026-10-26). Data 360 grounding is Designed only ([ADR-011](../adr/011-context-grounding-strategy-direct-crm-vs-data-360.md), 2026-10-22). ([Live](../../packages/portfolio-site/main/default/classes/PortfolioGroundingService.cls))
+- **Milestone 5 (Go-Live):** ([Live](./cutover-runbook.md)) The public launch is the cutover to the static front end on 2026-11-09 ([ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)). This guide does not track the telemetry review that was part of this milestone.
 
 ### 3.3 Detailed Phasing
 
-**Phase 1: Core Foundation (Completed)**
+**Phase 1: Core Foundation ([Live](../../.github/workflows/pr.yml))**
 
 - **Org Setup:** (DevHub, DX Project).
 - **GitHub Repo Init:** (a branch ruleset on `main`: changes arrive by pull request, and force pushes are blocked).
 - **CI/CD Pipeline V1:** (Validation Only).
 
-**Phase 2: Data & API Layer (Completed)**
+**Phase 2: Data & API Layer ([Live](../../packages/integration-api/main/default/classes/SAPIRouter.cls))**
 
-- **Schema Deployment:** (Completed)
-- **Apex REST Services:** (Completed) 15 SAPI and 8 PAPI paths. Contract v2.1.0 is selected by the `X-API-Version: v2` header and returns public keys only. v1 is deprecated for one month and then answers 410 ([ADR-039](../adr/039-api-v2-and-the-v1-sunset.md).
-- **Data Loading:** (Completed) seed data in `data/site`.
+- **Schema Deployment:** ([Live](../../packages/portfolio-site/main/default/objects))
+- **Apex REST Services:** ([Live](../../packages/integration-api/main/default/classes/SAPIRouter.cls)) 15 SAPI and 8 PAPI paths. Contract v2.1.0 is selected by the `X-API-Version: v2` header and returns public keys only. v1 is deprecated for one month and then answers 410 ([ADR-039](../adr/039-api-v2-and-the-v1-sunset.md).
+- **Data Loading:** ([Live](../../data/site)) seed data in `data/site`.
 
-**Phase 3: UI Framework (Completed)**
+**Phase 3: UI Framework ([Live](../../packages/portfolio-site/main/default/lwc/portfolioThemeLayout))**
 
 - **Theme Layout:** `c-portfolio-theme-layout`, with the header, its "How it's built" menu, the Back to top arrow and the theme toggle.
 - **Home page:** `c-hero-banner`, then the case studies (`c-case-study-grid`), then the work timeline, the credentials band and the contact call. The "How this site is built" section (`c-site-build-section`, the pillar cards) sits on the Docs page, under the page title and above the document list.
 - **Navigation:** the header and the tour read one pillar list, `c/pillarData`.
 
-**Phase 4: Integrations (Completed)**
+**Phase 4: Integrations ([Live](../../packages/portfolio-site/main/default/classes/JiraService.cls))**
 
 - **Jira Connect:** (the `Jira_API` Named Credential).
 - **GitHub Connect:** (the `GitHub_API` Named Credential and the `Github_Cache__c` cache).
@@ -202,23 +202,23 @@ The delivery is organized into four parallel tracks:
 - **API Mode Indicator:** the Glass Box footer measures the guest GraphQL path after first paint and shows it as live with its latency, or as unavailable. It is measured on every visit, never a constant label (my decision, 2026-10-21).
 - **Final Polish:** Mobile optimization, Lighthouse audits, and Public DNS configuration. The domain redirect is in place. The device checks on iOS and Android are planned before launch.
 
-**Phase 7: Observability & Governance (moved into the launch scope, built)**
+**Phase 7: Observability & Governance (moved into the launch scope, [Live](../../packages/portfolio-site/main/default/classes/GovernanceController.cls))**
 
 - **System Health Dashboard:** "Glass Box Telemetry" footer.
 - **Smart Documentation:** moved into the launch scope (my decision, 2026-10-21). `c-smart-checklist` reads `Pipeline_Run__c` records written by an Apex trigger on `Governance_Event__e`, which CI publishes. It does not use `lightning/empApi`, which LWR sites do not support.
 
-**Phase 8: Multi-Cloud & FinOps, a Hybrid GraphQL Strategy (planned for 2027 to 2028)**
+**Phase 8: Multi-Cloud & FinOps, a Hybrid GraphQL Strategy (2027 to 2028, Designed)**
 
-| Phase       | Status                  | Rationale                                                                   |
-| :---------- | :---------------------- | :-------------------------------------------------------------------------- |
-| **Phase 8** | **Designed, not built** | Designed to show how the site would scale out, deferred until after launch. |
-| **MVP**     | **Live**                | Focus on measured mobile LCP and the Zero Cost constraint.                  |
+| Phase       | Status       | Rationale                                                                  |
+| :---------- | :----------- | :------------------------------------------------------------------------- |
+| **Phase 8** | **Designed** | Designed to show how the site would scale out, and left out of the launch. |
+| **MVP**     | **Live**     | Focus on measured mobile LCP and the Zero Cost constraint.                 |
 
-_The design is in the SAS. Apart from the GraphQL check, which confirms what runs today, every item below is a plan and none of it is built._
+_The design is in the SAS. Apart from the GraphQL check, which confirms what runs today, every item below is Designed and none of it is built._
 
 - **Native GraphQL Verification:**
   - Confirm `c-skill-network` and Project Gallery use `lightning/uiGraphQLApi`. `c-roadmap-viewer` reads Apex over the cache by design (my decision, 2026-10-21)
-- **AWS Lambda Polyglot Gateway:** (Function URL), "Door 2", **designed, not built** (planned for 2027 to 2028)
+- **AWS Lambda Polyglot Gateway:** (Function URL), "Door 2", **Designed** (2027 to 2028)
   - Deploy single HTTPS Function URL endpoint (no API Gateway)
   - Support both REST → GraphQL translation and direct GraphQL
   - In-function governance: `x-api-key` validation, tiered rate limiting, CloudWatch metrics
@@ -237,7 +237,7 @@ _The design is in the SAS. Apart from the GraphQL check, which confirms what run
 
 **Phase 9: Edge AI Proxy (Cloudflare Workers)**
 
-- A deferred design in [ADR-016](../adr/016-cloudflare-worker-as-edge-ai-proxy.md), not built. No Cloudflare Worker runs today. The cache warmer ([Technical Guide §2.13](./04-Technical-Guide.md#213-cloudflare-cache-warmer-worker)), which called no API, was retired at cutover on 2026-11-09. The static site's Pages Functions are a separate thing (SAS section 6.3).
+- **Designed.** The design is in [ADR-016](../adr/016-cloudflare-worker-as-edge-ai-proxy.md), whose decision is Deferred. No Cloudflare Worker runs today. The cache warmer ([Technical Guide §2.13](./04-Technical-Guide.md#213-cloudflare-cache-warmer-worker)), which called no API, was retired at cutover on 2026-11-09. The static site's Pages Functions are a separate thing (SAS section 6.3).
 
 ## 4. Implementation Checklist (Execution Plan)
 
@@ -247,7 +247,7 @@ _The design is in the SAS. Apart from the GraphQL check, which confirms what run
 - **D.1:** Deploy `Project__c` Object.
 - **D.2:** Deploy `Testimonial__c` Object.
 - **E.1:** Apex tests for every class, with org wide coverage gated at 90% on every pull request (`scripts/coverage-gate.js`).
-- **A.7:** Not built: no C4 diagram was exported or uploaded as a static resource. The diagrams are the Mermaid blocks in the guides.
+- **A.7:** Designed. No C4 diagram was exported or uploaded as a static resource. The diagrams are the Mermaid blocks in the guides.
 - **1.3:** Verify Technical Acceptance Criteria (CI/CD Green, LCP Baseline).
 
 **Phase 2: Delivery**
@@ -279,9 +279,9 @@ _The design is in the SAS. Apart from the GraphQL check, which confirms what run
 
 **Phase 5: Optimization**
 
-- **Dev:** Logging through one seam, `PortfolioLog`, to Nebula Logger when installed and debug logs otherwise. The planned `LogService.cls` with email offloading was not built.
+- **Dev:** Logging through one seam, `PortfolioLog`, to Nebula Logger when installed and debug logs otherwise. A `LogService.cls` with email offloading is Designed only and has no code.
 - **Dev:** Implement "Vibe-Gate" logic on `c-testimonial-submit`.
-- **Docs:** Not built: C4 Level 2 and 3 diagrams in IcePanel. The diagrams are the Mermaid blocks in the guides.
+- **Docs:** Designed: C4 Level 2 and 3 diagrams in IcePanel, with none drawn. The diagrams are the Mermaid blocks in the guides.
 
 **Phase 6: Observability & Launch**
 
