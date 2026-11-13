@@ -29,6 +29,11 @@
 //   SITE_BASE   the site root, for example https://example.my.site.com/portfolio (required)
 //   BROWSERS    comma list of Playwright engines, default "chromium,webkit"
 //   SMOKE_FOOTER_CHECK  "1" adds the footer check rows, off by default
+//   SMOKE_ALLOW_LOCAL_HTTP  "1" strips the CSP directive upgrade-insecure-requests from document
+//               responses, only when SITE_BASE is a local http:// address (localhost, 127.0.0.1
+//               or [::1]). WebKit applies that directive to http://localhost, so without this a
+//               local run cannot load its own pages in WebKit. Off by default, and never applied
+//               to an https:// base or to a remote host.
 //   SMOKE_JSON  optional file path that also receives the JSON body
 //   CF_ACCESS_CLIENT_ID, CF_ACCESS_CLIENT_SECRET  optional Cloudflare Access service token for a
 //               preview behind Access, sent only to the base's own pages.dev host
@@ -59,6 +64,7 @@ const BROWSERS = (process.env.BROWSERS || "chromium,webkit")
   .filter(Boolean);
 const SMOKE_JSON = process.env.SMOKE_JSON || "";
 const FOOTER_CHECK = process.env.SMOKE_FOOTER_CHECK === "1";
+const ALLOW_LOCAL_HTTP = process.env.SMOKE_ALLOW_LOCAL_HTTP === "1";
 
 // What each page must show. A component named as a string counts once its first instance
 // is visible. A component that renders nothing until it has records (the testimonial wall
@@ -282,15 +288,81 @@ function accessHeadersFor(url) {
 }
 
 /**
+ * Whether a document response should lose the CSP directive upgrade-insecure-requests. Only
+ * when the option is on, the base is a local http:// address and the request goes to that same
+ * host, so an https:// base or a remote host is never touched.
+ * @param {string} url the request address
+ * @param {string} base the site root
+ * @param {boolean} allow whether the option is on
+ * @returns {boolean} true when the directive should be stripped
+ */
+function shouldStripUpgrade(url, base, allow) {
+  if (!allow || !base) {
+    return false;
+  }
+  try {
+    const target = new URL(url);
+    const root = new URL(base);
+    return (
+      root.protocol === "http:" &&
+      /^(localhost|127\.0\.0\.1|\[::1\])$/.test(root.hostname) &&
+      target.protocol === "http:" &&
+      target.host === root.host
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The response headers without upgrade-insecure-requests in any content security policy.
+ * @param {object} headers the response headers, names in lower case
+ * @returns {object} the headers to send
+ */
+function stripUpgradeHeaders(headers) {
+  const out = { ...headers };
+  for (const name of [
+    "content-security-policy",
+    "content-security-policy-report-only"
+  ]) {
+    if (typeof out[name] === "string") {
+      out[name] = out[name]
+        .split(";")
+        .map((part) => part.trim())
+        .filter(
+          (part) => part && part.toLowerCase() !== "upgrade-insecure-requests"
+        )
+        .join("; ");
+    }
+  }
+  return out;
+}
+
+/**
  * Blocks the analytics hosts and adds the Access headers where they belong, for every page
  * the context opens.
  * @param {object} context a Playwright browser context
  */
 async function prepare(context) {
-  await context.route("**/*", (route) => {
+  await context.route("**/*", async (route) => {
     const request = route.request();
     if (isBlocked(request.url())) {
       return route.abort();
+    }
+    if (
+      request.resourceType() === "document" &&
+      shouldStripUpgrade(request.url(), BASE, ALLOW_LOCAL_HTTP)
+    ) {
+      const response = await route.fetch({
+        headers: {
+          ...request.headers(),
+          ...(accessHeadersFor(request.url()) || {})
+        }
+      });
+      return route.fulfill({
+        response,
+        headers: stripUpgradeHeaders(response.headers())
+      });
     }
     const extra = accessHeadersFor(request.url());
     return extra
@@ -904,6 +976,8 @@ module.exports = {
   TOUR,
   isUnderBase,
   accessHeadersFor,
+  shouldStripUpgrade,
+  stripUpgradeHeaders,
   parseFeatures,
   routesFor
 };
