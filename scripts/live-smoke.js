@@ -7,7 +7,7 @@
 // error and throws no script error outside the short KNOWN_ERRORS list below.
 //
 // It loads pages and, apart from the tour walk below, nothing more. No form is submitted.
-// Requests to Google Analytics are blocked, so a smoke run never counts as a visitor.
+// Requests to Google Analytics and Cloudflare Web Analytics are blocked, so a smoke run never counts as a visitor.
 //
 // The tour walk, once per engine and size: on a normal visit to the home page the tour bar
 // shows nothing (the tour is opt in). Then it presses the hero's tour link, which goes to the
