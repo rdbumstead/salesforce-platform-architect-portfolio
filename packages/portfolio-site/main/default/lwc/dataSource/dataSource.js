@@ -207,6 +207,15 @@ export default class DataSource extends LightningElement {
       .join(WORDING.countSeparator);
   }
 
+  /**
+   * The counts as the button shows them, with a leading space. The space is collapsed on
+   * screen, and it keeps the shown words and the counts apart in the text a checker reads
+   * from the button, which the spoken name has to start with.
+   */
+  get summaryText() {
+    return this.hasSummary ? ` ${this.summary}` : "";
+  }
+
   get hasSummary() {
     return this.summary !== "";
   }
@@ -256,8 +265,7 @@ export default class DataSource extends LightningElement {
       markerShort && markerLabel.startsWith(markerShort)
         ? markerLabel.slice(markerShort.length)
         : "";
-    const withCounts = this.hasSummary ? `${shown}, ${this.summary}` : shown;
-    return `${withCounts}${extra}`;
+    return `${shown}${this.summaryText}${extra}`;
   }
 
   get panelClass() {

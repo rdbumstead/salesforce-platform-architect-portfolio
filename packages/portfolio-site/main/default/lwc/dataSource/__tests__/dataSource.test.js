@@ -118,8 +118,12 @@ describe("c-data-source", () => {
     expect(button(el).textContent).toContain("Live from Salesforce");
     expect(button(el).textContent).toContain("10 roles, 54 skills");
     expect(button(el).getAttribute("aria-label")).toBe(
-      "Live from Salesforce, 10 roles, 54 skills"
+      "Live from Salesforce 10 roles, 54 skills"
     );
+    // The name starts with every word the button shows.
+    expect(
+      button(el).getAttribute("aria-label").startsWith(button(el).textContent)
+    ).toBe(true);
   });
 
   it("passes the trimmed, de-duplicated names to the wire", async () => {
@@ -149,9 +153,9 @@ describe("c-data-source", () => {
       { name: "d", label: "Education Entries", hasCount: true, count: 2 }
     ]);
     await flush();
-    expect(el.shadowRoot.querySelector(".marker-counts").textContent).toBe(
-      "10 roles, 54 skills, 7 certifications"
-    );
+    expect(
+      el.shadowRoot.querySelector(".marker-counts").textContent.trim()
+    ).toBe("10 roles, 54 skills, 7 certifications");
     button(el).click();
     await flush();
     expect(el.shadowRoot.querySelectorAll(".source")).toHaveLength(4);
