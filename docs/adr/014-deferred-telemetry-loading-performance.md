@@ -30,3 +30,7 @@ A load that must not wait is the other half of the rule. An early read of the he
 ## Amendment (2026-11-02): the static front end
 
 On the static site ([ADR-041](041-headless-static-front-end-on-cloudflare-pages.md)) the rule applies to what paints. The first section of each page paints first and the rest of the components load after that paint, so the page never waits on all of its components to download and run before showing its first text. Telemetry and the live footer readings stay deferred as before. The numbers behind this are in [Technical Guide §2.11](../guides/04-Technical-Guide.md#211-mobile-performance), and they are local lab numbers.
+
+## Amendment (2026-11-12): the budget is now measured on the static site
+
+The LCP budget in the Context line was written against the Salesforce site. On the static site the production Lighthouse audit of 2026-11-12 measured mobile LCP medians of 2.2 to 2.9 s on the six main routes (lab data, three runs a route, [Technical Guide §2.11](../guides/04-Technical-Guide.md#211-mobile-performance) has the environment). The original decision is unchanged. Telemetry and the live footer readings still load after the page has painted.

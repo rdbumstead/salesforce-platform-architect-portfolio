@@ -39,7 +39,7 @@ Owner: Ryan Bumstead
 
 Version: 1.0
 
-Date: MVP – Q1 2027
+Date: Live since October 2026
 
 This document outlines the operational procedures required to maintain the security, stability, and "Green Build" status of the portfolio architecture.
 
@@ -275,12 +275,12 @@ The API is called at versionless URLs, and the old `/v1/` URLs are aliases that 
 
 ### 3.12 The Static Site: Workflow, Secrets and Kill Switches
 
-The static front end ([ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)) is built and deployed by `site.yml`. Until cutover it is reachable only at the `*.pages.dev` address ([cutover runbook](./cutover-runbook.md)).
+The static front end ([ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)) is built and deployed by `site.yml`. It has served `ryanbumstead.com` since the cutover on 2026-11-09 ([cutover runbook](./cutover-runbook.md)). Every `*.pages.dev` address is behind Cloudflare Access.
 
 **The workflow.**
 
 - **Triggers.** See section 3.2. A pull request deploys a preview under `pr-<number>`, runs the live smoke test against it, and writes the preview address and Lighthouse medians to the job summary. A run on `main` deploys to the Pages production branch.
-- **Lighthouse.** Six routes, three mobile runs each, with Google Analytics blocked so audits never count as visits. On a pull request it audits the same build on the runner through `wrangler pages dev`, because every `*.ryanbumstead.pages.dev` address is behind Cloudflare Access and Access gives a service token no cookie. Strict service token authentication is on and this Zero Trust organization cannot turn it off. Accessibility under 100 on any route fails the pull request. Performance and LCP there are the runner's numbers and only report. On `main` it audits `https://ryanbumstead.com` after the deploy, which gives Cloudflare's numbers.
+- **Lighthouse.** Six routes, three mobile runs each, with Google Analytics, Tag Manager and the Cloudflare Web Analytics beacon blocked so audits never count as visits. On a pull request it audits the same build on the runner through `wrangler pages dev`, because every `*.ryanbumstead.pages.dev` address is behind Cloudflare Access and Access gives a service token no cookie. Strict service token authentication is on and this Zero Trust organization cannot turn it off. Accessibility under 100 on any route fails the pull request. Performance and LCP there are the runner's numbers and only report. On `main` it audits `https://ryanbumstead.com` after the deploy, which gives Cloudflare's numbers.
 - **GitHub secrets it reads.** `SFDX_JWT_KEY` and `SFDX_CLIENT_ID` (the existing JWT app), `SFDX_SITE_BUILD_USERNAME` (the build user, `site-build@ryanbumstead.com`), `CLOUDFLARE_PAGES_TOKEN` (else `CLOUDFLARE_API_TOKEN`) and `SITE_DENYLIST` (comma separated terms the leak scan refuses). With no build user secret the build uses the sample fixtures and says so. With no Pages token the deploy is skipped and says so. The leak scan fails a real data build when `SITE_DENYLIST` is missing.
 - **After the build.** It publishes a `Governance_Event__e` for the workflow `site` on success or failure, and the Delivery checklist's "Static site build green" row reads it.
 - **A failed build.** The Pages project keeps serving the last good deployment. Read the job summary, fix the cause and run the workflow by hand.

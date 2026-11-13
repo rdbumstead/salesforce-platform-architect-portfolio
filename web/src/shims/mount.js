@@ -11,6 +11,12 @@
  *
  * Once everything is placed, a form whose switch reads recorded gives way to a note with
  * the owner's profile links.
+ *
+ * A page the build prerendered (site-root carries data-prerendered) already shows the
+ * finished page, so replacing it at once would blank the sections that load later. The
+ * live page is built beside it in a stage that takes no room and cannot be seen, and once
+ * every component and the footer are in place the stage opens and the prerendered copy goes
+ * in the same frame. If the live page never finishes, the prerendered copy stays.
  */
 import { createElement } from "lwc";
 import { unlessLeaving } from "./leaving.js";
@@ -21,6 +27,26 @@ import { swapRecordedForms } from "./recorded-forms.js";
 import { box, buildSections, lastInColumn } from "./sections.js";
 
 const SPACER = "component-wrapper-spacer";
+
+/** In the flow, so it has the width the page will have, but no height and no paint. */
+const STAGE_HIDDEN =
+  "position:relative;height:0;overflow:hidden;visibility:hidden";
+const STAGE_OPEN = "display:contents";
+
+/** Marks the page ready. The build's prerender step waits for it. */
+function markReady(root) {
+  root.setAttribute("data-ready", "true");
+}
+
+/** Opens the stage and removes the prerendered copy in one task, so one frame shows the change. */
+function reveal(root, stage) {
+  Array.from(root.childNodes).forEach((node) => {
+    if (node !== stage) root.removeChild(node);
+  });
+  stage.removeAttribute("inert");
+  stage.removeAttribute("aria-hidden");
+  stage.setAttribute("style", STAGE_OPEN);
+}
 
 function placed(entry) {
   if (entry.html !== undefined) {
@@ -94,7 +120,17 @@ export function mount({
   const now = firstLazy === -1 ? components : components.slice(0, firstLazy);
   const later = firstLazy === -1 ? [] : components.slice(firstLazy);
   now.forEach(put);
-  root.replaceChildren(layout);
+  let stage = null;
+  if (root.hasAttribute("data-prerendered")) {
+    stage = document.createElement("div");
+    stage.setAttribute("style", STAGE_HIDDEN);
+    stage.setAttribute("inert", "");
+    stage.setAttribute("aria-hidden", "true");
+    stage.appendChild(layout);
+    root.appendChild(stage);
+  } else {
+    root.replaceChildren(layout);
+  }
   // The rest starts loading only once the top of the page has painted, so the first paint
   // never shares the network or the main thread with the heavier components.
   return afterPaint()
@@ -118,5 +154,9 @@ export function mount({
       }
       return recordedForms(api, layout);
     })
+    .then(() =>
+      stage ? afterPaint().then(() => reveal(root, stage)) : undefined
+    )
+    .then(() => markReady(root))
     .catch(unlessLeaving);
 }

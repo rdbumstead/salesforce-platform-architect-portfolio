@@ -13,7 +13,7 @@ Three things pushed me to look at a different front end.
 
 1. **A licensing question.** Salesforce support told me that a public website served from a Developer Edition org may count as production use, which that edition does not allow. That question is not settled, and I do not treat the launch as cleared. I am not putting the support case number or the people involved in the repository.
 2. **A limit I cannot watch.** The Experience Cloud site's guest usage counters read 0 in the org, so I cannot see how close the site is to the guest limits. A front end that reads the org on a schedule, and not once per visitor, makes the question smaller.
-3. **A speed ceiling.** The LWR shell holds mobile LCP at 6.5 to 8.3 s on the live site (Lighthouse CI 0.15.1, mobile profile, 2026-11-02), against a target of 2.5 s ([Technical Guide §2.11](../guides/04-Technical-Guide.md#211-mobile-performance)). The cost is the network and the framework scripts that load before the first site component renders, not the device. Every route is a client render of an empty shell, and no change to my own files moves that. On a Cloudflare preview with sample fixture data the same profile gave median LCP of 2.13 to 2.94 s across six routes, and five of the six met 2.5 s ([SAS §2.1](../guides/03-SAS.md#21-core-nfrs)).
+3. **A speed ceiling.** The LWR shell held mobile LCP at 6.5 to 8.3 s on the live site (Lighthouse CI 0.15.1, mobile profile, 2026-11-02), against a target of 2.5 s ([Technical Guide §2.11](../guides/04-Technical-Guide.md#211-mobile-performance)). The cost is the network and the framework scripts that load before the first site component renders, not the device. Every route is a client render of an empty shell, and no change to my own files moves that. On a Cloudflare preview with sample fixture data the same profile gave median LCP of 2.13 to 2.94 s across six routes, and five of the six met 2.5 s ([SAS §2.1](../guides/03-SAS.md#21-core-nfrs)).
 
 ## Decision
 
@@ -25,6 +25,17 @@ Three things pushed me to look at a different front end.
 4. **Functions for the features that need a request.** The contact form, the testimonial form, the cover letter, the API Lab and the evaluator token form, the footer readings and the pipeline status call Salesforce through Pages Functions that sign in with a client credentials token for an edge user and call `/services/apexrest/site/actions/<action>`. No browser calls the Salesforce site as a guest. The browser's request is checked at the edge first. Turnstile guards the two forms, and the visitor's IP is hashed at the edge with a secret salt before Salesforce sees it, so `SubmissionGuard` can block and rate limit by hash without storing an address.
 5. **A kill switch for each feature.** `FEATURE_CONTACT`, `FEATURE_TESTIMONIAL`, `FEATURE_COVER_LETTER`, `FEATURE_API_LAB` and `FEATURE_LIVE_READS` are each `live` or `recorded`. Production is decided by the request host, and on a production host a switch that is not set reads as `live`, so all five are set in `[vars]` in `web/wrangler.toml`. They stayed `recorded` until the cutover, and I flipped each to `live` there on 2026-11-09, one pull request at a time. That file is the project's source of truth for plain variables, and a deploy drops any text variable set only in the dashboard. Any other host is always `recorded`. In `recorded` mode a form is replaced by the contact call with my public profile links, the cover letter shows a labelled sample, the API Lab shows responses captured at build time, and the live readings show the build snapshot only.
 6. **Honest labels.** Only a section that really calls Salesforce at view time says "Live from Salesforce". A section read at build time says when it was built.
+
+## What changed and what did not
+
+Cloudflare changed the presentation and delivery layer only. It did not replatform the system.
+
+| Layer                      | After the cutover                                                                                                                       |
+| :------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------- |
+| Presentation and delivery  | Static pages on Cloudflare Pages, built from the same Lightning Web Components. This is the part that changed.                          |
+| System of record           | Salesforce. Every case study, stat and timeline entry is still a record in the org.                                                     |
+| Data to the pages          | The build reads the org on a schedule through the export allowlist. The live features call it at view time through the Pages Functions. |
+| APIs, data model, security | Unchanged. The Apex REST APIs, the data model, the guest and integration security model and the CI deploys to the org are as they were. |
 
 ## Alternatives considered
 
@@ -45,6 +56,23 @@ Three things pushed me to look at a different front end.
 - **The cache warmer goes away.** The `portfolio-cache-warmer` Worker pinged `https://ryanbumstead.com/` every five minutes to keep the Salesforce site awake. With the static site as the front door there is nothing to wake, so it was retired at the cutover on 2026-11-09. Its cron trigger was removed before the domain moved, and its code and deploy workflow were deleted from the repository ([Technical Guide §2.13](../guides/04-Technical-Guide.md#213-cloudflare-cache-warmer-worker)).
 - **Turnstile and the host share a vendor.** The contact and testimonial forms use Cloudflare Turnstile, and the static site runs on Cloudflare. The third party trade in [ADR-031](031-native-contact-form.md) changes accordingly.
 
+## Consequences, measured
+
+These are production Lighthouse audit results, which are lab data and not Core Web Vitals. The tool was Lighthouse CI 0.15.1 running Lighthouse 12.6.1 against `https://ryanbumstead.com`, on 2026-11-12, with its default mobile emulation (Moto G Power, 412 by 823 at scale 1.75), simulated throttling (150 ms round trip, 1638.4 Kbps, 4x CPU slowdown), storage reset before each run, Google Analytics and Tag Manager blocked, on my Windows machine with desktop Chrome, three runs on each of the six main routes. The full table is in [Technical Guide §2.11](../guides/04-Technical-Guide.md#211-mobile-performance).
+
+| Measure                   | Experience Cloud (LWR)                                                                 | Cloudflare Pages                                    |
+| :------------------------ | :------------------------------------------------------------------------------------- | :-------------------------------------------------- |
+| Mobile LCP, route medians | 7.57 to 10.62 s (production, Lighthouse 11.4.0, 2026-10-29), 6.5 to 8.3 s (2026-11-02) | 2.22 to 2.92 s, and 2.52 s as the median of the six |
+| Performance score         | Not recorded here for production                                                       | 92 to 99                                            |
+| Accessibility score       | 100 on a scratch copy, a separate result                                               | 100 on all 18 runs                                  |
+
+- **Speed.** The 2.5 s target is not met on every route. Two route medians are under it (API Lab 2.22 s, nonprofit solutions 2.47 s), three are within 0.03 s above it (resume 2.51 s, skills 2.53 s, business architecture 2.53 s), and the home page is the slowest at 2.92 s. The two sets of figures used different tool versions, and Google Analytics was left on for the older production baseline and blocked in this audit, so the comparison is of the same kind and not exact.
+- **Layout shift.** The median CLS is 0 on five routes and 0.03 on the resume.
+- **Field data.** None existed for ryanbumstead.com at the time of the audit, so the figures above say nothing about the 75th percentile of real visits. Cloudflare Web Analytics, which collects LCP, INP and CLS from real visits with no cookies or local storage (CLS from Chromium browsers only), starts to once it is switched on.
+- **Accessibility.** A pull request now fails when any audited route scores under 100. Lighthouse covers the automated checks only, so the 100 does not establish WCAG conformance.
+- **Not settled by the move.** The licensing question under Context item 1 is open, and no cost claim is made.
+- **Rollback window.** It is still open. It ends on 2026-11-23, and these Consequences are written on the assumption that the move stands. A rollback before then would change the Build field above and this section with it.
+
 ## Open question
 
 The static pages and most functions do not touch the org when a visitor loads a page, but the live readings, the forms, the cover letter and the API Lab still call it. Public API traffic from a Developer Edition org still uses that org's daily API request quota, which the footer shows. Whether a public site that consumes the quota this way is allowed is a question only Salesforce sales can answer, and it is still open. The kill switches let me move every feature to `recorded` in minutes if the answer is no. The static front end reduces the load on the org and gives me a way to leave it. It does not settle the licensing question, and I do not claim that it does.
@@ -53,6 +81,10 @@ The static pages and most functions do not touch the org when a visitor loads a 
 
 Nothing in Salesforce changes at cutover, so the rollback takes minutes. I turn the Cloudflare Page Rule that forwards `ryanbumstead.com` to the Salesforce site back on and remove the custom domain from the Pages project. The Salesforce site never stopped deploying, so it answers as before. For two weeks after cutover I keep the Salesforce site up and the Page Rule ready, turned off but not deleted. After that I decide whether to take the Salesforce site offline. The API site that vends evaluator tokens stays either way. The steps are in the [cutover runbook](../guides/cutover-runbook.md#4-rollback-for-two-weeks).
 
+## Amendment (2026-11-13): prerendering each page
+
+Each page is still an empty shell until JavaScript runs, so a crawler or a link preview reads only the head and a short summary. [ADR-042](042-prerender-every-public-page-at-build-time.md) adds a build step that renders every public page in headless Chrome and writes the result into its HTML. It is built and not switched on, because in my measurements it raised Lighthouse mobile LCP by 541 to 876 ms across the six audited routes, over my limit of 200 ms. Nothing in this record changes until it is switched on.
+
 ## Related
 
-[ADR-001](001-experience-cloud-lwr-vs-aura.md), [ADR-014](014-deferred-telemetry-loading-performance.md), [ADR-016](016-cloudflare-worker-as-edge-ai-proxy.md), [ADR-021](021-native-graphql-door-1-vs-apex-rest-for-ui.md), [ADR-027](027-platform-native-api-authentication.md), [ADR-031](031-native-contact-form.md)
+[ADR-042](042-prerender-every-public-page-at-build-time.md), [ADR-001](001-experience-cloud-lwr-vs-aura.md), [ADR-014](014-deferred-telemetry-loading-performance.md), [ADR-016](016-cloudflare-worker-as-edge-ai-proxy.md), [ADR-021](021-native-graphql-door-1-vs-apex-rest-for-ui.md), [ADR-027](027-platform-native-api-authentication.md), [ADR-031](031-native-contact-form.md)

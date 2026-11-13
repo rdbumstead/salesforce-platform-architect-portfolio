@@ -27,7 +27,7 @@ Version: 1.0
 
 Owner: Ryan Bumstead
 
-Launch target: Q1 2027
+Status: live since October 2026, with the static front end live since 2026-11-09
 
 ## 1. Executive Summary
 
@@ -46,11 +46,11 @@ This is not a static website. It is a live, observable platform governed by prod
 
 ### 1.3 Current vs. Target Architecture Scope
 
-#### Current MVP State (Q1 2027 Launch)
+#### Current MVP State (live since October 2026)
 
-- 100% on-platform data access using Apex REST + native Salesforce GraphQL (lightning/uiGraphQLApi)
+- All data comes from the Salesforce org. The static pages are built from an allowlisted export of Apex controller methods and native Salesforce GraphQL queries, and the features that need a request at view time call Apex through Cloudflare Pages Functions. The Salesforce site reads it on the platform with Apex REST + native Salesforce GraphQL (lightning/uiGraphQLApi)
 - Skill Graph and Project Gallery use the native GraphQL wire adapter. The Roadmap and Changelog read cached Jira and GitHub data through Apex (`DeliveryController`), because the cache is one JSON row per refresh, not one record per item (my decision, 2026-10-21)
-- External services the site depends on: the Gemini API for cover letters (with a local template when it fails), GitHub and Jira for the Delivery page (read by scheduled jobs into caches, never by a visitor), and Google Analytics 4 for events. No middleware, server or database outside Salesforce is required
+- External services the site depends on: the Gemini API for cover letters (with a local template when it fails), GitHub and Jira for the Delivery page (read by scheduled jobs into caches, never by a visitor), Google Analytics 4 for events on the Salesforce site, and Cloudflare Web Analytics for field Core Web Vitals on the static site. Outside Salesforce the site runs on Cloudflare Pages and its Functions, with no database of its own
 
 #### Target Enterprise State, Phase 8 (2027 to 2028): Designed
 
@@ -64,7 +64,7 @@ This is not a static website. It is a live, observable platform governed by prod
 
 **In Scope:**
 
-- **Public-facing Experience Cloud (LWR)** site with "5-Minute Tour" guided navigation.
+- **Public-facing site** with "5-Minute Tour" guided navigation. It is a static build on Cloudflare Pages since 2026-11-09 ([ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)), and the Experience Cloud (LWR) site it replaced stays up as the rollback target until 2026-11-23.
 - **Custom LWC component framework** including a custom API Testing Harness.
 - **Apex REST API implementation** in MuleSoft's API led layers (a System API and a Process API), matching the OpenAPI specifications in the repository (15 SAPI and 8 PAPI paths, version 1.3.0).
 - **Generative AI** grounding and prompt engineering in Apex (`PortfolioGroundingService`, `ContentGenerationController.dispatch`). Agentforce, a Prompt Builder template, is the first provider and ships on.
@@ -107,17 +107,17 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 **Technical Acceptance:**
 | Metric | Current Baseline (Est.) | Target (Hard Gate) |
 | :--- | :--- | :--- |
-| **LCP (Mobile)** | 7.59 s median on `/` and 7.57 s on `/resume`, 7.57 to 10.62 s across the six main routes, Lighthouse 11 mobile on production, 2026-10-29 (Technical Guide §2.11) | Target **2.5 s**. Gate: the best the LWR shell allows, mobile LCP medians of 7.5 to 9.6 s on the six main routes, measured the same way |
+| **LCP (Mobile)** | Route medians of 2.22 to 2.92 s on the six main routes, 2.52 s as the median of the six, production Lighthouse audit of 2026-11-12 (lab data, Lighthouse CI 0.15.1, mobile emulation, three runs a route, [Technical Guide §2.11](./04-Technical-Guide.md#211-mobile-performance)). The Experience Cloud site measured 7.57 to 10.62 s on production on 2026-10-29, kept in the same section as history | Target **2.5 s**. Reported by every Lighthouse audit and not a failing gate, since lab LCP moves with the machine. Field data (Core Web Vitals at the 75th percentile) did not exist at the time of the audit |
 | **Apex Coverage** | 98% org wide, 1000 of 1000 tests passing (production's post deploy test run of the 2026-10-24 deploy) | **90% or more**, enforced on every pull request |
 | **Code Scanning** | N/A | **0 Critical or High violations** (`npm run scan`) |
-| **Accessibility** | 100 on every Lighthouse mobile run of the six main routes (scratch copy, Technical Guide §2.11). The 2026-10-29 accessibility audit found gaps Lighthouse does not score, fixed and re-audited on a scratch copy on 2026-10-30 (SAS Appendix G.6) | **100**, with a screen reader pass by me |
+| **Accessibility** | Cloudflare site: 100 on all 18 runs of the production audit of 2026-11-12, six routes. Salesforce site: 100 on every run on a scratch copy, a separate result ([Technical Guide §2.11](./04-Technical-Guide.md#211-mobile-performance)). The manual audit of 2026-10-29 found gaps Lighthouse does not score, fixed and re-audited on a scratch copy on 2026-10-30 (SAS Appendix G.6) | **100**, with a screen reader pass by me. A pull request fails when any audited route scores under 100. A score of 100 covers the automated checks only and does not establish WCAG conformance |
 
-- LCP measured with a Lighthouse mobile audit, three runs per route, medians. The target is 2.5 s. Most of the mobile LCP is render delay in the LWR framework's own script, which keeps it above the target, so the gate is the best the LWR shell allows: mobile LCP medians of 7.5 to 9.6 s on the six main routes, measured with Lighthouse 11 mobile on a scratch copy of the site (Technical Guide §2.11). The production baseline of 2026-10-29 is wider, 7.57 to 10.62 s. In the lab profile the first site component renders at about 5 s, after about 850 KB of framework scripts and styles, so site changes alone cannot reach 2.5 s. I keep 2.5 s as the target and say plainly that it is not met. The only change in that round with a proven effect was home layout shift, 0.33 to 0 (Technical Guide §2.11).
+- LCP is measured with a Lighthouse mobile audit, three runs per route, medians. The target is 2.5 s. The production audit of 2026-11-12 gave route medians of 2.22 to 2.92 s. Two are under the target, three are within 0.03 s above it, and the home page is 2.92 s. These are lab results and not a Core Web Vitals assessment. On the Experience Cloud site most of the mobile LCP was render delay in the LWR framework's own script, 7.5 to 9.6 s on a scratch copy and 7.57 to 10.62 s on production, and that evidence is kept in the Technical Guide §2.11 as the reason the front end moved.
 - Every Apex test passes and org wide coverage is 90% or more. `pr.yml` runs every local test in a scratch org and `scripts/coverage-gate.js --min 90` fails the pull request otherwise. It also validates the pull request check only against production with the local tests, so a test that fails only in production fails the pull request too.
 - CI/CD pipeline passing (Green build badge on Repo).
 - No Critical or High violations from Salesforce Code Analyzer (`npm run scan`, `--severity-threshold 2`, run on every pull request).
 - The network log shows no `D3_Library` request until a graph view is opened.
-- Lighthouse Accessibility score remains 100 with the "Matrix | Graph" view switch present.
+- Lighthouse Accessibility score remains 100 with the "Matrix | Graph" view switch present. Since the pull request gate was built, a preview that scores under 100 on any of the six routes fails.
 - Skills graph: a D3.js force layout with pan, zoom and node drag (eleven d3 modules in an 81,482 byte static resource, where the AntV graph library it replaced was 1.57 MB), loaded only when a visitor opens the graph view on desktop or tablet. Phones show the skills matrix and request no graph engine, and the Pillar A ERD shows its object list. A drag or the arrow keys pan the graph at any zoom, and a plain wheel scrolls the page.
 
 **Engagement:**
@@ -149,17 +149,17 @@ This implementation is run as a program of parallel delivery tracks, so the depe
 The delivery is organized into four parallel tracks:
 
 1. **Data & Schema:** Foundation layer, security modeling, and AI grounding sources.
-2. **Experience Layer:** LWR implementation, branding, and mobile optimization.
+2. **Experience Layer:** the Lightning Web Components, branding, and mobile optimization, delivered first on LWR and, since 2026-11-09, as a static build on Cloudflare Pages.
 3. **Integration Services:** API definitions, Mocking, and External Service configuration.
 4. **DevOps & Governance:** CI/CD pipeline, Code Quality gates, and Documentation.
 
 ### 3.2 Program Milestones
 
 - **Milestone 1 (Foundation):** Schema deployed, Baseline API contracts (OAS) defined. ([Live](../../packages/integration-api/specs/salesforce-sapi.yaml))
-- **Milestone 2 (Core Interactions):** LWR Site active, Navigation functional, Resume logic validated. ([Live](../../packages/portfolio-site/main/default/digitalExperiences))
+- **Milestone 2 (Core Interactions):** LWR Site active (the front end until the 2026-11-09 cutover), Navigation functional, Resume logic validated. ([Live](../../packages/portfolio-site/main/default/digitalExperiences))
 - **Milestone 3 (Integration):** External services (Jira/GitHub) connected, Security scanning active. ([Live](../../.github/workflows/pr.yml))
 - **Milestone 4 (Intelligence):** Grounded generation in Apex with a visible fallback chain, "Vibe-Gate" logic tested. Agentforce is built as a Prompt Builder template ([ADR-015](../adr/015-strategy-pattern-for-generative-ai.md), 2026-10-26). Data 360 grounding is Designed only ([ADR-011](../adr/011-context-grounding-strategy-direct-crm-vs-data-360.md), 2026-10-22). ([Live](../../packages/portfolio-site/main/default/classes/PortfolioGroundingService.cls))
-- **Milestone 5 (Go-Live):** ([Live](./cutover-runbook.md)) The public launch is the cutover to the static front end on 2026-11-09 ([ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)). This guide does not track the telemetry review that was part of this milestone.
+- **Milestone 5 (Go-Live):** ([Live](./cutover-runbook.md)) The public launch is the cutover to the static front end on 2026-11-09 ([ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)).
 
 ### 3.3 Detailed Phasing
 
@@ -198,9 +198,9 @@ The delivery is organized into four parallel tracks:
 - **System Health "Glass Box Telemetry":** `c-footer` with deferred loading (ADR-014) shows CPU, heap and SOQL use against their limits, AI provider health and AI requests today.
 - **Enterprise Logging:** Nebula Logger is optional. I install it (unlocked package, no namespace) in production by hand and sets 2-day retention (Maintenance Guide). Apex reaches it only through the `PortfolioLog` seam.
 - **Resilience Simulation:** the "Simulate an outage" switch on each Delivery page feed, which returns the cached data marked as simulated (`DeliveryController`).
-- **Analytics Instrumentation:** Google Analytics 4 (GA4) with custom events for API tests, resume downloads and the other events in `c/analyticsService`.
+- **Analytics Instrumentation:** Cloudflare Web Analytics on the static site for field Core Web Vitals (no cookies or local storage), and Google Analytics 4 (GA4) on the Salesforce site with custom events for API tests, resume downloads and the other events in `c/analyticsService`.
 - **API Mode Indicator:** the Glass Box footer measures the guest GraphQL path after first paint and shows it as live with its latency, or as unavailable. It is measured on every visit, never a constant label (my decision, 2026-10-21).
-- **Final Polish:** Mobile optimization, Lighthouse audits, and Public DNS configuration. The domain redirect is in place. The device checks on iOS and Android are planned before launch.
+- **Final Polish:** Mobile optimization, Lighthouse audits, and Public DNS configuration. `ryanbumstead.com` is served by Cloudflare Pages since 2026-11-09. The device checks on iOS and Android are still planned.
 
 **Phase 7: Observability & Governance (moved into the launch scope, [Live](../../packages/portfolio-site/main/default/classes/GovernanceController.cls))**
 

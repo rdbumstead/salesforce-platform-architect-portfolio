@@ -20,10 +20,15 @@ module.exports = {
     collect: {
       url: routes.map((route) => `${base}${route}`),
       numberOfRuns: 3,
-      // Each page loads Google Analytics. Blocking it keeps audit runs out of the visitor
-      // numbers, at the cost of leaving its script out of the performance score.
+      // Each page loads Google Analytics, and the live site also gets the Cloudflare Web
+      // Analytics beacon. Blocking both keeps audit runs out of the visitor numbers, at the
+      // cost of leaving their scripts out of the performance score.
       settings: {
-        blockedUrlPatterns: ["*googletagmanager.com*", "*google-analytics.com*"]
+        blockedUrlPatterns: [
+          "*googletagmanager.com*",
+          "*google-analytics.com*",
+          "*cloudflareinsights.com*"
+        ]
       }
     },
     // Accessibility is the only error, so `lhci assert` fails a pull request on accessibility

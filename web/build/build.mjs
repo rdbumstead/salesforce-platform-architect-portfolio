@@ -5,6 +5,9 @@
  *   node build/build.mjs              use web/.data from an earlier export, else the fixtures
  *   node build/build.mjs --fixtures   use the committed sample data in web/fixtures
  *
+ * Add --prerender to finish with the prerender step (build/prerender.mjs), which writes each
+ * public page's rendered sections into its HTML. It needs a browser driver and Chrome.
+ *
  * Add --write-fixtures to an --export run to refresh web/fixtures from that org.
  * A planned read with no data fails the build, so a page never ships a section that cannot load.
  */
@@ -21,6 +24,7 @@ import { readKey } from '../src/shims/site-data.js';
 import { WEB_DIR } from './site-plugin.mjs';
 import { writeLabPaths } from './lab-paths.mjs';
 import { copyRecorded } from './recorded.mjs';
+import { prerender } from './prerender.mjs';
 
 export const DIST_DIR = path.join(WEB_DIR, 'dist');
 export const FIXTURE_DIR = path.join(WEB_DIR, 'fixtures');
@@ -186,10 +190,12 @@ export async function build(args = new Set()) {
   writeLabPaths();
   copyRecorded(DIST_DIR, undefined, { fixture: Boolean(manifest.fixture) });
   writeHostFiles(copied.lines, isPreviewBuild(args));
+  const prerendered = args.has('--prerender') ? await prerender({ distDir: DIST_DIR, routes, log: console.log }) : [];
 
   const report = {
     builtAt: manifest.builtAt,
     fixture: Boolean(manifest.fixture),
+    prerendered: prerendered.map((entry) => entry.path),
     routes: routes.map((route) => route.path || route.file),
     skippedRoutes: skipped.map((route) => route.path),
     reads: Object.keys(reads).length,

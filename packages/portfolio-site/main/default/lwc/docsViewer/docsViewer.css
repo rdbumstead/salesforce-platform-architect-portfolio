@@ -1,3 +1,5 @@
+@import "c/nativeControls";
+
 /*
  * Colours come only from the --pf- site tokens, which hold the light and dark values.
  * Every element that sets a background also sets its text colour from the matching pair.
@@ -109,6 +111,14 @@
 
 .doc-group-details[open] {
   padding-bottom: var(--pf-space-4, 1rem);
+}
+
+.decisions-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: var(--pf-space-3, 0.75rem);
+  text-decoration: none;
 }
 
 .doc-group-summary,

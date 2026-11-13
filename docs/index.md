@@ -67,6 +67,7 @@ _Target Audience: Architects, Developers_
 - [ADR-039: API v2 and the v1 Sunset](adr/039-api-v2-and-the-v1-sunset.md)
 - [ADR-040: Versionless API URLs](adr/040-versionless-api-urls.md)
 - [ADR-041: Headless Static Front End on Cloudflare Pages](adr/041-headless-static-front-end-on-cloudflare-pages.md)
+- [ADR-042: Prerender Every Public Page at Build Time](adr/042-prerender-every-public-page-at-build-time.md)
 
 **AI, Data & FinOps**
 

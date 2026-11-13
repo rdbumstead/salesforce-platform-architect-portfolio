@@ -1,9 +1,11 @@
 # Ryan Bumstead: Salesforce Platform Architect Portfolio
 
-**Live App:** [https://ryanbumstead.com](https://ryanbumstead.com), a static build of the site on Cloudflare Pages, built from the Salesforce org's records ([ADR-041](docs/adr/041-headless-static-front-end-on-cloudflare-pages.md), cut over on 2026-11-09). The Experience Cloud site stays up for two weeks as the rollback target
+**Live App:** [https://ryanbumstead.com](https://ryanbumstead.com), a static build of the site on Cloudflare Pages, built from the Salesforce org's records ([ADR-041](docs/adr/041-headless-static-front-end-on-cloudflare-pages.md), cut over on 2026-11-09). The Experience Cloud site stays up until 2026-11-23 as the rollback target
 
 > [!IMPORTANT]
-> **Project Status:** Live since October 2026. 6 enterprise docs and 41 ADRs. This README describes what runs in production.
+> **Project Status:** Live since October 2026. 6 enterprise docs and 42 ADRs. This README describes what runs in production.
+
+**The outcome:** I moved the public front end of a Salesforce portfolio to static pages on Cloudflare Pages, built from the same Lightning Web Components, with Salesforce kept as the system of record. Production Lighthouse mobile LCP went from 7.5 to 10.6 s on Experience Cloud to 2.2 to 2.9 s on Cloudflare across six routes. Accessibility is held at 100 by a pull request gate. These are lab results, the median of three runs a route, from an audit on 2026-11-12 ([Technical Guide §2.11](docs/guides/04-Technical-Guide.md#211-mobile-performance) names the tool, the emulation and the environment). They are not Core Web Vitals field data.
 
 > [!TIP]
 > **Non-Salesforce Reader?** This is a public website whose content lives in a Salesforce org. Every case study, stat and timeline entry is a record in that org. The live site is a static build that reads them through an allowlisted API when it is built. Its forms, labs and live readings call Salesforce at request time through the site's own functions, each behind a kill switch. It writes cover letters with an AI model and is deployed by an automated pipeline with quality gates.
@@ -40,7 +42,7 @@ Salesforce platform architecture, including:
 **By The Numbers:**
 
 - **6 Enterprise Documents**: SAS, Charter, Technical Guide, Ops Guide, Governance, Overview.
-- **41 Architectural Decisions (ADRs)**: documented rationale for performance, security, and AI.
+- **42 Architectural Decisions (ADRs)**: documented rationale for performance, security, and AI.
 - **15 Core Competencies**: mapped to verifiable artifacts and validation methods.
 - **8 CI/CD Workflows**: delta deploys that also refresh the docs cache after a push that changes the docs, PR gates (including a check only validation against production), an internal reference check for pull requests that change only the docs, a read only live smoke test after each deploy and once a day, a Postman sync that pushes the public collection after each green production deploy, the daily heartbeat, the static site build and deploy to Cloudflare Pages, and a Lighthouse audit run on demand.
 
@@ -60,7 +62,7 @@ Salesforce platform architecture, including:
 | **AI/ML Governance**            | One dispatch, Agentforce, Gemini, then the Local Template                                                                                 | [AI Strategy Section](docs/guides/03-SAS.md#541-feature-spotlight-generative-cover-letter-engine) • [ADR-015](docs/adr/015-strategy-pattern-for-generative-ai.md)                                                                                                                                                                           | Open `/ai-lab`, generate a letter, and open the panel that shows the provider, the attempts and the prompt that was sent                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | **Security Architecture**       | Zero Trust with Guest User restrictions                                                                                                   | [Data Security Matrix](docs/guides/03-SAS.md#46-data-security-matrix) • [ADR-012](docs/adr/012-guest-user-security-restriction-rules.md) • [ADR-027](docs/adr/027-platform-native-api-authentication.md)                                                                                                                                    | Examine FLS, guest restrictions, and OAuth client-credentials auth                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | **Resilience Engineering**      | Circuit breaker pattern with degraded mode                                                                                                | [Contingency Plans](docs/guides/03-SAS.md#8-contingency--rollback-plans) • [ADR-022](docs/adr/022-resilience-engineering-resilience-simulation-toggle.md)                                                                                                                                                                                   | Turn on "Simulate an outage" on the Delivery page's changelog or roadmap and watch the cached data carry a "Simulated" badge (status `SIMULATED`)                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| **Performance Optimization**    | Mobile-first with measured LCP                                                                                                            | [NFRs Section](docs/guides/03-SAS.md#21-core-nfrs) • [ADR-020](docs/adr/020-mobile-performance-static-svg-fallback-strategy.md)                                                                                                                                                                                                             | Read the measured mobile numbers in the Technical Guide §2.11, or run the Lighthouse workflow on demand against any URL                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| **Performance Optimization**    | Mobile-first with measured LCP                                                                                                            | [NFRs Section](docs/guides/03-SAS.md#21-core-nfrs) • [ADR-020](docs/adr/020-mobile-performance-static-svg-fallback-strategy.md)                                                                                                                                                                                                             | Read the production audit in the Technical Guide §2.11 (six routes, environment named), or run the Lighthouse workflow on demand against any URL                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | **Data Modeling**               | Persona-based resume generation schema                                                                                                    | [ERD Diagram](docs/guides/03-SAS.md#41-logical-data-model-simplified-erd) • [Data Dictionary](docs/guides/03-SAS.md#appendix-d-data-dictionary-detailed-schema)                                                                                                                                                                             | Examine junction object strategy and filtering logic                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | **Observability & Monitoring**  | Live telemetry in the Glass Box footer                                                                                                    | [Observability Section](docs/guides/03-SAS.md#9-observability--glass-box-telemetry) • [ADR-014](docs/adr/014-deferred-telemetry-loading-performance.md)                                                                                                                                                                                     | Open any page and read the footer: live CPU, heap and SOQL use, the org's daily API and async Apex quotas, the AI provider and circuit breaker states, and the CI badges for the deploy, the live smoke test and the Postman sync                                                                                                                                                                                                                                                                                                                                                  |
 | **Event-Driven Architecture**   | Executable governance: CI publishes a platform event, an Apex trigger persists it                                                         | [Pillar E](docs/guides/03-SAS.md#55-pillar-e-agile-delivery--devops-roadmap) • [ADR-019](docs/adr/019-executable-governance-platform-events-for-documentation-logic.md)                                                                                                                                                                     | Open the Delivery page and compare the checklist's commit and run link with the GitHub Actions history                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
@@ -100,11 +102,11 @@ EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design"
 
 **Available Now:**
 
-- [Architecture decisions documented with rationale](docs/adr/): 41 ADRs covering performance, security and AI. Each one in the [index below](#architectural-decision-records) gives its Decision (Accepted, Superseded or Deferred) and its Build state (Live, In progress or Designed)
-- [CI/CD pipelines green with delta deployment strategy](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions): 8 workflows (deploy, PR validation, the docs internal reference check, the live smoke test, the Postman sync, the heartbeat, the static site build, plus a Lighthouse audit run on demand)
+- [Architecture decisions documented with rationale](docs/adr/): 42 ADRs covering performance, security and AI. Each one in the [index below](#architectural-decision-records) gives its Decision (Accepted, Superseded or Deferred) and its Build state (Live, In progress or Designed)
+- [CI/CD pipelines green with delta deployment strategy](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions): 8 workflows (deploy, PR validation, the docs internal reference check, the live smoke test, the Postman sync, the heartbeat, the static site build, which also runs the six route Lighthouse audit, plus a Lighthouse run on demand)
 - [A static front end built from the same components](docs/adr/041-headless-static-front-end-on-cloudflare-pages.md): the existing Lightning Web Components compile with LWC OSS, the org's data comes through an allowlisted export with parity tests against what the guest sees, and the features that need a request go through Cloudflare Pages Functions with a kill switch each. It has been the front door at `ryanbumstead.com` since 2026-11-09. [Cutover runbook](docs/guides/cutover-runbook.md)
 - [API contracts OpenAPI 3.0 compliant](packages/integration-api/specs/salesforce-sapi.yaml): Twin API pattern with SAPI + PAPI specifications
-- [Mobile performance targets quantified](docs/guides/03-SAS.md#21-core-nfrs): an LCP target of 2.5 s and a gate at the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, October 2026) on the six main routes, with the skills matrix on phones and the graph engine loaded only on demand
+- [Mobile performance targets quantified](docs/guides/03-SAS.md#21-core-nfrs): an LCP target of 2.5 s. The production Lighthouse audit of 2026-11-12 (mobile, lab data, the median of three runs a route) measured route LCP medians of 2.2 to 2.9 s on the six main routes. Two route medians are under 2.5 s, three are within 0.03 s above it, and the home page is the slowest at 2.92 s. The Experience Cloud site measured 7.5 to 10.6 s, and those numbers stay in the Technical Guide as history. The skills matrix shows on phones and the graph engine loads only on demand
 - [Zero Trust security model enforced](docs/guides/03-SAS.md#46-data-security-matrix): Guest user FLS restrictions + OAuth 2.0 client-credentials auth (External Client App) + read-only endpoints
 - [AI governance with failover strategy](docs/guides/03-SAS.md#541-feature-spotlight-generative-cover-letter-engine): one dispatch from Agentforce to the Gemini API to a Local Template built from the records, grounded on portfolio records
 
@@ -118,7 +120,7 @@ EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design"
 - **Live data marker**: nine sections, from the resume and the home page to the Delivery page and the cover letter page, carry a "Live from Salesforce" marker. Its panel names the records the section reads with their counts in plain labels, and "See this section's data model" draws the full data model with those objects highlighted, described live by `SchemaService`
 - **Operational settings in custom metadata**: API rate tiers, page sizes, form limits, cache windows and display counts live in `Portfolio_Setting__mdt` records with safe ranges, and the code keeps its own defaults as fallbacks ([ADR-032](docs/adr/032-operational-settings-in-custom-metadata.md))
 - **Contact page and analytics**: a native contact form on `/contact` with spam guards, and GA4 events for how visitors use the site, with no personal data in any event
-- **Mobile performance validation**: on a phone the skills page shows the matrix and requests no graph engine. Mobile LCP medians were 7.5 to 9.6 s on the six main routes (Lighthouse 11 mobile, October 2026), the best the LWR shell allows against a 2.5 s target. In October 2026 I measured production at 7.6 to 10.6 s. The first site component renders at about 5 s, after about 850 KB of framework scripts, so site changes alone cannot reach 2.5 s. Lab medians move about 1.5 s from run to run, so the only gain I claim from the October 2026 performance work is home layout shift, 0.33 to 0 (Technical Guide 2.11)
+- **Mobile performance validation**: on a phone the skills page shows the matrix and requests no graph engine. The production audit of 2026-11-12 measured mobile LCP medians of 2.2 to 2.9 s on the six main routes, performance 92 to 99 and accessibility 100 on all 18 runs (Lighthouse CI 0.15.1, lab data, not field data). The Experience Cloud site measured 7.5 to 10.6 s in October 2026, which is why the front end moved ([ADR-041](docs/adr/041-headless-static-front-end-on-cloudflare-pages.md)). Lab medians moved about 1.5 s from run to run on that site, so I read a single run as proof of very little (Technical Guide 2.11)
 - **The architecture docs on the site**: `/docs` renders 32 documents, the Executive Overview, the SAS, the Program Charter, the Technical Guide, Guardrails and Executable Governance, then the 27 full ADRs, read from the same cache that View source uses, never from GitHub on page load. The cache refreshes once a day, and a push that changes the docs refreshes them in production after the deploy. The page builds every element itself, so no HTML from a document is ever parsed, and GitHub alert blocks show as titled callouts. The footer, the "How it's built" menu and a "Read the design" link on each pillar page lead there
 - **Queries in custom metadata**: each read of portfolio content, in the APIs and on the site, is a `Query_Definition__mdt` record, checked against the query in its class, so an edit can narrow a read and never widen it ([ADR-033](docs/adr/033-queries-in-custom-metadata.md))
 - **API Lab filters to pick from**: each name and Id filter is a picklist of values read from the org on page load, and on phones the lab opens with the endpoint and Execute showing and the rest in sections a visitor opens
@@ -138,7 +140,7 @@ EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design"
 ## Architectural Decision Records
 
 <details>
-<summary><strong>Architectural Decision Records (ADR) Index</strong> (Click to expand. 41 documented decisions)</summary>
+<summary><strong>Architectural Decision Records (ADR) Index</strong> (Click to expand. 42 documented decisions)</summary>
 
 | ID                                                                                       | Subject                                       | Strategic Driver                | Decision           | Build                                                                                                           |
 | :--------------------------------------------------------------------------------------- | :-------------------------------------------- | :------------------------------ | :----------------- | :-------------------------------------------------------------------------------------------------------------- |
@@ -183,6 +185,7 @@ EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design"
 | [ADR-039](docs/adr/039-api-v2-and-the-v1-sunset.md)                                      | API v2 and the v1 sunset                      | API Design                      | Accepted           | [Live](packages/integration-api/main/default/classes/ApiVersionTest.cls)                                        |
 | [ADR-040](docs/adr/040-versionless-api-urls.md)                                          | Versionless API URLs                          | API Design                      | Accepted           | [Live](packages/integration-api/main/default/classes/ApiRouting.cls)                                            |
 | [ADR-041](docs/adr/041-headless-static-front-end-on-cloudflare-pages.md)                 | Headless Static Front End on Cloudflare Pages | Front End and Performance       | Accepted           | [Live](docs/guides/cutover-runbook.md)                                                                          |
+| [ADR-042](docs/adr/042-prerender-every-public-page-at-build-time.md)                     | Prerender Every Public Page at Build Time     | Front End and Performance       | Accepted           | In progress (SPAP-98)                                                                                           |
 
 </details>
 
@@ -214,30 +217,30 @@ graph LR
     classDef sfdc fill:#00A1E0,stroke:#005FB2,stroke-width:2px,color:#ffffff,font-weight:bold;
     classDef jira fill:#0052CC,stroke:#003A8F,stroke-width:2px,color:#ffffff,font-weight:bold;
     classDef github fill:#24292E,stroke:#000000,stroke-width:2px,color:#ffffff,font-weight:bold;
+    classDef cloud fill:#F38020,stroke:#B85A00,stroke-width:2px,color:#ffffff,font-weight:bold;
     classDef data fill:#8E24AA,stroke:#4A148C,stroke-width:2px,color:#ffffff,font-weight:bold;
 
     %% ========= NODES =========
     User((User))
-    LWR[Experience Cloud<br/>LWR]
-    GQL[Salesforce<br/>GraphQL]
-    Apex[Apex Runtime<br/>with the Local Template]
+    CF[Cloudflare Pages<br/>static site and Functions]
+    Apex[Apex REST and Runtime<br/>with the Local Template]
     DB[(Custom Objects)]
     AI[Agentforce and<br/>Gemini API]
     Jira[Jira Cloud API]
     GitHub[GitHub API]
 
     %% ========= FLOWS =========
-    User --> LWR
-    LWR --> GQL
-    GQL --> DB
-    LWR --> Apex
+    User --> CF
+    CF --> Apex
+    Apex --> DB
     Apex <--> AI
     Apex --> Jira
     Apex --> GitHub
 
     %% ========= APPLY STYLES =========
     class User user;
-    class LWR,GQL,Apex,AI sfdc;
+    class Apex,AI sfdc;
+    class CF cloud;
     class DB data;
     class Jira jira;
     class GitHub github;
@@ -246,7 +249,7 @@ graph LR
     linkStyle 0,1,2 stroke:#2ECC71,stroke-width:3px;
 ```
 
-> **Diagram Description (for accessibility):** The diagram shows a user reaching the Experience Cloud LWR site, live since October 2026. The site reads some records through the native Salesforce GraphQL API and the rest through the Apex runtime. Apex asks Agentforce for cover letters through the API, falls back to the Gemini API, and then to its own Local Template. Scheduled Apex jobs read GitHub and Jira into caches, and everything is backed by custom Salesforce objects.
+> **Diagram Description (for accessibility):** The diagram shows a user reaching the static site on Cloudflare Pages, live since 2026-11-09. The pages are built from records the Salesforce org exports, and the few features that need a request at view time go through Cloudflare Pages Functions to Apex. Apex asks Agentforce for cover letters through the API, falls back to the Gemini API, and then to its own Local Template. Scheduled Apex jobs read GitHub and Jira into caches, and everything is backed by custom Salesforce objects.
 
 ---
 

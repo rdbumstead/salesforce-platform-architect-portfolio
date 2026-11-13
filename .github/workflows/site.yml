@@ -279,12 +279,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Only the npm package. The browsers come with the image, in its PLAYWRIGHT_BROWSERS_PATH.
+      # Only the npm packages. The browsers come with the image, in its PLAYWRIGHT_BROWSERS_PATH.
+      # axe-core is the version the root package.json pins, and the smoke's accessibility rows
+      # load it through NODE_PATH.
       - name: Install Playwright
-        run: npm install --prefix "$RUNNER_TEMP/pw" --no-save --no-audit --no-fund "playwright@$PLAYWRIGHT_VERSION"
+        run: npm install --prefix "$RUNNER_TEMP/pw" --no-save --no-audit --no-fund "playwright@$PLAYWRIGHT_VERSION" axe-core@4.11.1
 
-      # A healthy smoke takes about three minutes. The step timeout turns a hang into a
-      # failure, so the report job still publishes a Failure event for it.
+      # A healthy smoke took about three minutes before round 23 added 48 accessibility rows.
+      # The step timeout turns a hang into a failure, so the report job still publishes a
+      # Failure event for it.
       - name: Smoke the deployed site
         timeout-minutes: 12
         run: |

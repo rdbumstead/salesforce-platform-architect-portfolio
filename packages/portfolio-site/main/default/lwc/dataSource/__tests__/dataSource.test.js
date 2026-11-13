@@ -120,6 +120,11 @@ describe("c-data-source", () => {
     expect(button(el).getAttribute("aria-label")).toBe(
       "Live from Salesforce, 10 roles, 54 skills"
     );
+    // Every word the button shows is in the name, in order, commas aside.
+    const words = (text) => text.replace(/[,\s]+/g, " ").trim();
+    expect(words(button(el).getAttribute("aria-label"))).toBe(
+      words(button(el).textContent)
+    );
   });
 
   it("passes the trimmed, de-duplicated names to the wire", async () => {
@@ -149,9 +154,9 @@ describe("c-data-source", () => {
       { name: "d", label: "Education Entries", hasCount: true, count: 2 }
     ]);
     await flush();
-    expect(el.shadowRoot.querySelector(".marker-counts").textContent).toBe(
-      "10 roles, 54 skills, 7 certifications"
-    );
+    expect(
+      el.shadowRoot.querySelector(".marker-counts").textContent.trim()
+    ).toBe("10 roles, 54 skills, 7 certifications");
     button(el).click();
     await flush();
     expect(el.shadowRoot.querySelectorAll(".source")).toHaveLength(4);
