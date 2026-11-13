@@ -41,8 +41,7 @@
 }
 
 .toggle:focus-visible,
-.row-head:focus-visible,
-.text-link:focus-visible {
+.row-head:focus-visible {
   outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
   border-radius: 6px;
@@ -519,23 +518,6 @@
 .early-line b {
   color: var(--pf-text);
   font-weight: 600;
-}
-
-.text-link,
-.text-link:link,
-.text-link:visited {
-  display: inline-flex;
-  min-height: 44px;
-  align-items: center;
-  margin-top: 4px;
-  color: var(--pf-accent);
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.text-link:hover {
-  text-decoration: underline;
 }
 
 .career-foot {

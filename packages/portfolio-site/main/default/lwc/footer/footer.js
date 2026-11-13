@@ -87,7 +87,8 @@ export const BUILT_ON = IS_STATIC
   ? "Built from my Salesforce org."
   : "Built on Salesforce LWR.";
 
-const REPO_URL =
+/** The public repository, shared with c/docsViewer for its link to the decision records. */
+export const REPO_URL =
   "https://github.com/rdbumstead/salesforce-platform-architect-portfolio";
 export const BADGE_URL = `${REPO_URL}/actions/workflows/deploy.yml/badge.svg?branch=main`;
 export const ACTIONS_URL = `${REPO_URL}/actions/workflows/deploy.yml`;

@@ -66,6 +66,16 @@
                   </template>
                 </ul>
               </details>
+              <a
+                lwc:if={group.isDecisions}
+                class="nc-button nc-button_secondary decisions-link"
+                href={decisionsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="View all decisions on GitHub, opens in a new tab"
+                data-id="all-decisions"
+                >View all decisions</a
+              >
             </template>
           </section>
         </template>
