@@ -118,12 +118,13 @@ describe("c-data-source", () => {
     expect(button(el).textContent).toContain("Live from Salesforce");
     expect(button(el).textContent).toContain("10 roles, 54 skills");
     expect(button(el).getAttribute("aria-label")).toBe(
-      "Live from Salesforce 10 roles, 54 skills"
+      "Live from Salesforce, 10 roles, 54 skills"
     );
-    // The name starts with every word the button shows.
-    expect(
-      button(el).getAttribute("aria-label").startsWith(button(el).textContent)
-    ).toBe(true);
+    // Every word the button shows is in the name, in order, commas aside.
+    const words = (text) => text.replace(/[,\s]+/g, " ").trim();
+    expect(words(button(el).getAttribute("aria-label"))).toBe(
+      words(button(el).textContent)
+    );
   });
 
   it("passes the trimmed, de-duplicated names to the wire", async () => {

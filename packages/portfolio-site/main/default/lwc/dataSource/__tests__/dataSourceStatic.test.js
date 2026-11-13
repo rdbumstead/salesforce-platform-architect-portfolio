@@ -80,7 +80,12 @@ describe("c-data-source label on the static site", () => {
     const shown = button(el).textContent.replace(/\s+/g, " ").trim();
     const name = button(el).getAttribute("aria-label");
     expect(shown).toBe("From Salesforce · built 3 Nov 2026 10 roles");
-    expect(name.startsWith(shown)).toBe(true);
+    expect(name.replace(/,/g, "").startsWith(shown.replace(/,/g, ""))).toBe(
+      true
+    );
+    expect(
+      name.startsWith("From Salesforce · built 3 Nov 2026, 10 roles")
+    ).toBe(true);
     expect(name.endsWith(", 14:05 UTC")).toBe(true);
   });
 
