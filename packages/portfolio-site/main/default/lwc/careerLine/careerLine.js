@@ -15,9 +15,9 @@
  *                      from the same dates, and the earliest year tick hides when it would meet
  *                      another tick. The bars carry no labels, the rows carry everything.
  *                      Under the ribbon is a list of employer rows, newest first as the read
- *                      sends them. A row shows its years, the employer, a Now pill for a current
- *                      one, a Part time pill for a part time only one ("alongside" only when it
- *                      overlaps a full time employer), the role path ending on the newest full
+ *                      sends them. A row shows its years, the employer, a Now pill for every
+ *                      current one, part time included, and beside it a Part time pill for a
+ *                      part time one ("alongside" only when it overlaps a full time employer), the role path ending on the newest full
  *                      time title, an "Also <titles>, part time" line, a role count and a chevron.
  *                      The row head is a button with aria-expanded and aria-controls. The panel
  *                      is a region labelled by it and lists every role with its years and up to 3
@@ -797,7 +797,7 @@ export default class CareerLine extends LightningElement {
         expanded: String(open),
         rowClass,
         swatchClass: `swatch swatch-${stop.tone}`,
-        showNow: stop.isCurrent && !stop.isPartTime,
+        showNow: stop.isCurrent,
         partPill: pill,
         showPartPill: pill !== "",
         showCount: stop.roleCount > 1,

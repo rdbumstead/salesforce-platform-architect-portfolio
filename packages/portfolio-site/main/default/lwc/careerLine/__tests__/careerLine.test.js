@@ -511,12 +511,15 @@ describe("c-career-line", () => {
     expect(within(freelance, "stop-count")).toBeNull();
   });
 
-  it("marks only a current full time employer Now, and the fold with a count and its employers", async () => {
+  it("marks every current employer Now, part time included, and the fold with a count and its employers", async () => {
     const element = await mount();
     const now = all(element, "stop").map((row) =>
       Boolean(within(row, "pill-now"))
     );
-    expect(now).toEqual([true, false, false, false]);
+    expect(now).toEqual([true, true, false, false]);
+    const freelance = rowFor(element, "Freelance Studio");
+    expect(text(within(freelance, "pill-now"))).toBe("Now");
+    expect(text(within(freelance, "pill-part"))).toBe("Part time, alongside");
     const early = rowFor(element, "Earlier roles");
     expect(text(within(early, "stop-path"))).toBe("Harbor Retail, Pine Market");
     expect(text(within(early, "stop-count"))).toBe("2 roles");
