@@ -547,7 +547,7 @@ describe("c-career-line", () => {
     expect(bullets).toEqual(["One", "Two", "Three", "Taught evening classes"]);
   });
 
-  it("lists each earlier role in the Earlier roles panel, then the resume link", async () => {
+  it("lists each earlier role in the Earlier roles panel", async () => {
     const element = await mount();
     const early = rowFor(element, "Earlier roles");
     const lines = Array.from(
@@ -557,9 +557,7 @@ describe("c-career-line", () => {
       "Support Technician, Harbor Retail2015",
       "Store Manager, Pine Market2012 to 2014"
     ]);
-    const link = early.querySelector('[data-id="fold-resume-link"]');
-    expect(text(link)).toBe("See the full resume →");
-    expect(link.getAttribute("href")).toBe("/portfolio/resume");
+    expect(early.querySelector('[data-id="fold-resume-link"]')).toBeNull();
   });
 
   it("draws the bars, the dot and the lane label with no break mark, and hides the ribbon from assistive tech", async () => {
