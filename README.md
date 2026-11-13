@@ -3,7 +3,7 @@
 **Live App:** [https://ryanbumstead.com](https://ryanbumstead.com), a static build of the site on Cloudflare Pages, built from the Salesforce org's records ([ADR-041](docs/adr/041-headless-static-front-end-on-cloudflare-pages.md), cut over on 2026-11-09). The Experience Cloud site stays up until 2026-11-23 as the rollback target
 
 > [!IMPORTANT]
-> **Project Status:** Live since October 2026. 6 enterprise docs and 41 ADRs. This README describes what runs in production.
+> **Project Status:** Live since October 2026. 6 enterprise docs and 42 ADRs. This README describes what runs in production.
 
 **The outcome:** I moved the public front end of a Salesforce portfolio to static pages on Cloudflare Pages, built from the same Lightning Web Components, with Salesforce kept as the system of record. Production Lighthouse mobile LCP went from 7.5 to 10.6 s on Experience Cloud to 2.2 to 2.9 s on Cloudflare across six routes. Accessibility is held at 100 by a pull request gate. These are lab results, the median of three runs a route, from an audit on 2026-11-12 ([Technical Guide §2.11](docs/guides/04-Technical-Guide.md#211-mobile-performance) names the tool, the emulation and the environment). They are not Core Web Vitals field data.
 
@@ -42,7 +42,7 @@ Salesforce platform architecture, including:
 **By The Numbers:**
 
 - **6 Enterprise Documents**: SAS, Charter, Technical Guide, Ops Guide, Governance, Overview.
-- **41 Architectural Decisions (ADRs)**: documented rationale for performance, security, and AI.
+- **42 Architectural Decisions (ADRs)**: documented rationale for performance, security, and AI.
 - **15 Core Competencies**: mapped to verifiable artifacts and validation methods.
 - **8 CI/CD Workflows**: delta deploys that also refresh the docs cache after a push that changes the docs, PR gates (including a check only validation against production), an internal reference check for pull requests that change only the docs, a read only live smoke test after each deploy and once a day, a Postman sync that pushes the public collection after each green production deploy, the daily heartbeat, the static site build and deploy to Cloudflare Pages, and a Lighthouse audit run on demand.
 
@@ -102,7 +102,7 @@ EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design"
 
 **Available Now:**
 
-- [Architecture decisions documented with rationale](docs/adr/): 41 ADRs covering performance, security and AI. Each one in the [index below](#architectural-decision-records) gives its Decision (Accepted, Superseded or Deferred) and its Build state (Live, In progress or Designed)
+- [Architecture decisions documented with rationale](docs/adr/): 42 ADRs covering performance, security and AI. Each one in the [index below](#architectural-decision-records) gives its Decision (Accepted, Superseded or Deferred) and its Build state (Live, In progress or Designed)
 - [CI/CD pipelines green with delta deployment strategy](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions): 8 workflows (deploy, PR validation, the docs internal reference check, the live smoke test, the Postman sync, the heartbeat, the static site build, which also runs the six route Lighthouse audit, plus a Lighthouse run on demand)
 - [A static front end built from the same components](docs/adr/041-headless-static-front-end-on-cloudflare-pages.md): the existing Lightning Web Components compile with LWC OSS, the org's data comes through an allowlisted export with parity tests against what the guest sees, and the features that need a request go through Cloudflare Pages Functions with a kill switch each. It has been the front door at `ryanbumstead.com` since 2026-11-09. [Cutover runbook](docs/guides/cutover-runbook.md)
 - [API contracts OpenAPI 3.0 compliant](packages/integration-api/specs/salesforce-sapi.yaml): Twin API pattern with SAPI + PAPI specifications
@@ -140,7 +140,7 @@ EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design"
 ## Architectural Decision Records
 
 <details>
-<summary><strong>Architectural Decision Records (ADR) Index</strong> (Click to expand. 41 documented decisions)</summary>
+<summary><strong>Architectural Decision Records (ADR) Index</strong> (Click to expand. 42 documented decisions)</summary>
 
 | ID                                                                                       | Subject                                       | Strategic Driver                | Decision           | Build                                                                                                           |
 | :--------------------------------------------------------------------------------------- | :-------------------------------------------- | :------------------------------ | :----------------- | :-------------------------------------------------------------------------------------------------------------- |
@@ -185,6 +185,7 @@ EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design"
 | [ADR-039](docs/adr/039-api-v2-and-the-v1-sunset.md)                                      | API v2 and the v1 sunset                      | API Design                      | Accepted           | [Live](packages/integration-api/main/default/classes/ApiVersionTest.cls)                                        |
 | [ADR-040](docs/adr/040-versionless-api-urls.md)                                          | Versionless API URLs                          | API Design                      | Accepted           | [Live](packages/integration-api/main/default/classes/ApiRouting.cls)                                            |
 | [ADR-041](docs/adr/041-headless-static-front-end-on-cloudflare-pages.md)                 | Headless Static Front End on Cloudflare Pages | Front End and Performance       | Accepted           | [Live](docs/guides/cutover-runbook.md)                                                                          |
+| [ADR-042](docs/adr/042-prerender-every-public-page-at-build-time.md)                     | Prerender Every Public Page at Build Time     | Front End and Performance       | Accepted           | In progress (SPAP-98)                                                                                           |
 
 </details>
 

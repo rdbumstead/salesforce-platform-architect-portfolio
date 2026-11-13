@@ -81,6 +81,10 @@ The static pages and most functions do not touch the org when a visitor loads a 
 
 Nothing in Salesforce changes at cutover, so the rollback takes minutes. I turn the Cloudflare Page Rule that forwards `ryanbumstead.com` to the Salesforce site back on and remove the custom domain from the Pages project. The Salesforce site never stopped deploying, so it answers as before. For two weeks after cutover I keep the Salesforce site up and the Page Rule ready, turned off but not deleted. After that I decide whether to take the Salesforce site offline. The API site that vends evaluator tokens stays either way. The steps are in the [cutover runbook](../guides/cutover-runbook.md#4-rollback-for-two-weeks).
 
+## Amendment (2026-11-13): prerendering each page
+
+Each page is still an empty shell until JavaScript runs, so a crawler or a link preview reads only the head and a short summary. [ADR-042](042-prerender-every-public-page-at-build-time.md) adds a build step that renders every public page in headless Chrome and writes the result into its HTML. It is built and not switched on, because in my measurements it raised Lighthouse mobile LCP by 541 to 876 ms across the six audited routes, over my limit of 200 ms. Nothing in this record changes until it is switched on.
+
 ## Related
 
-[ADR-001](001-experience-cloud-lwr-vs-aura.md), [ADR-014](014-deferred-telemetry-loading-performance.md), [ADR-016](016-cloudflare-worker-as-edge-ai-proxy.md), [ADR-021](021-native-graphql-door-1-vs-apex-rest-for-ui.md), [ADR-027](027-platform-native-api-authentication.md), [ADR-031](031-native-contact-form.md)
+[ADR-042](042-prerender-every-public-page-at-build-time.md), [ADR-001](001-experience-cloud-lwr-vs-aura.md), [ADR-014](014-deferred-telemetry-loading-performance.md), [ADR-016](016-cloudflare-worker-as-edge-ai-proxy.md), [ADR-021](021-native-graphql-door-1-vs-apex-rest-for-ui.md), [ADR-027](027-platform-native-api-authentication.md), [ADR-031](031-native-contact-form.md)
