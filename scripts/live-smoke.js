@@ -240,7 +240,7 @@ const KNOWN_ERRORS = [
 ];
 
 const BLOCKED_HOSTS =
-  /(^|\.)(googletagmanager\.com|google-analytics\.com|analytics\.google\.com)$/;
+  /(^|\.)(googletagmanager\.com|google-analytics\.com|analytics\.google\.com|cloudflareinsights\.com)$/;
 
 const NAVIGATION_TIMEOUT_MS = 60000;
 const LAYOUT_TIMEOUT_MS = 30000;
