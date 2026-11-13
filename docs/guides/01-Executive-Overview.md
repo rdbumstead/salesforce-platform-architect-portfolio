@@ -17,13 +17,15 @@ Version: 1.0
 
 Owner: Ryan Bumstead
 
-Launch target: Q1 2027
+Status: live since October 2026, with the static front end live since 2026-11-09
 
 ## 1. Strategic Summary (Read This First)
 
 **The Problem:** Enterprise Salesforce implementations often go wrong in three quiet ways: costs nobody watches (FinOps), slow pages, and guest users who can see more than they should.
 
-**The Solution:** This portfolio is a **zero budget architecture** built to enterprise habits. It runs on a free Salesforce Developer Edition org, calls the Gemini API through a Named Credential for cover letters, keeps every guest grant in one permission set in source, and shows its own limits on every page.
+**The Solution:** This portfolio is a **zero budget architecture** built to enterprise habits. Its records live in a free Salesforce Developer Edition org, which stays the system of record. The public pages are static files on Cloudflare Pages, built from those records. The site calls the Gemini API through a Named Credential for cover letters, keeps every guest grant in one permission set in source, and shows its own limits on every page.
+
+**The Outcome:** I moved the public front end of a Salesforce portfolio to static pages on Cloudflare Pages, built from the same Lightning Web Components, with Salesforce kept as the system of record. Production Lighthouse mobile LCP went from 7.5 to 10.6 s on Experience Cloud to 2.2 to 2.9 s on Cloudflare across six routes. Accessibility is held at 100 by a pull request gate. These are lab results (the median of three runs a route, audited on 2026-11-12), not Core Web Vitals field data. The tool, emulation and environment are in the [Technical Guide §2.11](./04-Technical-Guide.md#211-mobile-performance).
 
 **Why It Matters:**
 
@@ -87,6 +89,6 @@ To clarify Salesforce-specific terms used throughout this portfolio:
 
 ## 5. Success Criteria (Definition of Done)
 
-This project holds itself to functional and technical acceptance criteria. Two of them: performance, where the target is a 2.5 s mobile LCP and the gate is the best the LWR shell allows (mobile LCP medians of 7.5 to 9.6 s across the six main routes, measured with Lighthouse 11 mobile on a scratch copy of the site, and 7.57 to 10.62 s on production in the 2026-10-29 baseline, where the first site component alone renders at about 5 s), and code quality, where org wide Apex coverage must be 90% or more on every pull request.
+This project holds itself to functional and technical acceptance criteria. Two of them: performance, where the target is a 2.5 s mobile LCP and the production Lighthouse audit of 2026-11-12 measured route medians of 2.2 to 2.9 s (lab data, mobile emulation, three runs a route, environment in the [Technical Guide §2.11](./04-Technical-Guide.md#211-mobile-performance)), and code quality, where org wide Apex coverage must be 90% or more on every pull request. The Experience Cloud site measured 7.5 to 10.6 s before the front end moved, and those figures stay in the Technical Guide as history.
 
 For the authoritative definition of all success metrics, quality gates, and "Definition of Done", please refer to the **[Program Charter: Success Criteria](./02-Program-Charter.md#22-success-criteria-definition-of-done)**.

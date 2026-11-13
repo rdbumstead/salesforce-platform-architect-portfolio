@@ -18,7 +18,7 @@ Owner: Ryan Bumstead
 
 Version: 1.0
 
-Launch target: Q1 2027
+Status: live since October 2026, with the static front end live since 2026-11-09
 
 This document outlines the governance framework and constraint-based design principles that let the portfolio run on a zero budget while it keeps to enterprise quality, security and performance habits. Where a performance target is not met, the measured number is given.
 
@@ -123,8 +123,8 @@ We enforce "Green Builds" through automated gatekeeping in our GitHub Actions pi
 ### LCP Target (2.5 seconds)
 
 **What is LCP?** Largest Contentful Paint: the time until the main content appears on screen. Google uses this for search ranking.  
-**Our target:** 2.5 seconds (Google's "good" threshold). On mobile, render delay in the LWR framework's own script keeps LCP above it, so the gate is the best the LWR shell allows: mobile LCP medians of 7.5 to 9.6 s on the six main routes, measured with Lighthouse 11 mobile on a scratch copy of the site ([Technical Guide §2.11](./04-Technical-Guide.md#211-mobile-performance)). In October 2026 I measured production at 7.6 to 10.6 s. The first site component renders at about 5 s, after about 850 KB of framework scripts, so site changes alone cannot reach 2.5 s.  
-**How we enforce:** Lighthouse runs on demand (`performance.yml`, started by hand with a target URL, which runs `npm run test:lighthouse`) and as a launch gate. It does not run on every commit, and no build fails on it automatically.  
+**Our target:** 2.5 seconds (Google's "good" threshold, which applies to the 75th percentile of real visits). The production Lighthouse audit of 2026-11-12 measured mobile LCP medians of 2.2 to 2.9 s on the six main routes. That is lab data, three runs a route, and not a Core Web Vitals result. Two route medians are under 2.5 s, three are within 0.03 s above it, and the home page is the slowest at 2.92 s ([Technical Guide §2.11](./04-Technical-Guide.md#211-mobile-performance) names the tool, the emulation and the environment). The Experience Cloud site measured 7.5 to 10.6 s, and those figures stay in the Technical Guide as history.  
+**How we enforce:** LCP and performance only warn. The static site workflow (`site.yml`) runs a six route, three run Lighthouse audit on every pull request and every merge to `main`, and reports the medians in the job summary. A pull request audits a local copy of the build on the runner, and a merge audits `https://ryanbumstead.com` after the deploy. The one failing assertion is accessibility, which must read 100 on every route of a pull request. Lighthouse also runs on demand (`performance.yml`, started by hand with a target URL, which runs `npm run test:lighthouse`).  
 **Why it matters:** Slow sites lose users, and LCP is one of the signals Google uses for search ranking.
 
 ---
