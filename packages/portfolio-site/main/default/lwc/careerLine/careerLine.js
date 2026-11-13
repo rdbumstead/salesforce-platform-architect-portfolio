@@ -17,8 +17,8 @@
  *                      Under the ribbon is a list of employer rows, newest first as the read
  *                      sends them. A row shows its years, the employer, a Now pill for every
  *                      current one, part time included, and beside it a Part time pill for a
- *                      part time one ("alongside" only when it overlaps a full time employer), the role path ending on the newest full
- *                      time title, an "Also <titles>, part time" line, a role count and a chevron.
+ *                      part time one ("alongside" only when it overlaps a full time employer),
+ *                      the role path ending on the newest full time title, an "Also <titles>, part time" line, a role count and a chevron.
  *                      The row head is a button with aria-expanded and aria-controls. The panel
  *                      is a region labelled by it and lists every role with its years and up to 3
  *                      highlights. The Earlier roles panel lists one line per role and a resume
