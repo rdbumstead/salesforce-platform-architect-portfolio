@@ -114,6 +114,17 @@ jest.mock(
   { virtual: true }
 );
 
+// The footer holds the repository address. Its own tests cover the rest of the footer.
+jest.mock(
+  "c/footer",
+  () => ({
+    __esModule: true,
+    REPO_URL:
+      "https://github.com/rdbumstead/salesforce-platform-architect-portfolio"
+  }),
+  { virtual: true }
+);
+
 jest.mock(
   "@salesforce/community/basePath",
   () => ({ __esModule: true, default: "/portfolio" }),
@@ -317,6 +328,40 @@ describe("c-docs-viewer list", () => {
     expect(groups[0].querySelector("details")).toBeNull();
     // Every document still opens from its row.
     expect(shadow(el).querySelectorAll(".doc-list-link")).toHaveLength(6);
+  });
+
+  it("puts a View all decisions link to the ADR folder under the Decisions group, closed or open", async () => {
+    const el = await create({}, [
+      { key: "sas", title: "Systems Architecture Specification", path: "c" },
+      { key: "adr-004", title: "Four", path: "e" }
+    ]);
+    const decisions = shadow(el).querySelector(
+      '.doc-group[data-group="decisions"]'
+    );
+    const link = decisions.querySelector('.nc-button[data-id="all-decisions"]');
+    expect(link).not.toBeNull();
+    expect(link.textContent).toBe("View all decisions");
+    expect(link.getAttribute("href")).toBe(
+      "https://github.com/rdbumstead/salesforce-platform-architect-portfolio/tree/main/docs/adr"
+    );
+    expect(link.getAttribute("rel")).toBe("noopener noreferrer");
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("aria-label")).toBe(
+      "View all decisions on GitHub, opens in a new tab"
+    );
+    // Outside the details element, so it shows with the group closed.
+    expect(link.closest("details")).toBeNull();
+    const details = decisions.querySelector("details");
+    expect(details.open).toBe(false);
+    details.open = true;
+    details.dispatchEvent(new CustomEvent("toggle"));
+    await flush();
+    expect(decisions.querySelector('[data-id="all-decisions"]')).not.toBeNull();
+    expect(decisions.querySelector("details").contains(link)).toBe(false);
+    // No other group has one.
+    expect(
+      shadow(el).querySelectorAll('[data-id="all-decisions"]')
+    ).toHaveLength(1);
   });
 
   it("leaves a group out when it has no document", async () => {

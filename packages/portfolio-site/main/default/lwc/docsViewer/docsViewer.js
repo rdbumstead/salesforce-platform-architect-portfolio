@@ -26,6 +26,7 @@ import MERMAID_DIAGRAMS from "@salesforce/resourceUrl/Mermaid_Diagrams";
 import getDocs from "@salesforce/apex/SourceController.getDocs";
 import getDoc from "@salesforce/apex/SourceController.getDoc";
 import { trackEvent, EVENTS } from "c/analyticsService";
+import { REPO_URL } from "c/footer";
 import { renderMarkdown } from "./docsRenderer";
 
 const DOC_KEY_PATTERN = /^[a-z0-9-]{1,40}$/;
@@ -352,6 +353,7 @@ export default class DocsViewer extends LightningElement {
         label: group.label,
         isOpenGroup: group.open,
         isExpanded: Boolean(this.openedGroups[group.key]),
+        isDecisions: group.key === "decisions",
         items: members,
         countLabel: `${members.length} ${members.length === 1 ? "record" : "records"}`
       };
@@ -364,6 +366,11 @@ export default class DocsViewer extends LightningElement {
 
   get listEmpty() {
     return this.docsLoaded && this.docs.length === 0;
+  }
+
+  /** The folder of decision records on GitHub, built from the repository constant. */
+  get decisionsUrl() {
+    return `${REPO_URL}/tree/main/docs/adr`;
   }
 
   get listHref() {
