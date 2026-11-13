@@ -46,9 +46,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Only the npm package. The browsers come with the image, in its PLAYWRIGHT_BROWSERS_PATH.
+      # Only the npm packages. The browsers come with the image, in its PLAYWRIGHT_BROWSERS_PATH.
+      # axe-core is the version the root package.json pins, and the smoke's accessibility rows
+      # load it through NODE_PATH.
       - name: Install Playwright
-        run: npm install --prefix "$RUNNER_TEMP/pw" --no-save --no-audit --no-fund "playwright@$PLAYWRIGHT_VERSION"
+        run: npm install --prefix "$RUNNER_TEMP/pw" --no-save --no-audit --no-fund "playwright@$PLAYWRIGHT_VERSION" axe-core@4.11.1
 
       - name: Run Live Smoke Test
         run: |
