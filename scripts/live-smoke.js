@@ -25,10 +25,21 @@
 // the old footer, and the site build waits on that run. Turn it on once the new footer is live
 // on the apex. With the variable unset no footer rows exist and the row count is unchanged.
 //
+// The accessibility check, per engine, for six main routes (AXE_ROUTES below, the same six the
+// Lighthouse audit covers), at both sizes and in both colour schemes. After the route's
+// components are visible it injects axe-core and fails the row on any violation of the WCAG 2.0
+// to 2.2 A and AA rules, naming the rule id and the first elements. Dark is checked because the
+// site themes by colour scheme and a contrast failure shows up in one scheme only. It checks the
+// page as loaded. The open tour and an open menu are not checked, because each is a state of one
+// component that its own Jest tests cover, and the tour walk above already drives the tour. It
+// runs unless SMOKE_AXE_CHECK is "0". Best practice rules are not part of it, because they
+// are advice and not failures a visitor meets.
+//
 // Environment:
 //   SITE_BASE   the site root, for example https://example.my.site.com/portfolio (required)
 //   BROWSERS    comma list of Playwright engines, default "chromium,webkit"
 //   SMOKE_FOOTER_CHECK  "1" adds the footer check rows, off by default
+//   SMOKE_AXE_CHECK  "0" leaves the accessibility rows out, they run by default
 //   SMOKE_ALLOW_LOCAL_HTTP  "1" strips the CSP directive upgrade-insecure-requests from document
 //               responses, only when SITE_BASE is a local http:// address (localhost, 127.0.0.1
 //               or [::1]). WebKit applies that directive to http://localhost, so without this a
@@ -64,6 +75,7 @@ const BROWSERS = (process.env.BROWSERS || "chromium,webkit")
   .filter(Boolean);
 const SMOKE_JSON = process.env.SMOKE_JSON || "";
 const FOOTER_CHECK = process.env.SMOKE_FOOTER_CHECK === "1";
+const AXE_CHECK = process.env.SMOKE_AXE_CHECK !== "0";
 const ALLOW_LOCAL_HTTP = process.env.SMOKE_ALLOW_LOCAL_HTTP === "1";
 
 // What each page must show. A component named as a string counts once its first instance
@@ -206,6 +218,19 @@ async function readFeatures() {
 }
 
 const LAYOUT = "c-portfolio-theme-layout";
+
+// The routes the accessibility check covers, the same six as config/lighthouserc.cjs.
+const AXE_ROUTES = [
+  "/",
+  "/resume",
+  "/skills",
+  "/api-lab",
+  "/business-architecture",
+  "/nonprofit-solutions"
+];
+const AXE_SCHEMES = ["light", "dark"];
+const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
+const AXE_SHOWN = 5;
 
 // The tour's stops in order, each a page above, starting from the hero on the home page.
 const TOUR = {
@@ -846,6 +871,98 @@ async function tourRow(browser, engine, viewport) {
   };
 }
 
+/**
+ * Shapes axe-core violations for the report: the rule, its impact and the first elements.
+ * @param {object[]} violations the violations axe returned
+ * @returns {object[]} one entry per rule
+ */
+function summarizeViolations(violations) {
+  return (violations || []).map((violation) => ({
+    rule: violation.id,
+    impact: violation.impact,
+    count: violation.nodes.length,
+    elements: violation.nodes
+      .slice(0, AXE_SHOWN)
+      .map((node) => (node.target || []).flat().join(" "))
+  }));
+}
+
+async function axeOnce(browser, route, viewport, scheme) {
+  const context = await browser.newContext({
+    viewport: { width: viewport.width, height: viewport.height },
+    colorScheme: scheme,
+    // The site policy blocks an injected script. axe-core needs to run in the page, so only these
+    // rows ignore it. The other rows run under the real policy.
+    bypassCSP: true
+  });
+  const result = { status: null, violations: [], errors: [] };
+  try {
+    await prepare(context);
+    const page = await context.newPage();
+    const response = await page.goto(BASE + route.path, {
+      waitUntil: "domcontentloaded",
+      timeout: NAVIGATION_TIMEOUT_MS
+    });
+    result.status = response ? response.status() : null;
+    if (result.status !== 200 || !(await hasLayout(page))) {
+      result.missingPage = true;
+      result.pass = false;
+      return result;
+    }
+    for (const entry of route.components) {
+      const { tag, mayBeEmpty } =
+        typeof entry === "string" ? { tag: entry, mayBeEmpty: false } : entry;
+      const state = await componentState(page, tag, mayBeEmpty);
+      if (state !== "visible" && state !== "empty") {
+        result.errors.push(`${tag} is ${state}`);
+      }
+    }
+    await page.waitForTimeout(SETTLE_MS);
+    await page.addScriptTag({ path: require.resolve("axe-core/axe.min.js") });
+    const found = await page.evaluate(
+      (tags) =>
+        // eslint-disable-next-line no-undef
+        axe.run(document, {
+          runOnly: { type: "tag", values: tags },
+          resultTypes: ["violations"]
+        }),
+      AXE_TAGS
+    );
+    result.violations = summarizeViolations(found.violations);
+  } catch (error) {
+    result.error = String(error.message).split("\n")[0];
+  } finally {
+    await context.close();
+  }
+  result.pass =
+    !result.error &&
+    result.errors.length === 0 &&
+    result.violations.length === 0;
+  return result;
+}
+
+async function axeRow(browser, engine, route, viewport, scheme) {
+  let attempt = await axeOnce(browser, route, viewport, scheme);
+  let attempts = 1;
+  // A real violation fails every load. Only a load problem is tried once more.
+  if (
+    !attempt.pass &&
+    attempt.violations.length === 0 &&
+    !attempt.missingPage
+  ) {
+    attempt = await axeOnce(browser, route, viewport, scheme);
+    attempts = 2;
+  }
+  return {
+    browser: engine,
+    route: `axe ${route.path}`,
+    viewport: viewport.name,
+    scheme,
+    attempts,
+    ...attempt
+  };
+}
+
 async function runPool(tasks, size) {
   const results = [];
   let next = 0;
@@ -931,6 +1048,18 @@ async function main() {
           tasks.push(() => checkRow(browser, engine, route, viewport));
         }
       }
+      if (AXE_CHECK) {
+        for (const path of AXE_ROUTES) {
+          const route = routes.find((entry) => entry.path === path);
+          for (const viewport of VIEWPORTS) {
+            for (const scheme of AXE_SCHEMES) {
+              tasks.push(() =>
+                axeRow(browser, engine, route, viewport, scheme)
+              );
+            }
+          }
+        }
+      }
       for (const viewport of VIEWPORTS) {
         tasks.push(() => tourRow(browser, engine, viewport));
         if (FOOTER_CHECK) {
@@ -947,12 +1076,12 @@ async function main() {
   const ok = rows.length > 0 && failed.length === 0;
   const summary =
     `live smoke: ${ok ? "PASS" : "FAIL"}, ${rows.length - failed.length} of ` +
-    `${rows.length} rows pass (${BROWSERS.join(", ")}, ${ROUTES.length} routes and the tour walk${FOOTER_CHECK ? ", the footer check" : ""}, ` +
+    `${rows.length} rows pass (${BROWSERS.join(", ")}, ${ROUTES.length} routes and the tour walk${AXE_CHECK ? ", the accessibility check" : ""}${FOOTER_CHECK ? ", the footer check" : ""}, ` +
     `${VIEWPORTS.length} sizes)` +
     (failed.length
       ? `, failing: ${failed
           .map((row) =>
-            `${row.browser} ${row.route || ""} ${row.viewport || ""}`.trim()
+            `${row.browser} ${row.route || ""} ${row.viewport || ""} ${row.scheme || ""}`.trim()
           )
           .join("; ")}`
       : "");
@@ -975,6 +1104,8 @@ module.exports = {
   ROUTES,
   TOUR,
   isUnderBase,
+  AXE_ROUTES,
+  summarizeViolations,
   accessHeadersFor,
   shouldStripUpgrade,
   stripUpgradeHeaders,
