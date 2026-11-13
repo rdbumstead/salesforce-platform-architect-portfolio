@@ -11,6 +11,7 @@
 import { createElement } from "@lwc/engine-dom";
 import DataSource from "c/dataSource";
 import { builtAt } from "c/siteHost";
+import getSources from "@salesforce/apex/DataSourceController.getSources";
 
 jest.mock(
   "@salesforce/apex/DataSourceController.getSources",
@@ -33,8 +34,9 @@ jest.mock("c/siteHost", () => {
   return { ...actual, builtAt: jest.fn(() => null) };
 });
 
-function create() {
+function create(props = {}) {
   const element = createElement("c-data-source", { is: DataSource });
+  Object.assign(element, props);
   document.body.appendChild(element);
   return element;
 }
@@ -60,6 +62,28 @@ describe("c-data-source label on the static site", () => {
     expect(button(el).getAttribute("aria-label")).toBe(
       "From Salesforce · built 3 Nov 2026, 14:05 UTC"
     );
+  });
+
+  it("starts the spoken name with the shown words, counts included, and puts the time last", async () => {
+    builtAt.mockReturnValue("2026-11-03T14:05:09.000Z");
+    const el = create({ sourceKeys: "ResumeController_Roles" });
+    getSources.emit([
+      {
+        name: "ResumeController_Roles",
+        label: "Roles",
+        description: "Resume roles.",
+        hasCount: true,
+        count: 10
+      }
+    ]);
+    await Promise.resolve();
+    const shown = button(el).textContent.replace(/\s+/g, " ").trim();
+    const name = button(el).getAttribute("aria-label");
+    expect(shown).toContain("From Salesforce · built 3 Nov 2026");
+    expect(
+      name.startsWith("From Salesforce · built 3 Nov 2026, 10 roles")
+    ).toBe(true);
+    expect(name.endsWith(", 14:05 UTC")).toBe(true);
   });
 
   it("keeps the live label and no title on the Salesforce site", async () => {

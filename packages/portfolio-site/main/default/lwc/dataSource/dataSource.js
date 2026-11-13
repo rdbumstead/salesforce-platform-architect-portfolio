@@ -244,9 +244,20 @@ export default class DataSource extends LightningElement {
     return this.wording.markerShort ? this.wording.markerLabel : undefined;
   }
 
+  /**
+   * The spoken name. It starts with the words shown on the button, so a voice user who says
+   * what they see matches it. On the static site the full label only adds the build time
+   * after the shown date, so that time goes last.
+   */
   get buttonLabel() {
-    const label = this.wording.markerLabel;
-    return this.hasSummary ? `${label}, ${this.summary}` : label;
+    const { markerLabel, markerShort } = this.wording;
+    const shown = markerShort || markerLabel;
+    const extra =
+      markerShort && markerLabel.startsWith(markerShort)
+        ? markerLabel.slice(markerShort.length)
+        : "";
+    const withCounts = this.hasSummary ? `${shown}, ${this.summary}` : shown;
+    return `${withCounts}${extra}`;
   }
 
   get panelClass() {
