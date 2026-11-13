@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { inject, resolveFile, serve } from '../build/prerender.mjs';
+import { inject, resolveFile, serve, shareSheets } from '../build/prerender.mjs';
 
 function tempDist() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prerender-'));
@@ -66,4 +66,16 @@ test('the local server answers every switch live and 404 for a missing file', as
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }
+});
+
+test('each distinct sheet is written once under assets and the markers point at it', () => {
+  const dir = tempDist();
+  const markup = '<link rel="stylesheet" href="#sheet-0"><link rel="stylesheet" href="#sheet-1"><link rel="stylesheet" href="#sheet-0">';
+  const shared = shareSheets(dir, markup, ['a{color:red}', 'b{color:blue}']);
+  assert.equal(shared.files.length, 2);
+  const names = fs.readdirSync(path.join(dir, 'assets')).sort();
+  assert.deepEqual(names, [...shared.files].sort());
+  assert.ok(!shared.markup.includes('#sheet-'));
+  assert.equal(shared.markup.split(`/assets/${shared.files[0]}`).length - 1, 2, 'the first sheet is linked twice and written once');
+  assert.equal(fs.readFileSync(path.join(dir, 'assets', shared.files[1]), 'utf8'), 'b{color:blue}');
 });

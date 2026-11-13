@@ -13,8 +13,9 @@
  * Shadow DOM: the components run in native shadow roots. The browser is asked to create
  * every root serializable, and the root is read with getHTML, which writes each one as a
  * declarative shadow root. Adopted style sheets are not serialized by the browser, so each
- * one is copied into its root as a style element first. Without that the markup would
- * parse into roots with no styles.
+ * distinct sheet is written once to assets/pr-<hash>.css and every root links the sheets it
+ * adopted, in order. Without that the markup would parse into roots with no styles. Set
+ * PRERENDER_STYLES=inline to copy the text into each root instead, for comparison.
  *
  * Data: the page is served from dist, so it reads the same inlined and recorded data the
  * build wrote. Nothing reaches Salesforce, and every request to another host is refused.
@@ -25,6 +26,7 @@
  * playwright-core from PRERENDER_MODULES (a node_modules folder), then the usual places.
  * Set CHROME_PATH to use an installed Chrome.
  */
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
@@ -122,29 +124,59 @@ function makeRootsSerializable() {
   };
 }
 
-/** Runs in the page: copies adopted sheets into their roots, then reads site-root with its roots. */
-function readMarkup() {
+/**
+ * Runs in the page: puts a link marker in each root for every adopted sheet, in order, then
+ * reads site-root with its roots. Returns the markup and the distinct sheet texts, where
+ * marker N in the markup stands for sheet N. With inline set, the text goes in a style
+ * element in each root instead and no sheets come back.
+ */
+function readMarkup(inline) {
   const root = document.getElementById('site-root');
   const seen = new Set();
+  const sheets = [];
+  const stats = { roots: 0, copies: 0 };
   const visit = (node) => {
     if (seen.has(node)) return;
     seen.add(node);
     if (node.shadowRoot) {
       const shadow = node.shadowRoot;
-      const text = [...shadow.adoptedStyleSheets]
-        .map((sheet) => [...sheet.cssRules].map((rule) => rule.cssText).join('\n'))
-        .join('\n');
-      if (text) {
-        const style = document.createElement('style');
-        style.textContent = text;
-        shadow.insertBefore(style, shadow.firstChild);
-      }
+      stats.roots += 1;
+      const texts = [...shadow.adoptedStyleSheets].map((sheet) => [...sheet.cssRules].map((rule) => rule.cssText).join('\n'));
+      const parts = texts.map((text) => {
+        stats.copies += text.length;
+        if (inline) {
+          const style = document.createElement('style');
+          style.textContent = text;
+          return style;
+        }
+        let index = sheets.indexOf(text);
+        if (index === -1) index = sheets.push(text) - 1;
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = '#sheet-' + index;
+        return link;
+      });
+      shadow.prepend(...parts);
       visit(shadow);
     }
     Array.from(node.children || []).forEach(visit);
   };
   visit(root);
-  return root.getHTML({ serializableShadowRoots: true });
+  return { markup: root.getHTML({ serializableShadowRoots: true }), sheets, stats };
+}
+
+/** Writes each distinct sheet once under assets, named by its content, and points the markers at the files. */
+export function shareSheets(distDir, markup, sheets) {
+  fs.mkdirSync(path.join(distDir, 'assets'), { recursive: true });
+  let out = markup;
+  const files = [];
+  sheets.forEach((text, index) => {
+    const name = `pr-${crypto.createHash('sha256').update(text).digest('hex').slice(0, 10)}.css`;
+    fs.writeFileSync(path.join(distDir, 'assets', name), text);
+    files.push(name);
+    out = out.split(`href="#sheet-${index}"`).join(`href="/assets/${name}"`);
+  });
+  return { markup: out, files };
 }
 
 /** Waits until the page has mounted every component and its markup has stopped changing. */
@@ -167,6 +199,7 @@ export async function prerender({ distDir, routes, log = () => {} }) {
   const { server, origin } = await serve(distDir);
   const browser = await driver.chromium.launch({ executablePath: process.env.CHROME_PATH || undefined });
   const results = [];
+  const inline = process.env.PRERENDER_STYLES === 'inline';
   try {
     const context = await browser.newContext({
       viewport: { width: Number(process.env.PRERENDER_WIDTH) || 390, height: 844 },
@@ -185,12 +218,15 @@ export async function prerender({ distDir, routes, log = () => {} }) {
       try {
         await page.goto(`${origin}${route.path}`, { waitUntil: 'load' });
         await settled(page);
-        const markup = await page.evaluate(readMarkup);
+        const read = await page.evaluate(readMarkup, inline);
+        const shared = inline ? { markup: read.markup, files: [] } : shareSheets(distDir, read.markup, read.sheets);
+        const markup = shared.markup;
         if (problems.length) throw new Error(problems.join(' | '));
         const file = path.join(distDir, route.file);
-        fs.writeFileSync(file, inject(fs.readFileSync(file, 'utf8'), markup));
-        results.push({ path: route.path, bytes: markup.length });
-        log(`Prerendered ${route.path} (${markup.length} characters).`);
+        const withMarkup = inject(fs.readFileSync(file, 'utf8'), markup);
+        fs.writeFileSync(file, withMarkup);
+        results.push({ path: route.path, bytes: markup.length, roots: read.stats.roots, copiedCss: read.stats.copies, distinctSheets: read.sheets.length });
+        log(`Prerendered ${route.path} (${markup.length} characters, ${read.stats.roots} roots, ${read.stats.copies} characters of sheet text, ${read.sheets.length} distinct sheets).`);
       } catch (error) {
         throw new Error(`Prerender of ${route.path} failed: ${error.message}`);
       } finally {
