@@ -9,6 +9,8 @@ import { SELECTOR_PROMPT } from '../functions/_lib/tailor/prompts/selector.js';
 import { evidenceIds, extractLetter, parseSelection, runOne, selectedIds, viewForMode, WAIT_LIMIT_MS } from '../tailor-eval/lib/pipeline.mjs';
 import { createProvider, fakeProvider, geminiProvider, MissingKeyError, paidProvider, workersAiProvider } from '../tailor-eval/lib/providers.mjs';
 import { buildFakeSelection } from '../tailor-eval/lib/fake.mjs';
+import { currentRole, currentRoles } from '../tailor-eval/lib/roles.mjs';
+import { buildFromFiles, buildSnapshot, COMMITTED_SNAPSHOT, FIXTURE_OVERLAY, FIXTURE_READS, SnapshotError, snapshotProblems } from '../tailor-eval/build-snapshot.mjs';
 import { pickValidators } from '../tailor-eval/lib/validators.mjs';
 import { assertPrivateFolder, loadInputs, parseArgs, pickPostings, runEval } from '../tailor-eval/run-eval.mjs';
 import {
@@ -262,6 +264,108 @@ test('the cover letter prompt takes the candidate from the snapshot owner', () =
   assert.throws(() => coverLetterPrompt({ name: 'Jordan Example' }), /current employer/);
   assert.throws(() => coverLetterPrompt(), /name/);
   assert.equal(postings.find((posting) => posting.id === 'posting-1-engineer').expected.checks.letterNamesCurrentEmployer, true);
+});
+
+/* ---------- the snapshot builder ---------- */
+
+const FIXTURE_READS_DATA = JSON.parse(fs.readFileSync(FIXTURE_READS, 'utf8'));
+const FIXTURE_OVERLAY_DATA = JSON.parse(fs.readFileSync(FIXTURE_OVERLAY, 'utf8'));
+const clone = (value) => JSON.parse(JSON.stringify(value));
+const problemsOf = (reads, overlay) => {
+  try {
+    buildSnapshot(reads, overlay, { generatedAt: '2026-01-01T00:00:00.000Z', categories: [...CATEGORY_IDS] });
+    return [];
+  } catch (error) {
+    assert.ok(error instanceof SnapshotError, error.message);
+    return error.problems;
+  }
+};
+
+test('the committed snapshot is exactly the builder output from the fixture reads and overlay', () => {
+  const built = buildSnapshot(FIXTURE_READS_DATA, FIXTURE_OVERLAY_DATA, { generatedAt: FIXTURE_OVERLAY_DATA.generatedAt, categories: [...CATEGORY_IDS] });
+  const committed = JSON.parse(fs.readFileSync(COMMITTED_SNAPSHOT, 'utf8'));
+  assert.deepEqual(committed, built);
+  assert.ok(built.items.filter((item) => item.verified).every((item) => !FIXTURE_OVERLAY_DATA.items.some((added) => added.id === item.id)));
+  assert.ok(FIXTURE_OVERLAY_DATA.items.every((added) => built.items.find((item) => item.id === added.id).verified === false));
+});
+
+test('the builder matches roles by employer and title, not by position', () => {
+  const reads = clone(FIXTURE_READS_DATA);
+  for (const persona of ['Architect', 'Developer', 'Admin']) reads[`ResumeController.getResume|{"persona":"${persona}"}`].roles.reverse();
+  const built = buildSnapshot(reads, FIXTURE_OVERLAY_DATA, { generatedAt: 'x', categories: [...CATEGORY_IDS] });
+  const committed = JSON.parse(fs.readFileSync(COMMITTED_SNAPSHOT, 'utf8'));
+  for (const role of committed.roles) assert.deepEqual(built.roles.find((entry) => entry.id === role.id), role);
+});
+
+test('the builder refuses every broken overlay with a named problem', () => {
+  const cases = [
+    ['a private item', (o) => o.items.push({ ...o.items[0], id: 'private-one', visibility: 'private' }), /visibility private/],
+    ['an id collision', (o) => o.items.push({ ...o.items[0], id: 'headline-site-title' }), /Two items share the id headline-site-title/],
+    ['a role the reads do not hold', (o) => o.roles.push({ id: 'ghost-role', match: { employer: 'Nobody Inc', title: 'Ghost' } }), /ghost-role names Nobody Inc \/ Ghost, which the reads do not hold/],
+    ['a bullet on an unknown role', (o) => o.items.push({ id: 'ghost-bullet', type: 'bullet', roleId: 'ghost-role', text: 'x', tags: [], priority: 2, verified: false }), /attaches to role ghost-role/],
+    ['several current roles and none named', (o) => delete o.currentRoleId, /mark 3 roles current .* must name one as currentRoleId/],
+    ['a named role that is not current', (o) => (o.currentRoleId = 'lakeview-app-admin'), /lakeview-app-admin is not marked current/],
+    ['a read role left unmapped', (o) => o.roles.splice(o.roles.findIndex((role) => role.id === 'mapworks-gis-analyst'), 1), /Mapworks \/ GIS Analyst, which the overlay does not map/],
+    ['an added item marked verified', (o) => (o.items[0].verified = true), /must say verified: false/],
+    ['a read item the reads do not produce', (o) => (o.readItems['skill-ghost'] = { tags: [], priority: 2 }), /readItems names skill-ghost/],
+    ['an unknown tag', (o) => (o.items[0].tags = ['no-such-tag']), /tag no-such-tag/],
+    ['a bad priority', (o) => (o.items[0].priority = 4), /priority 4/]
+  ];
+  for (const [name, change, pattern] of cases) {
+    const overlay = clone(FIXTURE_OVERLAY_DATA);
+    change(overlay);
+    const problems = problemsOf(FIXTURE_READS_DATA, overlay);
+    assert.ok(problems.some((problem) => pattern.test(problem)), `${name}: ${problems.join(' | ')}`);
+  }
+  assert.deepEqual(problemsOf(FIXTURE_READS_DATA, FIXTURE_OVERLAY_DATA), []);
+});
+
+test('the current role rule is the one the builder enforces', () => {
+  assert.equal(currentRole(snapshot).id, 'northwind-consultant');
+  assert.equal(currentRoles(snapshot).length, 1);
+  const twoAtOneEmployer = clone(snapshot);
+  twoAtOneEmployer.roles.find((role) => role.id === 'seed-architect').employer = snapshot.owner.currentEmployer;
+  assert.equal(currentRole(twoAtOneEmployer), null);
+  assert.ok(snapshotProblems(twoAtOneEmployer).some((problem) => /Exactly one current role/.test(problem)));
+  const reads = clone(FIXTURE_READS_DATA);
+  for (const persona of ['Architect', 'Developer', 'Admin']) for (const role of reads[`ResumeController.getResume|{"persona":"${persona}"}`].roles) if (role.isCurrent && role.employer !== 'Northwind Digital') role.isCurrent = false;
+  const overlay = clone(FIXTURE_OVERLAY_DATA);
+  delete overlay.currentRoleId;
+  assert.deepEqual(problemsOf(reads, overlay), [], 'one current role needs no currentRoleId');
+});
+
+test('a snapshot from real data is written only where git ignores it', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'snapshot-'));
+  const reads = path.join(dir, 'reads.json');
+  fs.writeFileSync(reads, JSON.stringify(FIXTURE_READS_DATA));
+  const top = path.resolve(WEB, '..');
+  const notIgnored = (args) => {
+    if (args[0] === 'rev-parse') return top;
+    throw new Error('not ignored');
+  };
+  const inside = path.join(EVAL, 'snapshot', 'real-snapshot.json');
+  assert.throws(() => buildFromFiles({ reads, out: inside, git: notIgnored }), /Refusing to write a snapshot built from real data/);
+  assert.ok(!fs.existsSync(inside));
+  const outside = path.join(dir, 'snapshot.json');
+  buildFromFiles({ reads, out: outside, git: notIgnored });
+  assert.equal(JSON.parse(fs.readFileSync(outside, 'utf8')).items.length, snapshot.items.length);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('run-eval takes --snapshot, and a snapshot that breaks the contract is refused on load', async () => {
+  assert.equal(parseArgs([]).snapshot, COMMITTED_SNAPSHOT);
+  assert.equal(parseArgs(['--snapshot', 'x.json']).snapshot, path.resolve('x.json'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'snapshot-'));
+  const good = path.join(dir, 'good.json');
+  const bad = path.join(dir, 'bad.json');
+  const changed = clone(snapshot);
+  changed.owner.name = 'Jordan Example';
+  fs.writeFileSync(good, JSON.stringify(changed));
+  assert.equal((await loadInputs({ includePrivate: false, snapshotPath: good })).snapshot.owner.name, 'Jordan Example');
+  changed.items[0].visibility = 'private';
+  fs.writeFileSync(bad, JSON.stringify(changed));
+  await assert.rejects(loadInputs({ includePrivate: false, snapshotPath: bad }), /Only public items/);
+  fs.rmSync(dir, { recursive: true, force: true });
 });
 
 /* ---------- scorer, hand built answers ---------- */
