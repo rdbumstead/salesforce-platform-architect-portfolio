@@ -6,16 +6,17 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { coverLetterPrompt } from '../functions/_lib/tailor/prompts/cover-letter.js';
 import { SELECTOR_PROMPT } from '../functions/_lib/tailor/prompts/selector.js';
-import { evidenceIds, extractLetter, parseSelection, runOne, selectedIds, viewForMode, WAIT_LIMIT_MS } from '../tailor-eval/lib/pipeline.mjs';
+import { extractLetter, parseSelection, runOne, selectedIds, viewForMode, WAIT_LIMIT_MS } from '../tailor-eval/lib/pipeline.mjs';
 import { createProvider, fakeProvider, geminiProvider, MissingKeyError, paidProvider, workersAiProvider } from '../tailor-eval/lib/providers.mjs';
 import { buildFakeSelection } from '../tailor-eval/lib/fake.mjs';
 import { currentRole, currentRoles } from '../tailor-eval/lib/roles.mjs';
 import { buildFromFiles, buildSnapshot, COMMITTED_SNAPSHOT, FIXTURE_OVERLAY, FIXTURE_READS, SnapshotError, snapshotProblems } from '../tailor-eval/build-snapshot.mjs';
-import { pickValidators } from '../tailor-eval/lib/validators.mjs';
-import { assertPrivateFolder, loadInputs, parseArgs, pickPostings, runEval } from '../tailor-eval/run-eval.mjs';
+import { loadValidators } from '../tailor-eval/lib/validators.mjs';
+import { assertPrivateFolder, loadInputs, parseArgs, parseBlocklistSafely, pickPostings, runEval, runLine } from '../tailor-eval/run-eval.mjs';
 import {
   categoryConfusions,
   checkExpectations,
+  countCodes,
   formatTable,
   gapRecall,
   goldIdsFor,
@@ -40,73 +41,26 @@ const { snapshot, categories, postings, prices } = inputs;
 const CATEGORY_IDS = new Set(categories.map((category) => category.id));
 const COVER_LETTER_PROMPT = coverLetterPrompt(snapshot.owner);
 
-/**
- * Validators with the final contract's names, arguments and result shapes, standing in for the
- * real module: validateSelection returns selection and blocksExport, validateLetter takes mode
- * and adds wordCount, paragraphCount and verifyItems, validateResume adds blocksExport, and
- * grounding takes the evidence texts and an allow list from their own helpers.
- */
-function stubValidators({ selectionOk } = {}) {
-  const result = (errors, extra = {}) => ({ ok: errors.length === 0, errors, warnings: [], ...extra });
-  const error = (code, offending = '') => ({ code, message: code, offending });
-  const seen = { letterModes: [], groundingAllow: [] };
-  const validators = pickValidators({
-    validateSelection(text, snap, { mode }) {
-      const fenced = /^\s*```/.test(text);
-      const selection = parseSelection(text);
-      if (selectionOk && !selectionOk(text)) return result([error('FORCED')], { selection: null, blocksExport: true });
-      if (!selection) return result([error('NOT_JSON')], { selection: null, blocksExport: true });
-      const allowed = new Set(snap.items.filter((item) => mode === 'owner' || item.verified).map((item) => item.id));
-      const errors = selectedIds(selection)
-        .filter((id) => !allowed.has(id))
-        .map((id) => error('UNKNOWN_ID', id));
-      const clean = mode === 'visitor' ? { ...selection, top_requirements: (selection.top_requirements || []).filter((entry) => entry.match === 'strong'), hard_filter_flags: [], missing_evidence_suggestions: [] } : selection;
-      const unverified = selectedIds(selection).some((id) => snap.items.find((item) => item.id === id)?.verified === false);
-      const out = result(errors, { selection: errors.length ? null : clean, blocksExport: unverified || errors.length > 0 });
-      if (fenced) out.warnings.push({ code: 'selection.fenced', message: 'fenced', offending: '' });
-      return out;
+/** The real validators, through the harness's own adapter. */
+const REAL = await loadValidators();
+/** An invented blocklist term, so the letter validator has a list to check against. */
+const BLOCKLIST = REAL.parseBlocklist('zzinventedclient').terms;
+
+/** The real validators, with the letter and grounding calls recorded so a test can see what they got. */
+function spyValidators() {
+  const seen = { letterModes: [], groundingAllow: [], groundingTexts: [] };
+  const validators = {
+    ...REAL,
+    validateLetter(text, options) {
+      seen.letterModes.push(options.mode);
+      return REAL.validateLetter(text, options);
     },
-    validateLetter(text, { blocklist, employer, mode = 'owner' }) {
-      seen.letterModes.push(mode);
-      const errors = [];
-      const wordCount = text.split(/\s+/).filter(Boolean).length;
-      const paragraphCount = text.split(/\n\s*\n/).filter((part) => part.trim()).length;
-      const verifyItems = text.match(/\[VERIFY[^\]]*\]/g) || [];
-      if (wordCount < 300 || wordCount > 400) errors.push(error('WORD_COUNT', String(wordCount)));
-      if (paragraphCount !== 5) errors.push(error('PARAGRAPHS'));
-      if (DASH_OR_SEMICOLON.test(text)) errors.push(error('PUNCTUATION'));
-      if (!text.includes(employer)) errors.push(error('EMPLOYER'));
-      if (mode === 'visitor' && verifyItems.length) errors.push(error('VERIFY_IN_VISITOR', verifyItems[0]));
-      for (const term of blocklist) if (text.toLowerCase().includes(term.toLowerCase())) errors.push(error('BLOCKLIST', term));
-      return result(errors, { wordCount, paragraphCount, verifyItems });
-    },
-    validateResume(text, { selection, snapshot: snap }) {
-      const unverified = selectedIds(selection).filter((id) => snap.items.find((item) => item.id === id)?.verified === false);
-      return result(
-        unverified.map((id) => error('UNVERIFIED', id)),
-        { blocksExport: unverified.length > 0 }
-      );
-    },
-    selectedEvidenceTexts(selection, snap) {
-      const ids = new Set(evidenceIds(selection));
-      return snap.items.filter((item) => ids.has(item.id)).map((item) => item.text);
-    },
-    groundingAllowList(snap, { company, title }) {
-      return [snap.owner.name, snap.owner.currentEmployer, company, title];
-    },
-    checkGrounding(letter, evidence, { allow = [] } = {}) {
-      seen.groundingAllow.push(allow);
-      const joined = [...evidence, ...allow].join(' ');
-      const numbers = letter.match(/\d[\d,]*/g) || [];
-      return result(numbers.filter((number) => !joined.includes(number)).map((number) => error('UNGROUNDED_NUMBER', number)));
-    },
-    parseBlocklist(raw) {
-      return String(raw || '')
-        .split(/[,\n]/)
-        .map((term) => term.trim())
-        .filter(Boolean);
+    checkGrounding(letter, texts, options) {
+      seen.groundingAllow.push(options.allow);
+      seen.groundingTexts.push(texts);
+      return REAL.checkGrounding(letter, texts, options);
     }
-  });
+  };
   validators.seen = seen;
   return validators;
 }
@@ -226,7 +180,7 @@ test('the injection set covers every attack, with the client name request as wri
 
 test('the gold folder holds the README only, and its example uses real snapshot ids on an invented posting', () => {
   assert.deepEqual(fs.readdirSync(path.join(EVAL, 'gold')), ['README.md']);
-  const readme = fs.readFileSync(path.join(EVAL, 'gold', 'README.md'), 'utf8');
+  const readme = fs.readFileSync(path.join(EVAL, 'gold', 'README.md'), 'utf8').replace(/\r\n/g, '\n');
   assert.match(readme, /example only/i);
   const blocks = [...readme.matchAll(/```json\n([\s\S]*?)```/g)].map((match) => match[1]);
   const example = JSON.parse(blocks[blocks.length - 1]);
@@ -608,7 +562,6 @@ test('parsing a selection, pulling out the letter, and the mode views', () => {
   assert.equal(viewForMode(snapshot, 'owner').items.length, snapshot.items.length);
   assert.throws(() => viewForMode(snapshot, 'guest'), /Unknown mode/);
   assert.deepEqual(selectedIds(selection()), ['headline-engineer', 'summary-site', 'northwind-ai-toolkit', 'lakeview-devops-lead']);
-  assert.ok(!evidenceIds(selection()).includes('headline-engineer'));
 });
 
 test('a selector answer that fails is retried once with the failures, and a timeout is recorded', async () => {
@@ -628,14 +581,14 @@ test('a selector answer that fails is retried once with the failures, and a time
     }
   };
   const posting = postings.find((entry) => entry.id === 'posting-1-engineer');
-  const result = await runOne({ provider, posting, snapshot, mode: 'owner', validators: stubValidators(), categories });
+  const result = await runOne({ provider, posting, snapshot, mode: 'owner', validators: REAL, blocklist: BLOCKLIST, categories });
   assert.equal(result.selector.attempts.length, 2);
   assert.equal(result.selector.firstOk, false);
   assert.equal(result.selector.finalOk, true);
-  assert.match(seenRetry, /YOUR PREVIOUS ANSWER FAILED THESE CHECKS\n- NOT_JSON/);
+  assert.match(seenRetry, /YOUR PREVIOUS ANSWER FAILED THESE CHECKS\n- selection\.json/);
 
   const slow = { name: 'slow', model: 'slow', complete: ({ signal }) => new Promise((resolve, reject) => signal.addEventListener('abort', () => reject(new Error('aborted')))) };
-  const timedOut = await runOne({ provider: slow, posting, snapshot, mode: 'owner', validators: stubValidators(), categories, timeoutMs: 20 });
+  const timedOut = await runOne({ provider: slow, posting, snapshot, mode: 'owner', validators: REAL, categories, timeoutMs: 20 });
   assert.equal(timedOut.error.code, 'TIMEOUT');
   assert.ok(timedOut.waitMs.total >= 15);
 });
@@ -670,21 +623,21 @@ test('results are refused inside the repository unless git ignores the folder', 
 
 /* ---------- end to end with the fake provider ---------- */
 
-test('end to end: every posting, both modes, two repeats, through the fake provider', async () => {
+test('end to end with the real validators: every posting, both modes, two repeats, through the fake provider', async () => {
   let clock = 0;
   const now = () => (clock += 250);
-  const validators = stubValidators();
-  const records = await runEval({ providers: [fakeProvider()], postings, snapshot, modes: ['owner', 'visitor'], repeats: 2, validators, blocklist: ['Placeholder Client'], categories, now });
+  const validators = spyValidators();
+  const records = await runEval({ providers: [fakeProvider()], postings, snapshot, modes: ['owner', 'visitor'], repeats: 2, validators, blocklist: BLOCKLIST, categories, now });
   assert.deepEqual([...new Set(validators.seen.letterModes)], ['owner', 'visitor'], 'the run mode reaches validateLetter');
   assert.ok(validators.seen.groundingAllow.every((allow) => allow.includes(snapshot.owner.currentEmployer)), 'grounding gets the allow list');
   assert.ok(records.filter((entry) => entry.mode === 'visitor').every((entry) => entry.selection.hard_filter_flags.length === 0), 'visitor runs use the cleaned selection');
   assert.ok(records.every((entry) => typeof entry.letter.attempts[0].wordCount === 'number' && typeof entry.selector.blocksExport === 'boolean'));
   assert.equal(records.length, 12 * 2 * 2);
   assert.ok(records.every((entry) => !entry.error), JSON.stringify(records.find((entry) => entry.error)?.error));
-  assert.ok(records.every((entry) => entry.selector.finalOk), 'every fake selection passes the stub');
+  assert.ok(records.every((entry) => entry.selector.finalOk), 'every fake selection passes the real validator');
   const failedLetters = records.filter((entry) => !entry.letter.finalOk).map((entry) => `${entry.postingId} ${entry.mode} ${JSON.stringify(entry.letter.attempts.at(-1).errors)}`);
   assert.deepEqual(failedLetters, []);
-  const { groups, runs } = scoreRuns(records, { snapshot, postings, gold: {}, categories, prices, blocklist: ['Placeholder Client'] });
+  const { groups, runs } = scoreRuns(records, { snapshot, postings, gold: {}, categories, prices, blocklist: BLOCKLIST });
   assert.deepEqual(
     groups.map((group) => group.group),
     ['fake owner', 'fake visitor', 'fake both']
@@ -708,13 +661,73 @@ test('end to end: every posting, both modes, two repeats, through the fake provi
 
 test('the fake provider can be scripted, and the harness records a first try failure', async () => {
   const provider = fakeProvider({ script: ({ kind, attempt }) => (kind === 'letter' && attempt === 1 ? 'Too short' : undefined) });
-  const records = await runEval({ providers: [provider], postings: pickPostings(postings, 'posting-3-consultant'), snapshot, modes: ['owner'], repeats: 1, validators: stubValidators(), categories });
+  const records = await runEval({ providers: [provider], postings: pickPostings(postings, 'posting-3-consultant'), snapshot, modes: ['owner'], repeats: 1, validators: REAL, blocklist: BLOCKLIST, categories });
   assert.equal(records[0].letter.attempts.length, 2);
   assert.equal(records[0].letter.firstOk, false);
   assert.equal(records[0].letter.finalOk, true);
   const { groups } = scoreRuns(records, { snapshot, postings, categories, prices });
   assert.equal(groups[0].letterFirstTryPassRate, 0);
   assert.ok(groups[0].misses.includes('blocklist not checked, SITE_DENYLIST not set'));
+});
+
+test('a failed run records and prints its validator error codes, and the scorer counts them', async () => {
+  const posting = postings.find((entry) => entry.id === 'posting-2-architect');
+  const noBullets = fakeProvider({
+    script: ({ kind, context }) => {
+      if (kind !== 'selector') return undefined;
+      const selection = buildFakeSelection(context);
+      return JSON.stringify({ ...selection, roles: selection.roles.map((role) => ({ ...role, include: false, bullet_ids: [] })) });
+    }
+  });
+  const failed = await runOne({ provider: noBullets, posting, snapshot, mode: 'owner', validators: REAL, blocklist: BLOCKLIST, categories });
+  assert.equal(failed.error.code, 'NO_SELECTION');
+  assert.ok(failed.error.codes.includes('selection.bullet_count'), failed.error.codes.join(', '));
+  assert.ok(!failed.error.codes.some((code) => / /.test(code)), 'codes only, no text');
+  failed.repeat = 1;
+  assert.match(runLine(failed), /^fake owner posting-2-architect #1 NO_SELECTION selection\.bullet_count/);
+
+  const shortLetter = fakeProvider({ script: ({ kind }) => (kind === 'letter' ? 'Too short.' : undefined) });
+  const letterFailed = await runOne({ provider: shortLetter, posting, snapshot, mode: 'owner', validators: REAL, blocklist: BLOCKLIST, categories });
+  letterFailed.repeat = 1;
+  assert.equal(letterFailed.error, null);
+  assert.equal(letterFailed.letter.finalOk, false);
+  assert.ok(letterFailed.letter.codes.length > 0);
+  assert.match(runLine(letterFailed), /LETTER_FAILED letter\./);
+  const counted = countCodes([failed, letterFailed]);
+  assert.ok(counted.includes('selection.bullet_count: 1'), counted.join(' | '));
+  assert.ok(counted.some((entry) => entry.startsWith('letter.')), counted.join(' | '));
+});
+
+test('the blocklist comes from the terms of the real parser, and an empty result means not checked', async () => {
+  assert.deepEqual(await parseBlocklistSafely('zzinventedclient, zzanother', REAL), ['zzinventedclient', 'zzanother']);
+  assert.deepEqual(await parseBlocklistSafely('ab', REAL), []);
+  assert.deepEqual(await parseBlocklistSafely('', REAL), []);
+  assert.deepEqual(await parseBlocklistSafely('x', { parseBlocklist: () => ['legacy'] }), ['legacy']);
+});
+
+test('the letter is given exactly the evidence texts grounding checks', async () => {
+  const validators = spyValidators();
+  const letterUsers = [];
+  const inner = fakeProvider();
+  const provider = {
+    name: 'fake',
+    model: 'fake',
+    complete(call) {
+      if (call.kind === 'letter') letterUsers.push(call.user);
+      return inner.complete(call);
+    }
+  };
+  await runEval({ providers: [provider], postings: pickPostings(postings, 'synthetic'), snapshot, modes: ['owner', 'visitor'], repeats: 1, validators, blocklist: BLOCKLIST, categories });
+  assert.equal(letterUsers.length, validators.seen.groundingTexts.length);
+  letterUsers.forEach((user, index) => {
+    const lines = user.split('\n');
+    const start = lines.indexOf('SELECTED EVIDENCE') + 1;
+    const end = lines.indexOf('', start);
+    assert.deepEqual(
+      lines.slice(start, end),
+      validators.seen.groundingTexts[index].map((text) => `- ${text}`)
+    );
+  });
 });
 
 test('no tracked file under the evaluation folder holds a key or a private path', () => {
