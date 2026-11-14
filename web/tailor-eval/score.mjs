@@ -161,8 +161,10 @@ export function promptShingles(owner = ANY_OWNER) {
 }
 
 function outputsOf(record) {
-  const selection = (record.selector?.attempts || []).map((attempt) => attempt.text || '').join('\n');
-  const letter = (record.letter?.attempts || []).map((attempt) => attempt.raw || attempt.text || '').join('\n');
+  // A router run also carries the routes that fell through before it. Their output counts too.
+  const runs = [record, ...(record.fellThrough || [])];
+  const selection = runs.flatMap((run) => (run.selector?.attempts || []).map((attempt) => attempt.text || '')).join('\n');
+  const letter = runs.flatMap((run) => (run.letter?.attempts || []).map((attempt) => attempt.raw || attempt.text || '')).join('\n');
   return { selection, letter, any: `${selection}\n${letter}` };
 }
 
@@ -280,6 +282,26 @@ export function countCodes(records) {
 }
 
 /**
+ * For router runs: how often each route answered, and how often each route ended in each
+ * outcome. Both are empty for runs that did not go through a router.
+ */
+export function routeCounts(records) {
+  const answers = {};
+  const outcomes = {};
+  for (const record of records) {
+    if (!record.route) continue;
+    const answered = record.route.answeredBy || 'none';
+    answers[answered] = (answers[answered] || 0) + 1;
+    for (const step of record.route.trace || []) {
+      const key = `${step.route} ${step.outcome}`;
+      outcomes[key] = (outcomes[key] || 0) + 1;
+    }
+  }
+  const list = (counts) => Object.entries(counts).map(([key, count]) => `${key}: ${count}`);
+  return { routeAnswers: list(answers), routeOutcomes: list(outcomes) };
+}
+
+/**
  * Scores every run. Returns { groups: [...] } with one row per provider and mode and one per
  * provider across both modes, each with every metric and a pass verdict.
  */
@@ -368,7 +390,8 @@ export function scoreRuns(records, { snapshot, postings, gold = {}, categories, 
       expectationsMet: share(expectationResults.filter((entry) => entry.ok).length, expectationResults.length),
       expectationsFailed: [...new Set(expectationResults.filter((entry) => !entry.ok).map((entry) => entry.check))],
       monthlyCostUsd: cost ? cost.monthlyUsd : null,
-      priceStatus: price ? price.status || 'unverified' : 'missing'
+      priceStatus: price ? price.status || 'unverified' : 'missing',
+      ...routeCounts(list)
     };
     const misses = [];
     if (metrics.categoryConfusions > 0) misses.push('category confusions');

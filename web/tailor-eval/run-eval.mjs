@@ -5,7 +5,11 @@
  *   node tailor-eval/run-eval.mjs --providers fake --repeats 5 --mode both --postings all
  *
  * Options:
- *   --providers  comma separated: fake, gemini, workers-ai, paid. Default fake.
+ *   --providers  comma separated: fake, gemini, workers-ai, paid. Default fake, or none
+ *                when --router is given.
+ *   --router     a policy name from routes.json, such as public or owner. The run goes
+ *                through the router, falls through on failures and ends at the local template.
+ *                The scorer then reports which route answered how often.
  *   --postings   all, synthetic, injection, or comma separated posting ids. Default all.
  *   --repeats    runs per posting, provider and mode. Default 5.
  *   --mode       both, owner or visitor. Default both.
@@ -25,6 +29,7 @@ import { MODES, runOne, WAIT_LIMIT_MS } from './lib/pipeline.mjs';
 import { assertSnapshot, COMMITTED_SNAPSHOT } from './build-snapshot.mjs';
 import { assertPrivateFolder } from './lib/private.mjs';
 import { createProvider, PROVIDER_NAMES } from './lib/providers.mjs';
+import { createRouter, loadPolicy } from './lib/router.mjs';
 import { loadValidators } from './lib/validators.mjs';
 import { formatTable, scoreRuns } from './score.mjs';
 
@@ -89,12 +94,16 @@ export async function parseBlocklistSafely(raw, validators) {
 }
 
 export function parseArgs(argv) {
-  const args = { providers: ['fake'], postings: 'all', repeats: DEFAULT_REPEATS, mode: 'both', out: path.join(PRIVATE_DIR, 'runs'), timeoutMs: WAIT_LIMIT_MS, snapshot: COMMITTED_SNAPSHOT };
+  const args = { providers: ['fake'], router: null, postings: 'all', repeats: DEFAULT_REPEATS, mode: 'both', out: path.join(PRIVATE_DIR, 'runs'), timeoutMs: WAIT_LIMIT_MS, snapshot: COMMITTED_SNAPSHOT };
+  let providersGiven = false;
   for (let i = 0; i < argv.length; i += 1) {
     const [flag, inline] = argv[i].split('=');
     const value = inline ?? argv[(i += 1)];
     if (value === undefined) throw new Error(`${flag} needs a value.`);
-    if (flag === '--providers') args.providers = value.split(',').map((name) => name.trim()).filter(Boolean);
+    if (flag === '--providers') {
+      args.providers = value.split(',').map((name) => name.trim()).filter(Boolean);
+      providersGiven = true;
+    } else if (flag === '--router') args.router = value.trim();
     else if (flag === '--postings') args.postings = value;
     else if (flag === '--repeats') args.repeats = Number(value);
     else if (flag === '--mode') args.mode = value;
@@ -103,6 +112,7 @@ export function parseArgs(argv) {
     else if (flag === '--snapshot') args.snapshot = path.resolve(value);
     else throw new Error(`Unknown option ${flag}.`);
   }
+  if (args.router && !providersGiven) args.providers = [];
   if (!Number.isInteger(args.repeats) || args.repeats < 1) throw new Error('--repeats must be a whole number of 1 or more.');
   if (!['both', ...MODES].includes(args.mode)) throw new Error('--mode must be both, owner or visitor.');
   const unknown = args.providers.filter((name) => !PROVIDER_NAMES.includes(name));
@@ -133,7 +143,9 @@ export async function runEval({ providers, postings, snapshot, modes, repeats, v
       for (const posting of postings)
         for (let repeat = 1; repeat <= repeats; repeat += 1) {
           if (provider.reset) provider.reset();
-          const record = await runOne({ provider, posting, snapshot, mode, validators, blocklist, categories, timeoutMs, now });
+          const options = { provider, posting, snapshot, mode, validators, blocklist, categories, timeoutMs, now };
+          // A router runs the whole selector and letter per route itself, so it replaces runOne.
+          const record = provider.run ? await provider.run(options) : await runOne(options);
           record.repeat = repeat;
           records.push(record);
           if (onRun) onRun(record);
@@ -147,6 +159,7 @@ async function main(argv) {
   const inputs = await loadInputs({ snapshotPath: args.snapshot });
   const postings = pickPostings(inputs.postings, args.postings);
   const providers = args.providers.map((name) => createProvider(name));
+  if (args.router) providers.push(createRouter(loadPolicy(args.router)));
   const validators = await loadValidators();
   const blocklist = await parseBlocklistSafely(process.env.SITE_DENYLIST, validators);
   if (!blocklist.length) console.warn('SITE_DENYLIST is not set, so client names are not checked in this run.');
@@ -167,7 +180,8 @@ async function main(argv) {
   const scored = scoreRuns(records, { ...inputs, blocklist });
   fs.mkdirSync(args.out, { recursive: true });
   const stamp = startedAt.replace(/[:.]/g, '-');
-  const file = path.join(args.out, `${stamp}-${args.providers.join('-')}.json`);
+  const label = [...args.providers, ...(args.router ? [`router-${args.router}`] : [])].join('-');
+  const file = path.join(args.out, `${stamp}-${label}.json`);
   fs.writeFileSync(file, JSON.stringify({ startedAt, args: { ...args, out: undefined }, snapshotVersion: inputs.snapshot.version, records }, null, 2));
   fs.writeFileSync(file.replace(/\.json$/, '.summary.json'), JSON.stringify(scored, null, 2));
   console.log(formatTable(scored.groups));

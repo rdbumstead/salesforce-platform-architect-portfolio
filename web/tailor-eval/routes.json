@@ -1,0 +1,21 @@
+{
+  "about": "Routing policies for the tailoring evaluation. Each policy lists its routes in the order they are tried and ends with template. budgetMs is the whole wait allowed, floorMs is the least time left for a model route to start, routeTimeoutMs caps one route, and stopCodes lists validator codes that end the run instead of falling through.",
+  "policies": {
+    "public": {
+      "description": "The public site. Workers AI open weight first, then Gemini, then the local template.",
+      "routes": ["workers-ai", "gemini", "template"],
+      "budgetMs": 115000,
+      "floorMs": 20000,
+      "routeTimeoutMs": 60000,
+      "stopCodes": []
+    },
+    "owner": {
+      "description": "The owner's own runs. The order is the owner's to edit.",
+      "routes": ["gemini", "workers-ai", "template"],
+      "budgetMs": 115000,
+      "floorMs": 20000,
+      "routeTimeoutMs": 60000,
+      "stopCodes": []
+    }
+  }
+}

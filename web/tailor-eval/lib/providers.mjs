@@ -49,7 +49,8 @@ async function postJson(fetchImpl, url, headers, body, signal) {
   const data = await response.json().catch(() => null);
   if (!response.ok) {
     const detail = data?.error?.message || data?.errors?.[0]?.message || `HTTP ${response.status}`;
-    throw new Error(`Provider call failed: ${detail}`);
+    // The status travels with the error so the router can tell an outage from a quota refusal.
+    throw Object.assign(new Error(`Provider call failed: ${detail}`), { status: response.status });
   }
   return data;
 }

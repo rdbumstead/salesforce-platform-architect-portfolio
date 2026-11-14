@@ -9,6 +9,7 @@ This folder measures how well a model picks resume evidence for a job posting an
 - `categories.json` lists the requirement categories used as tags. Those marked proposed wait for the owner.
 - `postings/` holds four synthetic postings with invented company names and eight injection variants built on them. Each file states its expected outcomes. None holds a gold selection.
 - `gold/README.md` describes the gold files the owner writes.
+- `routes.json` holds the routing policies. See "Routing" below.
 - `prices.json` holds the list prices for the cost estimate, each with its source and whether it was read.
 - `run-eval.mjs` runs the postings through the providers. `score.mjs` turns the runs into the metric table.
 - `lib/` holds the pipeline, the providers and the one adapter that reaches the validators.
@@ -37,6 +38,24 @@ To score a results file again, for example after adding gold files:
 ```sh
 node tailor-eval/score.mjs tailor-eval/private/runs/<file>.json
 ```
+
+## Routing
+
+The router is the first layer of the pipeline. A request goes to the first route in a policy and falls to the next on an outage (a network error, an HTTP 5xx or a timeout), a quota refusal (an HTTP 429 or a quota message), a validator failure after the usual retry, a missing key or any other refused call. Every policy ends at the local template, which needs no model.
+
+The router works on whole runs, not single calls, because a validator failure is only known once the selector or the letter has been checked and retried. Each route runs the full selector and letter, and the router reads the result before it tries the next one.
+
+Policies live in `routes.json`, so changing the order is a config edit. `public` tries Workers AI, then Gemini, then the template. `owner` holds an order the owner edits. Each policy can set `budgetMs`, the whole wait allowed (115 seconds by default), `floorMs`, the least time that must be left for a model route to start, `routeTimeoutMs`, the most one route may take, and `stopCodes`, validator codes that end the run instead of falling through. The validators flag no posting injection today, so `stopCodes` is empty. A policy that names an unknown provider, has an empty list, repeats a route or does not end with `template` is refused on load with a plain message. Agentforce is refused for now because it needs the org.
+
+Run a policy from `web/`:
+
+```sh
+node tailor-eval/run-eval.mjs --router public
+```
+
+With no keys set, Workers AI and Gemini are skipped as missing keys and the template answers. Every router record carries `route.answeredBy` and `route.trace`, one step per route with its outcome, a short reason, its wait and its validator codes. The trace holds no posting text, letter text, key or provider message. The scorer adds `routeAnswers` and `routeOutcomes` to the table, and counts leaks in the routes that fell through as well as in the one that answered.
+
+The site's real template is the Apex class `LocalTemplateService`, which reads the org. The harness cannot import it, so the evaluation uses a stand in built from the snapshot by fixed rules. Its numbers say nothing about the real template's letters. Topic routing is not built. `orderRoutes` in `lib/router.mjs` is where it would plug in.
 
 ## Building the real snapshot
 
