@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import {
@@ -150,12 +152,14 @@ test('the fields check recovers every role and certification from the fixture PD
   assert.equal(good.recovered, good.total);
   assert.ok(good.total > 10);
   const planted = structuredClone(model);
+  planted.header.careerObjective = 'Planted summary.';
   planted.employers[0].roles[0].title = 'Planted Title';
   planted.retiredCertifications[0].text = 'Planted Certification, Jan 2000';
   const bad = checkFields(planted, layer.items, layout, format.employerLabel, layer.pages[0].width);
   assert.deepEqual(
     bad.misses.map((miss) => [miss.field, miss.expected]),
     [
+      ['summary', 'Planted summary.'],
       ['role 1 title', 'Planted Title'],
       ['retired certification', 'Planted Certification, Jan 2000']
     ]
@@ -192,16 +196,18 @@ test('a page count over the budget fails, and each failed check is named', () =>
 });
 
 test('a listed problem is an expected failure and any other problem in the same check is not', () => {
+  const listed = [{ variant: '*', check: 'order', problem: 'missing: Summary', reason: 'planted for the test' }];
   const result = {
     failures: ['order'],
     order: { missing: [{ text: 'Summary' }], outOfOrder: [], streamMatchesReading: true }
   };
-  assert.deepEqual(classifyFailures('Admin with retired', result, expected), {
+  assert.deepEqual(classifyFailures('Admin with retired', result, listed), {
     expectedFailures: ['order'],
     unexpectedFailures: []
   });
   const more = { ...result, order: { ...result.order, missing: [{ text: 'Summary' }, { text: 'Skills' }] } };
-  assert.deepEqual(classifyFailures('Admin with retired', more, expected).unexpectedFailures, ['order']);
+  assert.deepEqual(classifyFailures('Admin with retired', more, listed).unexpectedFailures, ['order']);
+  assert.deepEqual(classifyFailures('Admin with retired', result, []).unexpectedFailures, ['order']);
 });
 
 test('the variants are each persona with and without retired certifications', () => {
@@ -218,7 +224,8 @@ test('the variants are each persona with and without retired certifications', ()
   assert.deepEqual(single.map((entry) => entry.persona), ['Admin']);
 });
 
-test('all six variants over the fixture data pass, with only the known Summary heading listed', async () => {
+test('all six variants over the fixture data pass, with no known failure listed', async () => {
+  assert.deepEqual(expected, []);
   const report = await runChecks(reads, { budgets, expected });
   assert.equal(report.variants.length, 6);
   report.variants.forEach((variant) => {
@@ -229,10 +236,34 @@ test('all six variants over the fixture data pass, with only the known Summary h
     assert.equal(variant.reproducible, true, variant.name);
     assert.ok(variant.pages <= variant.budget, variant.name);
     assert.deepEqual(variant.order.outOfOrder, [], variant.name);
-    assert.deepEqual(variant.order.missing.map((line) => line.text), ['Summary'], variant.name);
-    assert.equal(variant.order.streamMatchesReading, true, variant.name);
-    assert.deepEqual(variant.unexpectedFailures, [], variant.name);
+    assert.deepEqual(variant.order.missing, [], variant.name);
+    assert.equal(variant.order.equal, true, variant.name);
+    assert.deepEqual(variant.failures, [], variant.name);
   });
   assert.equal(report.ok, true);
   assert.equal(summaryRows(report).length, 6);
+});
+
+test('the command line takes any getResume payload and checks no page budget unless one is given', () => {
+  const folder = mkdtempSync(path.join(tmpdir(), 'resume-pdf-check-'));
+  try {
+    const payload = path.join(folder, 'resume.json');
+    writeFileSync(payload, JSON.stringify(resumesFrom(reads).find((entry) => entry.persona === 'Admin').resume));
+    const script = path.join(here, '..', 'build', 'resume-pdf-check.mjs');
+    const run = (...extra) => spawnSync(process.execPath, [script, payload, ...extra], { encoding: 'utf8' });
+    const open = run();
+    assert.equal(open.status, 0, open.stderr);
+    const report = JSON.parse(open.stdout);
+    assert.deepEqual(report.variants.map((variant) => [variant.name, variant.budget]), [
+      ['Admin with retired', null],
+      ['Admin without retired', null]
+    ]);
+    const tightFile = path.join(folder, 'budget.json');
+    writeFileSync(tightFile, JSON.stringify({ 'Admin with retired': 1 }));
+    const tight = run('--budget', tightFile);
+    assert.equal(tight.status, 1);
+    assert.deepEqual(JSON.parse(tight.stdout).variants[0].unexpectedFailures, ['pages']);
+  } finally {
+    rmSync(folder, { recursive: true, force: true });
+  }
 });

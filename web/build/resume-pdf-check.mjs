@@ -347,7 +347,7 @@ export function checkOrder(lines, items, shortCertName) {
  * Characters as a reader compares them: runs of whitespace are one space, since pdf.js joins
  * two pieces on one line with a space it makes up from the gap between them.
  */
-const flat = (text) => String(text).replace(/s+/g, ' ').trim();
+const flat = (text) => String(text).replace(/\s+/g, ' ').trim();
 
 /**
  * The characters of two strings that line up, by longest common subsequence. The strings are
@@ -418,9 +418,9 @@ export function checkRoundTrip(trace, items, pageHeight = 792) {
 }
 
 /**
- * Reads experience and certifications back from the text layer by position alone. A section
- * starts at an all capitals row at the left margin in the section title size. A smaller all
- * capitals row (Retired) stays inside its section. A role row has a last piece set flush to the
+ * Reads the summary, experience and certifications back from the text layer by position alone.
+ * A section starts at an all capitals row at the left margin in the section title size. A
+ * smaller all capitals row (Retired) stays inside its section. A role row has a last piece set flush to the
  * right margin (its dates). An employer heading over several roles is a role row with a wide
  * gap above it, or at the top of a page, and another role row close under it. A row at the
  * left margin straight under a role row, with no gap, carries on its heading. A page break
@@ -445,6 +445,7 @@ export function parseFields(items, layout, pageWidth = 612) {
   const gapBefore = (index) =>
     pageStart(index) ? Infinity : rows[index - 1].baseline - rows[index].baseline - rows[index].size * leading;
   let section = '';
+  const summary = [];
   const experience = [];
   const certifications = [];
   let employer = null;
@@ -484,16 +485,20 @@ export function parseFields(items, layout, pageWidth = 612) {
       return;
     }
     carry = null;
+    if (section === 'SUMMARY') {
+      summary.push(row.text);
+    }
     if (section === 'CERTIFICATIONS') {
       certifications.push(row.text);
     }
   });
-  return { experience, certifications };
+  return { summary: summary.join(' '), experience, certifications };
 }
 
 /**
- * Field by field: for every role in the model, its title, employer and date range, and for
- * every certification, its line, must come back from parseFields.
+ * Field by field: the summary under its Summary title, then for every role in the model its
+ * title, employer and date range, and for every certification its line, must come back from
+ * parseFields.
  */
 export function checkFields(model, items, layout, employerLabel, pageWidth) {
   const parsed = parseFields(items, layout, pageWidth);
@@ -505,6 +510,10 @@ export function checkFields(model, items, layout, employerLabel, pageWidth) {
       misses.push({ field: what, expected, got: got === undefined ? null : got });
     }
   };
+  const objective = model.header ? model.header.careerObjective : '';
+  if (objective) {
+    expectField('summary', flat(objective), flat(parsed.summary));
+  }
   const roles = model.employers.flatMap((group) =>
     group.roles.map((role) => ({ role, group }))
   );
