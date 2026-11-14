@@ -25,6 +25,7 @@
     <tabs>Project_Asset__c</tabs>
     <tabs>Project_Skill__c</tabs>
     <tabs>Project__c</tabs>
+    <tabs>Resume_Variant__c</tabs>
     <tabs>Skill__c</tabs>
     <tabs>Testimonial__c</tabs>
     <uiType>Lightning</uiType>

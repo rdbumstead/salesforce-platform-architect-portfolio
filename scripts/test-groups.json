@@ -69,7 +69,8 @@
         "SiteRedirectControllerTest",
         "SiteActionsResourceTest",
         "SiteExport*",
-        "ResumeControllerTest"
+        "ResumeControllerTest",
+        "ResumeSnapshotServiceTest"
       ]
     },
     {

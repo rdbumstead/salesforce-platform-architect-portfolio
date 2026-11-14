@@ -90,3 +90,7 @@ Each page is still an empty shell until JavaScript runs, so a crawler or a link 
 ## Related
 
 [ADR-042](042-prerender-every-public-page-at-build-time.md), [ADR-001](001-experience-cloud-lwr-vs-aura.md), [ADR-014](014-deferred-telemetry-loading-performance.md), [ADR-016](016-cloudflare-worker-as-edge-ai-proxy.md), [ADR-021](021-native-graphql-door-1-vs-apex-rest-for-ui.md), [ADR-027](027-platform-native-api-authentication.md), [ADR-031](031-native-contact-form.md)
+
+## Amendment (2026-11-14)
+
+The export now serves 27 calls. The new one, `ResumeSnapshotService.getSnapshot`, is build only: no page imports it, the guest cannot call it, and `Portfolio_Site_Build` now grants the build user read access to the fields it reads. For the other 26 calls the build user still reads exactly what the guest reads. The Technical Guide section 2.26 has the detail.
