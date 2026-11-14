@@ -17,7 +17,21 @@ import { fileURLToPath } from 'node:url';
 import { bundle } from './bundle.mjs';
 import { readRoutes } from './routes.mjs';
 import { planRoute } from './plan.mjs';
-import { connect, exportCall, keyOf, readData, runReads, writeData, DATA_DIR } from './export.mjs';
+import {
+  connect,
+  exportCall,
+  exportSnapshot,
+  fixtureRefusal,
+  keyOf,
+  readData,
+  readFixtureSnapshot,
+  runReads,
+  snapshotCounts,
+  writeData,
+  writeSnapshot,
+  DATA_DIR,
+  FIXTURE_SNAPSHOT_FILE
+} from './export.mjs';
 import { copyResources, resourceIndex, resourcesNamedIn } from './resources.mjs';
 import { writePages } from './pages.mjs';
 import { readKey } from '../src/shims/site-data.js';
@@ -99,8 +113,16 @@ async function loadData(args, routes, reachable) {
       reads: Object.keys(reads).length
     };
     writeData(reads, manifest);
+    // The resume snapshot is build only. It goes under functions/_generated, never into the
+    // pages, and a snapshot that breaks its contract fails the build here.
+    const snapshot = await exportSnapshot(connection);
+    writeSnapshot(snapshot);
+    console.log(`Resume snapshot: ${JSON.stringify(snapshotCounts(snapshot))}`);
     if (args.has('--write-fixtures')) {
       writeData(fixtureReads(reads), { ...manifest, orgId: null, commit: null, fixture: true }, FIXTURE_DIR);
+      const refusal = fixtureRefusal(connection);
+      if (refusal) throw new Error(refusal);
+      writeSnapshot({ ...snapshot, generatedAt: '2026-01-01T00:00:00.000Z' }, FIXTURE_SNAPSHOT_FILE);
     }
     return { reads, manifest, plans };
   }
@@ -109,6 +131,7 @@ async function loadData(args, routes, reachable) {
   if (!data) throw new Error('No data: run with --export, or add web/fixtures.');
   if (!saved) {
     data.manifest = { ...data.manifest, fixture: true };
+    writeSnapshot(readFixtureSnapshot());
     console.log('Fixture build: the pages show sample data, not data read from Salesforce.');
   }
   const { plans, problems } = planAll(routes, reachable, { docKeys: docKeysFrom(data.reads) });
