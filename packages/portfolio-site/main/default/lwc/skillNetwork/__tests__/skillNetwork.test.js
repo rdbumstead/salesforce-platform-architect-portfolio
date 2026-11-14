@@ -334,23 +334,40 @@ describe("c-skill-network (Large form factor)", () => {
     expect(years("Data Cloud")).toBe("under 1 yr");
     // Linked to a project only, so no years.
     expect(years("Agentforce")).toBeNull();
-    expect(chipByName(element, "Agentforce").hasAttribute("aria-label")).toBe(
-      false
-    );
+    expect(
+      chipByName(element, "Agentforce").querySelector(".chip-spoken")
+        .textContent
+    ).toBe("proficiency 3 of 5, used on a project");
   });
 
-  it("names each chip from its shown words, with no label that could drift from them", async () => {
+  it("names each chip from its content: the shown name first, then the spoken detail", async () => {
     const element = await mountWithData();
+    getCertificationLinks.emit(JSON.parse(JSON.stringify(CERTIFICATIONS)));
+    await flushPromises();
     const chip = chipByName(element, "Apex");
 
-    // Voice control says what it sees, so the name is the shown text itself and starts with it.
+    // No label, so voice control matches the shown name and a reader gets the full wording.
     expect(chip.hasAttribute("aria-label")).toBe(false);
     expect(chip.hasAttribute("aria-labelledby")).toBe(false);
-    expect(chip.querySelector(".chip-meta").hasAttribute("aria-hidden")).toBe(
-      false
-    );
     expect(chip.firstElementChild.textContent).toBe("Apex");
-    expect(chip.textContent.startsWith("Apex")).toBe(true);
+    // The shown abbreviations are hidden from readers, the spoken wording stands in for them.
+    expect(chip.querySelector(".chip-meta").getAttribute("aria-hidden")).toBe(
+      "true"
+    );
+    const spoken = chip.querySelector(".chip-spoken");
+    expect(spoken.classList.contains("slds-assistive-text")).toBe(true);
+    expect(spoken.textContent).toBe(
+      "proficiency 5 of 5, used for 8.0 years, certified in 2021, used on 2 projects"
+    );
+    // Hidden parts left out, the name reads in the shown order.
+    expect(
+      [...chip.children]
+        .filter((node) => node.getAttribute("aria-hidden") !== "true")
+        .map((node) => node.textContent)
+        .join(" ")
+    ).toBe(
+      "Apex proficiency 5 of 5, used for 8.0 years, certified in 2021, used on 2 projects"
+    );
   });
 
   it("lists the roles and projects of a selected chip and tracks skill_selected", async () => {

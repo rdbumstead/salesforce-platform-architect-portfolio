@@ -351,6 +351,16 @@ function evidenceParts(skill) {
   return parts;
 }
 
+function yearsSpoken(years) {
+  if (years === null) {
+    return "";
+  }
+  if (years < 1) {
+    return "used for under 1 year";
+  }
+  return `used for ${years.toFixed(1)} years`;
+}
+
 function evidenceSpoken(skill) {
   return evidenceParts(skill)
     .map((part) => part.spoken)
@@ -1146,7 +1156,15 @@ export default class SkillNetwork extends LightningElement {
       hasYears: Boolean(years),
       evidence: evidenceParts(skill),
       pressed: String(selected),
-      // No aria-label. The button is named from its shown words, so its name starts with them.
+      // No aria-label, so the name is computed from the content: the shown skill name, then this
+      // wording in visually hidden text. The shown abbreviations are hidden from readers.
+      spoken: [
+        `proficiency ${skill.proficiency} of 5`,
+        yearsSpoken(skill.years),
+        evidenceSpoken(skill)
+      ]
+        .filter(Boolean)
+        .join(", "),
       className: selected ? "chip is-selected" : "chip"
     };
   }

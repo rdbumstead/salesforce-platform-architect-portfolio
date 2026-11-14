@@ -114,7 +114,7 @@
                           onclick={handleChipClick}
                         >
                           <span class="chip-name">{chip.name}</span>
-                          <span class="chip-meta">
+                          <span class="chip-meta" aria-hidden="true">
                             <span class="chip-proficiency"
                               >{chip.proficiency}</span
                             >
@@ -130,6 +130,9 @@
                               >
                             </template>
                           </span>
+                          <span class="slds-assistive-text chip-spoken"
+                            >{chip.spoken}</span
+                          >
                         </button>
                       </template>
                     </li>
