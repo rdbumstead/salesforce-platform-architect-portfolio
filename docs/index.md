@@ -79,6 +79,7 @@ _Target Audience: Architects, Developers_
 - [ADR-018: FinOps (Lambda URLs vs. API Gateway)](adr/018-finops-constraint-aws-lambda-function-urls-vs-api-gateway.md)
 - [ADR-019: Executable Governance (Platform Events)](adr/019-executable-governance-platform-events-for-documentation-logic.md)
 - [ADR-022: Resilience Engineering (Chaos Toggle)](adr/022-resilience-engineering-resilience-simulation-toggle.md)
+- [ADR-043: A Provider Router for Tailored Letters](adr/043-provider-router-for-tailored-letters.md)
 
 ---
 

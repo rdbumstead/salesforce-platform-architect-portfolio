@@ -186,6 +186,7 @@ EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design"
 | [ADR-040](docs/adr/040-versionless-api-urls.md)                                          | Versionless API URLs                          | API Design                      | Accepted           | [Live](packages/integration-api/main/default/classes/ApiRouting.cls)                                            |
 | [ADR-041](docs/adr/041-headless-static-front-end-on-cloudflare-pages.md)                 | Headless Static Front End on Cloudflare Pages | Front End and Performance       | Accepted           | [Live](docs/guides/cutover-runbook.md)                                                                          |
 | [ADR-042](docs/adr/042-prerender-every-public-page-at-build-time.md)                     | Prerender Every Public Page at Build Time     | Front End and Performance       | Accepted           | In progress (SPAP-98)                                                                                           |
+| [ADR-043](docs/adr/043-provider-router-for-tailored-letters.md)                          | A Provider Router for Tailored Letters        | AI / Tailoring                  | Accepted           | Designed                                                                                                        |
 
 </details>
 
