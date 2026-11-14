@@ -30,6 +30,19 @@ public with sharing class ResumeSnapshotService {
   public static final String TYPE_PROJECT = 'project';
   public static final String TYPE_CERTIFICATION = 'certification';
 
+  /**
+   * The project statuses the public pages list. A project in any other status, or with none, is
+   * not shown on the site, so it is never offered as resume evidence. Mirrors
+   * PAPIProjects.LISTED_STATUS_FILTER and ApiLabOptionsController.LISTED_PROJECT_STATUSES. Change
+   * all three together.
+   */
+  @TestVisible
+  private static final Set<String> LISTED_PROJECT_STATUSES = new Set<String>{
+    'Live – In Production',
+    'Live – Demo / Reference',
+    'Active Development'
+  };
+
   private static final Map<String, String> VARIANT_TYPES = new Map<String, String>{
     'Headline' => TYPE_HEADLINE,
     'Summary' => TYPE_SUMMARY
@@ -266,6 +279,7 @@ public with sharing class ResumeSnapshotService {
         Is_Verified__c,
         Visibility__c
       FROM Project__c
+      WHERE Status__c IN :LISTED_PROJECT_STATUSES
       WITH USER_MODE
       ORDER BY Name ASC
     ]) {

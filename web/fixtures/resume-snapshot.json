@@ -234,33 +234,6 @@
       "visibility": "public"
     },
     {
-      "id": "prj_66nzgvd59y",
-      "type": "project",
-      "text": "Literacy program platform for an adult literacy nonprofit",
-      "tags": [],
-      "priority": 2,
-      "verified": true,
-      "visibility": "public"
-    },
-    {
-      "id": "prj_egj9w2zx48",
-      "type": "project",
-      "text": "Seed Project Alpha",
-      "tags": [],
-      "priority": 2,
-      "verified": true,
-      "visibility": "public"
-    },
-    {
-      "id": "prj_m4urhzd398",
-      "type": "project",
-      "text": "Seed Project Beta",
-      "tags": [],
-      "priority": 2,
-      "verified": true,
-      "visibility": "public"
-    },
-    {
       "id": "crt_pyhxpfttzq",
       "type": "certification",
       "text": "Seed Application Architect",
