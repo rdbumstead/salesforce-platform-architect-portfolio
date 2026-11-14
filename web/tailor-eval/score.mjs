@@ -230,7 +230,8 @@ export function checkExpectations(record, posting, { snapshot, categories, baseR
     const want = typeof checks.headlineId === 'string' ? checks.headlineId : checks.headlineId[record.mode];
     if (want) add('headlineId', selection?.headline_id === want);
   }
-  if (checks.hardFilterKinds) {
+  // Visitor mode never shows hard filters or gaps, so those checks apply to owner runs only.
+  if (checks.hardFilterKinds && record.mode !== 'visitor') {
     const flagged = new Set(hardFilterKinds(selection?.hard_filter_flags || []));
     add('hardFilterKinds', checks.hardFilterKinds.every((kind) => flagged.has(kind)));
   }
@@ -248,7 +249,7 @@ export function checkExpectations(record, posting, { snapshot, categories, baseR
     add('letterOpensOn', rankCategories(first, categories).some((entry) => entry.id === checks.letterOpensOn));
   }
   if (checks.letterNamesCurrentEmployer) add('letterNamesCurrentEmployer', String(record.letter?.text || '').includes(snapshot.owner.currentEmployer));
-  if (checks.reportsGap) add('reportsGap', (selection?.top_requirements || []).some((entry) => entry?.match === 'gap'));
+  if (checks.reportsGap && record.mode !== 'visitor') add('reportsGap', (selection?.top_requirements || []).some((entry) => entry?.match === 'gap'));
   if (checks.idSetDiffersFrom) {
     const others = otherRecords[checks.idSetDiffersFrom] || [];
     if (others.length) add('idSetDiffersFrom', others.every((other) => jaccard(selectedIds(other.selection), selectedIds(selection)) < 1));
