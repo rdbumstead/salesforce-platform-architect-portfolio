@@ -1,7 +1,9 @@
 /**
  * Checks the selector's output against the resume snapshot before anything is rendered.
  *
- * The output is the selector JSON (a string straight from the model, or the parsed object). It
+ * The output is the selector JSON (a string straight from the model, or the parsed object). One
+ * code fence around the whole string is removed with a warning, since models add one often and
+ * refusing it would spend the one retry on nothing. It
  * must hold exactly the fields of the selector schema, each with its type. Every id must exist in
  * the snapshot and sit in the right slot: a headline id in headline_id, a summary id in
  * summary_id, bullets under the role they belong to, skills in skill_ids and projects in
@@ -119,10 +121,28 @@ function checkStrings(list, where, errors) {
   });
 }
 
-function parse(output, errors) {
+/**
+ * One code fence around the whole output, with only whitespace outside it. The info string may be
+ * "json" or empty. Text before or after the fence, or a second fence, is not accepted.
+ */
+const FENCE = /^```(?:json)?[ \t]*\r?\n?([\s\S]*?)\r?\n?```$/i;
+
+function parse(output, errors, warnings) {
   if (typeof output !== "string") return output;
+  let text = output;
+  const fenced = output.trim().match(FENCE);
+  if (fenced && !fenced[1].includes("```")) {
+    text = fenced[1];
+    warnings.push(
+      issue(
+        "selection.fenced",
+        "The selector wrapped its JSON in a code fence, which was removed",
+        output.trim().split(/\r?\n/)[0]
+      )
+    );
+  }
   try {
-    return JSON.parse(output);
+    return JSON.parse(text);
   } catch (error) {
     errors.push(
       issue(
@@ -387,7 +407,7 @@ export function validateSelection(output, snapshot, { mode } = {}) {
     );
     return failed();
   }
-  const selection = parse(output, errors);
+  const selection = parse(output, errors, warnings);
   if (selection === undefined) return failed();
   if (!checkFields(selection, TOP_FIELDS, "selection", errors)) return failed();
   const index = indexSnapshot(snapshot, errors);

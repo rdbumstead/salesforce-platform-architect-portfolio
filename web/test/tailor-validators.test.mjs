@@ -663,3 +663,21 @@ test('blocklist: terms are normalised, so an invisible character in the secret d
   assert.deepEqual(parseBlocklist(`\uff5a\uff5aclientone`).terms, ['zzclientone']);
 });
 
+// ---------- a fenced selection ----------
+
+test('selection: one fenced block holding the whole output is accepted with a warning', () => {
+  for (const fenced of ['```json\n' + JSON.stringify(selection(), null, 2) + '\n```', '\n  ```\n' + JSON.stringify(selection()) + '\n```  \n', '```JSON\n' + JSON.stringify(selection()) + '```']) {
+    const result = validateSelection(fenced, SNAPSHOT, { mode: 'owner' });
+    assert.deepEqual(result.errors, []);
+    assert.equal(warned(result, 'selection.fenced').length, 1);
+  }
+  assert.deepEqual(warned(validateSelection(JSON.stringify(selection()), SNAPSHOT, { mode: 'owner' }), 'selection.fenced'), []);
+});
+
+test('selection: text around a fenced block, or two blocks, still fails as invalid JSON', () => {
+  const body = JSON.stringify(selection());
+  for (const text of ['Here you go:\n```json\n' + body + '\n```', '```json\n' + body + '\n```\nHope that helps.', '```json\n' + body + '\n```\n```json\n{}\n```']) {
+    assert.deepEqual(codes(validateSelection(text, SNAPSHOT, { mode: 'owner' })), ['selection.json'], text.slice(0, 20));
+  }
+});
+
