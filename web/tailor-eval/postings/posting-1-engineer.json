@@ -1,0 +1,41 @@
+{
+  "id": "posting-1-engineer",
+  "kind": "synthetic",
+  "company": "Quillfern Search",
+  "title": "Senior Salesforce Engineer",
+  "location": "Remote, United States",
+  "text": "Quillfern Search builds search and AI software for support teams. We run our own go to market on Salesforce, and we want a Senior Salesforce Engineer who writes code every day and uses AI-assisted coding tools as a normal part of the job.\n\nWhat you will do\n- Build full-stack features on Salesforce: Apex, Lightning Web Components, and the JavaScript around them.\n- Work daily with AI-assisted coding tools such as Claude Code, Cursor or Codex, and help the team set the standards for how AI-assisted code is reviewed and shipped.\n- Design REST and event-driven integrations between Salesforce, our product and our data warehouse.\n- Build agentic features for our sales and support teams, with clear governance and a human in the loop before anything reaches a customer.\n- Own CI/CD for the Salesforce platform: source control, automated tests, scratch orgs and release pipelines.\n\nWhat you bring\n- Six or more years of Salesforce engineering, with deep Apex and LWC experience.\n- Hands-on, daily use of AI-assisted coding tools (Claude Code, Cursor, Codex or similar) and opinions about where they help and where they need review.\n- REST and event-driven integration experience.\n- CI/CD experience on Salesforce.\n- A Bachelor's degree in Computer Science or a related field is required.\n\nThis role is remote within the United States.",
+  "canaries": [],
+  "expected": {
+    "notes": [
+      "title_family is engineer",
+      "AI-assisted development is a top requirement, matched to the AI toolkit bullet",
+      "The Bachelor's degree is flagged as a hard filter",
+      "The Power Automate bullet is not used as AI-assisted development evidence",
+      "The engineer headline variant is selected",
+      "The cover letter opens on AI-assisted development and names the current employer from the snapshot owner (owner.currentEmployer), which the prompt also takes from the snapshot"
+    ],
+    "checks": {
+      "titleFamily": "engineer",
+      "headlineId": {
+        "owner": "headline-engineer"
+      },
+      "hardFilterKinds": ["degree"],
+      "requireEvidence": [
+        {
+          "category": "ai-assisted-dev",
+          "id": "northwind-ai-toolkit",
+          "modes": ["owner"]
+        }
+      ],
+      "forbidEvidence": [
+        {
+          "category": "ai-assisted-dev",
+          "id": "lakeview-power-automate"
+        }
+      ],
+      "letterOpensOn": "ai-assisted-dev",
+      "letterNamesCurrentEmployer": true
+    }
+  }
+}

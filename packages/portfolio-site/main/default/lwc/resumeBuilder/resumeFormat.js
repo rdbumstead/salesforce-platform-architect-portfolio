@@ -508,7 +508,7 @@ export function buildLines(model) {
       push("meta", `${link.label}: ${link.url}`)
     );
     if (model.header.careerObjective) {
-      section("Summary");
+      section(RESUME_LAYOUT.labels.summary);
       push("text", model.header.careerObjective);
     }
   }
@@ -608,11 +608,9 @@ export function writePdf(doc, model, options = {}) {
     });
   };
 
-  // Header: centred name, title and links side by side, then the summary with no heading.
-  writer.header(model.header);
-
-  model.sections.forEach((entry) => {
-    writer.setSection(entry.title);
+  // A section title: upper case with the rule under it, kept with the first entry below it.
+  const sectionTitle = (title) => {
+    writer.setSection(title);
     if (writer.blockCount > 0) {
       writer.spacer(space.sectionBefore);
     }
@@ -620,7 +618,7 @@ export function writePdf(doc, model, options = {}) {
       [
         {
           kind: "section",
-          text: shown(entry.title, type.sectionTitle),
+          text: shown(title, type.sectionTitle),
           x: margin
         }
       ],
@@ -629,6 +627,22 @@ export function writePdf(doc, model, options = {}) {
     );
     titleRow.rule = true;
     block([titleRow], space.sectionTitleAfter, true);
+  };
+
+  // Header: centred name, title and links side by side. The summary follows under its own
+  // section title, as in the ATS text, so both read in the same order.
+  const header = model.header;
+  writer.header(header ? { ...header, careerObjective: "" } : header);
+  if (header && header.careerObjective) {
+    sectionTitle(layout.labels.summary);
+    block(
+      paragraph("summary", header.careerObjective, type.summary),
+      space.itemGap
+    );
+  }
+
+  model.sections.forEach((entry) => {
+    sectionTitle(entry.title);
 
     if (entry.isExperience) {
       model.employers.forEach((group) => {

@@ -583,7 +583,7 @@ describe("c-resume-builder", () => {
     expect(written).toContain("Ryan Bumstead");
     expect(written).toContain("EXPERIENCE");
     expect(written).toContain("Led the integration layer.");
-    expect(written).not.toContain("SUMMARY");
+    expect(written).toContain("SUMMARY");
     expect(query(element, ".export-message").textContent).toContain(
       "PDF downloaded."
     );
@@ -1024,7 +1024,10 @@ describe("c-resume-builder", () => {
       writePdf(doc, model, { family: "Inter", trace });
 
       const preview = previewOutline(element);
-      const pdf = pdfOutline(trace);
+      // The PDF opens with a Summary section, as the ATS text does. The preview shows the
+      // objective under the header with no heading, so the rest is compared section by section.
+      const [summary, ...pdf] = pdfOutline(trace);
+      expect(summary.title).toBe("SUMMARY");
       expect(preview.map((section) => section.title)).toEqual([
         "Experience",
         "Skills",
@@ -1044,8 +1047,8 @@ describe("c-resume-builder", () => {
       // The trace is what was drawn: every traced piece is in the document's text calls.
       const drawn = doc.drawn.map((piece) => piece.text);
       trace.forEach((piece) => expect(drawn).toContain(piece.text));
-      // The header has no Summary heading in either.
-      expect(drawn).not.toContain("SUMMARY");
+      // The PDF has a Summary heading and the preview does not.
+      expect(drawn).toContain("SUMMARY");
       expect(element.shadowRoot.textContent).not.toContain("Summary");
     });
 
@@ -1121,7 +1124,60 @@ describe("c-resume-builder", () => {
       expect(dates.x).toBeGreaterThan(heading.x);
       expect(heading.style).toBe("bold");
       expect(dates.style).toBe("normal");
-      // One rule under each section title.
+      // One rule under each section title, Summary included.
+      expect(doc.line).toHaveBeenCalledTimes(5);
+    });
+
+    it("draws the summary under a Summary title styled like every other section title", () => {
+      const model = buildViewModel(FULL, {
+        includeHeader: true,
+        includeSkills: true
+      });
+      const trace = [];
+      const doc = fakeDoc();
+      writePdf(doc, model, { family: "Inter", trace });
+      const summaryTitle = doc.drawn.find((piece) => piece.text === "SUMMARY");
+      const experienceTitle = doc.drawn.find(
+        (piece) => piece.text === "EXPERIENCE"
+      );
+      const objective = doc.drawn.find(
+        (piece) => piece.text === FULL.header.careerObjective
+      );
+      expect(summaryTitle.size).toBe(experienceTitle.size);
+      expect(summaryTitle.style).toBe(experienceTitle.style);
+      expect(summaryTitle.x).toBe(experienceTitle.x);
+      expect(summaryTitle.size).toBe(RESUME_LAYOUT.type.sectionTitle.size);
+      expect(objective.size).toBe(RESUME_LAYOUT.type.summary.size);
+      expect(objective.style).toBe("normal");
+      // Name, title and links, then the Summary title, the objective, then Experience.
+      const order = trace.map((piece) => piece.text);
+      const at = (text) => order.indexOf(text);
+      expect(at("Ryan Bumstead")).toBeLessThan(at("SUMMARY"));
+      expect(at("SUMMARY")).toBe(at(FULL.header.careerObjective) - 1);
+      expect(at(FULL.header.careerObjective)).toBeLessThan(at("EXPERIENCE"));
+      expect(objective.y).toBeGreaterThan(summaryTitle.y);
+      expect(experienceTitle.y).toBeGreaterThan(objective.y);
+      // The PDF reads in the same order as the ATS text.
+      const ats = buildLines(model)
+        .filter((line) => line.kind === "heading")
+        .map((line) => line.text.toUpperCase());
+      expect(
+        trace
+          .filter((piece) => piece.kind === "section")
+          .map((piece) => piece.text)
+      ).toEqual(ats);
+    });
+
+    it("draws no Summary title when there is no career objective", () => {
+      const model = buildViewModel(
+        { ...FULL, header: { ...FULL.header, careerObjective: "" } },
+        { includeHeader: true, includeSkills: true }
+      );
+      const doc = fakeDoc();
+      writePdf(doc, model, { family: "Inter" });
+      const drawn = doc.drawn.map((piece) => piece.text);
+      expect(drawn).not.toContain("SUMMARY");
+      expect(drawn).toContain("Ryan Bumstead");
       expect(doc.line).toHaveBeenCalledTimes(4);
     });
 

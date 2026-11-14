@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Public_Key__c</fullName>
+    <caseSensitive>false</caseSensitive>
+    <description
+  >Stable public identifier of the variant, the id a tailored resume selection names. Short, lower case and readable, and never changed once a selection uses it.</description>
+    <externalId>true</externalId>
+    <inlineHelpText
+  >Set once, for example engineer-headline. Do not change it after the variant is in use.</inlineHelpText>
+    <label>Public Key</label>
+    <length>24</length>
+    <required>false</required>
+    <trackFeedHistory>false</trackFeedHistory>
+    <type>Text</type>
+    <unique>true</unique>
+</CustomField>

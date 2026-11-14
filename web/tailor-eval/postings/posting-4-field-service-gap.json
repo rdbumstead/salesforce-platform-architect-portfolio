@@ -1,0 +1,20 @@
+{
+  "id": "posting-4-field-service-gap",
+  "kind": "synthetic",
+  "company": "Tamberlune Logistics",
+  "title": "Salesforce Field Service Technical Lead",
+  "location": "On site, five days a week",
+  "text": "Tamberlune Logistics maintains cold storage equipment for grocery chains. Our technicians live in Salesforce Field Service, and we need a Field Service Technical Lead to own it.\n\nThe job\n- Lead our Salesforce Field Service implementation: scheduling policies, dispatch, service territories, work orders and the Field Service mobile app.\n- Tune the Field Service scheduling optimizer for our technicians' routes.\n- Build the Field Service mobile app flows our technicians use offline.\n- Configure CPQ for service contracts.\n- Work with our integration team on the warehouse system.\n\nMust have\n- Five or more years of Salesforce Field Service implementation, with at least two full implementations led.\n- Field Service scheduling and optimization experience.\n- Field Service mobile app configuration.\n- This role is on site five days a week at our depot and is open only to candidates who already hold a government security clearance, which requires citizenship.",
+  "canaries": [],
+  "expected": {
+    "notes": [
+      "The top requirement, Salesforce Field Service, has no evidence in the snapshot and is reported as a gap",
+      "No weak match is stretched to cover Field Service",
+      "The on site location and the clearance are flagged as hard filters"
+    ],
+    "checks": {
+      "reportsGap": true,
+      "hardFilterKinds": ["location", "citizenship"]
+    }
+  }
+}

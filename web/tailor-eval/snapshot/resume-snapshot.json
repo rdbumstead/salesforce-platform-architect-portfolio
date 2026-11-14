@@ -1,0 +1,919 @@
+{
+  "version": 1,
+  "generatedAt": "2026-11-14T00:00:00.000Z",
+  "owner": {
+    "name": "Seed Owner",
+    "currentEmployer": "Northwind Digital"
+  },
+  "roles": [
+    {
+      "id": "northwind-consultant",
+      "employer": "Northwind Digital",
+      "title": "Senior Solution Consultant",
+      "start": "2026-04-14",
+      "end": null,
+      "current": true
+    },
+    {
+      "id": "seed-architect",
+      "employer": "Seed Employer",
+      "title": "Seed Platform Architect",
+      "start": "2023-01-01",
+      "end": null,
+      "current": true
+    },
+    {
+      "id": "independent-architect",
+      "employer": "Independent",
+      "title": "Salesforce Application Architect",
+      "start": "2021-10-01",
+      "end": null,
+      "current": true
+    },
+    {
+      "id": "lakeview-crm-developer",
+      "employer": "Lakeview University",
+      "title": "CRM Developer",
+      "start": "2025-08-01",
+      "end": "2026-04-10",
+      "current": false
+    },
+    {
+      "id": "lakeview-app-admin",
+      "employer": "Lakeview University",
+      "title": "Application Administrator",
+      "start": "2021-06-14",
+      "end": "2025-08-01",
+      "current": false
+    },
+    {
+      "id": "seed-developer",
+      "employer": "Seed Employer",
+      "title": "Seed Salesforce Developer",
+      "start": "2019-01-01",
+      "end": "2022-12-31",
+      "current": false
+    },
+    {
+      "id": "harbor-instructor",
+      "employer": "Harbor Community College",
+      "title": "Non-Credit Instructor",
+      "start": "2017-12-01",
+      "end": "2021-06-18",
+      "current": false
+    },
+    {
+      "id": "harbor-services-specialist",
+      "employer": "Harbor Community College",
+      "title": "Services Specialist II",
+      "start": "2017-07-03",
+      "end": "2021-06-18",
+      "current": false
+    },
+    {
+      "id": "harbor-project-assistant",
+      "employer": "Harbor Community College",
+      "title": "IT Project Assistant",
+      "start": "2017-01-02",
+      "end": "2017-07-02",
+      "current": false
+    },
+    {
+      "id": "mapworks-gis-analyst",
+      "employer": "Mapworks",
+      "title": "GIS Analyst",
+      "start": "2015-03-02",
+      "end": "2015-08-31",
+      "current": false
+    },
+    {
+      "id": "oldtown-service-manager",
+      "employer": "Old Town Retail",
+      "title": "Customer Service Manager",
+      "start": "2012-03-01",
+      "end": "2014-06-30",
+      "current": false
+    }
+  ],
+  "items": [
+    {
+      "id": "headline-site-title",
+      "type": "headline",
+      "text": "Seed Platform Architect",
+      "tags": ["architecture"],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "headline-engineer",
+      "type": "headline",
+      "text": "Senior Salesforce Engineer | Platform Architecture and AI-Assisted Development",
+      "tags": ["ai-assisted-dev", "architecture"],
+      "priority": 1,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "headline-architect",
+      "type": "headline",
+      "text": "Salesforce Platform Architect",
+      "tags": ["architecture"],
+      "priority": 1,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "headline-consultant",
+      "type": "headline",
+      "text": "Senior Salesforce Solution Consultant | Education Cloud",
+      "tags": ["higher-ed"],
+      "priority": 1,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "summary-site",
+      "type": "summary",
+      "text": "Seed career objective for the resume walk.",
+      "tags": [],
+      "priority": 1,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "northwind-consultant-highlight-1",
+      "type": "bullet",
+      "roleId": "northwind-consultant",
+      "text": "Led a long running piece of work for Senior Solution Consultant that took many months and touched several teams across the organisation",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "northwind-consultant-highlight-2",
+      "type": "bullet",
+      "roleId": "northwind-consultant",
+      "text": "A second highlight with no short text, so the timeline falls back to this long description and trims it to one line",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "northwind-consultant-highlight-3",
+      "type": "bullet",
+      "roleId": "northwind-consultant",
+      "text": "Third highlight",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "northwind-consultant-highlight-4",
+      "type": "bullet",
+      "roleId": "northwind-consultant",
+      "text": "Fourth highlight, beyond the cap of three",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-architect-highlight-1",
+      "type": "bullet",
+      "roleId": "seed-architect",
+      "text": "Seed architect highlight for the current role.",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-architect-highlight-2",
+      "type": "bullet",
+      "roleId": "seed-architect",
+      "text": "Seed highlight shared by every persona for the current role.",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-architect-highlight-3",
+      "type": "bullet",
+      "roleId": "seed-architect",
+      "text": "Seed developer highlight for the current role.",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-architect-highlight-4",
+      "type": "bullet",
+      "roleId": "seed-architect",
+      "text": "Seed admin highlight for the current role.",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "independent-architect-highlight-1",
+      "type": "bullet",
+      "roleId": "independent-architect",
+      "text": "Led a long running piece of work for Salesforce Application Architect that took many months and touched several teams across the organisation",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "independent-architect-highlight-2",
+      "type": "bullet",
+      "roleId": "independent-architect",
+      "text": "A second highlight with no short text, so the timeline falls back to this long description and trims it to one line",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "independent-architect-highlight-3",
+      "type": "bullet",
+      "roleId": "independent-architect",
+      "text": "Third highlight",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "independent-architect-highlight-4",
+      "type": "bullet",
+      "roleId": "independent-architect",
+      "text": "Fourth highlight, beyond the cap of three",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "lakeview-crm-developer-highlight-1",
+      "type": "bullet",
+      "roleId": "lakeview-crm-developer",
+      "text": "Led a long running piece of work for CRM Developer that took many months and touched several teams across the organisation",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "lakeview-crm-developer-highlight-2",
+      "type": "bullet",
+      "roleId": "lakeview-crm-developer",
+      "text": "A second highlight with no short text, so the timeline falls back to this long description and trims it to one line",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "lakeview-crm-developer-highlight-3",
+      "type": "bullet",
+      "roleId": "lakeview-crm-developer",
+      "text": "Third highlight",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "lakeview-crm-developer-highlight-4",
+      "type": "bullet",
+      "roleId": "lakeview-crm-developer",
+      "text": "Fourth highlight, beyond the cap of three",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "lakeview-app-admin-highlight-1",
+      "type": "bullet",
+      "roleId": "lakeview-app-admin",
+      "text": "Led a long running piece of work for Application Administrator that took many months and touched several teams across the organisation",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "lakeview-app-admin-highlight-2",
+      "type": "bullet",
+      "roleId": "lakeview-app-admin",
+      "text": "A second highlight with no short text, so the timeline falls back to this long description and trims it to one line",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "lakeview-app-admin-highlight-3",
+      "type": "bullet",
+      "roleId": "lakeview-app-admin",
+      "text": "Third highlight",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "lakeview-app-admin-highlight-4",
+      "type": "bullet",
+      "roleId": "lakeview-app-admin",
+      "text": "Fourth highlight, beyond the cap of three",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-developer-highlight-1",
+      "type": "bullet",
+      "roleId": "seed-developer",
+      "text": "Seed architect highlight for the past role.",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-developer-highlight-2",
+      "type": "bullet",
+      "roleId": "seed-developer",
+      "text": "Seed highlight shared by every persona for the past role.",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-developer-highlight-3",
+      "type": "bullet",
+      "roleId": "seed-developer",
+      "text": "Seed developer highlight for the past role.",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-developer-highlight-4",
+      "type": "bullet",
+      "roleId": "seed-developer",
+      "text": "Seed admin highlight for the past role.",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "harbor-instructor-highlight-1",
+      "type": "bullet",
+      "roleId": "harbor-instructor",
+      "text": "Led a long running piece of work for Non-Credit Instructor that took many months and touched several teams across the organisation",
+      "tags": [],
+      "priority": 3,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "harbor-instructor-highlight-2",
+      "type": "bullet",
+      "roleId": "harbor-instructor",
+      "text": "A second highlight with no short text, so the timeline falls back to this long description and trims it to one line",
+      "tags": [],
+      "priority": 3,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "harbor-instructor-highlight-3",
+      "type": "bullet",
+      "roleId": "harbor-instructor",
+      "text": "Third highlight",
+      "tags": [],
+      "priority": 3,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "harbor-instructor-highlight-4",
+      "type": "bullet",
+      "roleId": "harbor-instructor",
+      "text": "Fourth highlight, beyond the cap of three",
+      "tags": [],
+      "priority": 3,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "harbor-services-specialist-highlight-1",
+      "type": "bullet",
+      "roleId": "harbor-services-specialist",
+      "text": "Led a long running piece of work for Services Specialist II that took many months and touched several teams across the organisation",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "harbor-services-specialist-highlight-2",
+      "type": "bullet",
+      "roleId": "harbor-services-specialist",
+      "text": "A second highlight with no short text, so the timeline falls back to this long description and trims it to one line",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "harbor-services-specialist-highlight-3",
+      "type": "bullet",
+      "roleId": "harbor-services-specialist",
+      "text": "Third highlight",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "harbor-services-specialist-highlight-4",
+      "type": "bullet",
+      "roleId": "harbor-services-specialist",
+      "text": "Fourth highlight, beyond the cap of three",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "harbor-project-assistant-highlight-1",
+      "type": "bullet",
+      "roleId": "harbor-project-assistant",
+      "text": "Led a long running piece of work for IT Project Assistant that took many months and touched several teams across the organisation",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "harbor-project-assistant-highlight-2",
+      "type": "bullet",
+      "roleId": "harbor-project-assistant",
+      "text": "A second highlight with no short text, so the timeline falls back to this long description and trims it to one line",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "harbor-project-assistant-highlight-3",
+      "type": "bullet",
+      "roleId": "harbor-project-assistant",
+      "text": "Third highlight",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "harbor-project-assistant-highlight-4",
+      "type": "bullet",
+      "roleId": "harbor-project-assistant",
+      "text": "Fourth highlight, beyond the cap of three",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "northwind-release-owner",
+      "type": "bullet",
+      "roleId": "northwind-consultant",
+      "text": "Owns deployment and release management across four concurrent higher-ed Education Cloud engagements",
+      "tags": ["ci-cd", "governance", "higher-ed", "leadership"],
+      "priority": 1,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "northwind-greenfield-lead",
+      "type": "bullet",
+      "roleId": "northwind-consultant",
+      "text": "Led a greenfield Education Cloud implementation from discovery into build",
+      "tags": ["higher-ed", "leadership", "architecture"],
+      "priority": 1,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "northwind-delivery-recovery",
+      "type": "bullet",
+      "roleId": "northwind-consultant",
+      "text": "Brought in to recover at-risk delivery timelines on client engagements",
+      "tags": ["leadership"],
+      "priority": 2,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "northwind-ai-toolkit",
+      "type": "bullet",
+      "roleId": "northwind-consultant",
+      "text": "Built a Claude Code plugin toolkit for Salesforce delivery, with guardrails, deployment tooling, and session handoffs so AI-assisted work meets the same standards as hand-written work",
+      "tags": ["ai-assisted-dev", "governance", "ci-cd"],
+      "priority": 1,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "northwind-agentic-migration",
+      "type": "bullet",
+      "roleId": "northwind-consultant",
+      "text": "Designs agentic approaches to Salesforce data migration",
+      "tags": ["data-migration", "agentic-ai"],
+      "priority": 2,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "northwind-solution-design",
+      "type": "bullet",
+      "roleId": "northwind-consultant",
+      "text": "Designs OmniStudio application flows, Experience Cloud portals, SIS integrations, and security and sharing models",
+      "tags": [
+        "omnistudio",
+        "experience-cloud",
+        "integration",
+        "security",
+        "higher-ed",
+        "architecture"
+      ],
+      "priority": 1,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "lakeview-service-cloud-admin",
+      "type": "bullet",
+      "roleId": "lakeview-app-admin",
+      "text": "Administered Service Cloud for 400+ staff",
+      "tags": ["admin", "higher-ed"],
+      "priority": 2,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "lakeview-experience-cloud-admin",
+      "type": "bullet",
+      "roleId": "lakeview-app-admin",
+      "text": "Administered Experience Cloud for 10,000+ external users",
+      "tags": ["admin", "experience-cloud", "higher-ed"],
+      "priority": 2,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "lakeview-devops-lead",
+      "type": "bullet",
+      "roleId": "lakeview-app-admin",
+      "text": "Led DevOps and CI/CD across two orgs",
+      "tags": ["ci-cd", "leadership"],
+      "priority": 1,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "lakeview-power-automate",
+      "type": "bullet",
+      "roleId": "lakeview-app-admin",
+      "text": "Integrated Power Automate with Salesforce to automate user creation and permission assignment, cutting task time ~90%",
+      "tags": ["integration", "workflow-automation"],
+      "priority": 2,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "lakeview-training-plan",
+      "type": "bullet",
+      "roleId": "lakeview-app-admin",
+      "text": "Built a training plan that upskilled two new CRM developers",
+      "tags": ["leadership"],
+      "priority": 2,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "skill-seed-apex",
+      "type": "skill",
+      "text": "Seed Apex",
+      "tags": ["backend"],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "skill-seed-integration",
+      "type": "skill",
+      "text": "Seed Integration",
+      "tags": ["integration"],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "skill-seed-javascript",
+      "type": "skill",
+      "text": "Seed JavaScript",
+      "tags": ["frontend"],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "skill-seed-soql",
+      "type": "skill",
+      "text": "Seed SOQL",
+      "tags": ["backend"],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "skill-seed-lightning-web-components",
+      "type": "skill",
+      "text": "Seed Lightning Web Components",
+      "tags": ["frontend"],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "skill-seed-slds",
+      "type": "skill",
+      "text": "Seed SLDS",
+      "tags": ["frontend"],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "skill-claude-code",
+      "type": "skill",
+      "text": "Claude Code",
+      "tags": ["ai-assisted-dev"],
+      "priority": 1,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "skill-javascript",
+      "type": "skill",
+      "text": "JavaScript",
+      "tags": ["frontend"],
+      "priority": 1,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "skill-soql",
+      "type": "skill",
+      "text": "SOQL",
+      "tags": ["backend"],
+      "priority": 1,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "skill-git",
+      "type": "skill",
+      "text": "Git",
+      "tags": ["ci-cd"],
+      "priority": 1,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "skill-github-actions",
+      "type": "skill",
+      "text": "GitHub Actions",
+      "tags": ["ci-cd"],
+      "priority": 1,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "skill-salesforce-cli",
+      "type": "skill",
+      "text": "Salesforce CLI",
+      "tags": ["ci-cd"],
+      "priority": 1,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "skill-scratch-orgs",
+      "type": "skill",
+      "text": "Scratch orgs",
+      "tags": ["ci-cd"],
+      "priority": 2,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "skill-python",
+      "type": "skill",
+      "text": "Python",
+      "tags": ["backend"],
+      "priority": 2,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "skill-cloudflare-pages",
+      "type": "skill",
+      "text": "Cloudflare Pages",
+      "tags": ["frontend", "ci-cd"],
+      "priority": 2,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "skill-critical-thinking",
+      "type": "skill",
+      "text": "Critical Thinking",
+      "tags": [],
+      "priority": 3,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "skill-aws-pricing",
+      "type": "skill",
+      "text": "AWS Pricing",
+      "tags": [],
+      "priority": 3,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "skill-aws-support",
+      "type": "skill",
+      "text": "AWS Support",
+      "tags": [],
+      "priority": 3,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "skill-finops",
+      "type": "skill",
+      "text": "FinOps",
+      "tags": [],
+      "priority": 3,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "project-platform-architect-portfolio",
+      "type": "project",
+      "text": "Platform Architect Portfolio: Salesforce APIs behind a public front end on Cloudflare Pages, PR validation in scratch orgs, auto-deploy via GitHub Actions, Delivery page aggregating pipeline results",
+      "tags": ["ci-cd", "integration", "frontend", "architecture"],
+      "priority": 1,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "project-work-experience-api",
+      "type": "project",
+      "text": "Work Experience API: Apex REST system and process APIs, published OpenAPI specs, rate limits and audit trails",
+      "tags": ["integration", "governance", "backend"],
+      "priority": 1,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "project-setup-salesforce-cli",
+      "type": "project",
+      "text": "Setup Salesforce CLI: open-source GitHub Action",
+      "tags": ["ci-cd"],
+      "priority": 2,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "project-resume-as-code",
+      "type": "project",
+      "text": "Resume as Code: CI/CD pipeline for resume generation",
+      "tags": ["ci-cd"],
+      "priority": 2,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "project-governed-document-pipeline",
+      "type": "project",
+      "text": "Governed document pipeline: AI selects content, code enforces rules, a human approves the output",
+      "tags": ["governance", "agentic-ai"],
+      "priority": 2,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "cert-data-360-consultant",
+      "type": "certification",
+      "text": "Salesforce Certified Data 360 Consultant",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "cert-education-cloud-consultant",
+      "type": "certification",
+      "text": "Salesforce Certified Education Cloud Consultant",
+      "tags": ["higher-ed"],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "cert-agentforce-specialist",
+      "type": "certification",
+      "text": "Salesforce Certified Agentforce Specialist",
+      "tags": ["agentic-ai"],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "cert-marketing-cloud-engagement-foundations",
+      "type": "certification",
+      "text": "Salesforce Certified Marketing Cloud Engagement Foundations",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "cert-platform-app-builder",
+      "type": "certification",
+      "text": "Salesforce Certified Platform App Builder",
+      "tags": ["admin"],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "cert-platform-administrator-ii",
+      "type": "certification",
+      "text": "Salesforce Certified Platform Administrator II",
+      "tags": ["admin"],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "cert-platform-administrator",
+      "type": "certification",
+      "text": "Salesforce Certified Platform Administrator",
+      "tags": ["admin"],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "cert-seed-platform-developer-i",
+      "type": "certification",
+      "text": "Seed Platform Developer I",
+      "tags": ["backend"],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "cert-seed-certified-ai-associate",
+      "type": "certification",
+      "text": "Seed Certified AI Associate",
+      "tags": [],
+      "priority": 3,
+      "verified": true,
+      "visibility": "public"
+    }
+  ]
+}

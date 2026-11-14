@@ -1,0 +1,161 @@
+{
+  "description": "Requirement categories used as item tags in the resume snapshot and as requirement categories in gold files. Categories marked brief come from the owner's list. Categories marked proposed are not on that list and wait for the owner to keep, rename or drop. Keywords map a requirement's wording to a category when a gold file does not name one.",
+  "categories": [
+    {
+      "id": "ai-assisted-dev",
+      "source": "brief",
+      "label": "AI-assisted development",
+      "keywords": [
+        "ai-assisted",
+        "ai assisted",
+        "ai coding",
+        "coding assistant",
+        "claude code",
+        "cursor",
+        "codex",
+        "copilot"
+      ]
+    },
+    {
+      "id": "ci-cd",
+      "source": "brief",
+      "label": "CI/CD and release management",
+      "keywords": [
+        "ci/cd",
+        "continuous integration",
+        "deployment",
+        "release",
+        "devops",
+        "pipeline"
+      ]
+    },
+    {
+      "id": "integration",
+      "source": "brief",
+      "label": "Integration",
+      "keywords": [
+        "integration",
+        "rest",
+        "event-driven",
+        "event driven",
+        "api",
+        "middleware",
+        "sis"
+      ]
+    },
+    {
+      "id": "frontend",
+      "source": "brief",
+      "label": "Front end",
+      "keywords": [
+        "front end",
+        "frontend",
+        "front-end",
+        "full-stack",
+        "full stack",
+        "lightning web components",
+        "javascript",
+        "ui"
+      ]
+    },
+    {
+      "id": "leadership",
+      "source": "brief",
+      "label": "Leadership",
+      "keywords": ["lead", "leadership", "mentor", "stakeholder", "team"]
+    },
+    {
+      "id": "governance",
+      "source": "brief",
+      "label": "Governance",
+      "keywords": [
+        "governance",
+        "human-in-the-loop",
+        "human in the loop",
+        "risk",
+        "standards",
+        "review"
+      ]
+    },
+    {
+      "id": "higher-ed",
+      "source": "brief",
+      "label": "Higher education",
+      "keywords": [
+        "higher-ed",
+        "higher ed",
+        "education cloud",
+        "student",
+        "university",
+        "admissions",
+        "advising"
+      ]
+    },
+    {
+      "id": "data-migration",
+      "source": "brief",
+      "label": "Data migration",
+      "keywords": ["migration", "data load", "etl"]
+    },
+    {
+      "id": "architecture",
+      "source": "proposed",
+      "label": "Platform architecture",
+      "keywords": [
+        "architecture",
+        "architect",
+        "multi-org",
+        "multi org",
+        "org strategy",
+        "design authority"
+      ]
+    },
+    {
+      "id": "security",
+      "source": "proposed",
+      "label": "Security and sharing",
+      "keywords": ["security", "sharing", "access model", "permission"]
+    },
+    {
+      "id": "admin",
+      "source": "proposed",
+      "label": "Administration",
+      "keywords": ["administration", "administrator", "admin"]
+    },
+    {
+      "id": "experience-cloud",
+      "source": "proposed",
+      "label": "Experience Cloud",
+      "keywords": ["experience cloud", "portal", "community"]
+    },
+    {
+      "id": "omnistudio",
+      "source": "proposed",
+      "label": "OmniStudio",
+      "keywords": ["omnistudio", "omniscript", "flexcard"]
+    },
+    {
+      "id": "workflow-automation",
+      "source": "proposed",
+      "label": "Workflow automation",
+      "keywords": [
+        "workflow automation",
+        "power automate",
+        "flow builder",
+        "process automation"
+      ]
+    },
+    {
+      "id": "agentic-ai",
+      "source": "proposed",
+      "label": "Agentic AI features",
+      "keywords": ["agentic", "agentforce", "ai agent", "autonomous agent"]
+    },
+    {
+      "id": "backend",
+      "source": "proposed",
+      "label": "Back end",
+      "keywords": ["apex", "soql", "back end", "backend", "python"]
+    }
+  ]
+}

@@ -6,7 +6,10 @@
  *                      query definition names) or from fixed lists the controllers already use
  *                      (personas, schema scopes), never from free text. The methods run as the
  *                      calling user, so the build user must hold exactly what the site guest
- *                      holds. SiteExportResourceTest proves the results match the guest's.
+ *                      holds. SiteExportResourceTest proves the results match the guest's. The
+ *                      one exception is the resume snapshot, which no page shows. It reads fields
+ *                      only the build user holds, and ResumeSnapshotServiceTest proves the guest
+ *                      cannot read it.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -59,7 +62,8 @@ public with sharing class SiteExportCalls {
     'ApiLabController.getCatalog' => new Set<String>(),
     'ApiLabController.getPostmanRunUrl' => new Set<String>(),
     'ApiLabController.getVersionlessUrls' => new Set<String>(),
-    'ApiLabOptionsController.getOptions' => new Set<String>()
+    'ApiLabOptionsController.getOptions' => new Set<String>(),
+    'ResumeSnapshotService.getSnapshot' => new Set<String>()
   };
 
   /**
@@ -166,6 +170,9 @@ public with sharing class SiteExportCalls {
       }
       when 'PortfolioStatsController.getStats' {
         return PortfolioStatsController.getStats();
+      }
+      when 'ResumeSnapshotService.getSnapshot' {
+        return ResumeSnapshotService.getSnapshot();
       }
     }
     throw new NotAllowedException('Unknown call.');

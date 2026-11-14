@@ -3,6 +3,10 @@
 # INTELLIGENT HOOK
 # ----------------------
 
+# 0. PRIVATE FILES
+# Real postings, gold selections, run results and a snapshot of real data are never committed.
+node scripts/check-private-paths.js || exit 1
+
 # 1. HYGIENE (Handled by lint-staged in package.json)
 # Runs: Prettier, ESLint, Secret Lint, and LWC Jest (Related Files Only)
 echo "[INFO] [1/2] Running Hygiene Checks (Lint/Secrets/UI Tests)..."

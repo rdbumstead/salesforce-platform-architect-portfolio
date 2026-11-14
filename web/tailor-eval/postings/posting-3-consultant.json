@@ -1,0 +1,17 @@
+{
+  "id": "posting-3-consultant",
+  "kind": "synthetic",
+  "company": "Merrowfield Partners",
+  "title": "Education Cloud Consultant",
+  "location": "Remote, North America",
+  "text": "Merrowfield Partners is a Salesforce consulting partner that works with colleges and universities. We are looking for an Education Cloud Consultant to lead client work across the student lifecycle.\n\nIn this role you will\n- Run discovery workshops with admissions, advising and student services teams, and turn what you hear into a solution design.\n- Configure Education Cloud for the higher-ed student lifecycle: recruitment, admissions, enrollment, advising and alumni.\n- Build OmniStudio flows for applications and student requests.\n- Design and configure Experience Cloud portals for applicants and students.\n- Work with the delivery team on integrations to the student information system.\n\nYou have\n- Three or more years of Salesforce consulting, ideally in higher education.\n- Education Cloud experience, with the Education Cloud Consultant certification or the plan to earn it.\n- Hands-on OmniStudio and Experience Cloud work.\n- Strong discovery and client facing skills.",
+  "canaries": [],
+  "expected": {
+    "notes": [
+      "The selection changes from posting 1 to fit a higher-ed consultant role"
+    ],
+    "checks": {
+      "idSetDiffersFrom": "posting-1-engineer"
+    }
+  }
+}
