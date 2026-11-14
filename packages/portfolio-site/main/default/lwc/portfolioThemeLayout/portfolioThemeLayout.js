@@ -43,6 +43,8 @@
 import { LightningElement, wire } from "lwc";
 import { CurrentPageReference } from "lightning/navigation";
 import basePath from "@salesforce/community/basePath";
+import getRedirect from "@salesforce/apex/SiteRedirectController.getRedirect";
+import { IS_STATIC } from "c/siteHost";
 import { PILLARS } from "c/pillarData";
 import { trackEvent, EVENTS } from "c/analyticsService";
 import {
@@ -94,6 +96,87 @@ export const TOUR_HEADING_WAIT_MS = 5000;
 export const TOUR_HEADING_POLL_MS = 100;
 // The line under the tour row in the "How it's built" menu.
 export const TOUR_MENU_NOTE = "Five stops, with one task on each";
+
+/** The query parameter the redirect adds, with the value that says the Salesforce site sent the visitor. */
+export const ARRIVAL_PARAM = "from";
+export const ARRIVAL_VALUE = "sf";
+
+/** The query parameter that keeps a visitor on the Salesforce site, and the key that remembers it for the tab. */
+export const BYPASS_PARAM = "stay";
+export const BYPASS_VALUE = "1";
+export const BYPASS_KEY = "portfolio-redirect-stay";
+
+/** The hosts an http target may name. Any other target must be https. */
+const LOCAL_HOSTS = ["localhost", "127.0.0.1"];
+
+/** The one place the layout leaves the page, so a test can watch it. */
+export const navigation = {
+  replace(address) {
+    window.location.replace(address);
+  }
+};
+
+/**
+ * The address a Salesforce site visitor is sent to, or null when the page stays. The page
+ * stays unless the switch is on, the page's host is the one host in the settings, the target
+ * is a usable address on another host and the visitor did not ask to stay.
+ * The path keeps everything after the site prefix and the other query parameters are kept.
+ * The address ends with from=sf, which the static site removes again on arrival.
+ * @param {{enabled: boolean, target: string, host: string}} config the settings
+ * @param {{hostname: string, pathname: string, search: string, hash: string}} where the page
+ * @param {string} prefix the site's path prefix, such as "/portfolio", or ""
+ * @param {boolean} stay true when the visitor asked to stay
+ * @returns {string|null} the address, or null
+ */
+export function redirectDestination(config, where, prefix, stay) {
+  if (!config || config.enabled !== true || stay || !where) {
+    return null;
+  }
+  const host = String(config.host || "").toLowerCase();
+  if (!host || host !== String(where.hostname || "").toLowerCase()) {
+    return null;
+  }
+  let target;
+  try {
+    target = new URL(config.target);
+  } catch {
+    return null;
+  }
+  const secure = target.protocol === "https:";
+  const local =
+    target.protocol === "http:" && LOCAL_HOSTS.includes(target.hostname);
+  if ((!secure && !local) || target.hostname.toLowerCase() === host) {
+    return null;
+  }
+  let path = where.pathname || "/";
+  const base = prefix || "";
+  if (base && (path === base || path.startsWith(`${base}/`))) {
+    path = path.slice(base.length) || "/";
+  }
+  const query = new URLSearchParams(where.search || "");
+  query.set(ARRIVAL_PARAM, ARRIVAL_VALUE);
+  return `${target.origin}${path}?${query.toString()}${where.hash || ""}`;
+}
+
+/**
+ * True when the visitor asked to stay on the Salesforce site, with stay=1 in the address now
+ * or earlier in this tab. The request is remembered for the tab, so a reload keeps it.
+ * @param {string} search the address's query string
+ * @returns {boolean} true to stay
+ */
+export function wantsToStay(search) {
+  const asked =
+    new URLSearchParams(search || "").get(BYPASS_PARAM) === BYPASS_VALUE;
+  try {
+    if (asked) {
+      window.sessionStorage.setItem(BYPASS_KEY, BYPASS_VALUE);
+      return true;
+    }
+    return window.sessionStorage.getItem(BYPASS_KEY) === BYPASS_VALUE;
+  } catch {
+    return asked;
+  }
+}
 
 /**
  * Builds a site relative href from the community base path and a route URL.
@@ -389,6 +472,9 @@ export default class PortfolioThemeLayout extends LightningElement {
     if (this.chosenTheme) {
       this.applyTheme(this.chosenTheme);
     }
+    if (!IS_STATIC) {
+      this.redirectVisitor();
+    }
     forgetStoredMotion();
     this.applyMotion(isReduced());
     this._stopMotion = onMotionChange((reduced) => this.applyMotion(reduced));
@@ -398,6 +484,33 @@ export default class PortfolioThemeLayout extends LightningElement {
     window.addEventListener("resize", this._onScroll, { passive: true });
     window.addEventListener("popstate", this._onPopState);
     this.routeUrl = currentRouteUrl();
+  }
+
+  /**
+   * On the Salesforce site, sends the visitor to the static site when the settings say so. A
+   * failed read leaves the page as it is.
+   */
+  redirectVisitor() {
+    try {
+      if (wantsToStay(window.location.search)) {
+        return;
+      }
+      Promise.resolve(getRedirect())
+        .then((config) => {
+          const destination = redirectDestination(
+            config,
+            window.location,
+            basePath || "",
+            wantsToStay(window.location.search)
+          );
+          if (destination) {
+            navigation.replace(destination);
+          }
+        })
+        .catch(() => {});
+    } catch {
+      // The redirect is a convenience. The page works without it.
+    }
   }
 
   renderedCallback() {
