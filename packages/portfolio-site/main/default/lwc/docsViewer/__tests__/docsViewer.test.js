@@ -263,14 +263,9 @@ describe("c-docs-viewer list", () => {
       "How this site is designed and why. Start with the Executive Overview."
     );
     expect(links[0].getAttribute("href")).toBe("/portfolio/docs?doc=sas");
-    expect(links[1].getAttribute("aria-label")).toBe("Platform auth, ADR-027");
-    // The name starts with the visible title and carries the badge, which is hidden from readers.
-    expect(
-      links[1].getAttribute("aria-label").startsWith("Platform auth")
-    ).toBe(true);
-    expect(
-      links[1].querySelector(".doc-badge").getAttribute("aria-hidden")
-    ).toBe("true");
+    // Named from the shown badge and title, so voice control can say what it sees.
+    expect(links[1].hasAttribute("aria-label")).toBe(false);
+    expect(links[1].textContent).toBe("ADR-027Platform auth");
     expect(links[0].querySelector(".doc-badge").textContent).toBe("SAS");
     expect(links[1].querySelector(".doc-badge").textContent).toBe("ADR-027");
     expect(links[1].querySelector(".doc-name").textContent).toBe(

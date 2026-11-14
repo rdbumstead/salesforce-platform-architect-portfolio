@@ -334,23 +334,23 @@ describe("c-skill-network (Large form factor)", () => {
     expect(years("Data Cloud")).toBe("under 1 yr");
     // Linked to a project only, so no years.
     expect(years("Agentforce")).toBeNull();
-    expect(chipByName(element, "Agentforce").getAttribute("aria-label")).toBe(
-      "Agentforce, proficiency 3 of 5, used on a project"
+    expect(chipByName(element, "Agentforce").hasAttribute("aria-label")).toBe(
+      false
     );
   });
 
-  it("names each chip from its visible name, with the meta row left to the label", async () => {
+  it("names each chip from its shown words, with no label that could drift from them", async () => {
     const element = await mountWithData();
     const chip = chipByName(element, "Apex");
-    const label = chip.getAttribute("aria-label");
 
-    // The name is the only visible text voice control has to match, so the label starts with it.
-    expect(chip.querySelector(".chip-name").textContent).toBe("Apex");
-    expect(label.startsWith("Apex")).toBe(true);
-    // The proficiency, years and evidence are in the label already, so the visual row is hidden.
-    expect(chip.querySelector(".chip-meta").getAttribute("aria-hidden")).toBe(
-      "true"
+    // Voice control says what it sees, so the name is the shown text itself and starts with it.
+    expect(chip.hasAttribute("aria-label")).toBe(false);
+    expect(chip.hasAttribute("aria-labelledby")).toBe(false);
+    expect(chip.querySelector(".chip-meta").hasAttribute("aria-hidden")).toBe(
+      false
     );
+    expect(chip.firstElementChild.textContent).toBe("Apex");
+    expect(chip.textContent.startsWith("Apex")).toBe(true);
   });
 
   it("lists the roles and projects of a selected chip and tracks skill_selected", async () => {
@@ -404,9 +404,6 @@ describe("c-skill-network (Large form factor)", () => {
 
     expect(evidenceOf(chip)).toEqual(["Certified 2023", "Project"]);
     expect(chip.querySelector(".chip-years")).toBeNull();
-    expect(chip.getAttribute("aria-label")).toBe(
-      "Agentforce, proficiency 3 of 5, certified in 2023, used on a project"
-    );
     chip.click();
     await flushPromises();
     expect(
@@ -423,7 +420,6 @@ describe("c-skill-network (Large form factor)", () => {
     expect(chip.querySelector(".chip-years").textContent).toBe("8.0 yrs");
     // Time worked, a certification and projects are separate evidence, so the chip shows each.
     expect(evidenceOf(chip)).toEqual(["Certified 2021", "2 projects"]);
-    expect(chip.getAttribute("aria-label")).toContain("certified in 2021");
     chip.click();
     await flushPromises();
     expect(
