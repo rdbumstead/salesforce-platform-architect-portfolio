@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomMetadata
+  xmlns="http://soap.sforce.com/2006/04/metadata"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
+    <label>Site redirect target</label>
+    <protected>false</protected>
+    <values>
+        <field>Number_Value__c</field>
+        <value xsi:nil="true" />
+    </values>
+    <values>
+        <field>Text_Value__c</field>
+        <value xsi:type="xsd:string">https://ryanbumstead.com</value>
+    </values>
+    <values>
+        <field>Min_Value__c</field>
+        <value xsi:nil="true" />
+    </values>
+    <values>
+        <field>Max_Value__c</field>
+        <value xsi:nil="true" />
+    </values>
+    <values>
+        <field>Description__c</field>
+        <value
+      xsi:type="xsd:string"
+    >The static site's origin. The redirect keeps the path after the site prefix and the other query parameters, and adds from=sf. Blank turns the redirect off.</value>
+    </values>
+</CustomMetadata>

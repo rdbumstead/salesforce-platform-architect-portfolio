@@ -6,6 +6,7 @@
 /** Calls that change something or must be read when the visitor asks. */
 export const REQUEST_TIME_CALLS = new Set([
   'FooterController.getSystemSnapshot',
+  'SiteRedirectController.getRedirect',
   'ContactFormController.submitContact',
   'TestimonialController.submitTestimonial',
   'TestimonialController.submitOwnTestimonial',

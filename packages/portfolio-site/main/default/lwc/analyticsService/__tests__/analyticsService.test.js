@@ -101,6 +101,9 @@ const PRE_LAUNCH_NAMES = [
 // Appended for the footer's analytics events list.
 const ANALYTICS_LIST_NAMES = ["analytics_events_opened"];
 
+// Appended for the Salesforce site's returning visitor redirect.
+const REDIRECT_NAMES = ["redirect_arrived"];
+
 describe("c/analyticsService", () => {
   afterEach(() => {
     delete window.gtag;
@@ -119,7 +122,8 @@ describe("c/analyticsService", () => {
         ...CAREER_NAMES,
         ...TIMELINE_TOUR_NAMES,
         ...PRE_LAUNCH_NAMES,
-        ...ANALYTICS_LIST_NAMES
+        ...ANALYTICS_LIST_NAMES,
+        ...REDIRECT_NAMES
       ].sort()
     );
   });
@@ -132,7 +136,8 @@ describe("c/analyticsService", () => {
       ...CAREER_NAMES,
       ...TIMELINE_TOUR_NAMES,
       ...PRE_LAUNCH_NAMES,
-      ...ANALYTICS_LIST_NAMES
+      ...ANALYTICS_LIST_NAMES,
+      ...REDIRECT_NAMES
     ];
     expect(Object.values(EVENTS).slice(-newest.length)).toEqual(newest);
   });

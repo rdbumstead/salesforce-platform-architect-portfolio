@@ -1,0 +1,104 @@
+name: Prerender Audit
+
+# Measures the prerender (ADR-042) against the same build without it. Run by hand only. It
+# builds the site from the org the way the Static Site workflow does, then
+# web/build/prerender-audit.mjs prerenders a copy and audits both builds on this runner in
+# turns, the plain build on port 8788 and the prerendered copy on port 8789. Lighthouse cannot
+# reach a pages.dev preview, because Cloudflare Access gives a service token no cookie, so both
+# sides run here and share the machine and the moment. The difference between the two sides is
+# the measurement. The absolute numbers are the runner's, not Cloudflare's.
+#
+# It deploys nothing, writes nothing to the org and changes nothing on the live site.
+
+on:
+  workflow_dispatch:
+    inputs:
+      rounds:
+        description: "Rounds. Each round audits every main page once on each side."
+        default: "5"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prerender-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Prerender off and on
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      HAS_BUILD_USER: ${{ secrets.SFDX_SITE_BUILD_USERNAME != '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Salesforce CLI as the site build user
+        if: env.HAS_BUILD_USER == 'true'
+        uses: rdbumstead/setup-salesforce-action@v2
+        with:
+          jwt_key: ${{ secrets.SFDX_JWT_KEY }}
+          client_id: ${{ secrets.SFDX_CLIENT_ID }}
+          username: ${{ secrets.SFDX_SITE_BUILD_USERNAME }}
+          alias: "site-build"
+          node_version: "26"
+
+      - name: Setup Node
+        if: env.HAS_BUILD_USER != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "26"
+
+      - name: Install web build dependencies
+        run: npm ci --prefix web --no-audit --no-fund
+
+      - name: Build from Salesforce
+        if: env.HAS_BUILD_USER == 'true'
+        working-directory: web
+        env:
+          SF_TARGET_ORG: site-build
+          SITE_PREVIEW: "true"
+          TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
+        run: node build/build.mjs --export
+
+      - name: Build from fixtures
+        if: env.HAS_BUILD_USER != 'true'
+        working-directory: web
+        env:
+          SITE_PREVIEW: "true"
+        run: |
+          echo "::notice::No SFDX_SITE_BUILD_USERNAME secret, so this audits a fixture build with sample data."
+          node build/build.mjs --fixtures
+
+      - name: Install the audit tools
+        run: npm install --prefix "$RUNNER_TEMP/audit" --no-save --no-audit --no-fund @lhci/cli@0.15.1 playwright-core@1.64.0
+
+      - name: Audit prerender off and on
+        working-directory: web
+        env:
+          LHCI: ${{ runner.temp }}/audit/node_modules/.bin/lhci
+          PRERENDER_MODULES: ${{ runner.temp }}/audit/node_modules
+          ROUNDS: ${{ inputs.rounds }}
+        run: |
+          export CHROME_PATH="$(command -v google-chrome)"
+          node build/prerender-audit.mjs dist --rounds "$ROUNDS" --out "$RUNNER_TEMP/prerender-audit" | tee "$RUNNER_TEMP/audit.md"
+          {
+            echo "## Prerender off and on, median of $ROUNDS runs per page"
+            echo ""
+            echo "Both builds ran on this runner in turns, off on port 8788 and on on port 8789. The change column is on minus off. The absolute numbers are the runner's, not Cloudflare's."
+            echo ""
+            grep '^|' "$RUNNER_TEMP/audit.md"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the Lighthouse results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prerender-audit
+          path: |
+            ${{ runner.temp }}/prerender-audit/
+            !${{ runner.temp }}/prerender-audit/site-on/
+          if-no-files-found: ignore
+          retention-days: 30

@@ -72,7 +72,8 @@ export const EVENTS = Object.freeze({
   POSTMAN_COLLECTION_DOWNLOADED: "postman_collection_downloaded", // source: api_lab or reference
   CURL_COPIED: "curl_copied", // example: token, health or data
   STORAGE_PANEL_OPENED: "storage_panel_opened", // none
-  ANALYTICS_EVENTS_OPENED: "analytics_events_opened" // count: events listed when it opened
+  ANALYTICS_EVENTS_OPENED: "analytics_events_opened", // count: events listed when it opened
+  REDIRECT_ARRIVED: "redirect_arrived" // source: sf, a visitor the Salesforce site sent here
 });
 
 /** The document event the site's head script listens for and passes to gtag. */

@@ -24,11 +24,7 @@
               <ul class="doc-list" aria-label={group.label}>
                 <template for:each={group.items} for:item="item">
                   <li key={item.key} class="doc-list-item">
-                    <a
-                      class="doc-list-link"
-                      href={item.href}
-                      aria-label={item.label}
-                    >
+                    <a class="doc-list-link" href={item.href}>
                       <span class="doc-badge">{item.badge}</span>
                       <span class="doc-name">{item.title}</span>
                     </a>
@@ -54,11 +50,7 @@
                 >
                   <template for:each={group.items} for:item="item">
                     <li key={item.key} class="doc-list-item">
-                      <a
-                        class="doc-list-link"
-                        href={item.href}
-                        aria-label={item.label}
-                      >
+                      <a class="doc-list-link" href={item.href}>
                         <span class="doc-badge">{item.badge}</span>
                         <span class="doc-name">{item.title}</span>
                       </a>
