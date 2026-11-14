@@ -364,14 +364,44 @@ export function nameSectionLinks(root) {
  * own, never taller than the viewport below that line. Redoc writes its own top and height
  * inline from scrollYOffset, so these win with !important. Below 50rem Redoc folds the menu
  * behind its own menu button, which these rules leave alone.
+ * The menu never hands its scroll on to the page behind it. Browsers that support
+ * overscroll-behavior stop it with the first rule, and menuScrollsPage below stops it
+ * in the rest.
  */
 export const REDOC_STYLE_OVERRIDES = [
   ".redoc-target a[href]:link, .redoc-target a[href]:visited { text-decoration: underline; }",
   REDOC_FOCUS_RULE,
+  ".menu-content, .menu-content > div { overscroll-behavior: contain; }",
   "@media (min-width: 50rem) { .redoc-panel_full .menu-content {",
   " top: var(--reference-menu-top, 0px) !important;",
   " height: calc(100vh - var(--reference-menu-top, 0px)) !important; } }"
 ].join("\n");
+
+/**
+ * True when a scroll of this direction, started over the menu, would be handed to the page
+ * because the menu is already at that end of its list. dy is positive to scroll down.
+ * @param {Element} scroller The element that scrolls the menu list.
+ * @param {number} dy The wheel delta, or the opposite of a finger's movement.
+ */
+export function menuScrollsPage(scroller, dy) {
+  if (!scroller || !dy) {
+    return false;
+  }
+  const atTop = scroller.scrollTop <= 0;
+  const atBottom =
+    scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
+  return dy < 0 ? atTop : atBottom;
+}
+
+/** The scrolling list of Redoc's menu when an event came from inside it. */
+function menuScroller(event) {
+  const path =
+    typeof event.composedPath === "function" ? event.composedPath() : [];
+  const menu = path.find(
+    (node) => node && node.classList && node.classList.contains("menu-content")
+  );
+  return menu ? menu.firstElementChild : null;
+}
 
 /** Space left between the header and a section scrolled into view. */
 const SECTION_GAP = 8;
@@ -526,6 +556,7 @@ export default class ApiReference extends LightningElement {
   redocPromise;
   styleBaseline;
   copiedStyleSignature;
+  touchY;
   renderCount = 0;
   timeoutId;
 
@@ -785,6 +816,36 @@ export default class ApiReference extends LightningElement {
       (toggle ? toggle.offsetHeight : 0) +
       SECTION_GAP
     );
+  }
+
+  /** A wheel turn over the menu that the menu cannot use is cancelled, so the page stays put. */
+  handleRedocWheel(event) {
+    if (event.ctrlKey || !event.cancelable) {
+      return;
+    }
+    const scroller = menuScroller(event);
+    if (scroller && menuScrollsPage(scroller, event.deltaY)) {
+      event.preventDefault();
+    }
+  }
+
+  handleRedocTouchStart(event) {
+    const touch = event.touches && event.touches[0];
+    this.touchY = touch ? touch.clientY : undefined;
+  }
+
+  /** The same for a swipe. A finger moving up scrolls the list down. */
+  handleRedocTouchMove(event) {
+    const touch = event.touches && event.touches[0];
+    if (!touch || this.touchY === undefined || !event.cancelable) {
+      return;
+    }
+    const dy = this.touchY - touch.clientY;
+    this.touchY = touch.clientY;
+    const scroller = menuScroller(event);
+    if (scroller && menuScrollsPage(scroller, dy)) {
+      event.preventDefault();
+    }
   }
 
   /** A click on a Redoc menu item or an in page link: let Redoc update, then scroll. */
