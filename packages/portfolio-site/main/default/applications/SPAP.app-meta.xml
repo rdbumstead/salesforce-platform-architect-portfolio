@@ -73,6 +73,10 @@
             <tab>Project__c</tab>
         </mappings>
         <mappings>
+            <fieldName>Contact__c</fieldName>
+            <tab>Resume_Variant__c</tab>
+        </mappings>
+        <mappings>
             <tab>Skill__c</tab>
         </mappings>
         <mappings>
