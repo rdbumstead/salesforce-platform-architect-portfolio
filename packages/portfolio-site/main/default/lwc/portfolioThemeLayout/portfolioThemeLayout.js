@@ -96,6 +96,49 @@ export const TOUR_HEADING_WAIT_MS = 5000;
 export const TOUR_HEADING_POLL_MS = 100;
 // The line under the tour row in the "How it's built" menu.
 export const TOUR_MENU_NOTE = "Five stops, with one task on each";
+// Below this window width the navigation folds behind the menu button, as in the CSS.
+export const PHONE_MENU_WIDTH = 768;
+
+/**
+ * True when the window is narrow enough for the phone menu.
+ * @returns {boolean} whether the phone menu is in use
+ */
+export function isPhoneWidth() {
+  return (window.innerWidth || 0) < PHONE_MENU_WIDTH;
+}
+
+/**
+ * True when a scroll of this direction, started over the open phone menu, would move the page:
+ * the menu has nothing to scroll, or it is already at that end of its list.
+ * @param {Element} scroller the open menu
+ * @param {number} dy the wheel delta, or the opposite of a finger's movement, positive to scroll down
+ * @returns {boolean} whether the scroll would reach the page
+ */
+export function menuPassesScroll(scroller, dy) {
+  if (!scroller || scroller.scrollHeight <= scroller.clientHeight + 1) {
+    return true;
+  }
+  if (!dy) {
+    return false;
+  }
+  const atTop = scroller.scrollTop <= 0;
+  const atBottom =
+    scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
+  return dy < 0 ? atTop : atBottom;
+}
+
+/**
+ * True when a point on the screen falls inside an element's box. The layout tests the point
+ * instead of the event path, because the published site stops the path at the host.
+ * @param {Element} element the element
+ * @param {number} x the point's clientX
+ * @param {number} y the point's clientY
+ * @returns {boolean} whether the point is inside
+ */
+function pointIn(element, x, y) {
+  const box = element.getBoundingClientRect();
+  return x >= box.left && x <= box.right && y >= box.top && y <= box.bottom;
+}
 
 /** The query parameter the redirect adds, and the value that says the Salesforce site sent the visitor. */
 export const ARRIVAL_PARAM = "from";
@@ -443,14 +486,53 @@ export default class PortfolioThemeLayout extends LightningElement {
   // is read again each time the page reference changes.
   routeUrl = currentRouteUrl();
 
+  // The header's height outside the open phone menu, in px, so the menu ends at the bottom edge.
+  menuRoom = 0;
+  // The element that holds the page still while the phone menu is open, and the last finger
+  // position it saw.
+  _menuGuard = null;
+  _touchY = null;
+
   @wire(CurrentPageReference)
   wiredPageReference() {
-    this.routeUrl = currentRouteUrl();
+    this.followRoute(currentRouteUrl());
     this._heroLookedAt = -Infinity;
   }
 
   _onPopState = () => {
-    this.routeUrl = currentRouteUrl();
+    this.followRoute(currentRouteUrl());
+  };
+
+  _onResize = () => {
+    this._onScroll();
+    if (!this.menuOpen) {
+      return;
+    }
+    if (isPhoneWidth()) {
+      this.measureMenu();
+    } else {
+      // The phone menu is gone at this width, so it closes and gives the page back.
+      this.closePhoneMenu();
+    }
+  };
+
+  _onMenuTouchStart = (event) => {
+    const touch = event.touches && event.touches[0];
+    this._touchY = touch ? touch.clientY : null;
+  };
+
+  _onMenuTouchMove = (event) => {
+    const touch = event.touches && event.touches[0];
+    if (!touch || this._touchY === null) {
+      return;
+    }
+    const dy = this._touchY - touch.clientY;
+    this._touchY = touch.clientY;
+    this.holdPage(event, touch.clientX, touch.clientY, dy);
+  };
+
+  _onMenuWheel = (event) => {
+    this.holdPage(event, event.clientX, event.clientY, event.deltaY);
   };
 
   _onScroll = () => {
@@ -538,7 +620,7 @@ export default class PortfolioThemeLayout extends LightningElement {
     document.addEventListener("click", this._onDocumentClick);
     document.addEventListener("keydown", this._onDocumentKeydown);
     window.addEventListener("scroll", this._onScroll, { passive: true });
-    window.addEventListener("resize", this._onScroll, { passive: true });
+    window.addEventListener("resize", this._onResize, { passive: true });
     window.addEventListener("popstate", this._onPopState);
     this.routeUrl = currentRouteUrl();
   }
@@ -586,10 +668,114 @@ export default class PortfolioThemeLayout extends LightningElement {
       this.focusControl(".site-nav_open .nav-link");
     }
     // The router can update the address after it has told the page about the new route.
-    const now = currentRouteUrl();
-    if (now !== this.routeUrl) {
-      this.routeUrl = now;
+    this.followRoute(currentRouteUrl());
+    this.syncMenuGuard();
+    if (this.menuOpen) {
+      this.measureMenu();
     }
+  }
+
+  /**
+   * Keeps the current route. A route change closes the phone menu, as a tap on one of its
+   * links does, so a page never arrives with the menu still holding it.
+   * @param {string} url the route address now
+   */
+  followRoute(url) {
+    if (url === this.routeUrl) {
+      return;
+    }
+    this.routeUrl = url;
+    if (this.menuOpen) {
+      this.closePhoneMenu();
+    }
+  }
+
+  closePhoneMenu() {
+    this.menuOpen = false;
+    this.pillarsOpen = false;
+  }
+
+  /**
+   * Holds the page still while the phone menu is open. A touch or wheel scroll goes through
+   * only when it starts inside the menu and the menu still has room to scroll that way. The
+   * CSS stops a scroll that started in the menu from carrying on to the page once the menu
+   * reaches its end. The listeners are on only while the menu is open, so the page scrolls
+   * at full speed the rest of the time.
+   */
+  syncMenuGuard() {
+    const want = this.menuOpen
+      ? this.template.querySelector(".portfolio-layout-wrapper")
+      : null;
+    if (want === this._menuGuard) {
+      return;
+    }
+    this.releaseMenuGuard();
+    if (want) {
+      want.addEventListener("touchstart", this._onMenuTouchStart, {
+        passive: true
+      });
+      want.addEventListener("touchmove", this._onMenuTouchMove, {
+        passive: false
+      });
+      want.addEventListener("wheel", this._onMenuWheel, { passive: false });
+      this._menuGuard = want;
+    }
+  }
+
+  releaseMenuGuard() {
+    const guard = this._menuGuard;
+    if (!guard) {
+      return;
+    }
+    guard.removeEventListener("touchstart", this._onMenuTouchStart);
+    guard.removeEventListener("touchmove", this._onMenuTouchMove);
+    guard.removeEventListener("wheel", this._onMenuWheel);
+    this._menuGuard = null;
+    this._touchY = null;
+  }
+
+  /**
+   * Cancels a scroll that would move the page behind the open phone menu.
+   * @param {Event} event the touchmove or wheel event
+   * @param {number} x where the finger or pointer is, clientX
+   * @param {number} y where it is, clientY
+   * @param {number} dy the scroll direction, positive to scroll down
+   */
+  holdPage(event, x, y, dy) {
+    if (!this.menuOpen || !isPhoneWidth() || !event.cancelable) {
+      return;
+    }
+    const menu = this.template.querySelector(".site-nav_open");
+    if (menu && pointIn(menu, x, y) && !menuPassesScroll(menu, dy)) {
+      return;
+    }
+    event.preventDefault();
+  }
+
+  /**
+   * Keeps how much of the header's height is not the open phone menu: the bar above it and the
+   * padding and border below it. Set only when it changes, so a render does not ask for another.
+   */
+  measureMenu() {
+    const menu = this.template.querySelector(".site-nav_open");
+    const header = this.template.querySelector(".site-header");
+    if (!menu || !header) {
+      return;
+    }
+    const box = menu.getBoundingClientRect();
+    const outside = header.getBoundingClientRect().bottom - box.bottom;
+    const room = Math.max(Math.round(box.top + outside), 0);
+    if (room !== this.menuRoom) {
+      this.menuRoom = room;
+    }
+  }
+
+  // The open phone menu and the header around it end at the bottom of the screen. The CSS has
+  // a fallback until the layout has measured them.
+  get navStyle() {
+    return this.menuOpen && this.menuRoom > 0
+      ? `--site-menu-room: ${this.menuRoom}px;`
+      : "";
   }
 
   disconnectedCallback() {
@@ -603,8 +789,9 @@ export default class PortfolioThemeLayout extends LightningElement {
     document.removeEventListener("click", this._onDocumentClick);
     document.removeEventListener("keydown", this._onDocumentKeydown);
     window.removeEventListener("scroll", this._onScroll);
-    window.removeEventListener("resize", this._onScroll);
+    window.removeEventListener("resize", this._onResize);
     window.removeEventListener("popstate", this._onPopState);
+    this.releaseMenuGuard();
     this.stopHeadingWait();
   }
 
