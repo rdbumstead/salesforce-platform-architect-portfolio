@@ -1,0 +1,39 @@
+{
+  "description": "List prices per million tokens for the monthly cost estimate, before any free tier. Every price here was written from memory and not read from the source page, so each is marked unverified until someone reads the page and fills in readDate.",
+  "providers": {
+    "fake": {
+      "model": "fake",
+      "inputPerMillionUsd": 0,
+      "outputPerMillionUsd": 0,
+      "source": "none, no model is called",
+      "readDate": null,
+      "status": "confirmed"
+    },
+    "gemini": {
+      "model": "gemini-2.5-flash",
+      "inputPerMillionUsd": 0.3,
+      "outputPerMillionUsd": 2.5,
+      "freeTier": "The Gemini API has a free tier with per minute and per day request limits for this model. Its limits and terms are not checked here.",
+      "source": "https://ai.google.dev/gemini-api/docs/pricing",
+      "readDate": null,
+      "status": "unverified"
+    },
+    "workers-ai": {
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "inputPerMillionUsd": 0.29,
+      "outputPerMillionUsd": 2.25,
+      "freeTier": "Workers AI includes a daily free allocation of neurons on every plan. Its size and how it converts to tokens for this model are not checked here.",
+      "source": "https://developers.cloudflare.com/workers-ai/platform/pricing/",
+      "readDate": null,
+      "status": "unverified"
+    },
+    "paid": {
+      "model": "set by TAILOR_EVAL_PAID_MODEL",
+      "inputPerMillionUsd": null,
+      "outputPerMillionUsd": null,
+      "source": "the paid provider's own price page, filled in with its key",
+      "readDate": null,
+      "status": "unverified"
+    }
+  }
+}
