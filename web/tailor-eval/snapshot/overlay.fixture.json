@@ -1,0 +1,438 @@
+{
+  "description": "Overlay for the fixture reads. It maps each fixture role to a readable id, names the current role, sets tags and priority on items from the reads, and adds the items the reads do not hold. Added items start unverified until the owner confirms them.",
+  "generatedAt": "2026-11-14T00:00:00.000Z",
+  "currentRoleId": "northwind-consultant",
+  "roles": [
+    {
+      "id": "northwind-consultant",
+      "match": {
+        "employer": "Northwind Digital",
+        "title": "Senior Solution Consultant"
+      }
+    },
+    {
+      "id": "seed-architect",
+      "match": {
+        "employer": "Seed Employer",
+        "title": "Seed Platform Architect"
+      }
+    },
+    {
+      "id": "independent-architect",
+      "match": {
+        "employer": "Independent",
+        "title": "Salesforce Application Architect"
+      }
+    },
+    {
+      "id": "lakeview-crm-developer",
+      "match": {
+        "employer": "Lakeview University",
+        "title": "CRM Developer"
+      }
+    },
+    {
+      "id": "lakeview-app-admin",
+      "match": {
+        "employer": "Lakeview University",
+        "title": "Application Administrator"
+      }
+    },
+    {
+      "id": "seed-developer",
+      "match": {
+        "employer": "Seed Employer",
+        "title": "Seed Salesforce Developer"
+      }
+    },
+    {
+      "id": "harbor-instructor",
+      "match": {
+        "employer": "Harbor Community College",
+        "title": "Non-Credit Instructor"
+      }
+    },
+    {
+      "id": "harbor-services-specialist",
+      "match": {
+        "employer": "Harbor Community College",
+        "title": "Services Specialist II"
+      }
+    },
+    {
+      "id": "harbor-project-assistant",
+      "match": {
+        "employer": "Harbor Community College",
+        "title": "IT Project Assistant"
+      }
+    },
+    {
+      "id": "mapworks-gis-analyst",
+      "match": {
+        "employer": "Mapworks",
+        "title": "GIS Analyst"
+      }
+    },
+    {
+      "id": "oldtown-service-manager",
+      "match": {
+        "employer": "Old Town Retail",
+        "title": "Customer Service Manager"
+      }
+    }
+  ],
+  "readItems": {
+    "headline-site-title": {
+      "tags": ["architecture"],
+      "priority": 2
+    },
+    "summary-site": {
+      "tags": [],
+      "priority": 1
+    },
+    "harbor-instructor-highlight-1": {
+      "tags": [],
+      "priority": 3
+    },
+    "harbor-instructor-highlight-2": {
+      "tags": [],
+      "priority": 3
+    },
+    "harbor-instructor-highlight-3": {
+      "tags": [],
+      "priority": 3
+    },
+    "harbor-instructor-highlight-4": {
+      "tags": [],
+      "priority": 3
+    },
+    "skill-seed-apex": {
+      "tags": ["backend"],
+      "priority": 2
+    },
+    "skill-seed-integration": {
+      "tags": ["integration"],
+      "priority": 2
+    },
+    "skill-seed-javascript": {
+      "tags": ["frontend"],
+      "priority": 2
+    },
+    "skill-seed-soql": {
+      "tags": ["backend"],
+      "priority": 2
+    },
+    "skill-seed-lightning-web-components": {
+      "tags": ["frontend"],
+      "priority": 2
+    },
+    "skill-seed-slds": {
+      "tags": ["frontend"],
+      "priority": 2
+    },
+    "cert-education-cloud-consultant": {
+      "tags": ["higher-ed"],
+      "priority": 2
+    },
+    "cert-agentforce-specialist": {
+      "tags": ["agentic-ai"],
+      "priority": 2
+    },
+    "cert-platform-app-builder": {
+      "tags": ["admin"],
+      "priority": 2
+    },
+    "cert-platform-administrator-ii": {
+      "tags": ["admin"],
+      "priority": 2
+    },
+    "cert-platform-administrator": {
+      "tags": ["admin"],
+      "priority": 2
+    },
+    "cert-seed-platform-developer-i": {
+      "tags": ["backend"],
+      "priority": 2
+    },
+    "cert-seed-certified-ai-associate": {
+      "tags": [],
+      "priority": 3
+    }
+  },
+  "items": [
+    {
+      "id": "headline-engineer",
+      "type": "headline",
+      "text": "Senior Salesforce Engineer | Platform Architecture and AI-Assisted Development",
+      "tags": ["ai-assisted-dev", "architecture"],
+      "priority": 1,
+      "verified": false
+    },
+    {
+      "id": "headline-architect",
+      "type": "headline",
+      "text": "Salesforce Platform Architect",
+      "tags": ["architecture"],
+      "priority": 1,
+      "verified": false
+    },
+    {
+      "id": "headline-consultant",
+      "type": "headline",
+      "text": "Senior Salesforce Solution Consultant | Education Cloud",
+      "tags": ["higher-ed"],
+      "priority": 1,
+      "verified": false
+    },
+    {
+      "id": "northwind-release-owner",
+      "type": "bullet",
+      "roleId": "northwind-consultant",
+      "text": "Owns deployment and release management across four concurrent higher-ed Education Cloud engagements",
+      "tags": ["ci-cd", "governance", "higher-ed", "leadership"],
+      "priority": 1,
+      "verified": false
+    },
+    {
+      "id": "northwind-greenfield-lead",
+      "type": "bullet",
+      "roleId": "northwind-consultant",
+      "text": "Led a greenfield Education Cloud implementation from discovery into build",
+      "tags": ["higher-ed", "leadership", "architecture"],
+      "priority": 1,
+      "verified": false
+    },
+    {
+      "id": "northwind-delivery-recovery",
+      "type": "bullet",
+      "roleId": "northwind-consultant",
+      "text": "Brought in to recover at-risk delivery timelines on client engagements",
+      "tags": ["leadership"],
+      "priority": 2,
+      "verified": false
+    },
+    {
+      "id": "northwind-ai-toolkit",
+      "type": "bullet",
+      "roleId": "northwind-consultant",
+      "text": "Built a Claude Code plugin toolkit for Salesforce delivery, with guardrails, deployment tooling, and session handoffs so AI-assisted work meets the same standards as hand-written work",
+      "tags": ["ai-assisted-dev", "governance", "ci-cd"],
+      "priority": 1,
+      "verified": false
+    },
+    {
+      "id": "northwind-agentic-migration",
+      "type": "bullet",
+      "roleId": "northwind-consultant",
+      "text": "Designs agentic approaches to Salesforce data migration",
+      "tags": ["data-migration", "agentic-ai"],
+      "priority": 2,
+      "verified": false
+    },
+    {
+      "id": "northwind-solution-design",
+      "type": "bullet",
+      "roleId": "northwind-consultant",
+      "text": "Designs OmniStudio application flows, Experience Cloud portals, SIS integrations, and security and sharing models",
+      "tags": [
+        "omnistudio",
+        "experience-cloud",
+        "integration",
+        "security",
+        "higher-ed",
+        "architecture"
+      ],
+      "priority": 1,
+      "verified": false
+    },
+    {
+      "id": "lakeview-service-cloud-admin",
+      "type": "bullet",
+      "roleId": "lakeview-app-admin",
+      "text": "Administered Service Cloud for 400+ staff",
+      "tags": ["admin", "higher-ed"],
+      "priority": 2,
+      "verified": false
+    },
+    {
+      "id": "lakeview-experience-cloud-admin",
+      "type": "bullet",
+      "roleId": "lakeview-app-admin",
+      "text": "Administered Experience Cloud for 10,000+ external users",
+      "tags": ["admin", "experience-cloud", "higher-ed"],
+      "priority": 2,
+      "verified": false
+    },
+    {
+      "id": "lakeview-devops-lead",
+      "type": "bullet",
+      "roleId": "lakeview-app-admin",
+      "text": "Led DevOps and CI/CD across two orgs",
+      "tags": ["ci-cd", "leadership"],
+      "priority": 1,
+      "verified": false
+    },
+    {
+      "id": "lakeview-power-automate",
+      "type": "bullet",
+      "roleId": "lakeview-app-admin",
+      "text": "Integrated Power Automate with Salesforce to automate user creation and permission assignment, cutting task time ~90%",
+      "tags": ["integration", "workflow-automation"],
+      "priority": 2,
+      "verified": false
+    },
+    {
+      "id": "lakeview-training-plan",
+      "type": "bullet",
+      "roleId": "lakeview-app-admin",
+      "text": "Built a training plan that upskilled two new CRM developers",
+      "tags": ["leadership"],
+      "priority": 2,
+      "verified": false
+    },
+    {
+      "id": "skill-claude-code",
+      "type": "skill",
+      "text": "Claude Code",
+      "tags": ["ai-assisted-dev"],
+      "priority": 1,
+      "verified": false
+    },
+    {
+      "id": "skill-javascript",
+      "type": "skill",
+      "text": "JavaScript",
+      "tags": ["frontend"],
+      "priority": 1,
+      "verified": false
+    },
+    {
+      "id": "skill-soql",
+      "type": "skill",
+      "text": "SOQL",
+      "tags": ["backend"],
+      "priority": 1,
+      "verified": false
+    },
+    {
+      "id": "skill-git",
+      "type": "skill",
+      "text": "Git",
+      "tags": ["ci-cd"],
+      "priority": 1,
+      "verified": false
+    },
+    {
+      "id": "skill-github-actions",
+      "type": "skill",
+      "text": "GitHub Actions",
+      "tags": ["ci-cd"],
+      "priority": 1,
+      "verified": false
+    },
+    {
+      "id": "skill-salesforce-cli",
+      "type": "skill",
+      "text": "Salesforce CLI",
+      "tags": ["ci-cd"],
+      "priority": 1,
+      "verified": false
+    },
+    {
+      "id": "skill-scratch-orgs",
+      "type": "skill",
+      "text": "Scratch orgs",
+      "tags": ["ci-cd"],
+      "priority": 2,
+      "verified": false
+    },
+    {
+      "id": "skill-python",
+      "type": "skill",
+      "text": "Python",
+      "tags": ["backend"],
+      "priority": 2,
+      "verified": false
+    },
+    {
+      "id": "skill-cloudflare-pages",
+      "type": "skill",
+      "text": "Cloudflare Pages",
+      "tags": ["frontend", "ci-cd"],
+      "priority": 2,
+      "verified": false
+    },
+    {
+      "id": "skill-critical-thinking",
+      "type": "skill",
+      "text": "Critical Thinking",
+      "tags": [],
+      "priority": 3,
+      "verified": false
+    },
+    {
+      "id": "skill-aws-pricing",
+      "type": "skill",
+      "text": "AWS Pricing",
+      "tags": [],
+      "priority": 3,
+      "verified": false
+    },
+    {
+      "id": "skill-aws-support",
+      "type": "skill",
+      "text": "AWS Support",
+      "tags": [],
+      "priority": 3,
+      "verified": false
+    },
+    {
+      "id": "skill-finops",
+      "type": "skill",
+      "text": "FinOps",
+      "tags": [],
+      "priority": 3,
+      "verified": false
+    },
+    {
+      "id": "project-platform-architect-portfolio",
+      "type": "project",
+      "text": "Platform Architect Portfolio: Salesforce APIs behind a public front end on Cloudflare Pages, PR validation in scratch orgs, auto-deploy via GitHub Actions, Delivery page aggregating pipeline results",
+      "tags": ["ci-cd", "integration", "frontend", "architecture"],
+      "priority": 1,
+      "verified": false
+    },
+    {
+      "id": "project-work-experience-api",
+      "type": "project",
+      "text": "Work Experience API: Apex REST system and process APIs, published OpenAPI specs, rate limits and audit trails",
+      "tags": ["integration", "governance", "backend"],
+      "priority": 1,
+      "verified": false
+    },
+    {
+      "id": "project-setup-salesforce-cli",
+      "type": "project",
+      "text": "Setup Salesforce CLI: open-source GitHub Action",
+      "tags": ["ci-cd"],
+      "priority": 2,
+      "verified": false
+    },
+    {
+      "id": "project-resume-as-code",
+      "type": "project",
+      "text": "Resume as Code: CI/CD pipeline for resume generation",
+      "tags": ["ci-cd"],
+      "priority": 2,
+      "verified": false
+    },
+    {
+      "id": "project-governed-document-pipeline",
+      "type": "project",
+      "text": "Governed document pipeline: AI selects content, code enforces rules, a human approves the output",
+      "tags": ["governance", "agentic-ai"],
+      "priority": 2,
+      "verified": false
+    }
+  ]
+}
