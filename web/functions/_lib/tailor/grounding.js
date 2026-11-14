@@ -169,7 +169,10 @@ function found(term, text) {
   return termMatcher(term).test(text);
 }
 
-/** The text of everything the selection put on the resume or named as evidence, for the check. */
+/**
+ * The text of everything the selection put on the resume or named as evidence, for the check.
+ * A selected project brings its value and solution text too, since a letter may quote them.
+ */
 export function selectedEvidenceTexts(selection, snapshot) {
   if (!selection || !snapshot || !Array.isArray(snapshot.items)) return [];
   const items = new Map(snapshot.items.map((item) => [item.id, item]));
@@ -190,7 +193,11 @@ export function selectedEvidenceTexts(selection, snapshot) {
   const texts = [...new Set(ids)]
     .map((id) => items.get(id))
     .filter(Boolean)
-    .map((item) => item.text);
+    .flatMap((item) =>
+      item.type === "project"
+        ? [item.text, item.value, item.solution]
+        : [item.text]
+    );
   included.forEach((entry) => {
     const role = roles.get(entry.role_id);
     if (role)

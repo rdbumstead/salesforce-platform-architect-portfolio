@@ -27,7 +27,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildTemplateLetter } from "../../functions/_lib/tailor/template.js";
+import {
+  buildTemplateLetter,
+  templateSelection
+} from "../../functions/_lib/tailor/template.js";
 import { buildFakeSelection } from "./fake.mjs";
 import { runOne, WAIT_LIMIT_MS } from "./pipeline.mjs";
 import {
@@ -249,8 +252,9 @@ export function orderRoutes(policy) {
 /**
  * The template route: the port of LocalTemplateService in the provider shape, with no model
  * and no network. The Apex has no selector step, because PortfolioGroundingService ranks the
- * records itself. Here the selector call answers with the harness's rule built selection, and
- * the letter call writes the template letter from it, with the same evidence texts the
+ * records itself. Here the selector call answers with the harness's rule built selection, with
+ * its projects topped up by templateSelection, and the letter call writes the template letter
+ * from it, with the same evidence texts the
  * grounding check reads. options passes ownerName and startYear. startYear has no default, see
  * template.js.
  */
@@ -261,7 +265,12 @@ export function templateProvider(options = {}) {
     async complete({ kind, context }) {
       const usage = { inputTokens: 0, outputTokens: 0 };
       if (kind === "selector")
-        return { text: JSON.stringify(buildFakeSelection(context)), usage };
+        return {
+          text: JSON.stringify(
+            templateSelection(buildFakeSelection(context), context.snapshot)
+          ),
+          usage
+        };
       const text = buildTemplateLetter({
         ...options,
         posting: context.posting,

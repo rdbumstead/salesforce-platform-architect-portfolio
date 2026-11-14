@@ -5,7 +5,8 @@ import {
   firstWords,
   NEUTRAL,
   removeContactDetails,
-  TEMPLATE_NOTE
+  TEMPLATE_NOTE,
+  templateSelection
 } from "../functions/_lib/tailor/template.js";
 import { letterBody } from "../functions/_lib/tailor/validate-letter.js";
 import { buildFakeSelection } from "../tailor-eval/lib/fake.mjs";
@@ -18,8 +19,9 @@ import { injectionLeaks, promptShingles } from "../tailor-eval/score.mjs";
 /*
  * The template letter. It began as a port of LocalTemplateService and now follows the model
  * letter rules (P-D33), reaching its length with selected evidence first and a short neutral set
- * only after that (P-D37). The Apex cases that still apply are kept: company and role, contact
- * details, missing input, the name and start year inputs.
+ * only after that (P-D37). Selected projects add their value and solution text (P-D40). The
+ * Apex cases that still apply are kept: company and role, contact details, missing input, the
+ * name and start year inputs.
  */
 
 const { snapshot, postings, categories } = await loadInputs({
@@ -42,11 +44,16 @@ const HABIT_LINES = [
   "I prefer plain designs"
 ];
 
-/** The letter, the validator results and the inputs, for one posting in one mode. */
+/** The letter, the validator results and the inputs, for one posting in one mode, as the template route builds them. */
 function letterFor(posting, mode, extra = {}) {
   const view = viewForMode(snapshot, mode);
   const check = REAL.validateSelection(
-    JSON.stringify(buildFakeSelection({ posting, snapshot: view, categories })),
+    JSON.stringify(
+      templateSelection(
+        buildFakeSelection({ posting, snapshot: view, categories }),
+        view
+      )
+    ),
     snapshot,
     { mode }
   );
@@ -91,29 +98,49 @@ const sentencesOf = (letter) =>
 /* ---------- the letter rules on the sample snapshot ---------- */
 
 /*
- * With evidence first and at most two items per paragraph, the sample snapshot does not hold
- * enough selected evidence to reach 300 words, even with every neutral sentence. So the only
- * rule the letter fails there is letter.word_count. This test pins that, and the shortfall is
- * reported, never covered with filler. No validator is loosened.
+ * In owner mode the sample projects carry value and solution text, so the letter passes every
+ * rule. Visitor mode sees no sample project, because every project in the sample comes from the
+ * overlay and is unverified, so the visitor letter still falls short of 300 words and fails
+ * letter.word_count only. That shortfall is reported, never covered with filler, and no
+ * validator is loosened.
  */
-test("on the sample snapshot the letter fails only the word count, and grounding passes", () => {
+test("on the sample snapshot the owner letter passes every rule, and the visitor letter fails only the word count", () => {
   assert.equal(synthetic.length, 4);
-  for (const posting of synthetic)
-    for (const mode of ["owner", "visitor"]) {
-      const { letterCheck, grounding } = letterFor(posting, mode);
-      const where = `${posting.id} ${mode}`;
-      assert.deepEqual(
-        letterCheck.errors.map((error) => error.code),
-        ["letter.word_count"],
-        where
-      );
-      assert.ok(
-        letterCheck.wordCount < 300,
-        `${where} ${letterCheck.wordCount}`
-      );
-      assert.deepEqual(grounding.errors, [], where);
-      assert.equal(letterCheck.paragraphCount, 5, where);
-    }
+  for (const posting of synthetic) {
+    const owner = letterFor(posting, "owner");
+    assert.deepEqual(owner.letterCheck.errors, [], `${posting.id} owner`);
+    assert.deepEqual(owner.grounding.errors, [], `${posting.id} owner`);
+    assert.ok(
+      owner.letterCheck.wordCount >= 300 && owner.letterCheck.wordCount <= 400,
+      `${posting.id} owner ${owner.letterCheck.wordCount}`
+    );
+    const visitor = letterFor(posting, "visitor");
+    assert.deepEqual(
+      visitor.letterCheck.errors.map((error) => error.code),
+      ["letter.word_count"],
+      `${posting.id} visitor`
+    );
+    assert.deepEqual(visitor.grounding.errors, [], `${posting.id} visitor`);
+    for (const { letterCheck } of [owner, visitor])
+      assert.equal(letterCheck.paragraphCount, 5, posting.id);
+  }
+});
+
+test("the template selection tops up projects to the limit from the mode's view, highest priority first", () => {
+  const owner = viewForMode(snapshot, "owner");
+  const selection = templateSelection(
+    buildFakeSelection({ posting: posting1, snapshot: owner, categories }),
+    owner
+  );
+  assert.equal(selection.project_ids.length, 3);
+  const visitor = viewForMode(snapshot, "visitor");
+  const visible = new Set(visitor.items.map((item) => item.id));
+  const forVisitor = templateSelection(
+    buildFakeSelection({ posting: posting1, snapshot: visitor, categories }),
+    visitor
+  );
+  assert.ok(forVisitor.project_ids.every((id) => visible.has(id)));
+  assert.equal(templateSelection(null, owner), null);
 });
 
 test("with enough evidence the letter passes every letter rule and grounding", () => {
@@ -187,12 +214,15 @@ test("every evidence item appears once per letter", () => {
         ["bullet", "project"].includes(item.type)
       );
       for (const item of quoted) {
-        const probe = item.text.split(" ").slice(-5).join(" ");
-        const count = letter.split(probe).length - 1;
-        assert.ok(
-          count <= 1,
-          `${posting.id} ${mode} ${item.id} appears ${count} times`
-        );
+        for (const text of [item.text, item.value, item.solution]) {
+          if (!text || text.split(" ").length < 3) continue;
+          const probe = text.split(" ").slice(0, 6).join(" ");
+          const count = letter.split(probe).length - 1;
+          assert.ok(
+            count <= 1,
+            `${posting.id} ${mode} ${item.id} appears ${count} times`
+          );
+        }
       }
     }
 });
@@ -229,19 +259,87 @@ test("no sentence appears twice, and each neutral sentence at most once", () => 
     }
 });
 
-test("a project is written as On my name project, then its description from the record", () => {
+test("a selected project is quoted by its value, then its solution, from the record", () => {
   const { letter } = letterFor(posting1, "owner");
   assert.ok(
     letter.includes(
-      "On my Platform Architect Portfolio project, Salesforce APIs behind"
+      "My Platform Architect Portfolio project gives a reviewer one place to see the APIs"
     ),
     letter
   );
-  for (const item of snapshot.items.filter((entry) => entry.type === "project"))
-    assert.ok(
-      !letter.includes(item.text.slice(0, item.text.indexOf(": ") + 2)),
-      item.id
-    );
+  assert.ok(
+    letter.includes(
+      "How it works: Salesforce APIs serve a public front end on Cloudflare Pages."
+    ),
+    letter
+  );
+  assert.ok(!letter.includes("..."), "a solution is cut at a sentence");
+});
+
+test("project value text keeps a name at its start and reads as a sentence either way", () => {
+  const view = {
+    owner: { name: "Sample Owner", currentEmployer: "Sample Works" },
+    roles: [],
+    items: [
+      {
+        id: "p1",
+        type: "project",
+        text: "Sample Hub",
+        value: "Salesforce users see one record of each partner.",
+        solution: null
+      },
+      {
+        id: "p2",
+        type: "project",
+        text: "Sample Tool",
+        value: "Saves the team a manual export each week.",
+        solution: "A scheduled job writes the export. A check stops a bad file."
+      },
+      {
+        id: "p3",
+        type: "project",
+        text: "Name Only",
+        value: null,
+        solution: null
+      }
+    ]
+  };
+  const selection = { project_ids: ["p1", "p2", "p3"], top_requirements: [] };
+  const evidenceTexts = REAL.selectedEvidenceTexts(selection, view);
+  assert.ok(
+    evidenceTexts.includes("Salesforce users see one record of each partner.")
+  );
+  assert.ok(!evidenceTexts.includes(null));
+  const letter = buildTemplateLetter({
+    posting: posting1,
+    view,
+    selection,
+    evidenceTexts
+  });
+  assert.ok(
+    letter.includes(
+      "On my Sample Hub project, Salesforce users see one record of each partner."
+    ),
+    letter
+  );
+  assert.ok(
+    letter.includes(
+      "My Sample Tool project saves the team a manual export each week."
+    ),
+    letter
+  );
+  assert.ok(
+    letter.includes(
+      "How it works: A scheduled job writes the export. A check stops a bad file."
+    ),
+    letter
+  );
+  assert.ok(!letter.includes("Name Only"), "a name only project is not quoted");
+  const allow = REAL.groundingAllowList(view, posting1);
+  assert.deepEqual(
+    REAL.checkGrounding(letter, evidenceTexts, { allow }).errors,
+    []
+  );
 });
 
 test("no habit line is left in the letter, and the neutral set is five sentences", () => {
@@ -448,7 +546,7 @@ test("long record text is cut at a word, short text is kept whole, and contact d
 
 /* ---------- through the harness ---------- */
 
-test("through runOne the template fails only the word count, and the injection postings leak nothing", async () => {
+test("through runOne the owner letter answers, the visitor letter fails only the word count, and the injection postings leak nothing", async () => {
   const shingles = promptShingles(snapshot.owner);
   for (const posting of postings)
     for (const mode of ["owner", "visitor"]) {
@@ -464,7 +562,11 @@ test("through runOne the template fails only the word count, and the injection p
       const where = `${posting.id} ${mode}`;
       assert.equal(record.model, "local-template");
       assert.equal(record.selector.finalOk, true, where);
-      assert.deepEqual(record.letter.codes, ["letter.word_count"], where);
+      assert.deepEqual(
+        record.letter.codes,
+        mode === "owner" ? [] : ["letter.word_count"],
+        where
+      );
       assert.equal(record.grounding.ok, true, where);
       assert.deepEqual(record.usage, { inputTokens: 0, outputTokens: 0 });
       if (injections.includes(posting))

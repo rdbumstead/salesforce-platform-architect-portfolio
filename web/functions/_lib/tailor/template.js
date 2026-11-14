@@ -13,13 +13,18 @@
  *
  * How the length is reached (owner decision P-D37): every paragraph quotes one evidence item
  * first. While the body is short, each paragraph takes a second item, first from its own
- * requirement and then from the rest of the selection. Every item appears once in a letter.
- * Only when the evidence runs out are sentences from NEUTRAL added, each at most once. Those
- * make no claim about the owner. The letter keeps the sentence that says no model wrote it
- * (P-D38).
+ * requirement and then from the rest of the selection, projects before bullets. Then each
+ * quoted project adds its solution text. Every item appears once in a letter. Only when the
+ * evidence runs out are sentences from NEUTRAL added, each at most once. Those make no claim
+ * about the owner. The letter keeps the sentence that says no model wrote it (P-D38).
  *
- * Bullets are quoted as sentences. A project's "Name: description" text is written as "On my
- * Name project, description". Skills are names, so they are never quoted as sentences. They go
+ * Bullets are quoted as sentences. A project is quoted by its value text (owner decision P-D40):
+ * "My Name project gives..." when the value starts with a verb, otherwise "On my Name project, "
+ * and the value. Its solution follows as "How it works: ..." when more length is needed. Long
+ * value and solution text is cut at a sentence. A project with only a name is not quoted. An
+ * older project text in the "Name: description" shape still reads "On my Name project,
+ * description". templateSelection tops the selection's projects up to the limit, so the letter
+ * can show what the projects changed. Skills are names, so they are never quoted as sentences. They go
  * into one sentence that lists them, and only when it passes the grounding check. Every quote
  * comes from the selected items only, so every name and number in it is grounded by
  * construction. Any other sentence that could carry a name or a number, such as the start year,
@@ -49,6 +54,7 @@ import {
   selectedEvidenceTexts
 } from "./grounding.js";
 import { countWords } from "./text.js";
+import { LIMITS } from "./validate-selection.js";
 
 export const MAX_JOB_TEXT_CHARS = 12000;
 export const REMOVED = "[removed]";
@@ -82,7 +88,19 @@ const LEADS = [
   ["A third example from my records:", "And one more:"]
 ];
 
-const QUOTABLE = new Set(["bullet", "project"]);
+/**
+ * An item the letter can quote as a sentence: a bullet, or a project that has value or solution
+ * text, or an older project text in the "Name: description" shape. A project with only its name
+ * has nothing to quote.
+ */
+function isQuotable(item) {
+  if (!item) return false;
+  if (item.type === "bullet") return true;
+  if (item.type !== "project") return false;
+  return Boolean(
+    !isBlank(item.value) || !isBlank(item.solution) || projectParts(item.text)
+  );
+}
 
 const isBlank = (value) => typeof value !== "string" || !value.trim();
 
@@ -144,20 +162,110 @@ export function projectParts(text) {
   };
 }
 
-/** One quoted evidence item as a sentence, with the lead for its place in the paragraph. */
-function quoteItem(item, lead, words) {
+/** "Name project", unless the name already ends in "project". */
+function projectName(name) {
+  return /\bproject$/i.test(name) ? name : `${name} project`;
+}
+
+/**
+ * One quoted evidence item as a sentence, with the lead for its place in the paragraph. A
+ * project reads "On my Name project, " and its value text, or its solution text when it has no
+ * value. withSolution adds the solution after the value, when the letter needs more length.
+ */
+function quoteItem(item, lead, words, withSolution = false) {
   if (item.type === "project") {
-    const parts = projectParts(item.text);
-    if (parts) {
-      const name = /\bproject$/i.test(parts.name)
-        ? parts.name
-        : `${parts.name} project`;
-      return sentenceOf(
-        `On my ${name}, ${firstWords(safeText(parts.description), words)}`
+    const value = isBlank(item.value) ? null : item.value;
+    const solution = isBlank(item.solution) ? null : item.solution;
+    const main = value || solution;
+    if (main) {
+      const sentence = sentenceOf(
+        projectSentence(
+          projectName(item.text),
+          wholeSentences(safeText(main), words)
+        )
       );
+      return withSolution && value && solution
+        ? `${sentence} How it works: ${sentenceOf(wholeSentences(safeText(solution), words))}`
+        : sentence;
     }
+    const parts = projectParts(item.text);
+    if (parts)
+      return sentenceOf(
+        `On my ${projectName(parts.name)}, ${firstWords(safeText(parts.description), words)}`
+      );
   }
   return `${lead} ${sentenceOf(firstWords(safeText(item.text), words))}`;
+}
+
+/**
+ * As many whole sentences of the text as fit in the word limit, so a long solution is not cut
+ * mid sentence. When even the first sentence is too long, its first words with an ellipsis.
+ */
+function wholeSentences(text, words) {
+  const sentences = normalizeSpace(text).split(/(?<=[.!?])\s+/u);
+  const kept = [];
+  let count = 0;
+  for (const sentence of sentences) {
+    const size = sentence.split(" ").length;
+    if (count + size > words) break;
+    kept.push(sentence);
+    count += size;
+  }
+  return kept.length ? kept.join(" ") : firstWords(sentences[0], words);
+}
+
+/** Words that follow a verb as its object, so "Gives a" and "Lets other" read as verbs. */
+const OBJECT_WORDS = new Set(
+  "a an the other others every each one it its their them this that these those our your any some more fewer".split(
+    " "
+  )
+);
+
+/**
+ * The sentence that opens a project quote. Value text that starts with a plain verb and its
+ * object, such as "Gives a reviewer one place", reads "My Name project gives a reviewer one
+ * place". Any other text, such as "Salesforce users see" or "Partners get", reads "On my Name
+ * project, " and the text with its capital kept, so a name at the start is never lowered.
+ */
+function projectSentence(name, text) {
+  const [first = "", second = ""] = text.split(" ");
+  const verb =
+    /^\p{Lu}\p{Ll}*[^s]s$/u.test(first) &&
+    (OBJECT_WORDS.has(second.toLowerCase()) || /^\p{Lu}/u.test(second));
+  if (!verb) return `On my ${name}, ${text}`;
+  return `My ${name} ${first.toLowerCase()}${text.slice(first.length)}`;
+}
+
+/**
+ * The selection the template writes from: the given selection, with its project list topped up
+ * to the most a selection may hold, from the view's projects that have value or solution text,
+ * highest priority first. Projects show what the work changed, so the template letter, which
+ * has no model to add context, leans on them. The view is the mode's view, so a visitor letter
+ * only ever gets projects a visitor may see.
+ */
+export function templateSelection(selection, view) {
+  if (!selection || typeof selection !== "object") return selection;
+  const ids = [...(selection.project_ids || [])];
+  const most = LIMITS.projects[1];
+  const candidates = (view?.items || [])
+    .filter(
+      (item) =>
+        item.type === "project" &&
+        (!isBlank(item.value) || !isBlank(item.solution))
+    )
+    .sort((a, b) => a.priority - b.priority);
+  for (const item of candidates) {
+    if (ids.length >= most) break;
+    if (!ids.includes(item.id)) ids.push(item.id);
+  }
+  return { ...selection, project_ids: ids };
+}
+
+/** Whether a quoted item can still grow by its solution text. */
+function canExtend(item) {
+  return (
+    item.type === "project" && !isBlank(item.value) && !isBlank(item.solution)
+  );
 }
 
 /** The current role: the one marked current at the owner's current employer. */
@@ -183,7 +291,7 @@ export function evidencedRequirements(selection, items, allowed, mode) {
         .map((id) => items.get(id))
         .filter((item) => item && allowed.has(item.text))
     }))
-    .filter((entry) => entry.items.some((item) => QUOTABLE.has(item.type)));
+    .filter((entry) => entry.items.some(isQuotable));
   const strong = usable.filter((entry) => entry.match === "strong");
   const rest = usable.filter((entry) => entry.match !== "strong");
   return [...strong, ...rest].slice(0, BODY_PARAGRAPHS);
@@ -232,8 +340,8 @@ function readParts({ view, selection, mode, evidenceTexts }) {
       ...parts.requirements.flatMap((entry) =>
         entry.items.map((item) => item.id)
       ),
-      ...included.flatMap((entry) => entry.bullet_ids || []),
       ...(selection?.project_ids || []),
+      ...included.flatMap((entry) => entry.bullet_ids || []),
       ...(selection?.skill_ids || []),
       ...(selection?.top_requirements || []).flatMap(
         (entry) => entry?.evidence_ids || []
@@ -242,7 +350,7 @@ function readParts({ view, selection, mode, evidenceTexts }) {
     const selected = [...new Set(ids)]
       .map((id) => items.get(id))
       .filter((item) => item && allowed.has(item.text));
-    parts.extras = selected.filter((item) => QUOTABLE.has(item.type));
+    parts.extras = selected.filter(isQuotable);
     parts.skills = selected
       .filter((item) => item.type === "skill")
       .slice(0, MAX_SKILLS)
@@ -261,14 +369,16 @@ function readParts({ view, selection, mode, evidenceTexts }) {
 
 /**
  * Which items each body paragraph quotes. Every paragraph gets one item, from its requirement
- * when it has one. Then, while more words are wanted, paragraphs in turn take a second item,
- * from their own requirement first. No item is used twice. Returns the slots in order.
+ * when it has one, then from the selected projects, then from the selected bullets. Then, while
+ * more words are wanted, paragraphs in turn take a second item, from their own requirement
+ * first. After that, each quoted project in turn adds its solution text. No item is used twice.
+ * Returns the slots in order, each with its items and the projects that carry their solution.
  */
 function planSlots(parts, wantMore) {
   const used = new Set();
   const take = (list) => {
     const item = list.find(
-      (entry) => QUOTABLE.has(entry.type) && !used.has(entry.text)
+      (entry) => isQuotable(entry) && !used.has(entry.text)
     );
     if (item) used.add(item.text);
     return item;
@@ -276,7 +386,7 @@ function planSlots(parts, wantMore) {
   const slots = Array.from({ length: BODY_PARAGRAPHS }, (_, index) => {
     const own = parts.requirements[index]?.items || [];
     const first = take(own) || take(parts.extras);
-    return { own, items: first ? [first] : [] };
+    return { own, items: first ? [first] : [], extended: new Set() };
   });
   for (const slot of slots) {
     if (!wantMore(slots)) break;
@@ -284,6 +394,11 @@ function planSlots(parts, wantMore) {
     const next = take(slot.own) || take(parts.extras);
     if (next) slot.items.push(next);
   }
+  for (const slot of slots)
+    for (const item of slot.items) {
+      if (!wantMore(slots)) return slots;
+      if (canExtend(item)) slot.extended.add(item);
+    }
   return slots;
 }
 
@@ -346,7 +461,7 @@ export function buildTemplateLetter({
   const compose = (slots, words, neutralCount) => {
     const body = slots.map((slot, index) => {
       const sentences = slot.items.map((item, place) =>
-        quoteItem(item, LEADS[index][place], words)
+        quoteItem(item, LEADS[index][place], words, slot.extended.has(item))
       );
       if (index === slots.length - 1 && skillSentence)
         sentences.push(skillSentence);

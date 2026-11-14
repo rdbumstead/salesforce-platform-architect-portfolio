@@ -27,7 +27,8 @@ export function selectorMessage(posting, view) {
   const data = {
     owner: view.owner,
     roles: view.roles,
-    items: view.items.map(({ id, type, roleId, text, tags, priority }) => ({ id, type, ...(roleId ? { roleId } : {}), text, tags, priority }))
+    // A project's value text goes with it, so the selector can see what the project changed.
+    items: view.items.map(({ id, type, roleId, text, value, tags, priority }) => ({ id, type, ...(roleId ? { roleId } : {}), text, ...(type === 'project' && value ? { value } : {}), tags, priority }))
   };
   return `${postingBlock(posting)}\n\nRESUME DATA (JSON)\n${JSON.stringify(data)}`;
 }

@@ -92,6 +92,11 @@ test('snapshot items: unique readable ids, valid types, roles on bullets only, k
       assert.ok(roleIds.has(item.roleId), `${item.id} names a known role`);
       keys.push('roleId');
     } else assert.equal(item.roleId, undefined, `${item.id} has no role`);
+    if (item.type === 'headline' || item.type === 'summary') keys.push('titleFamily');
+    if (item.type === 'project') {
+      keys.push('value', 'solution');
+      for (const key of ['value', 'solution']) assert.ok(item[key] === null || (typeof item[key] === 'string' && !DASH_OR_SEMICOLON.test(item[key])), `${item.id} ${key}`);
+    }
     assert.deepEqual(Object.keys(item).sort(), keys.sort());
     assert.ok(typeof item.text === 'string' && item.text.trim(), item.id);
     assert.doesNotMatch(item.text, DASH_OR_SEMICOLON, item.id);
@@ -263,7 +268,9 @@ test('the builder refuses every broken overlay with a named problem', () => {
     ['an added item marked verified', (o) => (o.items[0].verified = true), /must say verified: false/],
     ['a read item the reads do not produce', (o) => (o.readItems['skill-ghost'] = { tags: [], priority: 2 }), /readItems names skill-ghost/],
     ['an unknown tag', (o) => (o.items[0].tags = ['no-such-tag']), /tag no-such-tag/],
-    ['a bad priority', (o) => (o.items[0].priority = 4), /priority 4/]
+    ['a bad priority', (o) => (o.items[0].priority = 4), /priority 4/],
+    ['a value on a bullet', (o) => (o.items.find((item) => item.type === 'bullet').value = 'x'), /is a bullet and must not set value/],
+    ['a title family on a project', (o) => (o.items.find((item) => item.type === 'project').titleFamily = 'engineer'), /is a project and must not set titleFamily/]
   ];
   for (const [name, change, pattern] of cases) {
     const overlay = clone(FIXTURE_OVERLAY_DATA);
@@ -272,6 +279,20 @@ test('the builder refuses every broken overlay with a named problem', () => {
     assert.ok(problems.some((problem) => pattern.test(problem)), `${name}: ${problems.join(' | ')}`);
   }
   assert.deepEqual(problemsOf(FIXTURE_READS_DATA, FIXTURE_OVERLAY_DATA), []);
+});
+
+test('a snapshot without the new keys is refused with a plain message', () => {
+  const old = clone(snapshot);
+  delete old.items.find((item) => item.type === 'project').value;
+  delete old.items.find((item) => item.type === 'headline').titleFamily;
+  const problems = snapshotProblems(old);
+  assert.ok(problems.some((problem) => /is a project and must carry value, text or null. Rebuild the snapshot./.test(problem)), problems.join(' | '));
+  assert.ok(problems.some((problem) => /is a headline and must carry titleFamily/.test(problem)), problems.join(' | '));
+  const project = snapshot.items.find((item) => item.id === 'project-work-experience-api');
+  assert.equal(project.text, 'Work Experience API');
+  assert.ok(project.value && project.solution, 'the sample project carries value and solution');
+  assert.equal(snapshot.items.find((item) => item.id === 'headline-engineer').titleFamily, 'engineer');
+  assert.equal(snapshot.items.find((item) => item.id === 'headline-site-title').titleFamily, null);
 });
 
 test('the current role rule is the one the builder enforces', () => {
