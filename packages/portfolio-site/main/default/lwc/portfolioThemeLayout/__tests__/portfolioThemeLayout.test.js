@@ -853,14 +853,16 @@ describe("c-portfolio-theme-layout", () => {
       });
     }
 
+    // A touch event with one finger at x, y, or with every finger in a list of [x, y] points.
     function touch(target, type, x, y) {
+      const points = Array.isArray(x) ? x : [[x, y]];
       const event = new CustomEvent(type, {
         bubbles: true,
         cancelable: true,
         composed: true
       });
       Object.defineProperty(event, "touches", {
-        value: [{ clientX: x, clientY: y }]
+        value: points.map(([clientX, clientY]) => ({ clientX, clientY }))
       });
       target.dispatchEvent(event);
       return event;
@@ -872,14 +874,15 @@ describe("c-portfolio-theme-layout", () => {
       return touch(target, "touchmove", x, y1);
     }
 
-    function wheel(target, x, y, deltaY) {
+    function wheel(target, x, y, deltaY, ctrlKey = false) {
       const event = new WheelEvent("wheel", {
         bubbles: true,
         cancelable: true,
         composed: true,
         clientX: x,
         clientY: y,
-        deltaY
+        deltaY,
+        ctrlKey
       });
       target.dispatchEvent(event);
       return event;
@@ -1043,6 +1046,41 @@ describe("c-portfolio-theme-layout", () => {
       await flush();
       expect(button.getAttribute("aria-expanded")).toBe("false");
       expect(swipe(main, 200, 540, 520).defaultPrevented).toBe(false);
+    });
+
+    it("never blocks a two finger pinch zoom over the open menu or the page", async () => {
+      const element = render();
+      const nav = await openMenu(element);
+      scrollBox(nav, { scrollHeight: 446, clientHeight: 446, scrollTop: 0 });
+      const link = nav.querySelector(".nav-link");
+      const main = element.shadowRoot.querySelector(".region-content");
+
+      for (const target of [link, main]) {
+        touch(target, "touchstart", [
+          [150, 300],
+          [250, 300]
+        ]);
+        const pinch = touch(target, "touchmove", [
+          [120, 280],
+          [280, 320]
+        ]);
+        expect(pinch.defaultPrevented).toBe(false);
+      }
+
+      // One finger lifts and the other moves on: the guard starts clean and holds the page.
+      expect(touch(main, "touchmove", 200, 530).defaultPrevented).toBe(true);
+      expect(touch(main, "touchmove", 200, 510).defaultPrevented).toBe(true);
+    });
+
+    it("never blocks a zoom by Ctrl and the wheel or a trackpad pinch", async () => {
+      const element = render();
+      const nav = await openMenu(element);
+      scrollBox(nav, { scrollHeight: 446, clientHeight: 446, scrollTop: 0 });
+      const main = element.shadowRoot.querySelector(".region-content");
+      const link = nav.querySelector(".nav-link");
+      expect(wheel(main, 200, 540, 100, true).defaultPrevented).toBe(false);
+      expect(wheel(link, 200, 300, -100, true).defaultPrevented).toBe(false);
+      expect(wheel(main, 200, 540, 100).defaultPrevented).toBe(true);
     });
 
     it("does not hold the page at 768 px and up, even with the menu state open", async () => {
