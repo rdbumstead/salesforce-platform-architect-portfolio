@@ -41,14 +41,8 @@ export function selectedIds(selection) {
   return [...new Set(ids.filter((id) => typeof id === 'string' && id))];
 }
 
-/** The ids the letter may draw on: the selection without the headline, plus each requirement's evidence. */
-export function evidenceIds(selection) {
-  const ids = selectedIds(selection).filter((id) => id !== selection.headline_id);
-  for (const entry of selection.top_requirements || []) ids.push(...(entry?.evidence_ids || []));
-  return [...new Set(ids)];
-}
-
-export function letterMessage(posting, view, selection, evidence, mode) {
+/** evidenceTexts are the texts the grounding check reads, so the letter sees exactly that set. */
+export function letterMessage(posting, view, selection, evidenceTexts, mode) {
   const current = currentRole(view);
   const requirements = (selection.top_requirements || []).filter((entry) => mode === 'owner' || entry?.match === 'strong');
   const analysis = { title_family: selection.title_family, top_requirements: requirements, ...(mode === 'owner' ? { hard_filter_flags: selection.hard_filter_flags || [] } : {}) };
@@ -62,7 +56,7 @@ export function letterMessage(posting, view, selection, evidence, mode) {
     JSON.stringify(analysis),
     '',
     'SELECTED EVIDENCE',
-    ...evidence.map((entry) => `- [${entry.id}] ${entry.text}`),
+    ...evidenceTexts.map((text) => `- ${text}`),
     '',
     postingBlock(posting)
   ].join('\n');
@@ -145,20 +139,17 @@ export async function runOne({ provider, posting, snapshot, mode, validators, bl
     if (!selection) throw Object.assign(new Error('The selector gave no usable selection.'), { code: 'NO_SELECTION' });
 
     const byId = new Map(snapshot.items.map((item) => [item.id, item]));
-    const evidence = evidenceIds(selection)
-      .filter((id) => byId.has(id))
-      .map((id) => ({ id, text: byId.get(id).text }));
     const evidenceTexts = validators.selectedEvidenceTexts(selection, snapshot);
     const allow = validators.groundingAllowList(snapshot, { company: posting.company, title: posting.title });
     const letterPrompt = coverLetterPrompt(snapshot.owner);
     const letterStart = now();
-    const baseLetter = letterMessage(posting, view, selection, evidence, mode);
+    const baseLetter = letterMessage(posting, view, selection, evidenceTexts, mode);
     let letterCheck = null;
     let grounding = null;
     let letter = '';
     for (let attempt = 1; attempt <= 2; attempt += 1) {
       const user = attempt === 1 ? baseLetter : baseLetter + retryNote({ errors: [...letterCheck.errors, ...grounding.errors] });
-      const raw = await call('letter', letterPrompt, user, { posting, snapshot: view, selection, evidence, mode });
+      const raw = await call('letter', letterPrompt, user, { posting, snapshot: view, selection, evidenceTexts, mode });
       letter = extractLetter(raw);
       letterCheck = validators.validateLetter(letter, { selection, snapshot, blocklist, employer: snapshot.owner.currentEmployer, mode });
       grounding = validators.checkGrounding(letter, evidenceTexts, { allow });
