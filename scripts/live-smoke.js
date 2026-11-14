@@ -25,8 +25,8 @@
 // the old footer, and the site build waits on that run. Turn it on once the new footer is live
 // on the apex. With the variable unset no footer rows exist and the row count is unchanged.
 //
-// The accessibility check, per engine, for six main routes (AXE_ROUTES below, the same six the
-// Lighthouse audit covers), at both sizes and in both colour schemes. After the route's
+// The accessibility check, per engine, for seven routes (AXE_ROUTES below, the six the
+// Lighthouse audit covers and /docs, whose Decisions group it opens first), at both sizes and in both colour schemes. After the route's
 // components are visible it injects axe-core and fails the row on any violation of the WCAG 2.0
 // to 2.2 A and AA rules, naming the rule id and the first elements. Dark is checked because the
 // site themes by colour scheme and a contrast failure shows up in one scheme only. It checks the
@@ -104,7 +104,13 @@ const ROUTES = [
     ]
   },
   { path: "/contact", components: ["c-contact-form"] },
-  { path: "/docs", components: ["c-site-build-section", "c-docs-viewer"] },
+  {
+    path: "/docs",
+    components: ["c-site-build-section", "c-docs-viewer"],
+    // The Decisions group is closed on load and draws its links only once open, so the axe row
+    // presses its summary first. Without that its links would never be checked.
+    axeOpen: "c-docs-viewer details.doc-group-details > summary"
+  },
   { path: "/resume", components: ["c-resume-builder"] },
   { path: "/skills", components: ["c-skill-network"] },
   {
@@ -232,6 +238,7 @@ const AXE_ROUTES = [
   "/",
   "/resume",
   "/skills",
+  "/docs",
   "/api-lab",
   "/business-architecture",
   "/nonprofit-solutions"
@@ -1005,6 +1012,17 @@ async function axeOnce(browser, route, viewport, scheme) {
       const state = await componentState(page, tag, mayBeEmpty);
       if (state !== "visible" && state !== "empty") {
         result.errors.push(`${tag} is ${state}`);
+      }
+    }
+    if (route.axeOpen) {
+      const summaries = page.locator(route.axeOpen);
+      const count = await summaries.count();
+      for (let index = 0; index < count; index++) {
+        const group = summaries.nth(index);
+        const open = await group.evaluate((node) => node.parentElement.open);
+        if (!open) {
+          await group.click();
+        }
       }
     }
     await page.waitForTimeout(SETTLE_MS);

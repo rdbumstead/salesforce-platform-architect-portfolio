@@ -8,7 +8,8 @@ const {
   warningsFrom,
   warningCountText,
   AXE_EXTRA_RULES,
-  AXE_ROUTES
+  AXE_ROUTES,
+  ROUTES
 } = require("./live-smoke.js");
 
 test("strips only for a local http base with the option on", () => {
@@ -183,4 +184,13 @@ test("the summary ending always shows the count, zero included", () => {
 test("the axe rows switch on the voice control rule by id and keep the skills page", () => {
   assert.ok(AXE_EXTRA_RULES.includes("label-content-name-mismatch"));
   assert.ok(AXE_ROUTES.includes("/skills"));
+});
+
+test("the docs page is an axe route and opens its Decisions group to reach the links", () => {
+  assert.ok(AXE_ROUTES.includes("/docs"));
+  const docs = ROUTES.find((route) => route.path === "/docs");
+  assert.ok(docs.axeOpen.includes("summary"));
+  AXE_ROUTES.forEach((path) =>
+    assert.ok(ROUTES.some((route) => route.path === path))
+  );
 });
