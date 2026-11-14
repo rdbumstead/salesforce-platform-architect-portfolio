@@ -224,7 +224,7 @@ test('selection: the current role carries 4 to 6 bullets', () => {
   const seven = validateSelection(withRole('role-quillmark', { bullet_ids: ['q-toolkit', 'q-release', 'q-migration', 'q-omnistudio', 'q-greenfield', 'q-recover', 'q-standards'] }), SNAPSHOT, { mode: 'owner' });
   assert.deepEqual(offending(seven, 'selection.bullet_count'), ['role-quillmark: 7']);
   const omitted = validateSelection(withRole('role-quillmark', { include: false, bullet_ids: [] }), SNAPSHOT, { mode: 'owner' });
-  assert.deepEqual(offending(omitted, 'selection.bullet_count'), ['role-quillmark: 0']);
+  assert.deepEqual(offending(omitted, 'selection.current_role_omitted'), ['role-quillmark']);
 });
 
 test('selection: an older role carries 0 to 3 bullets', () => {
@@ -697,4 +697,56 @@ test('letter: visitor mode refuses a [VERIFY] marker, owner mode lists it', () =
 
 test('letter: a mode other than visitor or owner fails closed', () => {
   assert.deepEqual(offending(validateLetter(LETTER, letterOptions({ mode: 'admin' })), 'letter.mode'), ['admin']);
+});
+
+// ---------- the current role ----------
+
+const FREELANCE_ROLE = { id: 'role-freelance', employer: 'Ostwick Freelance', title: 'Independent Consultant', start: '2024-01', end: null, current: true };
+const FREELANCE_BULLETS = ['fr-one', 'fr-two', 'fr-three', 'fr-four'].map((id, position) => ({ id, type: 'bullet', roleId: 'role-freelance', text: `Freelance bullet ${position + 1}`, tags: [], priority: 2, verified: true, visibility: 'public' }));
+const TWO_CURRENT = { ...SNAPSHOT, roles: [...SNAPSHOT.roles, FREELANCE_ROLE], items: [...SNAPSHOT.items, ...FREELANCE_BULLETS] };
+
+function withFreelance(bulletIds) {
+  const base = selection();
+  return { ...base, roles: [...base.roles, { role_id: 'role-freelance', include: bulletIds.length > 0, bullet_ids: bulletIds }] };
+}
+
+test('current role: with two current roles, only the one at owner.currentEmployer carries 4 to 6 bullets', () => {
+  for (const count of [0, 1, 3]) {
+    const result = validateSelection(withFreelance(FREELANCE_BULLETS.slice(0, count).map((item) => item.id)), TWO_CURRENT, { mode: 'owner' });
+    assert.deepEqual(result.errors, [], `${count} freelance bullets`);
+  }
+  const four = validateSelection(withFreelance(FREELANCE_BULLETS.map((item) => item.id)), TWO_CURRENT, { mode: 'owner' });
+  assert.deepEqual(offending(four, 'selection.bullet_count'), ['role-freelance: 4']);
+  const primaryThree = validateSelection({ ...withFreelance([]), roles: withFreelance([]).roles.map((role) => (role.role_id === 'role-quillmark' ? { ...role, bullet_ids: role.bullet_ids.slice(0, 3) } : role)) }, TWO_CURRENT, { mode: 'owner' });
+  assert.deepEqual(offending(primaryThree, 'selection.bullet_count'), ['role-quillmark: 3']);
+});
+
+test('current role: a snapshot with no owner.currentEmployer fails closed', () => {
+  const snapshot = { ...SNAPSHOT, owner: { name: 'Jordan Example' } };
+  assert.deepEqual(codes(validateSelection(selection(), snapshot, { mode: 'owner' })), ['selection.no_current_employer']);
+});
+
+test('current role: a snapshot with no current role at owner.currentEmployer fails closed', () => {
+  const snapshot = { ...SNAPSHOT, roles: SNAPSHOT.roles.map((role) => ({ ...role, current: false })) };
+  const result = validateSelection(selection(), snapshot, { mode: 'owner' });
+  assert.deepEqual(codes(result), ['selection.no_current_role']);
+  assert.equal(result.errors[0].offending, 'Quillmark Digital');
+  const elsewhere = { ...SNAPSHOT, owner: { ...SNAPSHOT.owner, currentEmployer: 'Ostwick Freelance' } };
+  assert.deepEqual(codes(validateSelection(selection(), elsewhere, { mode: 'owner' })), ['selection.no_current_role']);
+});
+
+test('current role: a snapshot with two current roles at owner.currentEmployer fails closed', () => {
+  const snapshot = { ...TWO_CURRENT, roles: TWO_CURRENT.roles.map((role) => (role.id === 'role-freelance' ? { ...role, employer: 'Quillmark Digital' } : role)) };
+  const result = validateSelection(selection(), snapshot, { mode: 'owner' });
+  assert.deepEqual(codes(result), ['selection.many_current_roles']);
+  assert.equal(result.errors[0].offending, 'role-quillmark, role-freelance');
+});
+
+test('current role: a selection that omits the current role, or leaves it out of roles, fails with its own code', () => {
+  const omitted = validateSelection(withRole('role-quillmark', { include: false, bullet_ids: [] }), SNAPSHOT, { mode: 'owner' });
+  assert.deepEqual(offending(omitted, 'selection.current_role_omitted'), ['role-quillmark']);
+  const base = selection();
+  const absent = validateSelection({ ...base, roles: base.roles.filter((role) => role.role_id !== 'role-quillmark') }, SNAPSHOT, { mode: 'owner' });
+  assert.deepEqual(offending(absent, 'selection.current_role_omitted'), ['role-quillmark']);
+  assert.deepEqual(offending(validateSelection(selection(), SNAPSHOT, { mode: 'owner' }), 'selection.current_role_omitted'), []);
 });
