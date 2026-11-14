@@ -676,7 +676,7 @@ test('a failed run records and prints its validator error codes, and the scorer 
     script: ({ kind, context }) => {
       if (kind !== 'selector') return undefined;
       const selection = buildFakeSelection(context);
-      return JSON.stringify({ ...selection, roles: selection.roles.map((role) => ({ ...role, include: false, bullet_ids: [] })) });
+      return JSON.stringify({ ...selection, roles: selection.roles.map((role) => ({ ...role, bullet_ids: [] })) });
     }
   });
   const failed = await runOne({ provider: noBullets, posting, snapshot, mode: 'owner', validators: REAL, blocklist: BLOCKLIST, categories });

@@ -44,9 +44,10 @@ export function buildFakeSelection({ posting, snapshot, categories }) {
       const hitB = b.tags.some((tag) => topIds.has(tag)) ? 0 : 1;
       return hitA - hitB || byPriority(a, b);
     });
-  // The selection validator holds every role marked current to the current role's 4 to 6
-  // bullets, so the fake gives each of them four.
-  const bulletsFor = (role) => (role.current ? scored(items.filter((item) => item.type === 'bullet' && item.roleId === role.id)).slice(0, 4) : []);
+  // Only the current role, the one at the owner's current employer, carries the 4 to 6
+  // bullets. Any other role marked current is included with none.
+  const mainRole = currentRole(snapshot);
+  const bulletsFor = (role) => (mainRole && role.id === mainRole.id ? scored(items.filter((item) => item.type === 'bullet' && item.roleId === role.id)).slice(0, 4) : []);
   const requirements = ranked.map((entry) => {
     const evidence = items.filter((item) => item.type !== 'headline' && item.type !== 'summary' && item.tags.includes(entry.id)).sort(byPriority).slice(0, 2);
     const label = categories.find((category) => category.id === entry.id)?.label || entry.id;
