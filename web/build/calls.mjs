@@ -27,6 +27,17 @@ export const UNREACHABLE_CALLS = new Map([
   ['ApiLabController.invoke', 'No component imports it. apiTester imports invokeVersioned under that name.']
 ]);
 
+/**
+ * Calls the export serves to the build alone, with the reason. No component on a public page
+ * may import one, and the coverage check accepts each as served but not imported.
+ */
+export const BUILD_ONLY_CALLS = new Map([
+  [
+    'ResumeSnapshotService.getSnapshot',
+    'The resume snapshot for the tailored resume. It holds unverified items, so no page reads it and the build writes it under functions/_generated only.'
+  ]
+]);
+
 export function modeOf(call) {
   return REQUEST_TIME_CALLS.has(call) ? 'request' : 'build';
 }
