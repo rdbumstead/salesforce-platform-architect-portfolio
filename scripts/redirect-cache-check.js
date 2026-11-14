@@ -29,7 +29,7 @@
 // repository. The org is named on the command line and its Id is checked before any deploy.
 //
 // Usage:
-//   node scripts/redirect-cache-check.js --org r22-org --org-id 00DE200000dSvkuMAC \
+//   node scripts/redirect-cache-check.js --org <scratch alias> --org-id <its 15 or 18 character Id> \
 //     --sf-base https://example.scratch.my.site.com/portfolio --dist web/dist --port 8822
 // Options: --browsers chromium,webkit  --measure 5  --out result.json  --shots folder
 //
