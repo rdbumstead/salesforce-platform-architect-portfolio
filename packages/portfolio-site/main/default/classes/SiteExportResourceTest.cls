@@ -167,7 +167,9 @@ private class SiteExportResourceTest {
   @isTest
   static void parityTestsCoverEveryAllowlistedCall() {
     // The parity methods here and in SiteExportTestimonialParityTest name these calls. The list
-    // must equal the allowlist, so a call added without a parity check fails here.
+    // must equal the allowlist, so a call added without a parity check fails here. The resume
+    // snapshot is the one call the guest must not read, so ResumeSnapshotServiceTest checks it
+    // the other way round.
     Set<String> tested = new Set<String>{
       'ResumeController.getHeader',
       'ResumeController.getTimeline',
@@ -194,7 +196,8 @@ private class SiteExportResourceTest {
       'ApiLabController.getCatalog',
       'ApiLabController.getPostmanRunUrl',
       'ApiLabController.getVersionlessUrls',
-      'ApiLabOptionsController.getOptions'
+      'ApiLabOptionsController.getOptions',
+      'ResumeSnapshotService.getSnapshot'
     };
     Assert.areEqual(
       tested,
