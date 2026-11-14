@@ -40,6 +40,7 @@ const os = require("os");
 const path = require("path");
 const http = require("http");
 const { spawnSync } = require("child_process");
+const { quote } = require("./scratch-ready");
 
 const PATHS = ["/", "/resume", "/api-lab"];
 const SETTINGS = [
@@ -321,15 +322,16 @@ function parseSfJson(stdout) {
   }
 }
 
+// sf runs through cmd.exe only on Windows, where sf.cmd needs a shell, with each argument
+// quoted by scratch-ready's quote(), which refuses what cmd.exe cannot pass safely. Elsewhere
+// it runs with no shell, so no argument is ever read by one.
 function sf(args) {
-  const quoted = args.map((arg) =>
-    /[\s()'"]/.test(arg) ? `"${arg.replace(/"/g, '\\"')}"` : arg
+  const windows = process.platform === "win32";
+  const result = spawnSync(
+    windows ? `sf ${args.map(quote).join(" ")}` : "sf",
+    windows ? [] : args,
+    { shell: windows, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 }
   );
-  const result = spawnSync("sf", quoted, {
-    shell: true,
-    encoding: "utf8",
-    maxBuffer: 64 * 1024 * 1024
-  });
   return parseSfJson(result.stdout);
 }
 
