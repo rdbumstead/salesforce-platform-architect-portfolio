@@ -66,6 +66,7 @@
         "PortfolioLogTest",
         "PortfolioServiceTest",
         "PortfolioSettingsTest",
+        "SiteRedirectControllerTest",
         "SiteActionsResourceTest",
         "SiteExport*",
         "ResumeControllerTest"

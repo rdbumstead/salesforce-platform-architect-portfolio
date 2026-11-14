@@ -11,7 +11,7 @@
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 10/26/2026
  **/
-export const COUNTED_ON = "2026-11-12";
+export const COUNTED_ON = "2026-11-13";
 
 export const APEX_GROUPS = [
   {
@@ -20,7 +20,7 @@ export const APEX_GROUPS = [
   },
   {
     name: "Other site classes",
-    tests: 290
+    tests: 295
   },
   {
     name: "API Lab and AI cover letters",
@@ -51,7 +51,7 @@ export const APEX_GROUPS = [
 export const JEST_GROUPS = [
   {
     name: "Page shell, home and navigation",
-    tests: 466
+    tests: 501
   },
   {
     name: "Delivery, docs and pillar pages",
@@ -59,11 +59,11 @@ export const JEST_GROUPS = [
   },
   {
     name: "API Lab, API reference and AI Lab",
-    tests: 224
+    tests: 235
   },
   {
     name: "Skills, graphs and resume",
-    tests: 206
+    tests: 207
   },
   {
     name: "Contact and testimonial forms",
