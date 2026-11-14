@@ -3,6 +3,7 @@
  * paragraph letter built only from the selected evidence text. Deterministic, so the harness
  * can run end to end with no model and give the same numbers every time.
  */
+import { currentRole } from './roles.mjs';
 import { HARD_FILTER_WORDS, hasPhrase, rankCategories, wordCount } from './text.mjs';
 
 const FAMILIES = ['engineer', 'architect', 'consultant', 'admin'];
@@ -36,7 +37,7 @@ export function buildFakeSelection({ posting, snapshot, categories }) {
   const family = titleFamily(posting.title);
   const headline = items.find((item) => item.id === `headline-${family}`) || items.find((item) => item.type === 'headline');
   const summary = items.find((item) => item.type === 'summary');
-  const current = snapshot.roles.find((role) => role.current && role.employer === snapshot.owner.currentEmployer) || snapshot.roles[0];
+  const current = currentRole(snapshot) || snapshot.roles[0];
   const topIds = new Set(ranked.map((entry) => entry.id));
   const scored = (list) =>
     [...list].sort((a, b) => {
@@ -71,7 +72,7 @@ export function buildFakeSelection({ posting, snapshot, categories }) {
 
 /** context: { posting, snapshot, selection, evidence: [{ id, text }] } */
 export function buildFakeLetter({ posting, snapshot, selection, evidence }) {
-  const current = snapshot.roles.find((role) => role.current && role.employer === snapshot.owner.currentEmployer);
+  const current = currentRole(snapshot);
   const byId = new Map(evidence.map((entry) => [entry.id, entry.text]));
   const withEvidence = (selection.top_requirements || []).filter((entry) => entry.match !== 'gap' && entry.evidence_ids.some((id) => byId.has(id)));
   const body = withEvidence.slice(0, 3).map((entry) => {

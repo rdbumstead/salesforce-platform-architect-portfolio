@@ -5,6 +5,7 @@
  */
 import { COVER_LETTER_PROMPT } from '../../functions/_lib/tailor/prompts/cover-letter.js';
 import { SELECTOR_PROMPT } from '../../functions/_lib/tailor/prompts/selector.js';
+import { currentRole } from './roles.mjs';
 
 /** The wait the site's cover letter function allows today, in milliseconds. */
 export const WAIT_LIMIT_MS = 115000;
@@ -48,7 +49,7 @@ export function evidenceIds(selection) {
 }
 
 export function letterMessage(posting, view, selection, evidence, mode) {
-  const current = view.roles.find((role) => role.current && role.employer === view.owner.currentEmployer);
+  const current = currentRole(view);
   const requirements = (selection.top_requirements || []).filter((entry) => mode === 'owner' || entry?.match === 'strong');
   const analysis = { title_family: selection.title_family, top_requirements: requirements, ...(mode === 'owner' ? { hard_filter_flags: selection.hard_filter_flags || [] } : {}) };
   return [

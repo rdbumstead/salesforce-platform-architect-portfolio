@@ -16,11 +16,11 @@
  * Real providers read their keys from the environment (see lib/providers.mjs) and refuse to
  * start without them. The client blocklist comes from SITE_DENYLIST, never from a file.
  */
-import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { MODES, runOne, WAIT_LIMIT_MS } from './lib/pipeline.mjs';
+import { assertPrivateFolder } from './lib/private.mjs';
 import { createProvider, PROVIDER_NAMES } from './lib/providers.mjs';
 import { loadValidators } from './lib/validators.mjs';
 import { formatTable, scoreRuns } from './score.mjs';
@@ -28,6 +28,7 @@ import { formatTable, scoreRuns } from './score.mjs';
 export const EVAL_DIR = path.dirname(fileURLToPath(import.meta.url));
 export const PRIVATE_DIR = path.join(EVAL_DIR, 'private');
 export const DEFAULT_REPEATS = 5;
+export { assertPrivateFolder };
 
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -100,27 +101,6 @@ export function pickPostings(postings, which) {
   const missing = ids.filter((id) => !postings.some((posting) => posting.id === id));
   if (missing.length) throw new Error(`No posting with id ${missing.join(', ')}.`);
   return postings.filter((posting) => ids.includes(posting.id));
-}
-
-/**
- * Refuses a results folder inside the repository unless git ignores it, so a run can never
- * leave a posting or an answer where a commit would pick it up.
- */
-export function assertPrivateFolder(dir, { git = (args, cwd) => execFileSync('git', args, { cwd, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() } = {}) {
-  let top;
-  try {
-    top = path.resolve(git(['rev-parse', '--show-toplevel'], EVAL_DIR));
-  } catch {
-    return;
-  }
-  const relative = path.relative(top, path.resolve(dir));
-  if (relative.startsWith('..') || path.isAbsolute(relative)) return;
-  const probe = path.join(relative, 'probe.json').split(path.sep).join('/');
-  try {
-    git(['check-ignore', '-q', '--no-index', probe], top);
-  } catch {
-    throw new Error(`Refusing to write results to ${relative}, because git does not ignore it. Add web/tailor-eval/private/ to .gitignore first.`);
-  }
 }
 
 /** Every run, in order: provider, mode, posting, repeat. */
