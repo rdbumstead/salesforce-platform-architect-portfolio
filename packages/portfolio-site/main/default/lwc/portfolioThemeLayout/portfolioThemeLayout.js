@@ -517,21 +517,29 @@ export default class PortfolioThemeLayout extends LightningElement {
   };
 
   _onMenuTouchStart = (event) => {
-    const touch = event.touches && event.touches[0];
-    this._touchY = touch ? touch.clientY : null;
+    const touches = event.touches || [];
+    this._touchY = touches.length === 1 ? touches[0].clientY : null;
   };
 
+  // Zoom is never blocked. A move with two or more fingers is a pinch and goes through
+  // untouched. The finger left after a pinch starts clean on its next move.
   _onMenuTouchMove = (event) => {
-    const touch = event.touches && event.touches[0];
-    if (!touch || this._touchY === null) {
+    const touches = event.touches || [];
+    if (touches.length !== 1) {
+      this._touchY = null;
       return;
     }
-    const dy = this._touchY - touch.clientY;
+    const touch = touches[0];
+    const dy = this._touchY === null ? 0 : this._touchY - touch.clientY;
     this._touchY = touch.clientY;
     this.holdPage(event, touch.clientX, touch.clientY, dy);
   };
 
+  // Ctrl with the wheel, and a trackpad pinch in Chromium, is a zoom and goes through untouched.
   _onMenuWheel = (event) => {
+    if (event.ctrlKey) {
+      return;
+    }
     this.holdPage(event, event.clientX, event.clientY, event.deltaY);
   };
 
