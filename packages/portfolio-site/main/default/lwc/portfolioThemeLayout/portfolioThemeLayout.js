@@ -204,11 +204,33 @@ export function stripArrival(where, history) {
   }
 }
 
-// Read while the module loads, before the analytics tag has sent its first page view. Only
-// the static site is ever sent here, so the Salesforce site never strips anything.
+/** The attribute the page's head script puts on the root element after it has removed from=sf itself. */
+export const ARRIVAL_ATTRIBUTE = "data-redirect-arrival";
+
+/**
+ * Whether the visitor was sent here by the Salesforce site. The head script of the static page
+ * removes from=sf before the analytics tag can read the address, and leaves the attribute so
+ * this module still knows. When the head script is not there, this removes it itself.
+ * @param {{pathname: string, search: string, hash: string}} where the page address
+ * @param {{state: any, replaceState: Function}} history the window history
+ * @param {{getAttribute: Function}} root the document's root element
+ * @returns {boolean} true when the visitor arrived from the Salesforce site
+ */
+export function readArrival(where, history, root) {
+  let marked = false;
+  try {
+    marked = root.getAttribute(ARRIVAL_ATTRIBUTE) === ARRIVAL_VALUE;
+  } catch {
+    marked = false;
+  }
+  return stripArrival(where, history) || marked;
+}
+
+// Read while the module loads. Only the static site is ever sent here, so the Salesforce site
+// never strips anything.
 let arrivedFromSalesforce =
   IS_STATIC && typeof window !== "undefined"
-    ? stripArrival(window.location, window.history)
+    ? readArrival(window.location, window.history, document.documentElement)
     : false;
 
 /**

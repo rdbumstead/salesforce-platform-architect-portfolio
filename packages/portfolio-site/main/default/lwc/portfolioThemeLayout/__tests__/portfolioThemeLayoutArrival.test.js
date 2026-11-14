@@ -11,7 +11,11 @@
  * @Created           : 11/13/2026
  **/
 import { createElement } from "@lwc/engine-dom";
-import Layout, { stripArrival } from "c/portfolioThemeLayout";
+import Layout, {
+  ARRIVAL_ATTRIBUTE,
+  readArrival,
+  stripArrival
+} from "c/portfolioThemeLayout";
 import { trackEvent } from "c/analyticsService";
 import getRedirect from "@salesforce/apex/SiteRedirectController.getRedirect";
 
@@ -128,6 +132,56 @@ describe("stripArrival", () => {
     };
     expect(
       stripArrival({ pathname: "/", search: "?from=sf", hash: "" }, h)
+    ).toBe(false);
+  });
+});
+
+describe("readArrival", () => {
+  const root = (value) => ({
+    getAttribute: (name) => (name === ARRIVAL_ATTRIBUTE ? value : null)
+  });
+  const history = () => ({ state: null, replaceState: jest.fn() });
+
+  it("is true when the head script left its mark and the address is already clean", () => {
+    const h = history();
+    expect(
+      readArrival({ pathname: "/a", search: "", hash: "" }, h, root("sf"))
+    ).toBe(true);
+    expect(h.replaceState).not.toHaveBeenCalled();
+  });
+
+  it("strips the address itself when there is no mark", () => {
+    const h = history();
+    expect(
+      readArrival(
+        { pathname: "/a", search: "?from=sf", hash: "" },
+        h,
+        root(null)
+      )
+    ).toBe(true);
+    expect(h.replaceState).toHaveBeenCalledWith(null, "", "/a");
+  });
+
+  it("is false with neither, or with a mark that is not sf", () => {
+    expect(
+      readArrival(
+        { pathname: "/a", search: "", hash: "" },
+        history(),
+        root(null)
+      )
+    ).toBe(false);
+    expect(
+      readArrival(
+        { pathname: "/a", search: "", hash: "" },
+        history(),
+        root("x")
+      )
+    ).toBe(false);
+  });
+
+  it("does not throw when the root cannot be read", () => {
+    expect(
+      readArrival({ pathname: "/a", search: "", hash: "" }, history(), null)
     ).toBe(false);
   });
 });
