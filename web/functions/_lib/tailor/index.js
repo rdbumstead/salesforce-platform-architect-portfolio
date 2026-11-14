@@ -27,4 +27,12 @@ export {
   nameRuns
 } from "./grounding.js";
 export { parseBlocklist } from "./blocklist.js";
-export { termMatcher, findNumbers, countWords, paragraphs } from "./text.js";
+export {
+  termMatcher,
+  findNumbers,
+  countWords,
+  paragraphs,
+  cleanText,
+  foldLookAlikes,
+  mixedScriptWords
+} from "./text.js";

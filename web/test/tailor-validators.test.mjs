@@ -361,7 +361,7 @@ test('letter: every banned phrase fails with the phrase, whatever its case', () 
 
 test('letter: a curly apostrophe does not hide "I\u2019m confident that"', () => {
   const result = validateLetter(letterWith(3, 'I\u2019m confident that it helps.'), letterOptions());
-  assert.match(offending(result, 'letter.banned_phrase')[0], /I'm confident that/);
+  assert.match(offending(result, 'letter.banned_phrase')[0], /I\u2019m confident that/);
 });
 
 test('letter: "leverage" as a verb fails, as a noun passes', () => {
@@ -610,3 +610,56 @@ test('blocklist: terms under three characters are dropped as the leak scan drops
   assert.deepEqual(result.terms, ['zzclientone']);
   assert.deepEqual(warned(result, 'blocklist.short_term'), ['2 dropped']);
 });
+
+// ---------- invisible characters and look alike letters ----------
+
+const SHY = String.fromCharCode(0xad);
+const ZWSP = String.fromCharCode(0x200b);
+const RLO = String.fromCharCode(0x202e);
+const CYRILLIC_O = String.fromCharCode(0x043e);
+
+test('letter: a soft hyphen inside a blocklisted term does not hide it', () => {
+  const result = validateLetter(letterWith(3, `I worked with zzclient${SHY}one last year.`), letterOptions());
+  assert.equal(result.ok, false);
+  assert.deepEqual(offending(result, 'letter.blocklisted'), [`zzclient${SHY}one`]);
+});
+
+test('letter: zero width characters do not hide a banned phrase, a client word or a semicolon', () => {
+  const phrase = validateLetter(letterWith(3, `I am pass${ZWSP}ionate about it.`), letterOptions());
+  assert.equal(offending(phrase, 'letter.banned_phrase').length, 1);
+  const word = validateLetter(letterWith(3, `It was a trou${String.fromCharCode(0x2060)}bled program.`), letterOptions());
+  assert.equal(offending(word, 'letter.banned_word').length, 1);
+  const fullwidth = validateLetter(letterWith(3, `It shipped${String.fromCharCode(0xff1b)} it held.`), letterOptions());
+  assert.equal(offending(fullwidth, 'letter.semicolon').length, 1);
+});
+
+test('letter: an employer name split by an invisible character still counts as present', () => {
+  const result = validateLetter(LETTER.replace('Quillmark Digital', `Quill${ZWSP}mark Digital`), letterOptions());
+  assert.deepEqual(offending(result, 'letter.employer_missing'), []);
+});
+
+test('letter: any invisible character is its own error naming the code point', () => {
+  const result = validateLetter(letterWith(3, `It ran${SHY} well${ZWSP} and ${RLO}here.`), letterOptions());
+  assert.deepEqual(result.errors.filter((entry) => entry.code === 'letter.invisible').map((entry) => entry.message.match(/U\+[0-9A-F]{4}/)[0]), ['U+00AD', 'U+200B', 'U+202E']);
+  assert.deepEqual(codes(validateLetter(LETTER, letterOptions())), []);
+});
+
+test('letter: a Cyrillic look alike letter does not hide a blocklisted term, and a mixed script word fails', () => {
+  const result = validateLetter(letterWith(3, `I worked with zzclient${CYRILLIC_O}ne last year.`), letterOptions());
+  assert.deepEqual(offending(result, 'letter.blocklisted'), [`zzclient${CYRILLIC_O}ne`]);
+  assert.deepEqual(offending(result, 'letter.mixed_script'), [`zzclient${CYRILLIC_O}ne`]);
+  const greek = validateLetter(letterWith(3, `See zzclientt${String.fromCharCode(0x03bf)}ne.`), letterOptions());
+  assert.equal(offending(greek, 'letter.mixed_script').length, 1);
+});
+
+test('resume: an invisible character is an error and does not hide a semicolon', () => {
+  const result = validateResume(`${RESUME}\nGit${ZWSP}${String.fromCharCode(0xff1b)} SOQL`, { selection: selection(), snapshot: SNAPSHOT });
+  assert.ok(codes(result).includes('resume.invisible'));
+  assert.equal(offending(result, 'resume.semicolon').length, 1);
+});
+
+test('blocklist: terms are normalised, so an invisible character in the secret does not split a term', () => {
+  assert.deepEqual(parseBlocklist(`zz${ZWSP}clientone`).terms, ['zzclientone']);
+  assert.deepEqual(parseBlocklist(`\uff5a\uff5aclientone`).terms, ['zzclientone']);
+});
+

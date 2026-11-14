@@ -1,6 +1,7 @@
 /**
  * Reads the client blocklist from the SITE_DENYLIST secret, the same list the public build's leak
- * scan uses: comma or newline separated, each term trimmed, empty terms dropped. Terms shorter
+ * scan uses: comma or newline separated, each term cleaned as the letter is (NFKC, invisible
+ * characters removed) and trimmed, empty terms dropped. Terms shorter
  * than three characters are dropped as the leak scan drops them, since a one or two letter term
  * would match inside ordinary text, and a warning says how many went.
  *
@@ -9,6 +10,7 @@
  */
 
 import { finish, issue } from "./result.js";
+import { cleanText } from "./text.js";
 
 export const MIN_TERM_LENGTH = 3;
 
@@ -17,7 +19,7 @@ export function parseBlocklist(raw) {
   const warnings = [];
   const listed = String(raw === undefined || raw === null ? "" : raw)
     .split(/[\n,]/)
-    .map((term) => term.trim())
+    .map((term) => cleanText(term).text.trim())
     .filter(Boolean);
   const terms = [
     ...new Set(listed.filter((term) => term.length >= MIN_TERM_LENGTH))

@@ -1,16 +1,19 @@
 /**
  * Checks a tailored resume. The text is the resume's plain text, the same text the ATS copy gives.
  *
- * Errors: an em dash or a semicolon in the text, a selected id the snapshot does not hold, and a
+ * Errors: an invisible character (a format character such as a zero width space), an em dash or
+ * a semicolon in the text, a selected id the snapshot does not hold, and a
  * number in the selected summary that no selected bullet states. Numbers are found and compared
  * the way the grounding check finds them, so "two" in the summary is backed by "2" in a bullet.
+ *
+ * The rules read a cleaned copy (NFKC, invisible characters removed) and quote the original.
  *
  * An unverified selected item is a warning and sets `blocksExport: true`, because final export
  * waits until the owner flips the flag. The review screen still shows the resume.
  */
 
 import { finish, issue } from "./result.js";
-import { around, findNumbers, normalise } from "./text.js";
+import { around, aroundOriginal, cleanText, findNumbers } from "./text.js";
 
 function selectedIds(selection) {
   const roles = Array.isArray(selection.roles)
@@ -49,13 +52,23 @@ export function validateResume(text, { selection, snapshot } = {}) {
     );
     return finish(errors, warnings, { blocksExport: true });
   }
-  const resume = normalise(text);
+  const clean = cleanText(text);
+  const resume = clean.text;
+  clean.invisible.forEach((entry) =>
+    errors.push(
+      issue(
+        "resume.invisible",
+        `The resume holds an invisible character, ${entry.codePoint}`,
+        around(clean.source, entry.index, 1)
+      )
+    )
+  );
   for (const match of resume.matchAll(/[\u2014\u2015]/gu)) {
     errors.push(
       issue(
         "resume.em_dash",
         "The resume uses an em dash",
-        around(resume, match.index, 1)
+        aroundOriginal(clean, match.index, 1)
       )
     );
   }
@@ -64,7 +77,7 @@ export function validateResume(text, { selection, snapshot } = {}) {
       issue(
         "resume.semicolon",
         "The resume uses a semicolon",
-        around(resume, match.index, 1)
+        aroundOriginal(clean, match.index, 1)
       )
     );
   }
@@ -96,11 +109,11 @@ export function validateResume(text, { selection, snapshot } = {}) {
 
   const summary = items.get(selection.summary_id);
   if (summary) {
-    const bulletText = normalise(
+    const bulletText = cleanText(
       ids.bullets.map((id) => (items.get(id) || {}).text || "").join("\n")
-    );
+    ).text;
     const backed = new Set(findNumbers(bulletText).map((entry) => entry.value));
-    const summaryText = normalise(summary.text);
+    const summaryText = cleanText(summary.text).text;
     findNumbers(summaryText).forEach((entry) => {
       if (!backed.has(entry.value)) {
         errors.push(

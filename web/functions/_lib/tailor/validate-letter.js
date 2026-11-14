@@ -3,14 +3,22 @@
  *
  * Errors: an em dash, an en dash used as a dash, a semicolon, a banned phrase, "distressed",
  * "troubled" or "failing", a body outside 300 to 400 words, a body that is not exactly five
- * paragraphs, a blocklisted term, and a letter that never names the current employer.
+ * paragraphs, a blocklisted term, a letter that never names the current employer, any invisible
+ * character, and a word that mixes Latin letters with Cyrillic or Greek ones.
  *
- * Warnings: each [VERIFY] marker, which the owner resolves before export, a spaced hyphen standing
- * in for a dash, and a selection with fewer than three requirements that have evidence. With
+ * Warnings: each [VERIFY] marker, which the owner resolves before export, a spaced hyphen
+ * standing in for a dash, and a selection with fewer than three requirements that have evidence. With
  * fewer than three the letter keeps five paragraphs and the opener and close carry more, so the
  * thin evidence is reported and does not fail the letter.
  *
  * How the rules read the text:
+ * - Every rule reads a cleaned copy: each character in NFKC form, curly quotes as straight ones,
+ *   and every invisible character (category Cf, such as a soft hyphen, a zero width space or a
+ *   bidi control) removed, so a term split by one still matches. Offending text is quoted from the
+ *   original letter, invisible characters included.
+ * - NFKC leaves look alike letters from other scripts alone, so a Cyrillic "o" inside a Latin word
+ *   is caught two ways: the word fails as mixed script, and the blocklist match folds the common
+ *   Cyrillic and Greek look alikes to Latin first (the table in text.js).
  * - An en dash between two digits with no space ("2021\u20132025") is a range and passes. Any
  *   other en dash is a dash and fails.
  * - Phrases and words match whole, ignoring case, after curly quotes are read as straight ones.
@@ -24,15 +32,20 @@
  * - A first block that is one short greeting line ("Dear Hiring Team,") and a last block that is a
  *   sign off ("Sincerely,", a name) are left out of the word and paragraph counts.
  * - The blocklist uses the leak scan's whole word rule. A hit reports the letter's own text.
+ * - The greeting and sign off are set aside by `letterBody`, whose rule waits on a decision.
  */
 
 import { parseBlocklist } from "./blocklist.js";
 import { finish, issue } from "./result.js";
 import {
   around,
+  aroundOriginal,
+  cleanText,
   countWords,
-  normalise,
+  foldLookAlikes,
+  mixedScriptWords,
   paragraphs,
+  sliceOriginal,
   termMatcher
 } from "./text.js";
 
@@ -128,13 +141,13 @@ export function letterBody(text) {
   return blocks.slice(start, end);
 }
 
-function checkPunctuation(text, errors, warnings) {
+function checkPunctuation(text, errors, warnings, show) {
   every(/[\u2014\u2015]/u, text).forEach((match) =>
     errors.push(
       issue(
         "letter.em_dash",
         "The letter uses an em dash",
-        around(text, match.index, 1)
+        show(match.index, 1)
       )
     )
   );
@@ -147,7 +160,7 @@ function checkPunctuation(text, errors, warnings) {
         issue(
           "letter.en_dash",
           "The letter uses an en dash as a dash",
-          around(text, match.index, 1)
+          show(match.index, 1)
         )
       );
   });
@@ -156,7 +169,7 @@ function checkPunctuation(text, errors, warnings) {
       issue(
         "letter.semicolon",
         "The letter uses a semicolon",
-        around(text, match.index, 1)
+        show(match.index, 1)
       )
     )
   );
@@ -165,20 +178,20 @@ function checkPunctuation(text, errors, warnings) {
       issue(
         "letter.spaced_hyphen",
         "A spaced hyphen stands in for a dash",
-        around(text, match.index, match[0].length)
+        show(match.index, match[0].length)
       )
     )
   );
 }
 
-function checkPhrases(text, errors) {
+function checkPhrases(text, errors, show) {
   BANNED_PHRASES.forEach((phrase) => {
     every(termMatcher(phrase), text).forEach((match) =>
       errors.push(
         issue(
           "letter.banned_phrase",
           `The letter uses the banned phrase "${phrase}"`,
-          around(text, match.index, match[0].length)
+          show(match.index, match[0].length)
         )
       )
     );
@@ -191,7 +204,7 @@ function checkPhrases(text, errors) {
       issue(
         "letter.banned_phrase",
         'The letter uses "leverage" as a verb',
-        around(text, match.index, match[0].length)
+        show(match.index, match[0].length)
       )
     )
   );
@@ -204,7 +217,7 @@ function checkPhrases(text, errors) {
           issue(
             "letter.banned_phrase",
             'The letter uses "leverage" as a verb',
-            around(text, match.index, match[0].length)
+            show(match.index, match[0].length)
           )
         );
       }
@@ -216,7 +229,7 @@ function checkPhrases(text, errors) {
         issue(
           "letter.banned_word",
           `The letter uses "${word}"`,
-          around(text, match.index, match[0].length)
+          show(match.index, match[0].length)
         )
       )
     );
@@ -261,10 +274,31 @@ export function validateLetter(
       verifyItems: []
     });
   }
-  const letter = normalise(text);
+  const clean = cleanText(text);
+  const letter = clean.text;
+  const show = (index, length) => aroundOriginal(clean, index, length);
 
-  checkPunctuation(letter, errors, warnings);
-  checkPhrases(letter, errors);
+  clean.invisible.forEach((entry) =>
+    errors.push(
+      issue(
+        "letter.invisible",
+        `The letter holds an invisible character, ${entry.codePoint}`,
+        around(clean.source, entry.index, 1)
+      )
+    )
+  );
+  mixedScriptWords(letter).forEach((entry) =>
+    errors.push(
+      issue(
+        "letter.mixed_script",
+        "A word mixes Latin letters with Cyrillic or Greek ones",
+        sliceOriginal(clean, entry.index, entry.word.length)
+      )
+    )
+  );
+
+  checkPunctuation(letter, errors, warnings, show);
+  checkPhrases(letter, errors, show);
 
   const body = letterBody(letter);
   const wordCount = body.reduce((sum, block) => sum + countWords(block), 0);
@@ -287,13 +321,14 @@ export function validateLetter(
     );
   }
 
+  const folded = foldLookAlikes(letter);
   blocklistTerms(blocklist, errors).forEach((term) => {
-    every(termMatcher(term), letter).forEach((match) =>
+    every(termMatcher(foldLookAlikes(term)), folded).forEach((match) =>
       errors.push(
         issue(
           "letter.blocklisted",
           "The letter names a blocklisted term",
-          match[0]
+          sliceOriginal(clean, match.index, match[0].length)
         )
       )
     );
@@ -309,7 +344,7 @@ export function validateLetter(
         ""
       )
     );
-  } else if (!termMatcher(current).test(letter)) {
+  } else if (!termMatcher(cleanText(current).text).test(letter)) {
     errors.push(
       issue(
         "letter.employer_missing",
