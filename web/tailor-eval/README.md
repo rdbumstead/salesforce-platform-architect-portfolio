@@ -25,11 +25,14 @@ node tailor-eval/run-eval.mjs --providers fake
 
 runs every posting through the fake provider, five times each, in both modes. Real providers need their keys in the environment and refuse to start without them:
 
-| Provider                           | Environment                                                                                             | Command                                                |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| Gemini API                         | `TAILOR_EVAL_GEMINI_KEY`, optional `TAILOR_EVAL_GEMINI_MODEL`                                           | `node tailor-eval/run-eval.mjs --providers gemini`     |
-| Cloudflare Workers AI              | `TAILOR_EVAL_CF_ACCOUNT_ID`, `TAILOR_EVAL_CF_TOKEN` (Workers AI scope), optional `TAILOR_EVAL_CF_MODEL` | `node tailor-eval/run-eval.mjs --providers workers-ai` |
-| Any paid chat completions endpoint | `TAILOR_EVAL_PAID_URL`, `TAILOR_EVAL_PAID_KEY`, `TAILOR_EVAL_PAID_MODEL`                                | `node tailor-eval/run-eval.mjs --providers paid`       |
+| Provider                            | Environment                                                                                                                                  | Command                                                |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| Gemini API                          | `TAILOR_EVAL_GEMINI_KEY`, optional `TAILOR_EVAL_GEMINI_MODEL`                                                                                | `node tailor-eval/run-eval.mjs --providers gemini`     |
+| Cloudflare Workers AI               | `TAILOR_EVAL_CF_ACCOUNT_ID`, `TAILOR_EVAL_CF_TOKEN` (Workers AI scope), optional `TAILOR_EVAL_CF_MODEL`                                      | `node tailor-eval/run-eval.mjs --providers workers-ai` |
+| Any paid chat completions endpoint  | `TAILOR_EVAL_PAID_URL`, `TAILOR_EVAL_PAID_KEY`, `TAILOR_EVAL_PAID_MODEL`                                                                     | `node tailor-eval/run-eval.mjs --providers paid`       |
+| Claude (owner mode comparison only) | `TAILOR_EVAL_CLAUDE_KEY`, optional `TAILOR_EVAL_CLAUDE_MODEL` (default `claude-opus-5-5`) and `TAILOR_EVAL_CLAUDE_EFFORT` (default `medium`) | `node tailor-eval/run-eval.mjs --providers claude`     |
+
+The Claude provider calls the Anthropic SDK with server side fallbacks on and no SDK retries, so the router decides what follows a failure. It bills per call, so the public policy refuses it, as it refuses `paid` (E19).
 
 Set `SITE_DENYLIST` the same way the site build does, or the client name check is skipped and the table says so. Other options: `--postings all|synthetic|injection|<ids>`, `--repeats <n>`, `--mode both|owner|visitor`, `--out <folder>`, `--timeout-ms <ms>`.
 

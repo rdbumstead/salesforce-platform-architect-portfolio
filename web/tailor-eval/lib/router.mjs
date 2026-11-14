@@ -44,6 +44,9 @@ export const ROUTES_FILE = path.join(
 
 export const TEMPLATE_ROUTE = "template";
 
+/** Routes that bill per call. None of them may appear in the public policy (E19). */
+export const PAID_ROUTES = ["paid", "claude"];
+
 /** The outcome classes a route can end in. */
 export const OUTCOMES = {
   answered: "answered",
@@ -99,6 +102,13 @@ export function policyProblems(name, policy) {
     if (routes.indexOf(route) !== index)
       problems.push(`Policy "${name}" lists "${route}" more than once.`);
   });
+  // E19: a paid model never serves the public site.
+  if (name === "public")
+    for (const route of routes)
+      if (PAID_ROUTES.includes(route))
+        problems.push(
+          `Policy "public" names ${route}, a paid model, which never serves the public site.`
+        );
   if (routes.at(-1) !== TEMPLATE_ROUTE)
     problems.push(`Policy "${name}" must end with "template".`);
   else if (routes.indexOf(TEMPLATE_ROUTE) !== routes.length - 1)

@@ -10,20 +10,23 @@
  * it. Nothing here is called by a test with a real key or a real network: tests pass their own
  * fetch.
  */
+import Anthropic from '@anthropic-ai/sdk';
 import { buildFakeLetter, buildFakeSelection } from './fake.mjs';
 
 export const ENV_NAMES = {
   gemini: { key: 'TAILOR_EVAL_GEMINI_KEY', model: 'TAILOR_EVAL_GEMINI_MODEL' },
   'workers-ai': { account: 'TAILOR_EVAL_CF_ACCOUNT_ID', key: 'TAILOR_EVAL_CF_TOKEN', model: 'TAILOR_EVAL_CF_MODEL' },
-  paid: { url: 'TAILOR_EVAL_PAID_URL', key: 'TAILOR_EVAL_PAID_KEY', model: 'TAILOR_EVAL_PAID_MODEL' }
+  paid: { url: 'TAILOR_EVAL_PAID_URL', key: 'TAILOR_EVAL_PAID_KEY', model: 'TAILOR_EVAL_PAID_MODEL' },
+  claude: { key: 'TAILOR_EVAL_CLAUDE_KEY', model: 'TAILOR_EVAL_CLAUDE_MODEL', effort: 'TAILOR_EVAL_CLAUDE_EFFORT' }
 };
 
 export const DEFAULT_MODELS = {
   gemini: 'gemini-2.5-flash',
-  'workers-ai': '@cf/meta/llama-3.3-70b-instruct-fp8-fast'
+  'workers-ai': '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+  claude: 'claude-opus-5-5'
 };
 
-export const PROVIDER_NAMES = ['fake', 'gemini', 'workers-ai', 'paid'];
+export const PROVIDER_NAMES = ['fake', 'gemini', 'workers-ai', 'paid', 'claude'];
 
 export class MissingKeyError extends Error {
   constructor(provider, names) {
@@ -154,6 +157,55 @@ export function paidProvider({ env = process.env, fetch: fetchImpl = globalThis.
 }
 
 /**
+ * Claude through the Anthropic SDK, for the owner mode comparison column only (E19: a paid model
+ * never serves the public site). The SDK does not retry here, so the router decides what happens
+ * after a failure. Its typed errors carry status, which the router reads to tell a quota refusal
+ * from an outage. Server side fallbacks are on, so a request a safety check declines is answered
+ * by the fallback model. A refusal that
+ * survives the fallback is thrown, so the router falls through to the next route.
+ */
+export function claudeProvider({ env = process.env, fetch: fetchImpl, maxTokens = 16000 } = {}) {
+  const names = ENV_NAMES.claude;
+  requireEnv(env, 'claude', [names.key]);
+  const model = env[names.model] || DEFAULT_MODELS.claude;
+  const effort = env[names.effort] || 'medium';
+  const client = new Anthropic({ apiKey: env[names.key], maxRetries: 0, ...(fetchImpl ? { fetch: fetchImpl } : {}) });
+  return {
+    name: 'claude',
+    model,
+    async complete({ system, user, signal }) {
+      const message = await client.beta.messages.create(
+        {
+          model,
+          max_tokens: maxTokens,
+          system,
+          messages: [{ role: 'user', content: user }],
+          output_config: { effort },
+          betas: ['server-side-fallback-2026-07-01'],
+          fallbacks: 'default'
+        },
+        { signal }
+      );
+      if (message.stop_reason === 'refusal') {
+        throw Object.assign(new Error('Provider call failed: the model declined the request.'), { code: 'REFUSAL' });
+      }
+      const text = message.content
+        .filter((block) => block.type === 'text')
+        .map((block) => block.text)
+        .join('');
+      const usage = message.usage || {};
+      return {
+        text,
+        usage: {
+          inputTokens: (usage.input_tokens || 0) + (usage.cache_read_input_tokens || 0) + (usage.cache_creation_input_tokens || 0),
+          outputTokens: usage.output_tokens || 0
+        }
+      };
+    }
+  };
+}
+
+/**
  * A provider with no model behind it. By default it builds a selection and a letter from the
  * snapshot with fixed rules, so the whole harness runs offline. script replaces either answer:
  * script({ kind, attempt, context }) returns text or undefined for the default.
@@ -189,6 +241,8 @@ export function createProvider(name, options = {}) {
       return workersAiProvider(options);
     case 'paid':
       return paidProvider(options);
+    case 'claude':
+      return claudeProvider(options);
     default:
       throw new Error(`Unknown provider "${name}". Known: ${PROVIDER_NAMES.join(', ')}.`);
   }
