@@ -1,7 +1,7 @@
 /**
  * @description       : Unit tests for portfolioThemeLayout LWC: header navigation (Home, Resume,
  *                      the "How it's built" menu with Docs and the API reference, Contact), the
- *                      phone menu, the theme toggle and its crossfade, motion following the
+ *                      phone menu and how it holds the page still, the theme toggle and its crossfade, motion following the
  *                      system setting with no motion button, the header shadow, and Back to top
  *                      in the header, and the tour: the menu row that starts it, the bar under the
  *                      header, the page padding for the pinned bar and focus on arrival.
@@ -19,12 +19,15 @@ import PortfolioThemeLayout, {
   DOCS_URL,
   HERO_LOOKUP_MS,
   HERO_SELECTOR,
+  PHONE_MENU_WIDTH,
   THEME_FADE_MS,
   TOUR_HEADING_POLL_MS,
   TOUR_HEADING_WAIT_MS,
   currentRouteUrl,
   findInContent,
-  idSelector
+  idSelector,
+  isPhoneWidth,
+  menuPassesScroll
 } from "c/portfolioThemeLayout";
 import { PILLARS, reset, setComingLetters } from "c/pillarData";
 import { trackEvent } from "c/analyticsService";
@@ -810,6 +813,260 @@ describe("c-portfolio-theme-layout", () => {
       link.click();
       await flush();
       expect(button.getAttribute("aria-expanded")).toBe("false");
+    });
+  });
+
+  describe("phone menu holds the page still", () => {
+    const realWidth = window.innerWidth;
+
+    function setWidth(width) {
+      Object.defineProperty(window, "innerWidth", {
+        configurable: true,
+        value: width
+      });
+    }
+
+    function box(element, top, bottom) {
+      element.getBoundingClientRect = () => ({
+        top,
+        bottom,
+        left: 0,
+        right: 390,
+        width: 390,
+        height: bottom - top
+      });
+    }
+
+    function scrollBox(element, { scrollHeight, clientHeight, scrollTop }) {
+      Object.defineProperty(element, "scrollHeight", {
+        configurable: true,
+        value: scrollHeight
+      });
+      Object.defineProperty(element, "clientHeight", {
+        configurable: true,
+        value: clientHeight
+      });
+      Object.defineProperty(element, "scrollTop", {
+        configurable: true,
+        writable: true,
+        value: scrollTop
+      });
+    }
+
+    function touch(target, type, x, y) {
+      const event = new CustomEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        composed: true
+      });
+      Object.defineProperty(event, "touches", {
+        value: [{ clientX: x, clientY: y }]
+      });
+      target.dispatchEvent(event);
+      return event;
+    }
+
+    // A finger drag from y0 to y1. Returns the move event, so a test reads whether it was cancelled.
+    function swipe(target, x, y0, y1) {
+      touch(target, "touchstart", x, y0);
+      return touch(target, "touchmove", x, y1);
+    }
+
+    function wheel(target, x, y, deltaY) {
+      const event = new WheelEvent("wheel", {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        clientX: x,
+        clientY: y,
+        deltaY
+      });
+      target.dispatchEvent(event);
+      return event;
+    }
+
+    async function openMenu(element) {
+      element.shadowRoot.querySelector(".menu-toggle").click();
+      await flush();
+      const nav = element.shadowRoot.querySelector(".site-nav");
+      // The menu sits from 54 px to 500 px on a 390 x 560 screen.
+      box(nav, 54, 500);
+      return nav;
+    }
+
+    beforeEach(() => {
+      setWidth(390);
+    });
+
+    afterEach(() => {
+      setWidth(realWidth);
+    });
+
+    it("tells when a scroll over the menu would reach the page", () => {
+      const list = document.createElement("div");
+      expect(menuPassesScroll(null, 10)).toBe(true);
+
+      scrollBox(list, { scrollHeight: 300, clientHeight: 300, scrollTop: 0 });
+      expect(menuPassesScroll(list, 10)).toBe(true);
+      expect(menuPassesScroll(list, -10)).toBe(true);
+
+      scrollBox(list, { scrollHeight: 800, clientHeight: 400, scrollTop: 100 });
+      expect(menuPassesScroll(list, 10)).toBe(false);
+      expect(menuPassesScroll(list, -10)).toBe(false);
+      expect(menuPassesScroll(list, 0)).toBe(false);
+
+      scrollBox(list, { scrollHeight: 800, clientHeight: 400, scrollTop: 0 });
+      expect(menuPassesScroll(list, -10)).toBe(true);
+      expect(menuPassesScroll(list, 10)).toBe(false);
+
+      scrollBox(list, { scrollHeight: 800, clientHeight: 400, scrollTop: 400 });
+      expect(menuPassesScroll(list, 10)).toBe(true);
+      expect(menuPassesScroll(list, -10)).toBe(false);
+    });
+
+    it("knows the phone width from the window", () => {
+      setWidth(PHONE_MENU_WIDTH - 1);
+      expect(isPhoneWidth()).toBe(true);
+      setWidth(PHONE_MENU_WIDTH);
+      expect(isPhoneWidth()).toBe(false);
+    });
+
+    it("leaves page scrolling alone while the menu is closed", () => {
+      const element = render();
+      const main = element.shadowRoot.querySelector(".region-content");
+      expect(swipe(main, 200, 400, 300).defaultPrevented).toBe(false);
+      expect(wheel(main, 200, 400, 100).defaultPrevented).toBe(false);
+    });
+
+    it("cancels a swipe or wheel on the page behind the open menu, and stops once it closes", async () => {
+      const element = render();
+      await openMenu(element);
+      const main = element.shadowRoot.querySelector(".region-content");
+      // Below the menu, on the page.
+      expect(swipe(main, 200, 540, 520).defaultPrevented).toBe(true);
+      expect(wheel(main, 200, 540, 100).defaultPrevented).toBe(true);
+
+      element.shadowRoot.querySelector(".menu-toggle").click();
+      await flush();
+      expect(swipe(main, 200, 540, 520).defaultPrevented).toBe(false);
+      expect(wheel(main, 200, 540, 100).defaultPrevented).toBe(false);
+    });
+
+    it("cancels a swipe inside a menu that has nothing to scroll", async () => {
+      const element = render();
+      const nav = await openMenu(element);
+      scrollBox(nav, { scrollHeight: 446, clientHeight: 446, scrollTop: 0 });
+      const link = nav.querySelector(".nav-link");
+      expect(swipe(link, 200, 300, 200).defaultPrevented).toBe(true);
+      expect(wheel(link, 200, 300, 100).defaultPrevented).toBe(true);
+    });
+
+    it("lets a menu that is taller than the screen scroll, and holds it at either end", async () => {
+      const element = render();
+      const nav = await openMenu(element);
+      const link = nav.querySelector(".nav-link");
+
+      scrollBox(nav, { scrollHeight: 800, clientHeight: 446, scrollTop: 100 });
+      expect(swipe(link, 200, 300, 200).defaultPrevented).toBe(false);
+      expect(swipe(link, 200, 200, 300).defaultPrevented).toBe(false);
+      expect(wheel(link, 200, 300, 100).defaultPrevented).toBe(false);
+
+      scrollBox(nav, { scrollHeight: 800, clientHeight: 446, scrollTop: 354 });
+      expect(swipe(link, 200, 300, 200).defaultPrevented).toBe(true);
+      expect(wheel(link, 200, 300, 100).defaultPrevented).toBe(true);
+      expect(swipe(link, 200, 200, 300).defaultPrevented).toBe(false);
+
+      scrollBox(nav, { scrollHeight: 800, clientHeight: 446, scrollTop: 0 });
+      expect(swipe(link, 200, 200, 300).defaultPrevented).toBe(true);
+      expect(wheel(link, 200, 300, -100).defaultPrevented).toBe(true);
+    });
+
+    it("ends the menu at the bottom of the screen from the measured header", async () => {
+      const element = render();
+      const header = element.shadowRoot.querySelector(".site-header");
+      header.getBoundingClientRect = () => ({
+        top: 0,
+        bottom: 511,
+        height: 511
+      });
+      await openMenu(element);
+      // A render reads the boxes again.
+      element.shadowRoot.querySelector(".pillars-toggle").click();
+      await flush();
+      await flush();
+      const nav = element.shadowRoot.querySelector(".site-nav");
+      expect(nav.getAttribute("style")).toBe("--site-menu-room: 65px;");
+
+      element.shadowRoot.querySelector(".menu-toggle").click();
+      await flush();
+      expect(nav.getAttribute("style") || "").toBe("");
+    });
+
+    it("closes on a route change and gives the page back", async () => {
+      const element = render();
+      await openMenu(element);
+      const main = element.shadowRoot.querySelector(".region-content");
+      const button = element.shadowRoot.querySelector(".menu-toggle");
+
+      goTo("/portfolio/contact");
+      // eslint-disable-next-line @lwc/lwc/no-unexpected-wire-adapter-usages
+      CurrentPageReference.emit({
+        type: "comm__namedPage",
+        attributes: { name: "Contact__c" }
+      });
+      await flush();
+      expect(button.getAttribute("aria-expanded")).toBe("false");
+      expect(swipe(main, 200, 540, 520).defaultPrevented).toBe(false);
+
+      await openMenu(element);
+      goTo("/portfolio/skills");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+      await flush();
+      expect(button.getAttribute("aria-expanded")).toBe("false");
+      expect(swipe(main, 200, 540, 520).defaultPrevented).toBe(false);
+    });
+
+    it("stays open on a resize at phone width and closes on a resize to 768 px and up", async () => {
+      const element = render();
+      await openMenu(element);
+      const main = element.shadowRoot.querySelector(".region-content");
+      const button = element.shadowRoot.querySelector(".menu-toggle");
+
+      setWidth(375);
+      window.dispatchEvent(new CustomEvent("resize"));
+      await flush();
+      expect(button.getAttribute("aria-expanded")).toBe("true");
+      expect(swipe(main, 200, 540, 520).defaultPrevented).toBe(true);
+
+      setWidth(PHONE_MENU_WIDTH);
+      window.dispatchEvent(new CustomEvent("resize"));
+      await flush();
+      expect(button.getAttribute("aria-expanded")).toBe("false");
+      expect(swipe(main, 200, 540, 520).defaultPrevented).toBe(false);
+    });
+
+    it("does not hold the page at 768 px and up, even with the menu state open", async () => {
+      const element = render();
+      await openMenu(element);
+      setWidth(1024);
+      const main = element.shadowRoot.querySelector(".region-content");
+      expect(swipe(main, 200, 540, 520).defaultPrevented).toBe(false);
+      expect(wheel(main, 200, 540, 100).defaultPrevented).toBe(false);
+    });
+
+    it("stops listening once the layout leaves the page", async () => {
+      const element = render();
+      await openMenu(element);
+      const wrapper = element.shadowRoot.querySelector(
+        ".portfolio-layout-wrapper"
+      );
+      const removed = jest.spyOn(wrapper, "removeEventListener");
+      document.body.removeChild(element);
+      expect(removed.mock.calls.map(([type]) => type).sort()).toEqual([
+        "touchmove",
+        "touchstart",
+        "wheel"
+      ]);
     });
   });
 
