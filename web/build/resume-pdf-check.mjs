@@ -417,6 +417,21 @@ export function checkRoundTrip(trace, items, pageHeight = 792) {
   return { percent, characters: total, matched, misses };
 }
 
+const MONTH_NAMES = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+/**
+ * A date range as months, from "Mon YYYY - Mon YYYY" or "Mon YYYY - Present", with anything
+ * after a " | " (Remote) left off. Null when the text is not a range.
+ */
+export function monthRange(text) {
+  const match = /^([A-Za-z]{3}) (\d{4}) - (?:([A-Za-z]{3}) (\d{4})|Present)$/.exec(String(text).split(' | ')[0].trim());
+  if (!match) {
+    return null;
+  }
+  const month = (name, year) => Number(year) * 12 + MONTH_NAMES.indexOf(name.toLowerCase());
+  return { start: month(match[1], match[2]), end: match[3] ? month(match[3], match[4]) : Infinity };
+}
+
 /**
  * Reads the summary, experience and certifications back from the text layer by position alone.
  * A section starts at an all capitals row at the left margin in the section title size. A
@@ -425,6 +440,12 @@ export function checkRoundTrip(trace, items, pageHeight = 792) {
  * gap above it, or at the top of a page, and another role row close under it. A row at the
  * left margin straight under a role row, with no gap, carries on its heading. A page break
  * does not end an employer's group.
+ *
+ * At the top of a page there is no gap above to go by, and an employer heading with a role
+ * under it looks the same as a role with no highlights and the next role of the same employer:
+ * same size, weight, left edge and gap between them. So when a group is still open from the
+ * page before, the row opens a new group only when its dates span the dates of every role row
+ * close under it, as an employer's overall span does. Otherwise it is the open group's next role.
  */
 export function parseFields(items, layout, pageWidth = 612) {
   const rows = readingRows(items);
@@ -448,6 +469,22 @@ export function parseFields(items, layout, pageWidth = 612) {
   const summary = [];
   const experience = [];
   const certifications = [];
+  // True when the dates span those of every role row in the close run under the row at index.
+  const spansRolesBelow = (index, dates) => {
+    const span = monthRange(dates);
+    if (!span) {
+      return true;
+    }
+    for (let below = index + 1; below < rows.length && gapBefore(below) < closeGap; below += 1) {
+      if (isRoleRow(rows[below])) {
+        const range = monthRange(rows[below].items[rows[below].items.length - 1].str);
+        if (range && (range.start < span.start || range.end > span.end)) {
+          return false;
+        }
+      }
+    }
+    return true;
+  };
   let employer = null;
   let carry = null;
   rows.forEach((row, index) => {
@@ -462,7 +499,10 @@ export function parseFields(items, layout, pageWidth = 612) {
       const dates = row.items[row.items.length - 1].str;
       const next = rows[index + 1];
       const wide = gapBefore(index) >= closeGap;
-      const opensGroup = wide && next && isRoleRow(next) && gapBefore(index + 1) < closeGap;
+      let opensGroup = wide && next && isRoleRow(next) && gapBefore(index + 1) < closeGap;
+      if (opensGroup && pageStart(index) && employer) {
+        opensGroup = spansRolesBelow(index, dates);
+      }
       if (opensGroup) {
         employer = { employer: left, span: dates };
         carry = employer;

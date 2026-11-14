@@ -14,6 +14,8 @@ import {
   checkOrder,
   checkRoundTrip,
   checkFields,
+  parseFields,
+  monthRange,
   checkModel,
   failuresOf,
   classifyFailures,
@@ -31,6 +33,9 @@ const readJson = (...parts) => JSON.parse(readFileSync(path.join(here, ...parts)
 const reads = readJson('..', 'fixtures', 'reads.json');
 const budgets = readJson('resume-pdf', 'page-budget.json');
 const expected = readJson('resume-pdf', 'expected-failures.json');
+// A synthetic resume with invented names: an employer with three roles breaks across two pages,
+// so the two roles with no highlights open page 2 and look like an employer heading and a role.
+const pageTopGroup = readJson('resume-pdf', 'page-top-group.json');
 
 // A text item as readTextLayer returns it, from a baseline, a width and a size.
 function item(str, x, baseline, width, { page = 1, size = 10, index = 0 } = {}) {
@@ -266,4 +271,80 @@ test('the command line takes any getResume payload and checks no page budget unl
   } finally {
     rmSync(folder, { recursive: true, force: true });
   }
+});
+
+test('a date range reads as months, with Present open ended and Remote left off', () => {
+  assert.deepEqual(monthRange('Jan 2017 - Jul 2017'), { start: 2017 * 12, end: 2017 * 12 + 6 });
+  assert.deepEqual(monthRange('Dec 2017 - Present | Remote'), { start: 2017 * 12 + 11, end: Infinity });
+  assert.equal(monthRange('2017 to 2021'), null);
+});
+
+// A role row: the title at the margin and the dates flush with the right margin.
+const roleRow = (title, dates, baseline, page) => [
+  item(title, 54, baseline, 80, { page }),
+  item(dates, 458, baseline, 100, { page })
+];
+const openGroupOnPageOne = () => [
+  item('EXPERIENCE', 54, 720, 60, { size: 9 }),
+  ...roleRow('Old Employer', 'Jan 2010 - Dec 2020', 700, 1),
+  ...roleRow('Old Role', 'Jan 2010 - Dec 2020', 684, 1)
+];
+
+test('at a page top, a row whose dates do not span the role under it carries on the open group', async () => {
+  const { layout } = await loadShipped();
+  const items = indexed([
+    ...openGroupOnPageOne(),
+    ...roleRow('Next Role', 'Dec 2015 - Jun 2018', 738, 2),
+    ...roleRow('Last Role', 'Jan 2015 - Jul 2015', 722, 2)
+  ]);
+  const roles = parseFields(items, layout, 612).experience;
+  assert.deepEqual(
+    roles.map((role) => [role.heading, role.employer]),
+    [
+      ['Old Role', 'Old Employer'],
+      ['Next Role', 'Old Employer'],
+      ['Last Role', 'Old Employer']
+    ]
+  );
+});
+
+test('at a page top, a row whose dates span the role under it opens a new group', async () => {
+  const { layout } = await loadShipped();
+  const items = indexed([
+    ...openGroupOnPageOne(),
+    ...roleRow('New Employer', 'Jan 2021 - Present', 738, 2),
+    ...roleRow('New Role', 'Mar 2021 - Present', 722, 2)
+  ]);
+  const roles = parseFields(items, layout, 612).experience;
+  assert.deepEqual(
+    roles.map((role) => [role.heading, role.employer]),
+    [
+      ['Old Role', 'Old Employer'],
+      ['New Role', 'New Employer']
+    ]
+  );
+});
+
+test('an employer group broken across two pages is read back field by field', async () => {
+  const report = await runChecks(pageTopGroup, {});
+  assert.deepEqual(report.variants.map((variant) => variant.name), ['Developer with retired', 'Developer without retired']);
+  report.variants.forEach((variant) => {
+    assert.equal(variant.pages, 2, variant.name);
+    assert.deepEqual(variant.fields.misses, [], variant.name);
+    assert.deepEqual(variant.failures, [], variant.name);
+  });
+  const { format, layout } = await loadShipped();
+  const model = format.buildViewModel(pageTopGroup, PAGE_OPTIONS);
+  const layer = await readTextLayer((await renderModel(model)).bytes);
+  const rows = readingRows(layer.items);
+  assert.equal(rows.find((row) => row.page === 2).text, 'Evening Tutor Dec 2017 - Jun 2021', 'the shape under test holds');
+  const parsed = parseFields(layer.items, layout, layer.pages[0].width).experience;
+  assert.deepEqual(
+    parsed.slice(1).map((role) => [role.heading, role.employer]),
+    [
+      ['Support Analyst', 'Sample Training Institute'],
+      ['Evening Tutor', 'Sample Training Institute'],
+      ['Project Helper', 'Sample Training Institute']
+    ]
+  );
 });
