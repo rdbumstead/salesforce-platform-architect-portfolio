@@ -93,4 +93,4 @@ Each page is still an empty shell until JavaScript runs, so a crawler or a link 
 
 ## Amendment (2026-11-14)
 
-The export now serves 27 calls. The new one, `ResumeSnapshotService.getSnapshot`, is build only: no page imports it, the guest cannot call it, and `Portfolio_Site_Build` now grants the build user read access to the fields it reads. For the other 26 calls the build user still reads exactly what the guest reads. The Technical Guide section 2.26 has the detail.
+The export now serves 27 calls. The new one, `ResumeSnapshotService.getSnapshot`, is build only: no page imports it, the guest cannot call it, and `Portfolio_Site_Build` now grants the build user read access to the fields it reads. For the other 26 calls the build user still gets exactly the results the guest gets, which the parity tests prove. The Technical Guide section 2.26 has the detail.
