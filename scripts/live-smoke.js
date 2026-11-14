@@ -25,15 +25,16 @@
 // the old footer, and the site build waits on that run. Turn it on once the new footer is live
 // on the apex. With the variable unset no footer rows exist and the row count is unchanged.
 //
-// The accessibility check, per engine, for six main routes (AXE_ROUTES below, the same six the
-// Lighthouse audit covers), at both sizes and in both colour schemes. After the route's
+// The accessibility check, per engine, for seven routes (AXE_ROUTES below, the six the
+// Lighthouse audit covers and /docs, whose Decisions group it opens first), at both sizes and in both colour schemes. After the route's
 // components are visible it injects axe-core and fails the row on any violation of the WCAG 2.0
 // to 2.2 A and AA rules, naming the rule id and the first elements. Dark is checked because the
 // site themes by colour scheme and a contrast failure shows up in one scheme only. It checks the
 // page as loaded. The open tour and an open menu are not checked, because each is a state of one
 // component that its own Jest tests cover, and the tour walk above already drives the tour. It
 // runs unless SMOKE_AXE_CHECK is "0". Best practice rules are not part of it, because they
-// are advice and not failures a visitor meets.
+// are advice and not failures a visitor meets. The one experimental rule it adds, by id, is
+// label-content-name-mismatch (AXE_EXTRA_RULES), which fails like the others.
 //
 // Environment:
 //   SITE_BASE   the site root, for example https://example.my.site.com/portfolio (required)
@@ -55,6 +56,13 @@
 // A row that fails on a component or a console error is loaded once more in a fresh context
 // before it counts as failed, because a WebKit page load now and then logs one transient error
 // that a second load does not repeat. A real defect fails both loads.
+//
+// That second load must not hide a flake, so a row that failed its first load and passed its
+// second is reported as a first load warning. Each warning names the route, engine, size (and
+// colour scheme for an accessibility row) and the first load's failure text. The JSON body
+// carries them in "warnings", each also goes to stderr, and the summary line ends with their
+// count ("first load warnings: N", also when it is 0). A warning never fails the run. A row that
+// fails both loads is a failure, and carries its first load's text in "firstLoadFailure".
 //
 // It fails fast on a page that is not there. A row whose page does not answer 200, or whose
 // page has no site layout, fails at once, with no component waits and no second load. Before
@@ -96,7 +104,13 @@ const ROUTES = [
     ]
   },
   { path: "/contact", components: ["c-contact-form"] },
-  { path: "/docs", components: ["c-site-build-section", "c-docs-viewer"] },
+  {
+    path: "/docs",
+    components: ["c-site-build-section", "c-docs-viewer"],
+    // The Decisions group is closed on load and draws its links only once open, so the axe row
+    // presses its summary first. Without that its links would never be checked.
+    axeOpen: "c-docs-viewer details.doc-group-details > summary"
+  },
   { path: "/resume", components: ["c-resume-builder"] },
   { path: "/skills", components: ["c-skill-network"] },
   {
@@ -224,12 +238,17 @@ const AXE_ROUTES = [
   "/",
   "/resume",
   "/skills",
+  "/docs",
   "/api-lab",
   "/business-architecture",
   "/nonprofit-solutions"
 ];
 const AXE_SCHEMES = ["light", "dark"];
 const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
+// Rules axe marks experimental, so its tag filter leaves them out. Each is switched on by id.
+// label-content-name-mismatch is the voice control rule: a control's accessible name must
+// start with its visible text.
+const AXE_EXTRA_RULES = ["label-content-name-mismatch"];
 const AXE_SHOWN = 5;
 
 // The tour's stops in order, each a page above, starting from the hero on the home page.
@@ -575,19 +594,98 @@ async function homeProblem(browser) {
   }
 }
 
-async function checkRow(browser, engine, route, viewport) {
-  let attempt = await checkOnce(browser, route, viewport);
+/**
+ * Says in one line why a load failed: its error, status, components that did not show, console
+ * errors and axe violations. This is the text a first load warning carries.
+ * @param {object} attempt one load's result
+ * @returns {string} the failure text, never empty
+ */
+function describeFailure(attempt) {
+  const parts = [];
+  if (attempt.error) {
+    parts.push(attempt.error);
+  }
+  if (attempt.status === null) {
+    parts.push("no response");
+  } else if (attempt.status !== undefined && attempt.status !== 200) {
+    parts.push(`status ${attempt.status}`);
+  }
+  if (attempt.layout === false) {
+    parts.push("no site layout");
+  }
+  for (const [tag, state] of Object.entries(attempt.components || {})) {
+    if (state !== "visible" && state !== "empty") {
+      parts.push(`${tag} ${state}`);
+    }
+  }
+  for (const message of attempt.errors || []) {
+    parts.push(`console: ${message}`);
+  }
+  for (const violation of attempt.violations || []) {
+    parts.push(`axe ${violation.rule} on ${violation.count}`);
+  }
+  return parts.join(", ") || "failed with no reason recorded";
+}
+
+/**
+ * Runs a load, and when it fails in a way worth a second look, runs it once more. A flake that
+ * the second load clears is not lost: the first load's failure text comes back with the result.
+ * @param {Function} once runs one load and resolves its result, which carries a boolean pass
+ * @param {Function} retryable says whether a failed result deserves a second load
+ * @returns {Promise<object>} the last result, the loads run and the first failure text, if any
+ */
+async function loadWithRetry(once, retryable) {
+  let attempt = await once();
   let attempts = 1;
-  // A missing page fails at once. Only a component or console failure is loaded again.
-  if (!attempt.pass && !attempt.missingPage) {
-    attempt = await checkOnce(browser, route, viewport);
+  let firstLoadFailure;
+  if (!attempt.pass && retryable(attempt)) {
+    firstLoadFailure = describeFailure(attempt);
+    attempt = await once();
     attempts = 2;
   }
+  return { attempt, attempts, firstLoadFailure };
+}
+
+/**
+ * The rows that failed their first load and passed their second. They stay passing rows, and
+ * each is also named here so a flake shows in the report and the daily run.
+ * @param {object[]} rows the run's rows
+ * @returns {object[]} one warning per recovered row
+ */
+function warningsFrom(rows) {
+  return (rows || [])
+    .filter((row) => row.pass && row.firstLoadFailure)
+    .map((row) => ({
+      warning: "first load failed",
+      browser: row.browser,
+      route: row.route,
+      viewport: row.viewport,
+      ...(row.scheme ? { scheme: row.scheme } : {}),
+      firstLoad: row.firstLoadFailure
+    }));
+}
+
+/**
+ * The summary line's ending for the warnings, always present so a clean run shows its zero.
+ * @param {object[]} warnings the run's warnings
+ * @returns {string} the text to append to the summary line
+ */
+function warningCountText(warnings) {
+  return `, first load warnings: ${warnings.length}`;
+}
+
+async function checkRow(browser, engine, route, viewport) {
+  // A missing page fails at once. Only a component or console failure is loaded again.
+  const { attempt, attempts, firstLoadFailure } = await loadWithRetry(
+    () => checkOnce(browser, route, viewport),
+    (failed) => !failed.missingPage
+  );
   return {
     browser: engine,
     route: route.path,
     viewport: viewport.name,
     attempts,
+    ...(firstLoadFailure ? { firstLoadFailure } : {}),
     ...attempt
   };
 }
@@ -856,17 +954,16 @@ async function tourOnce(browser, viewport) {
 }
 
 async function tourRow(browser, engine, viewport) {
-  let attempt = await tourOnce(browser, viewport);
-  let attempts = 1;
-  if (!attempt.pass && !attempt.missingPage) {
-    attempt = await tourOnce(browser, viewport);
-    attempts = 2;
-  }
+  const { attempt, attempts, firstLoadFailure } = await loadWithRetry(
+    () => tourOnce(browser, viewport),
+    (failed) => !failed.missingPage
+  );
   return {
     browser: engine,
     route: "tour",
     viewport: viewport.name,
     attempts,
+    ...(firstLoadFailure ? { firstLoadFailure } : {}),
     ...attempt
   };
 }
@@ -917,16 +1014,38 @@ async function axeOnce(browser, route, viewport, scheme) {
         result.errors.push(`${tag} is ${state}`);
       }
     }
+    if (route.axeOpen) {
+      const summaries = page.locator(route.axeOpen);
+      const count = await summaries.count();
+      for (let index = 0; index < count; index++) {
+        const group = summaries.nth(index);
+        const open = await group.evaluate((node) => node.parentElement.open);
+        if (!open) {
+          await group.click();
+        }
+      }
+    }
     await page.waitForTimeout(SETTLE_MS);
     await page.addScriptTag({ path: require.resolve("axe-core/axe.min.js") });
     const found = await page.evaluate(
-      (tags) =>
+      ({ tags, extra }) => {
+        // A tag filter and an experimental rule do not mix in one runOnly, so the tagged rules
+        // are listed by id, minus the experimental ones the tag filter always left out, and the
+        // extra ones are added to the same list.
         // eslint-disable-next-line no-undef
-        axe.run(document, {
-          runOnly: { type: "tag", values: tags },
-          resultTypes: ["violations"]
-        }),
-      AXE_TAGS
+        const ids = axe
+          .getRules(tags)
+          .filter((rule) => !rule.tags.includes("experimental"))
+          .map((rule) => rule.ruleId);
+        return (
+          // eslint-disable-next-line no-undef
+          axe.run(document, {
+            runOnly: { type: "rule", values: [...new Set([...ids, ...extra])] },
+            resultTypes: ["violations"]
+          })
+        );
+      },
+      { tags: AXE_TAGS, extra: AXE_EXTRA_RULES }
     );
     result.violations = summarizeViolations(found.violations);
   } catch (error) {
@@ -942,23 +1061,18 @@ async function axeOnce(browser, route, viewport, scheme) {
 }
 
 async function axeRow(browser, engine, route, viewport, scheme) {
-  let attempt = await axeOnce(browser, route, viewport, scheme);
-  let attempts = 1;
   // A real violation fails every load. Only a load problem is tried once more.
-  if (
-    !attempt.pass &&
-    attempt.violations.length === 0 &&
-    !attempt.missingPage
-  ) {
-    attempt = await axeOnce(browser, route, viewport, scheme);
-    attempts = 2;
-  }
+  const { attempt, attempts, firstLoadFailure } = await loadWithRetry(
+    () => axeOnce(browser, route, viewport, scheme),
+    (failed) => failed.violations.length === 0 && !failed.missingPage
+  );
   return {
     browser: engine,
     route: `axe ${route.path}`,
     viewport: viewport.name,
     scheme,
     attempts,
+    ...(firstLoadFailure ? { firstLoadFailure } : {}),
     ...attempt
   };
 }
@@ -1073,6 +1187,13 @@ async function main() {
   }
 
   const failed = rows.filter((row) => !row.pass);
+  const warnings = warningsFrom(rows);
+  for (const warning of warnings) {
+    console.error(
+      `live smoke warning: ${warning.browser} ${warning.route} ${warning.viewport}` +
+        `${warning.scheme ? ` ${warning.scheme}` : ""} failed its first load and passed its second: ${warning.firstLoad}`
+    );
+  }
   const ok = rows.length > 0 && failed.length === 0;
   const summary =
     `live smoke: ${ok ? "PASS" : "FAIL"}, ${rows.length - failed.length} of ` +
@@ -1084,7 +1205,8 @@ async function main() {
             `${row.browser} ${row.route || ""} ${row.viewport || ""} ${row.scheme || ""}`.trim()
           )
           .join("; ")}`
-      : "");
+      : "") +
+    warningCountText(warnings);
   finish(
     {
       ok,
@@ -1092,6 +1214,7 @@ async function main() {
       base: BASE,
       checkedAt: new Date().toISOString(),
       failed: failed.length,
+      warnings,
       rows
     },
     ok ? 0 : 1
@@ -1105,12 +1228,17 @@ module.exports = {
   TOUR,
   isUnderBase,
   AXE_ROUTES,
+  AXE_EXTRA_RULES,
   summarizeViolations,
   accessHeadersFor,
   shouldStripUpgrade,
   stripUpgradeHeaders,
   parseFeatures,
-  routesFor
+  routesFor,
+  describeFailure,
+  loadWithRetry,
+  warningsFrom,
+  warningCountText
 };
 
 if (require.main === module) {

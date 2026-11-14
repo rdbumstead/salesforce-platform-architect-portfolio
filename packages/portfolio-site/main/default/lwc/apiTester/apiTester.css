@@ -7,6 +7,16 @@
  * Advanced, Email and Purpose fields, the parameter fields and the Execute and Request token
  * buttons take their look from c/nativeControls, and this file sets only their layout.
  */
+/*
+ * The answer is scrolled to on a phone, under the sticky site header, so it stops one header
+ * height short of the top, so Status and Latency show in full. The header is 61 px high on a
+ * phone and 4rem leaves 3 px.
+ */
+.result-summary,
+.invoke-error {
+  scroll-margin-top: 4rem;
+}
+
 .console-container {
   background-color: var(--pf-surface);
   color: var(--pf-text);

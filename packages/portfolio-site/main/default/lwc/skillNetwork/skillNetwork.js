@@ -326,16 +326,6 @@ function yearsLabel(years) {
   return rounded === "1.0" ? "1.0 yr" : `${rounded} yrs`;
 }
 
-function yearsSpoken(years) {
-  if (years === null) {
-    return "";
-  }
-  if (years < 1) {
-    return "used for under 1 year";
-  }
-  return `used for ${years.toFixed(1)} years`;
-}
-
 // Everything besides time worked that backs a skill, each shown beside the years: "Certified 2024"
 // from the earliest year a linked certification was earned, then "Project" or "3 projects". A
 // certification, a project and years in a role are different evidence, so a chip shows every one
@@ -359,6 +349,16 @@ function evidenceParts(skill) {
     });
   }
   return parts;
+}
+
+function yearsSpoken(years) {
+  if (years === null) {
+    return "";
+  }
+  if (years < 1) {
+    return "used for under 1 year";
+  }
+  return `used for ${years.toFixed(1)} years`;
 }
 
 function evidenceSpoken(skill) {
@@ -1156,15 +1156,16 @@ export default class SkillNetwork extends LightningElement {
       hasYears: Boolean(years),
       evidence: evidenceParts(skill),
       pressed: String(selected),
-      className: selected ? "chip is-selected" : "chip",
-      ariaLabel: [
-        skill.name,
+      // No aria-label, so the name is computed from the content: the shown skill name, then this
+      // wording in visually hidden text. The shown abbreviations are hidden from readers.
+      spoken: [
         `proficiency ${skill.proficiency} of 5`,
         yearsSpoken(skill.years),
         evidenceSpoken(skill)
       ]
         .filter(Boolean)
-        .join(", ")
+        .join(", "),
+      className: selected ? "chip is-selected" : "chip"
     };
   }
 
