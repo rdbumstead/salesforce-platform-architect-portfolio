@@ -96,10 +96,23 @@ private class ResumeSnapshotServiceTest {
           Status__c = 'Archived'
         )
       };
-      insert new Certification__c(
-        Name = 'Invented Credential',
-        Contact__c = owner.Id
-      );
+      Contact other = new Contact(LastName = 'Other Person');
+      insert other;
+      insert new List<Certification__c>{
+        new Certification__c(
+          Name = 'Invented Credential',
+          Contact__c = owner.Id
+        ),
+        new Certification__c(
+          Name = 'Retired Invented Credential',
+          Contact__c = owner.Id,
+          Is_Retired__c = true
+        ),
+        new Certification__c(
+          Name = 'Someone Else Credential',
+          Contact__c = other.Id
+        )
+      };
       insert new List<Resume_Variant__c>{
         variant('engineer-headline', 'Headline', 'An invented headline'),
         variant('engineer-summary', 'Summary', 'An invented summary.')
@@ -369,6 +382,51 @@ private class ResumeSnapshotServiceTest {
       },
       ResumeSnapshotService.LISTED_PROJECT_STATUSES,
       'The three statuses the public pages list'
+    );
+  }
+
+  private static Set<String> certificationTexts(
+    ResumeSnapshotService.Snapshot snapshot
+  ) {
+    Set<String> texts = new Set<String>();
+    for (ResumeSnapshotService.Item item : snapshot.items) {
+      if (item.itemType == 'certification') {
+        texts.add(item.text);
+      }
+    }
+    return texts;
+  }
+
+  @isTest
+  static void shouldKeepACurrentCertificationOfTheOwner() {
+    Test.startTest();
+    Set<String> texts = certificationTexts(buildAsBuildUser());
+    Test.stopTest();
+    Assert.isTrue(
+      texts.contains('Invented Credential'),
+      'A current credential of the owner stays'
+    );
+  }
+
+  @isTest
+  static void shouldLeaveOutARetiredCertification() {
+    Test.startTest();
+    Set<String> texts = certificationTexts(buildAsBuildUser());
+    Test.stopTest();
+    Assert.isFalse(
+      texts.contains('Retired Invented Credential'),
+      'A retired credential is never offered as evidence'
+    );
+  }
+
+  @isTest
+  static void shouldLeaveOutACertificationOfAnotherContact() {
+    Test.startTest();
+    Set<String> texts = certificationTexts(buildAsBuildUser());
+    Test.stopTest();
+    Assert.isFalse(
+      texts.contains('Someone Else Credential'),
+      'Only credentials of the owner are in the snapshot'
     );
   }
 

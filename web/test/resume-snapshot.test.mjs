@@ -216,7 +216,7 @@ test('a fixture build never puts an unverified item that no page shows into dist
 });
 
 test('the fixture is written only from a scratch org, and never from production', () => {
-  const scratch = { orgId: '00DE200000dSvkuMAC', isScratch: true, targetOrg: 'sample-scratch' };
+  const scratch = { orgId: '00DX0000000SampAAA', isScratch: true, targetOrg: 'sample-scratch' };
   assert.equal(fixtureRefusal(scratch), null);
   const production = fixtureRefusal({ orgId: '00Dfj00000FSoCXEAZ', isScratch: true, targetOrg: 'sample' });
   assert.match(production, /^Refusing --write-fixture: sample is the production org/);

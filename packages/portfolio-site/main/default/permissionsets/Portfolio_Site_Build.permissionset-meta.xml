@@ -9,7 +9,7 @@
         <name>Site_Build_Export</name>
     </customPermissions>
     <description
-  >Site build user. Reads the site export and nothing else. Its read only grants cover just what the resume snapshot reads. The rest comes from Portfolio_Guest, so every other export call reads what the site guest reads.</description>
+  >Site build user. Reads the site export and nothing else. Its read only grants cover just what the resume snapshot reads. Every other export call returns the same results the site guest gets, which the export parity tests check.</description>
     <fieldPermissions>
         <editable>false</editable>
         <field>Experience__c.End_Date__c</field>

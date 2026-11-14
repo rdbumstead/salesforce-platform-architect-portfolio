@@ -16,14 +16,28 @@
  * record made after the deploy is never picked, so a new item is never marked verified, and
  * a second run finds nothing to do.
  *
+ * Projects count as live only in the three statuses the public pages list, the same list as
+ * PAPIProjects.LISTED_STATUS_FILTER and ResumeSnapshotService.LISTED_PROJECT_STATUSES. A
+ * project in any other status, or with none, is not on the site, so it is left blank and
+ * unverified for the owner to decide.
+ *
  * It does not tick Is_Primary_Role__c on any role. The owner ticks that by hand.
  *
  * How to check it worked (read only):
  *   SELECT COUNT() FROM Skill__c WHERE Visibility__c = null
- * The count must be 0 for each of the four objects. The script prints one line per object in
- * the debug log (search the log for MARK_VERIFIED): how many records it updated and how many
- * the object holds.
+ * The count must be 0 for Experience_Highlight__c, Skill__c and Certification__c. For
+ * projects, count the listed ones only, and that count must be 0:
+ *   SELECT COUNT() FROM Project__c WHERE Visibility__c = null AND Status__c IN
+ *     ('Live – In Production', 'Live – Demo / Reference', 'Active Development')
+ * The script prints one line per object in the debug log (search the log for MARK_VERIFIED):
+ * how many records it updated and how many the object holds, listed projects only for
+ * Project__c.
  */
+Set<String> listedProjectStatuses = new Set<String>{
+  'Live – In Production',
+  'Live – Demo / Reference',
+  'Active Development'
+};
 Map<String, Integer> updatedByObject = new Map<String, Integer>();
 Map<String, Integer> totalByObject = new Map<String, Integer>();
 List<SObject> changed = new List<SObject>();
@@ -44,7 +58,7 @@ List<List<SObject>> blanks = new List<List<SObject>>{
   [
     SELECT Id, Selection_Priority__c
     FROM Project__c
-    WHERE Visibility__c = NULL
+    WHERE Visibility__c = NULL AND Status__c IN :listedProjectStatuses
     LIMIT 2000
   ],
   [
@@ -79,7 +93,10 @@ totalByObject.put(
   [SELECT COUNT() FROM Experience_Highlight__c]
 );
 totalByObject.put('Skill__c', [SELECT COUNT() FROM Skill__c]);
-totalByObject.put('Project__c', [SELECT COUNT() FROM Project__c]);
+totalByObject.put(
+  'Project__c',
+  [SELECT COUNT() FROM Project__c WHERE Status__c IN :listedProjectStatuses]
+);
 totalByObject.put('Certification__c', [SELECT COUNT() FROM Certification__c]);
 
 for (String objectName : objectNames) {

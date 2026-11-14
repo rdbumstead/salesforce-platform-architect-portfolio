@@ -420,22 +420,37 @@ public with sharing class ResumeSnapshotService {
    *              the snapshot.
    */
   private without sharing class SystemModeSelector {
-    private String ownerName() {
-      List<Contact> owners = [
-        SELECT Name
-        FROM Contact
-        WHERE Is_Portfolio_Owner__c = TRUE
-        WITH SYSTEM_MODE
-        ORDER BY CreatedDate ASC
-        LIMIT 1
-      ];
-      if (owners.isEmpty()) {
-        throw new SnapshotException('No Contact is the portfolio owner.');
+    private Contact owner;
+
+    /** The oldest portfolio owner Contact, the one the resume header reads, read once. */
+    private Contact owner() {
+      if (owner == null) {
+        List<Contact> owners = [
+          SELECT Id, Name
+          FROM Contact
+          WHERE Is_Portfolio_Owner__c = TRUE
+          WITH SYSTEM_MODE
+          ORDER BY CreatedDate ASC
+          LIMIT 1
+        ];
+        if (owners.isEmpty()) {
+          throw new SnapshotException('No Contact is the portfolio owner.');
+        }
+        owner = owners[0];
       }
-      return owners[0].Name;
+      return owner;
     }
 
+    private String ownerName() {
+      return owner().Name;
+    }
+
+    /**
+     * The owner's certifications that are not retired. The contract has no retired marker, so a
+     * retired credential is never offered as plain evidence.
+     */
     private List<Certification__c> certifications() {
+      Id ownerId = owner().Id;
       return [
         SELECT
           Id,
@@ -446,6 +461,7 @@ public with sharing class ResumeSnapshotService {
           Is_Verified__c,
           Visibility__c
         FROM Certification__c
+        WHERE Contact__c = :ownerId AND Is_Retired__c = FALSE
         WITH SYSTEM_MODE
         ORDER BY Name ASC
       ];
