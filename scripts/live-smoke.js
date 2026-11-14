@@ -33,7 +33,8 @@
 // page as loaded. The open tour and an open menu are not checked, because each is a state of one
 // component that its own Jest tests cover, and the tour walk above already drives the tour. It
 // runs unless SMOKE_AXE_CHECK is "0". Best practice rules are not part of it, because they
-// are advice and not failures a visitor meets.
+// are advice and not failures a visitor meets. The one experimental rule it adds, by id, is
+// label-content-name-mismatch (AXE_EXTRA_RULES), which fails like the others.
 //
 // Environment:
 //   SITE_BASE   the site root, for example https://example.my.site.com/portfolio (required)
@@ -237,6 +238,10 @@ const AXE_ROUTES = [
 ];
 const AXE_SCHEMES = ["light", "dark"];
 const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
+// Rules axe marks experimental, so its tag filter leaves them out. Each is switched on by id.
+// label-content-name-mismatch is the voice control rule: a control's accessible name must
+// start with its visible text.
+const AXE_EXTRA_RULES = ["label-content-name-mismatch"];
 const AXE_SHOWN = 5;
 
 // The tour's stops in order, each a page above, starting from the hero on the home page.
@@ -1005,13 +1010,24 @@ async function axeOnce(browser, route, viewport, scheme) {
     await page.waitForTimeout(SETTLE_MS);
     await page.addScriptTag({ path: require.resolve("axe-core/axe.min.js") });
     const found = await page.evaluate(
-      (tags) =>
+      ({ tags, extra }) => {
+        // A tag filter and an experimental rule do not mix in one runOnly, so the tagged rules
+        // are listed by id, minus the experimental ones the tag filter always left out, and the
+        // extra ones are added to the same list.
         // eslint-disable-next-line no-undef
-        axe.run(document, {
-          runOnly: { type: "tag", values: tags },
-          resultTypes: ["violations"]
-        }),
-      AXE_TAGS
+        const ids = axe
+          .getRules(tags)
+          .filter((rule) => !rule.tags.includes("experimental"))
+          .map((rule) => rule.ruleId);
+        return (
+          // eslint-disable-next-line no-undef
+          axe.run(document, {
+            runOnly: { type: "rule", values: [...new Set([...ids, ...extra])] },
+            resultTypes: ["violations"]
+          })
+        );
+      },
+      { tags: AXE_TAGS, extra: AXE_EXTRA_RULES }
     );
     result.violations = summarizeViolations(found.violations);
   } catch (error) {
@@ -1194,6 +1210,7 @@ module.exports = {
   TOUR,
   isUnderBase,
   AXE_ROUTES,
+  AXE_EXTRA_RULES,
   summarizeViolations,
   accessHeadersFor,
   shouldStripUpgrade,

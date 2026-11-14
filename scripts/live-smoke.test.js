@@ -6,7 +6,9 @@ const {
   describeFailure,
   loadWithRetry,
   warningsFrom,
-  warningCountText
+  warningCountText,
+  AXE_EXTRA_RULES,
+  AXE_ROUTES
 } = require("./live-smoke.js");
 
 test("strips only for a local http base with the option on", () => {
@@ -176,4 +178,9 @@ test("the summary ending always shows the count, zero included", () => {
     warningCountText([{}, {}, {}]),
     ", first load warnings: 3"
   );
+});
+
+test("the axe rows switch on the voice control rule by id and keep the skills page", () => {
+  assert.ok(AXE_EXTRA_RULES.includes("label-content-name-mismatch"));
+  assert.ok(AXE_ROUTES.includes("/skills"));
 });
