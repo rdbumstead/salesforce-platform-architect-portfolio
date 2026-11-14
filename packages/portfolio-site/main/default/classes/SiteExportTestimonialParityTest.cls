@@ -8,7 +8,9 @@
  *                      The skills page and the project gallery read through the UI API GraphQL
  *                      endpoint, which a test cannot call. The GraphQL check reads the same
  *                      objects and fields with sharing applied and unreadable fields stripped,
- *                      once as each user, and the two must match.
+ *                      once as each user. The build then drops every row that reaches an
+ *                      unverified skill or project (web/build/verified.mjs), so the build
+ *                      user's rows go through the same drop here, and the two must match.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -102,18 +104,72 @@ private class SiteExportTestimonialParityTest {
     return view;
   }
 
+  /**
+   * The build user's GraphQL rows after the build's verified filter: a row goes when its Id,
+   * or a skill or project it points at, is unverified. Assets nested in a dropped project go
+   * with it.
+   */
+  private static String filteredBuildView(User build) {
+    List<Object> reads;
+    System.runAs(build) {
+      reads = new GraphqlReads().all();
+    }
+    Set<Id> unverified = unverifiedIds();
+    List<Object> kept = new List<Object>();
+    for (Object read : reads) {
+      List<SObject> rows = new List<SObject>();
+      for (SObject row : (List<SObject>) read) {
+        if (!pointsAtUnverified(row, unverified)) {
+          rows.add(row);
+        }
+      }
+      kept.add(rows);
+    }
+    return JSON.serialize(kept);
+  }
+
+  private static Set<Id> unverifiedIds() {
+    Set<Id> ids = new Set<Id>();
+    for (Skill__c skill : [
+      SELECT Id
+      FROM Skill__c
+      WHERE Is_Verified__c = FALSE
+      WITH SYSTEM_MODE
+    ]) {
+      ids.add(skill.Id);
+    }
+    for (Project__c project : [
+      SELECT Id
+      FROM Project__c
+      WHERE Is_Verified__c = FALSE
+      WITH SYSTEM_MODE
+    ]) {
+      ids.add(project.Id);
+    }
+    return ids;
+  }
+
+  private static Boolean pointsAtUnverified(SObject row, Set<Id> unverified) {
+    for (Object value : row.getPopulatedFieldsAsMap().values()) {
+      if (value instanceof Id && unverified.contains((Id) value)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   @isTest
   static void graphqlRowsMatchTheGuest() {
     User build = SiteExportTestSupport.createBuildUser();
     User guest = SiteGuestTestSupport.preparedGuest();
     Test.startTest();
     String guestView = graphqlView(guest);
-    String buildView = graphqlView(build);
+    String buildView = filteredBuildView(build);
     Test.stopTest();
     Assert.areEqual(
       guestView,
       buildView,
-      'The build user reads the same GraphQL rows and fields as the site guest'
+      'After the verified filter the build user has the same GraphQL rows and fields as the site guest'
     );
     // Two empty reads would match too, so where the org has skills the guest must see some.
     Integer skillsInOrg = [SELECT COUNT() FROM Skill__c WITH SYSTEM_MODE];

@@ -20,7 +20,7 @@ export const APEX_GROUPS = [
   },
   {
     name: "Other site classes",
-    tests: 329
+    tests: 332
   },
   {
     name: "API Lab and AI cover letters",

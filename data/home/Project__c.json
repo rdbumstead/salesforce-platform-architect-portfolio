@@ -18,7 +18,8 @@
       "Business_Value__c": "Ten staff users on donated licences, with staff testing the build in user acceptance before production.",
       "Case_Tags__c": "NPSP, Platform selection, Cost",
       "Live_URL__c": "/nonprofit-solutions",
-      "Home_Sort__c": 2
+      "Home_Sort__c": 2,
+      "Is_Verified__c": true
     },
     {
       "attributes": {
@@ -39,7 +40,8 @@
       "Business_Value__c": "Designed so that employer partners get one front door and a faster answer, departments stop duplicating outreach and see each other's work with a partner, and leadership can report on the employer relationship as a whole.",
       "Case_Tags__c": "Data model, Case routing, Dashboards",
       "Live_URL__c": "/business-architecture",
-      "Home_Sort__c": 1
+      "Home_Sort__c": 1,
+      "Is_Verified__c": true
     },
     {
       "attributes": {
@@ -60,7 +62,8 @@
       "Business_Value__c": "The test count on this card and the checklist on the Delivery page come from those stored runs, so they change when the pipeline does. A reviewer sees the roadmap, the commits and the latest pipeline results on one page.",
       "Case_Tags__c": "Experience Cloud, Apex REST, CI/CD",
       "Live_URL__c": "/delivery",
-      "Home_Sort__c": 3
+      "Home_Sort__c": 3,
+      "Is_Verified__c": true
     }
   ]
 }
