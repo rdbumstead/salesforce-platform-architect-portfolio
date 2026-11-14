@@ -5,7 +5,15 @@
  */
 export const VALIDATORS_PATH = '../../functions/_lib/tailor/index.js';
 
-export const VALIDATOR_NAMES = ['validateSelection', 'validateLetter', 'validateResume', 'checkGrounding', 'parseBlocklist'];
+/**
+ * What the harness relies on from each:
+ *   validateSelection(text, snapshot, { mode }) takes the raw answer and returns selection and blocksExport
+ *   validateLetter(text, { selection, snapshot, blocklist, employer, mode }) adds wordCount, paragraphCount, verifyItems
+ *   validateResume(text, { selection, snapshot }) adds blocksExport
+ *   checkGrounding(letter, texts, { allow }) with selectedEvidenceTexts and groundingAllowList
+ *   parseBlocklist(raw) for SITE_DENYLIST
+ */
+export const VALIDATOR_NAMES = ['validateSelection', 'validateLetter', 'validateResume', 'checkGrounding', 'parseBlocklist', 'selectedEvidenceTexts', 'groundingAllowList'];
 
 /** Checks a module has every validator and returns just those functions. */
 export function pickValidators(module) {

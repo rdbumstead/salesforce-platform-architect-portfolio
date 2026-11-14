@@ -106,10 +106,6 @@ function retryNote(result) {
   return `\n\nYOUR PREVIOUS ANSWER FAILED THESE CHECKS\n${lines.join('\n')}\nAnswer again and follow every rule.`;
 }
 
-function failed(code, message) {
-  return { ok: false, errors: [{ code, message, offending: '' }], warnings: [] };
-}
-
 /**
  * Runs one posting through one provider in one mode.
  * @returns a record the scorer reads. It never throws for a provider failure: the error is
@@ -134,14 +130,17 @@ export async function runOne({ provider, posting, snapshot, mode, validators, bl
     for (let attempt = 1; attempt <= 2; attempt += 1) {
       const user = attempt === 1 ? baseUser : baseUser + retryNote(check);
       const text = await call('selector', SELECTOR_PROMPT, user, { posting, snapshot: view, categories });
-      selection = parseSelection(text);
-      check = selection ? validators.validateSelection(text, snapshot, { mode }) : failed('NOT_JSON', 'The selector answer is not a JSON object.');
-      record.selector.attempts.push({ text, ok: check.ok, errors: check.errors, warnings: check.warnings });
+      check = validators.validateSelection(text, snapshot, { mode });
+      // The validator returns the cleaned selection (visitor mode strips what visitors may not
+      // see), or null when the answer is invalid. Everything after this uses that copy.
+      selection = Object.prototype.hasOwnProperty.call(check, 'selection') ? check.selection : parseSelection(text);
+      record.selector.attempts.push({ text, ok: check.ok, errors: check.errors, warnings: check.warnings, blocksExport: check.blocksExport });
       if (check.ok) break;
     }
     record.selection = selection;
     record.selector.firstOk = record.selector.attempts[0].ok;
     record.selector.finalOk = check.ok;
+    record.selector.blocksExport = check.blocksExport;
     record.waitMs.selector = now() - started;
     if (!selection) throw Object.assign(new Error('The selector gave no usable selection.'), { code: 'NO_SELECTION' });
 
@@ -149,7 +148,8 @@ export async function runOne({ provider, posting, snapshot, mode, validators, bl
     const evidence = evidenceIds(selection)
       .filter((id) => byId.has(id))
       .map((id) => ({ id, text: byId.get(id).text }));
-    const evidenceTexts = evidence.map((entry) => entry.text);
+    const evidenceTexts = validators.selectedEvidenceTexts(selection, snapshot);
+    const allow = validators.groundingAllowList(snapshot, { company: posting.company, title: posting.title });
     const letterPrompt = coverLetterPrompt(snapshot.owner);
     const letterStart = now();
     const baseLetter = letterMessage(posting, view, selection, evidence, mode);
@@ -160,9 +160,10 @@ export async function runOne({ provider, posting, snapshot, mode, validators, bl
       const user = attempt === 1 ? baseLetter : baseLetter + retryNote({ errors: [...letterCheck.errors, ...grounding.errors] });
       const raw = await call('letter', letterPrompt, user, { posting, snapshot: view, selection, evidence, mode });
       letter = extractLetter(raw);
-      letterCheck = validators.validateLetter(letter, { selection, snapshot, blocklist, employer: snapshot.owner.currentEmployer });
-      grounding = validators.checkGrounding(letter, evidenceTexts);
-      record.letter.attempts.push({ raw, text: letter, ok: letterCheck.ok, errors: letterCheck.errors, warnings: letterCheck.warnings, grounding });
+      letterCheck = validators.validateLetter(letter, { selection, snapshot, blocklist, employer: snapshot.owner.currentEmployer, mode });
+      grounding = validators.checkGrounding(letter, evidenceTexts, { allow });
+      const { wordCount, paragraphCount, verifyItems } = letterCheck;
+      record.letter.attempts.push({ raw, text: letter, ok: letterCheck.ok, errors: letterCheck.errors, warnings: letterCheck.warnings, wordCount, paragraphCount, verifyItems, grounding });
       if (letterCheck.ok && grounding.ok) break;
     }
     record.letter.text = letter;

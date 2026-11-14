@@ -38,34 +38,63 @@ const { snapshot, categories, postings, prices } = inputs;
 const CATEGORY_IDS = new Set(categories.map((category) => category.id));
 const COVER_LETTER_PROMPT = coverLetterPrompt(snapshot.owner);
 
-/** Validators with the contract's names and result shape, standing in for the real module. */
+/**
+ * Validators with the final contract's names, arguments and result shapes, standing in for the
+ * real module: validateSelection returns selection and blocksExport, validateLetter takes mode
+ * and adds wordCount, paragraphCount and verifyItems, validateResume adds blocksExport, and
+ * grounding takes the evidence texts and an allow list from their own helpers.
+ */
 function stubValidators({ selectionOk } = {}) {
-  const result = (errors) => ({ ok: errors.length === 0, errors, warnings: [] });
+  const result = (errors, extra = {}) => ({ ok: errors.length === 0, errors, warnings: [], ...extra });
   const error = (code, offending = '') => ({ code, message: code, offending });
-  return pickValidators({
+  const seen = { letterModes: [], groundingAllow: [] };
+  const validators = pickValidators({
     validateSelection(text, snap, { mode }) {
-      if (selectionOk) return result(selectionOk(text) ? [] : [error('FORCED')]);
+      const fenced = /^\s*```/.test(text);
       const selection = parseSelection(text);
-      if (!selection) return result([error('NOT_JSON')]);
+      if (selectionOk && !selectionOk(text)) return result([error('FORCED')], { selection: null, blocksExport: true });
+      if (!selection) return result([error('NOT_JSON')], { selection: null, blocksExport: true });
       const allowed = new Set(snap.items.filter((item) => mode === 'owner' || item.verified).map((item) => item.id));
-      return result(selectedIds(selection).filter((id) => !allowed.has(id)).map((id) => error('UNKNOWN_ID', id)));
+      const errors = selectedIds(selection)
+        .filter((id) => !allowed.has(id))
+        .map((id) => error('UNKNOWN_ID', id));
+      const clean = mode === 'visitor' ? { ...selection, top_requirements: (selection.top_requirements || []).filter((entry) => entry.match === 'strong'), hard_filter_flags: [], missing_evidence_suggestions: [] } : selection;
+      const unverified = selectedIds(selection).some((id) => snap.items.find((item) => item.id === id)?.verified === false);
+      const out = result(errors, { selection: errors.length ? null : clean, blocksExport: unverified || errors.length > 0 });
+      if (fenced) out.warnings.push({ code: 'selection.fenced', message: 'fenced', offending: '' });
+      return out;
     },
-    validateLetter(text, { blocklist, employer }) {
+    validateLetter(text, { blocklist, employer, mode = 'owner' }) {
+      seen.letterModes.push(mode);
       const errors = [];
-      const count = text.split(/\s+/).filter(Boolean).length;
-      if (count < 300 || count > 400) errors.push(error('WORD_COUNT', String(count)));
-      if (text.split(/\n\s*\n/).filter((part) => part.trim()).length !== 5) errors.push(error('PARAGRAPHS'));
+      const wordCount = text.split(/\s+/).filter(Boolean).length;
+      const paragraphCount = text.split(/\n\s*\n/).filter((part) => part.trim()).length;
+      const verifyItems = text.match(/\[VERIFY[^\]]*\]/g) || [];
+      if (wordCount < 300 || wordCount > 400) errors.push(error('WORD_COUNT', String(wordCount)));
+      if (paragraphCount !== 5) errors.push(error('PARAGRAPHS'));
       if (DASH_OR_SEMICOLON.test(text)) errors.push(error('PUNCTUATION'));
       if (!text.includes(employer)) errors.push(error('EMPLOYER'));
+      if (mode === 'visitor' && verifyItems.length) errors.push(error('VERIFY_IN_VISITOR', verifyItems[0]));
       for (const term of blocklist) if (text.toLowerCase().includes(term.toLowerCase())) errors.push(error('BLOCKLIST', term));
-      return result(errors);
+      return result(errors, { wordCount, paragraphCount, verifyItems });
     },
     validateResume(text, { selection, snapshot: snap }) {
       const unverified = selectedIds(selection).filter((id) => snap.items.find((item) => item.id === id)?.verified === false);
-      return result(unverified.map((id) => error('UNVERIFIED', id)));
+      return result(
+        unverified.map((id) => error('UNVERIFIED', id)),
+        { blocksExport: unverified.length > 0 }
+      );
     },
-    checkGrounding(letter, evidence) {
-      const joined = evidence.join(' ');
+    selectedEvidenceTexts(selection, snap) {
+      const ids = new Set(evidenceIds(selection));
+      return snap.items.filter((item) => ids.has(item.id)).map((item) => item.text);
+    },
+    groundingAllowList(snap, { company, title }) {
+      return [snap.owner.name, snap.owner.currentEmployer, company, title];
+    },
+    checkGrounding(letter, evidence, { allow = [] } = {}) {
+      seen.groundingAllow.push(allow);
+      const joined = [...evidence, ...allow].join(' ');
       const numbers = letter.match(/\d[\d,]*/g) || [];
       return result(numbers.filter((number) => !joined.includes(number)).map((number) => error('UNGROUNDED_NUMBER', number)));
     },
@@ -76,6 +105,8 @@ function stubValidators({ selectionOk } = {}) {
         .filter(Boolean);
     }
   });
+  validators.seen = seen;
+  return validators;
 }
 
 /* ---------- the snapshot against the contract ---------- */
@@ -232,7 +263,6 @@ test('the cover letter prompt takes the candidate from the snapshot owner', () =
   assert.throws(() => coverLetterPrompt(), /name/);
   assert.equal(postings.find((posting) => posting.id === 'posting-1-engineer').expected.checks.letterNamesCurrentEmployer, true);
 });
-
 
 /* ---------- scorer, hand built answers ---------- */
 
@@ -539,7 +569,12 @@ test('results are refused inside the repository unless git ignores the folder', 
 test('end to end: every posting, both modes, two repeats, through the fake provider', async () => {
   let clock = 0;
   const now = () => (clock += 250);
-  const records = await runEval({ providers: [fakeProvider()], postings, snapshot, modes: ['owner', 'visitor'], repeats: 2, validators: stubValidators(), blocklist: ['Placeholder Client'], categories, now });
+  const validators = stubValidators();
+  const records = await runEval({ providers: [fakeProvider()], postings, snapshot, modes: ['owner', 'visitor'], repeats: 2, validators, blocklist: ['Placeholder Client'], categories, now });
+  assert.deepEqual([...new Set(validators.seen.letterModes)], ['owner', 'visitor'], 'the run mode reaches validateLetter');
+  assert.ok(validators.seen.groundingAllow.every((allow) => allow.includes(snapshot.owner.currentEmployer)), 'grounding gets the allow list');
+  assert.ok(records.filter((entry) => entry.mode === 'visitor').every((entry) => entry.selection.hard_filter_flags.length === 0), 'visitor runs use the cleaned selection');
+  assert.ok(records.every((entry) => typeof entry.letter.attempts[0].wordCount === 'number' && typeof entry.selector.blocksExport === 'boolean'));
   assert.equal(records.length, 12 * 2 * 2);
   assert.ok(records.every((entry) => !entry.error), JSON.stringify(records.find((entry) => entry.error)?.error));
   assert.ok(records.every((entry) => entry.selector.finalOk), 'every fake selection passes the stub');
