@@ -3,12 +3,13 @@
  *
  * The output is the selector JSON (a string straight from the model, or the parsed object). One
  * code fence around the whole string is removed with a warning, since models add one often and
- * refusing it would spend the one retry on nothing. It
- * must hold exactly the fields of the selector schema, each with its type. Every id must exist in
- * the snapshot and sit in the right slot: a headline id in headline_id, a summary id in
- * summary_id, bullets under the role they belong to, skills in skill_ids and projects in
- * project_ids. The current role carries 4 to 6 bullets, every older role 0 to 3, and projects
- * number 0 to 3.
+ * refusing it would spend the one retry on nothing. It must hold exactly the fields of the
+ * selector schema, each with its type. Every id must exist in the snapshot and sit in the right
+ * slot: a headline id in headline_id, a summary id in summary_id, bullets under the role they
+ * belong to, skills in skill_ids and projects in project_ids. The current role (the one role
+ * marked current at owner.currentEmployer, see snapshot.js) must be included with 4 to 6 bullets.
+ * Every other role, another current one included, carries 0 to 3, and projects number 0 to 3.
+ * A snapshot with no such role, or more than one, fails closed.
  *
  * Visitor mode accepts only public, verified items, and refuses the selection otherwise. It then
  * strips what a visitor never sees: partial matches, gaps, hard filter flags and missing evidence
@@ -21,6 +22,7 @@
  */
 
 import { finish, issue } from "./result.js";
+import { currentRole } from "./snapshot.js";
 
 export const MODES = ["visitor", "owner"];
 export const TITLE_FAMILIES = ["engineer", "architect", "consultant", "admin"];
@@ -170,9 +172,15 @@ function indexSnapshot(snapshot, errors) {
     );
     return null;
   }
+  const current = currentRole(snapshot);
+  if (current.error) {
+    errors.push(current.error);
+    return null;
+  }
   return {
     items: new Map(snapshot.items.map((item) => [item.id, item])),
-    roles: new Map(snapshot.roles.map((role) => [role.id, role]))
+    roles: new Map(snapshot.roles.map((role) => [role.id, role])),
+    currentRoleId: current.role.id
   };
 }
 
@@ -305,7 +313,7 @@ function checkRoles(roles, index, errors, chosen) {
       );
     }
     const bullets = entry.include ? entry.bullet_ids : [];
-    counts.set(entry.role_id, bullets.length);
+    if (entry.include) counts.set(entry.role_id, bullets.length);
     bullets.forEach((id) => {
       if (typeof id !== "string") return;
       const item = checkId(
@@ -320,12 +328,23 @@ function checkRoles(roles, index, errors, chosen) {
     });
   });
   for (const role of index.roles.values()) {
+    const isCurrent = role.id === index.currentRoleId;
+    if (isCurrent && !counts.has(role.id)) {
+      errors.push(
+        issue(
+          "selection.current_role_omitted",
+          "The current role must be included with its bullets",
+          role.id
+        )
+      );
+      continue;
+    }
     const count = counts.get(role.id) || 0;
-    const limit = role.current
+    const limit = isCurrent
       ? LIMITS.currentRoleBullets
       : LIMITS.olderRoleBullets;
     if (!inRange(count, limit)) {
-      const label = role.current ? "The current role" : `Role ${role.id}`;
+      const label = isCurrent ? "The current role" : `Role ${role.id}`;
       errors.push(
         issue(
           "selection.bullet_count",

@@ -28,6 +28,7 @@ export {
   nameRuns
 } from "./grounding.js";
 export { parseBlocklist } from "./blocklist.js";
+export { currentRole } from "./snapshot.js";
 export {
   termMatcher,
   findNumbers,
