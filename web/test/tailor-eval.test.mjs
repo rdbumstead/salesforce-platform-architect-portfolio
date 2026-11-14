@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { COVER_LETTER_PROMPT } from '../functions/_lib/tailor/prompts/cover-letter.js';
+import { coverLetterPrompt } from '../functions/_lib/tailor/prompts/cover-letter.js';
 import { SELECTOR_PROMPT } from '../functions/_lib/tailor/prompts/selector.js';
 import { evidenceIds, extractLetter, parseSelection, runOne, selectedIds, viewForMode, WAIT_LIMIT_MS } from '../tailor-eval/lib/pipeline.mjs';
 import { createProvider, fakeProvider, geminiProvider, MissingKeyError, paidProvider, workersAiProvider } from '../tailor-eval/lib/providers.mjs';
@@ -36,6 +36,7 @@ const EVAL = path.join(WEB, 'tailor-eval');
 const inputs = await loadInputs({ includePrivate: false });
 const { snapshot, categories, postings, prices } = inputs;
 const CATEGORY_IDS = new Set(categories.map((category) => category.id));
+const COVER_LETTER_PROMPT = coverLetterPrompt(snapshot.owner);
 
 /** Validators with the contract's names and result shape, standing in for the real module. */
 function stubValidators({ selectionOk } = {}) {
@@ -212,8 +213,26 @@ test('the prompts hold the selector rules and the five paragraph structure, with
   assert.match(COVER_LETTER_PROMPT, /If fewer than three requirements have evidence, still write exactly five paragraphs/);
   assert.doesNotMatch(COVER_LETTER_PROMPT, /250 to 350|four paragraphs/);
   for (const prompt of [SELECTOR_PROMPT, COVER_LETTER_PROMPT]) assert.doesNotMatch(prompt, DASH_OR_SEMICOLON);
-  for (const role of snapshot.roles) assert.ok(!COVER_LETTER_PROMPT.includes(role.employer) && !SELECTOR_PROMPT.includes(role.employer), role.employer);
+  const sources = ['selector.js', 'cover-letter.js'].map((name) => fs.readFileSync(path.join(WEB, 'functions', '_lib', 'tailor', 'prompts', name), 'utf8'));
+  for (const source of sources) {
+    assert.doesNotMatch(source, /Ryan|Bumstead/, 'the committed prompt names no person');
+    assert.ok(!source.includes(snapshot.owner.name));
+    for (const role of snapshot.roles) assert.ok(!source.includes(role.employer), role.employer);
+  }
 });
+
+test('the cover letter prompt takes the candidate from the snapshot owner', () => {
+  const prompt = coverLetterPrompt({ name: 'Jordan Example', currentEmployer: 'Example Works' });
+  assert.match(prompt, /You write a cover letter for Jordan Example for a specific job posting\./);
+  assert.match(prompt, /Opening sentence states Jordan's strongest match to the #1 requirement\./);
+  assert.match(prompt, /- Name his current employer \(Example Works\) and role\./);
+  assert.match(prompt, /- Close with one sentence on what he would bring, then thanks\./);
+  assert.doesNotMatch(prompt, /greeting|sign off|sign-off/i, 'the prompt adds no greeting or sign off rule');
+  assert.throws(() => coverLetterPrompt({ name: 'Jordan Example' }), /current employer/);
+  assert.throws(() => coverLetterPrompt(), /name/);
+  assert.equal(postings.find((posting) => posting.id === 'posting-1-engineer').expected.checks.letterNamesCurrentEmployer, true);
+});
+
 
 /* ---------- scorer, hand built answers ---------- */
 

@@ -3,7 +3,7 @@
  * validation and grounding with one regeneration. The same order the site's pipeline will use,
  * so the wait it records is the wait a person would see.
  */
-import { COVER_LETTER_PROMPT } from '../../functions/_lib/tailor/prompts/cover-letter.js';
+import { coverLetterPrompt } from '../../functions/_lib/tailor/prompts/cover-letter.js';
 import { SELECTOR_PROMPT } from '../../functions/_lib/tailor/prompts/selector.js';
 import { currentRole } from './roles.mjs';
 
@@ -150,6 +150,7 @@ export async function runOne({ provider, posting, snapshot, mode, validators, bl
       .filter((id) => byId.has(id))
       .map((id) => ({ id, text: byId.get(id).text }));
     const evidenceTexts = evidence.map((entry) => entry.text);
+    const letterPrompt = coverLetterPrompt(snapshot.owner);
     const letterStart = now();
     const baseLetter = letterMessage(posting, view, selection, evidence, mode);
     let letterCheck = null;
@@ -157,7 +158,7 @@ export async function runOne({ provider, posting, snapshot, mode, validators, bl
     let letter = '';
     for (let attempt = 1; attempt <= 2; attempt += 1) {
       const user = attempt === 1 ? baseLetter : baseLetter + retryNote({ errors: [...letterCheck.errors, ...grounding.errors] });
-      const raw = await call('letter', COVER_LETTER_PROMPT, user, { posting, snapshot: view, selection, evidence, mode });
+      const raw = await call('letter', letterPrompt, user, { posting, snapshot: view, selection, evidence, mode });
       letter = extractLetter(raw);
       letterCheck = validators.validateLetter(letter, { selection, snapshot, blocklist, employer: snapshot.owner.currentEmployer });
       grounding = validators.checkGrounding(letter, evidenceTexts);

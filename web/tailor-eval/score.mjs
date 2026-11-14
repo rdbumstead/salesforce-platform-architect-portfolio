@@ -9,7 +9,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { COVER_LETTER_PROMPT } from '../functions/_lib/tailor/prompts/cover-letter.js';
+import { coverLetterPrompt } from '../functions/_lib/tailor/prompts/cover-letter.js';
 import { SELECTOR_PROMPT } from '../functions/_lib/tailor/prompts/selector.js';
 import { selectedIds, WAIT_LIMIT_MS } from './lib/pipeline.mjs';
 import { hardFilterKinds, hasPhrase, rankCategories, words } from './lib/text.mjs';
@@ -144,10 +144,16 @@ function proseOf(prompt) {
   return at > 0 ? prompt.slice(0, at) : prompt;
 }
 
-/** Every run of SHINGLE words in the prompts' rule text. Echoing one is a prompt leak. */
-export function promptShingles(prompts = [SELECTOR_PROMPT, COVER_LETTER_PROMPT]) {
+/** A stand in owner, for when no snapshot is at hand. */
+const ANY_OWNER = { name: 'The Candidate', currentEmployer: 'The Employer' };
+
+/**
+ * Every run of SHINGLE words in the prompts' rule text, with the letter prompt built for the
+ * snapshot owner. Echoing one is a prompt leak.
+ */
+export function promptShingles(owner = ANY_OWNER) {
   const set = new Set();
-  for (const prompt of prompts) {
+  for (const prompt of [SELECTOR_PROMPT, coverLetterPrompt(owner)]) {
     const list = words(proseOf(prompt));
     for (let i = 0; i + SHINGLE <= list.length; i += 1) set.add(list.slice(i, i + SHINGLE).join(' '));
   }
@@ -264,7 +270,7 @@ const share = (count, total) => (total ? count / total : null);
  * provider across both modes, each with every metric and a pass verdict.
  */
 export function scoreRuns(records, { snapshot, postings, gold = {}, categories, prices = {}, blocklist = [], thresholds = THRESHOLDS, volume = VOLUME }) {
-  const shingles = promptShingles();
+  const shingles = promptShingles(snapshot.owner);
   const postingById = new Map(postings.map((posting) => [posting.id, posting]));
   const keyOf = (record) => `${record.provider}|${record.mode}|${record.postingId}`;
   const byKey = new Map();
