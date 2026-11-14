@@ -187,22 +187,20 @@ test("a selector or letter that fails its validators after the retry falls throu
   );
 });
 
-// The ported template fails the letter rules today (see tailor-template.test.mjs), so a run
-// that reaches it ends as "template validator" with no route answering.
-test("a missing key is skipped, never thrown, and the run reaches the template", async () => {
+test("a missing key is skipped, never thrown, and the template answers", async () => {
   const router = createRouter(loadPolicy("public"), { env: {} });
   const record = await run(router);
   assert.deepEqual(steps(record), [
     "workers-ai missing-key",
     "gemini missing-key",
-    "template validator"
+    "template answered"
   ]);
   assert.deepEqual(record.route.trace[0].missing, [
     "TAILOR_EVAL_CF_ACCOUNT_ID",
     "TAILOR_EVAL_CF_TOKEN"
   ]);
-  assert.equal(record.route.answeredBy, null);
-  assert.ok(record.letter.text.includes("without an AI model"));
+  assert.equal(record.route.answeredBy, "template");
+  assert.ok(record.letter.text.includes("no model wrote it"));
   assert.equal(record.model, "local-template");
 });
 
@@ -217,9 +215,10 @@ test("when every model route fails the run ends at the template", async () => {
   assert.deepEqual(steps(record), [
     "workers-ai outage",
     "gemini quota",
-    "template validator"
+    "template answered"
   ]);
-  assert.equal(record.route.answeredBy, null);
+  assert.equal(record.route.answeredBy, "template");
+  assert.equal(record.letter.finalOk, true);
   assert.equal(record.fellThrough.length, 2);
   assert.equal(record.model, "local-template");
 });
@@ -302,7 +301,7 @@ test("a route is not started when the budget left is below the floor", async () 
   assert.deepEqual(steps(record), [
     "workers-ai outage",
     "fake budget",
-    "template validator"
+    "template answered"
   ]);
   assert.equal(record.route.trace[1].remainingMs, 15000);
   assert.equal(fakeCalls, 0);
@@ -408,7 +407,9 @@ test("--router runs a policy end to end, and the scorer counts which route answe
   const routed = records.filter((record) => record.route);
   assert.equal(routed.length, 8);
   assert.ok(
-    routed.every((record) => record.route.answeredBy === null && !record.error)
+    routed.every(
+      (record) => record.route.answeredBy === "template" && !record.error
+    )
   );
   const { groups } = scoreRuns(records, {
     snapshot,
@@ -418,11 +419,11 @@ test("--router runs a policy end to end, and the scorer counts which route answe
     blocklist: BLOCKLIST
   });
   const both = groups.find((group) => group.group === "router:public both");
-  assert.deepEqual(both.routeAnswers, ["none: 8"]);
+  assert.deepEqual(both.routeAnswers, ["template: 8"]);
   assert.deepEqual(both.routeOutcomes, [
     "workers-ai missing-key: 8",
     "gemini missing-key: 8",
-    "template validator: 8"
+    "template answered: 8"
   ]);
   assert.deepEqual(
     groups.find((group) => group.group === "fake both").routeAnswers,

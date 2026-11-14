@@ -250,8 +250,9 @@ export function orderRoutes(policy) {
  * The template route: the port of LocalTemplateService in the provider shape, with no model
  * and no network. The Apex has no selector step, because PortfolioGroundingService ranks the
  * records itself. Here the selector call answers with the harness's rule built selection, and
- * the letter call writes the ported letter from it. options passes ownerName, ownerTitle,
- * startYear and certificationCount to the port. startYear has no default, see template.js.
+ * the letter call writes the template letter from it, with the same evidence texts the
+ * grounding check reads. options passes ownerName and startYear. startYear has no default, see
+ * template.js.
  */
 export function templateProvider(options = {}) {
   return {
@@ -265,7 +266,9 @@ export function templateProvider(options = {}) {
         ...options,
         posting: context.posting,
         view: context.snapshot,
-        selection: context.selection
+        selection: context.selection,
+        evidenceTexts: context.evidenceTexts,
+        mode: context.mode
       });
       return { text, usage };
     }

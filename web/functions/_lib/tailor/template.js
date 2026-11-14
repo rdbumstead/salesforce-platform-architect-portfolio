@@ -1,44 +1,101 @@
 /**
- * The template cover letter, ported from the Apex class LocalTemplateService. It is the last
- * step of the provider router: a letter put together with no model, from the resume snapshot,
- * the selection and the posting. Pure code with no org call, no network and no I/O, so a Pages
- * Function can import it.
+ * The template cover letter: the last step of the provider router, written by fixed rules with
+ * no model. It started as a port of the Apex class LocalTemplateService and now meets the same
+ * letter rules as a model letter (owner decision P-D33): exactly five paragraphs, 300 to 400
+ * words, the current employer named, every number and every product or tool name grounded in
+ * the selected evidence, and the shape the letter prompt asks for. Pure code with no org call, no
+ * network and no I/O, so a Pages Function can import it.
  *
- * What the Apex reads from the org, and what this port takes instead:
+ * The shape: an opener, three evidence paragraphs from the three highest ranked requirements
+ * that have evidence, strong matches first, and a close. With fewer than three, the letter still
+ * has five paragraphs, each missing evidence paragraph says how I work without claiming
+ * anything, and the opener and close carry more. The letter validator then warns about thin
+ * evidence.
  *
- * - The owner's name, from ResumeController.getHeader. Here `snapshot.owner.name`, or the
- *   `ownerName` input. With neither, the sign off has no name. The Apex falls back to a name
- *   written in its code, which this port does not copy.
- * - The owner's title, from the same header. Here the text of the `headline-site-title` item,
- *   which the snapshot builder makes from that header, or the `ownerTitle` input. With neither,
- *   the sentence is left out.
- * - The year the owner started on Salesforce, from the Salesforce_Start_Year setting, whose code
- *   default is 2017. The snapshot does not carry it and only the owner sets it, so here it is
- *   the `startYear` input with no default. Without it, the sentence is left out.
- * - The count of current certifications, from ResumeController.getTimeline. Here the number of
- *   certification items in the snapshot view, or the `certificationCount` input.
- * - The highlights and projects, from PortfolioGroundingService, which ranks them by keywords and
- *   persona. Here the bullets and projects the selection chose, in its order. The selection
- *   already ranks evidence against the posting, so this port does not rank again.
+ * Evidence is quoted from the selected items only, cut to a fixed number of words, so every name
+ * and number in it is grounded by construction. Any other sentence that could carry a name or a
+ * number, such as the start year, is checked with checkGrounding first and left out when it
+ * fails.
  *
- * The company, the title and the description come from the posting and have email and phone
- * shapes removed, as in the Apex. No employer name goes into the letter.
+ * What the Apex reads from the org, and what this takes instead:
+ *
+ * - The owner's name, from ResumeController.getHeader. Here `ownerName`, or `snapshot.owner.name`.
+ *   With neither, the sign off has no name. No name is invented.
+ * - The year the owner started on Salesforce, from the Salesforce_Start_Year setting. Here the
+ *   `startYear` input with no default, because only the owner sets it. Without it, or when the
+ *   year is not in the evidence, the sentence is left out.
+ * - The count of current certifications, from ResumeController.getTimeline. Here the count of
+ *   certification items in the selection, stated only when the evidence carries that number.
+ * - The highlights and projects, from PortfolioGroundingService. Here the evidence the
+ *   selection's requirements name, in the selection's order.
+ * - The owner's title. Here the title of the current role, stated only when the selection
+ *   includes that role, so the title is in the evidence.
+ *
+ * The company and title come from the posting with email and phone shapes removed, as in the
+ * Apex. The posting text itself never reaches the letter.
  */
 
-export const MAX_FACTS = 3;
-export const MAX_FACT_WORDS = 40;
+import {
+  checkGrounding,
+  groundingAllowList,
+  selectedEvidenceTexts
+} from "./grounding.js";
+import { countWords } from "./text.js";
+
 export const MAX_JOB_TEXT_CHARS = 12000;
 export const REMOVED = "[removed]";
+export const BODY_PARAGRAPHS = 3;
+export const WORDS = { least: 320, most: 400 };
+/** Words kept from one evidence text: the first cut, and the shorter one for a long letter. */
+export const EVIDENCE_WORDS = [30, 18];
 export const TEMPLATE_NOTE =
-  "This is a template letter, put together from my portfolio records without an AI model.";
+  "I put this letter together from my portfolio records with a fixed template, and no model wrote it.";
 
 const PHONE = /(\+?\d{1,2}[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g;
+
+/** How each evidence paragraph starts and ends. Plain words with no names or numbers. */
+const LEADS = [
+  "The work closest to what you describe is this:",
+  "Another part of the role I can speak to directly:",
+  "A third example from my records:"
+];
+const SECOND = ["Alongside it:", "In the same vein:", "And related to that:"];
+const TAILS = [
+  "That is the kind of work I would bring to this role from the start.",
+  "I would expect the same approach to carry over to your team.",
+  "I keep the people who use the system close to each decision in work like this."
+];
+/** Body paragraphs for a requirement with no evidence. They describe habits and claim nothing. */
+const NEUTRAL = [
+  "I write down what I change so the next person can follow it, and I check my own work before anyone else has to. I would bring that habit to every part of this role.",
+  "I ask questions early, I keep the people who rely on the work informed, and I treat a small fix with the same care as a large one.",
+  "I prefer plain designs that the team can read and keep running after I hand them over, and I keep the reasons for each choice where the team can find them."
+];
+/** Sentences that bring a short letter to length, added to the opener and the close in turn. */
+const FILLER = [
+  "I would like to talk through how that work could carry over to your team.",
+  "The same habits would shape how I start in this role.",
+  "I write down what I change so the next person can follow it.",
+  "I keep the people who use the system close to every decision.",
+  "I would bring the same care to the work you describe.",
+  "I like to understand how a team works before I suggest changes to it.",
+  "I would be glad to walk through any of these examples in more detail.",
+  "I take the time to test my own work before I hand it on.",
+  "I would rather raise a question early than guess at what a team needs.",
+  "I keep my notes where the rest of the team can read them.",
+  "I break large pieces of work into steps that can be checked one at a time.",
+  "I listen to the people closest to a problem before I settle on a fix.",
+  "I treat handing work over cleanly as part of finishing it.",
+  "I am happy to start with the smaller tasks and earn the larger ones.",
+  "I care about the work being easy to keep running after it ships.",
+  "I would look forward to learning how your team plans and reviews its work."
+];
+
+const isBlank = (value) => typeof value !== "string" || !value.trim();
 
 function normalizeSpace(text) {
   return String(text).trim().split(/\s+/).filter(Boolean).join(" ");
 }
-
-const isBlank = (value) => typeof value !== "string" || !value.trim();
 
 /** Email and phone shapes out, whitespace collapsed. Null when blank. The Apex rule. */
 export function removeContactDetails(text) {
@@ -52,8 +109,7 @@ export function removeContactDetails(text) {
 
 /** Visitor text: anything that is not text, or is blank, counts as missing. */
 function cleanVisitorText(value) {
-  if (isBlank(value)) return null;
-  return removeContactDetails(normalizeSpace(value));
+  return isBlank(value) ? null : removeContactDetails(value);
 }
 
 /** The first maxWords words, with a trailing comma dropped and an ellipsis when cut. */
@@ -69,130 +125,216 @@ export function sentenceOf(text) {
   return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
 }
 
-function addFact(facts, label, text) {
-  if (facts.length >= MAX_FACTS || isBlank(text)) return;
-  const sentence = sentenceOf(firstWords(text, MAX_FACT_WORDS));
-  facts.push(isBlank(label) ? sentence : `As ${label}: ${sentence}`);
+/** Evidence text made safe for the letter rules: no em dash, no semicolon, no dash used as one. */
+const EM_DASHES = String.fromCharCode(0x2014, 0x2015);
+const EN_DASH = String.fromCharCode(0x2013);
+const DASH_OR_SEMICOLON = new RegExp(`\\s*[${EM_DASHES};]\\s*`, "gu");
+const EN_DASH_AS_DASH = new RegExp(
+  `\\s*(?:(?<!\\d)${EN_DASH}|${EN_DASH}(?!\\d))\\s*`,
+  "gu"
+);
+
+function quote(text, words) {
+  const safe = String(text)
+    .replace(DASH_OR_SEMICOLON, ", ")
+    .replace(EN_DASH_AS_DASH, ", ")
+    .replace(/\s+-\s+/g, ", ");
+  return sentenceOf(firstWords(safe, words));
+}
+
+/** The current role: the one marked current at the owner's current employer. */
+function currentRoleOf(view) {
+  const employer = view?.owner?.currentEmployer;
+  return (view?.roles || []).find(
+    (role) => role.current && role.employer === employer
+  );
 }
 
 /**
- * Up to MAX_FACTS sentences: the selected bullets first, labelled with their role's title, then
- * the selected projects, labelled with the project name before the first colon of their text.
- * Only items in the view count. Employers are left out.
+ * The requirements the evidence paragraphs come from: those with evidence among the allowed
+ * texts, strong matches before partial ones, each group in the selection's order, at most three.
+ * Visitor mode uses strong matches only, as the letter call does.
  */
-export function templateFacts(view, selection) {
-  const facts = [];
-  if (!view || !selection) return facts;
-  const items = new Map((view.items || []).map((item) => [item.id, item]));
-  const roles = new Map((view.roles || []).map((role) => [role.id, role]));
-  for (const role of selection.roles || []) {
-    if (!role || role.include === false) continue;
-    for (const id of role.bullet_ids || []) {
-      const item = items.get(id);
-      if (item?.type !== "bullet") continue;
-      addFact(facts, roles.get(item.roleId)?.title, item.text);
-    }
-  }
-  for (const id of selection.project_ids || []) {
-    const item = items.get(id);
-    if (item?.type !== "project") continue;
-    const at = item.text.indexOf(": ");
-    if (at > 0) addFact(facts, item.text.slice(0, at), item.text.slice(at + 2));
-    else addFact(facts, null, item.text);
-  }
-  return facts;
+export function evidencedRequirements(selection, items, allowed, mode) {
+  const usable = (selection?.top_requirements || [])
+    .filter((entry) => entry && entry.match !== "gap")
+    .filter((entry) => mode !== "visitor" || entry.match === "strong")
+    .map((entry) => ({
+      match: entry.match,
+      texts: (entry.evidence_ids || [])
+        .map((id) => items.get(id))
+        .filter(
+          (item) =>
+            item &&
+            item.type !== "headline" &&
+            item.type !== "summary" &&
+            allowed.has(item.text)
+        )
+        .map((item) => item.text)
+    }))
+    .filter((entry) => entry.texts.length);
+  const strong = usable.filter((entry) => entry.match === "strong");
+  const rest = usable.filter((entry) => entry.match !== "strong");
+  return [...strong, ...rest].slice(0, BODY_PARAGRAPHS);
 }
 
+function evidenceParagraph(entry, index, words, perParagraph) {
+  const [first, second] = entry.texts;
+  const parts = [`${LEADS[index]} ${quote(first, words)}`];
+  if (second && perParagraph > 1)
+    parts.push(`${SECOND[index]} ${quote(second, words)}`);
+  parts.push(TAILS[index]);
+  return parts.join(" ");
+}
+
+/** A greeting the validator sets aside: one line of at most six words. */
 function greeting(company) {
-  return company ? `Dear ${company} hiring team,` : "Dear hiring team,";
+  return company && company.split(" ").length <= 3
+    ? `Dear ${company} hiring team,`
+    : "Dear hiring team,";
 }
 
-function opening({ company, role }) {
-  const which = role ? `the ${role} role` : "the open role";
-  const at = company ? ` at ${company}` : "";
-  return `I would like to be considered for ${which}${at}. Below is a short account of my background and the work in my portfolio that fits it best.`;
-}
-
-function background({ ownerTitle, startYear, certificationCount }) {
-  const sentences = [];
-  if (ownerTitle) sentences.push(`My current title is ${ownerTitle}.`);
-  if (Number.isInteger(startYear))
-    sentences.push(
-      `I have worked on the Salesforce platform since ${startYear}.`
+/** What the letter is built from, read defensively so a broken selection never throws. */
+function readParts({ view, selection, mode, evidenceTexts }) {
+  const parts = {
+    texts: [],
+    requirements: [],
+    roleIncluded: false,
+    certifications: 0
+  };
+  try {
+    parts.texts = Array.isArray(evidenceTexts)
+      ? evidenceTexts
+      : selectedEvidenceTexts(selection, view);
+    const items = new Map((view?.items || []).map((item) => [item.id, item]));
+    parts.requirements = evidencedRequirements(
+      selection,
+      items,
+      new Set(parts.texts),
+      mode
     );
-  if (Number.isInteger(certificationCount) && certificationCount > 0)
-    sentences.push(
-      certificationCount === 1
-        ? "I hold 1 current certification."
-        : `I hold ${certificationCount} current certifications.`
+    const current = currentRoleOf(view);
+    parts.current = current;
+    parts.roleIncluded = Boolean(
+      current &&
+      (selection?.roles || []).some(
+        (entry) => entry && entry.include && entry.role_id === current.id
+      )
     );
-  return sentences.length ? sentences.join(" ") : null;
-}
-
-/**
- * The letter from its parts: greeting, the role, the owner's background, the facts, a close,
- * the name and the template note. The Apex compose, line for line.
- */
-export function composeTemplateLetter(parts) {
-  const letter = { facts: [], ...parts };
-  const paragraphs = [greeting(letter.company), opening(letter)];
-  const about = background(letter);
-  if (about) paragraphs.push(about);
-  if (letter.facts.length)
-    paragraphs.push(
-      `${
-        letter.hasDescription
-          ? "From my portfolio records, these are the parts closest to your description:"
-          : "From my portfolio records, these are the parts closest to the role:"
-      }\n- ${letter.facts.join("\n- ")}`
-    );
-  paragraphs.push(
-    "I would welcome a conversation about the role and where I could help your team. Thank you for reading."
-  );
-  paragraphs.push(
-    letter.ownerName ? `Sincerely,\n${letter.ownerName}` : "Sincerely,"
-  );
-  paragraphs.push(TEMPLATE_NOTE);
-  return paragraphs.join("\n\n");
+    const ids = new Set([
+      ...(selection?.skill_ids || []),
+      ...(selection?.project_ids || []),
+      ...(selection?.top_requirements || []).flatMap(
+        (entry) => entry?.evidence_ids || []
+      )
+    ]);
+    parts.certifications = [...ids].filter(
+      (id) => items.get(id)?.type === "certification"
+    ).length;
+  } catch {
+    // Recovered on purpose, as in the Apex: the letter is written with what it has.
+    parts.requirements = [];
+  }
+  return parts;
 }
 
 /**
  * The template letter. Never throws.
- * @param {object} input posting { company, title, text }, view (the snapshot for the mode),
- *   selection, and the optional overrides ownerName, ownerTitle, startYear, certificationCount.
+ * @param {object} input posting { company, title }, view (the snapshot for the mode),
+ *   selection, mode, and optionally evidenceTexts (the texts grounding reads, worked out from
+ *   the selection when left out), ownerName and startYear.
  */
 export function buildTemplateLetter({
   posting = {},
   view,
   selection,
+  mode = "owner",
+  evidenceTexts,
   ownerName,
-  ownerTitle,
-  startYear = null,
-  certificationCount
+  startYear = null
 } = {}) {
-  const items = view?.items || [];
-  let facts = [];
-  try {
-    facts = templateFacts(view, selection);
-  } catch {
-    // Recovered on purpose, as in the Apex: the letter is written with what it has.
-    facts = [];
-  }
-  const siteTitle = items.find(
-    (item) => item.id === "headline-site-title"
-  )?.text;
-  const name = ownerName ?? view?.owner?.name;
-  const title = ownerTitle ?? siteTitle;
-  return composeTemplateLetter({
-    company: cleanVisitorText(posting.company),
-    role: cleanVisitorText(posting.title),
-    hasDescription: cleanVisitorText(posting.text) !== null,
-    ownerName: isBlank(name) ? null : removeContactDetails(name),
-    ownerTitle: isBlank(title) ? null : removeContactDetails(title),
-    startYear: Number.isInteger(startYear) ? startYear : null,
-    certificationCount:
-      certificationCount ??
-      items.filter((item) => item.type === "certification").length,
-    facts
+  const company = cleanVisitorText(posting.company);
+  const role = cleanVisitorText(posting.title);
+  const employer = view?.owner?.currentEmployer;
+  const parts = readParts({ view, selection, mode, evidenceTexts });
+  const allow = groundingAllowList(view, {
+    company: posting.company,
+    title: posting.title
   });
+  const grounded = (sentence) =>
+    parts.texts.length > 0 &&
+    checkGrounding(sentence, parts.texts, { allow }).ok;
+
+  const opener = [
+    `I am applying for ${role ? `the ${role} role` : "the open role"}${company ? ` at ${company}` : ""}.`
+  ];
+  if (employer) {
+    const withTitle = parts.roleIncluded
+      ? `I work as ${parts.current.title} at ${employer}.`
+      : null;
+    opener.push(
+      withTitle && grounded(withTitle)
+        ? withTitle
+        : `I currently work at ${employer}.`
+    );
+  }
+  const year = `I have worked on the Salesforce platform since ${startYear}.`;
+  if (Number.isInteger(startYear) && grounded(year)) opener.push(year);
+  const certs = `I hold ${parts.certifications} current certifications.`;
+  if (parts.certifications > 1 && grounded(certs)) opener.push(certs);
+  if (!parts.requirements.length)
+    opener.push(
+      "This letter draws on my portfolio records, and none of them matches this posting closely."
+    );
+  const close = [
+    "I would welcome a conversation about the role and where I could help your team.",
+    TEMPLATE_NOTE,
+    "Thank you for reading."
+  ];
+
+  const name = ownerName ?? view?.owner?.name;
+  const signOff = isBlank(name)
+    ? "Sincerely,"
+    : `Sincerely,\n${removeContactDetails(name)}`;
+
+  const compose = (words, perParagraph, fillerCount) => {
+    const start = [...opener];
+    const end = [...close];
+    for (let i = 0; i < fillerCount; i += 1) {
+      const sentence = FILLER[i % FILLER.length];
+      if (i % 2 === 0) start.push(sentence);
+      else end.splice(end.length - 1, 0, sentence);
+    }
+    const body = Array.from({ length: BODY_PARAGRAPHS }, (_, index) =>
+      parts.requirements[index]
+        ? evidenceParagraph(
+            parts.requirements[index],
+            index,
+            words,
+            perParagraph
+          )
+        : NEUTRAL[index]
+    );
+    return [start.join(" "), ...body, end.join(" ")];
+  };
+
+  // The longest evidence cut that fits, with fillers until the body reaches its least length.
+  let paragraphs = [];
+  for (const [words, perParagraph] of [
+    [EVIDENCE_WORDS[0], 2],
+    [EVIDENCE_WORDS[1], 2],
+    [EVIDENCE_WORDS[1], 1]
+  ]) {
+    let fillers = 0;
+    paragraphs = compose(words, perParagraph, fillers);
+    while (
+      countWords(paragraphs.join(" ")) < WORDS.least &&
+      fillers < FILLER.length
+    ) {
+      fillers += 1;
+      paragraphs = compose(words, perParagraph, fillers);
+    }
+    if (countWords(paragraphs.join(" ")) <= WORDS.most) break;
+  }
+  return [greeting(company), ...paragraphs, signOff].join("\n\n");
 }
