@@ -261,7 +261,14 @@ const SERVED_DIRS = [path.join(WEB_DIR, 'dist'), path.join(WEB_DIR, 'public')];
 export const SNAPSHOT_ITEM_TYPES = ['headline', 'summary', 'bullet', 'skill', 'project', 'certification'];
 const TOP_KEYS = ['version', 'generatedAt', 'owner', 'roles', 'items'];
 const ROLE_KEYS = ['id', 'employer', 'title', 'start', 'end', 'current'];
-const ITEM_KEYS = ['id', 'type', 'roleId', 'text', 'tags', 'priority', 'verified', 'visibility'];
+const ITEM_KEYS = ['id', 'type', 'roleId', 'text', 'titleFamily', 'value', 'solution', 'tags', 'priority', 'verified', 'visibility'];
+/** Keys only some item types carry: roleId on bullets, titleFamily on headlines and summaries, value and solution on projects. */
+const TYPE_KEYS = { roleId: ['bullet'], titleFamily: ['headline', 'summary'], value: ['project'], solution: ['project'] };
+
+/** The keys an item of this type carries, in contract order. */
+export function itemKeys(type) {
+  return ITEM_KEYS.filter((key) => !TYPE_KEYS[key] || TYPE_KEYS[key].includes(type));
+}
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 function ordered(source, keys) {
@@ -271,7 +278,8 @@ function ordered(source, keys) {
 /**
  * The export leaves out null fields, so a role with no end date and an item with no role come
  * back without the key. This puts each object in the contract's key order, with a missing
- * value as null and roleId kept on bullets only.
+ * value as null. roleId stays on bullets only, titleFamily on headlines and summaries only, and
+ * value and solution on projects only.
  */
 export function normalizeSnapshot(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return raw;
@@ -280,7 +288,7 @@ export function normalizeSnapshot(raw) {
     owner: raw.owner && typeof raw.owner === 'object' ? ordered(raw.owner, ['name', 'currentEmployer']) : raw.owner,
     roles: Array.isArray(raw.roles) ? raw.roles.map((role) => ordered(role, ROLE_KEYS)) : raw.roles,
     items: Array.isArray(raw.items)
-      ? raw.items.map((item) => ordered(item, item.type === 'bullet' ? ITEM_KEYS : ITEM_KEYS.filter((key) => key !== 'roleId')))
+      ? raw.items.map((item) => ordered(item, itemKeys(item.type)))
       : raw.items
   };
 }
@@ -316,6 +324,12 @@ function checkItems(items, roleIds, problems) {
     if (!SNAPSHOT_ITEM_TYPES.includes(item.type)) problems.push(`${where}.type must be one of ${SNAPSHOT_ITEM_TYPES.join(', ')}`);
     if (item.type === 'bullet' && !roleIds.has(item.roleId)) problems.push(`${where} is a bullet of a role the snapshot does not hold`);
     if (item.type !== 'bullet' && 'roleId' in item) problems.push(`${where} is not a bullet but names a role`);
+    for (const key of ['titleFamily', 'value', 'solution']) {
+      const carries = TYPE_KEYS[key].includes(item.type);
+      if (!carries && key in item) problems.push(`${where} is a ${item.type} and must not carry ${key}`);
+      if (carries && !(key in item)) problems.push(`${where} is a ${item.type} and must carry ${key}, text or null`);
+      if (carries && key in item && !(item[key] === null || isText(item[key]))) problems.push(`${where}.${key} must be text or null`);
+    }
     const extra = Object.keys(item).filter((key) => !ITEM_KEYS.includes(key));
     if (extra.length) problems.push(`${where} has keys the contract does not define: ${extra.join(', ')}`);
     if (!isText(item.text)) problems.push(`${where} has no text`);
