@@ -491,7 +491,10 @@ public with sharing class PortfolioGroundingService implements QueryDefinitions.
         'Project__c',
         'Id, Name, Challenge__c, Solution__c, Business_Value__c'
       )
-      .filter('Is_Featured__c = TRUE AND Status__c IN :liveStatuses')
+      .filter(
+        'Is_Featured__c = TRUE AND Is_Verified__c = TRUE AND ' +
+        'Status__c IN :liveStatuses'
+      )
       .orderBy('Sort_Order__c ASC NULLS LAST, Name ASC')
       .rowLimit(CANDIDATE_PROJECTS)
       .mode(QueryDefinitions.Mode.SYSTEM_MODE)
@@ -513,7 +516,7 @@ public with sharing class PortfolioGroundingService implements QueryDefinitions.
         'Project_Skill__c',
         'Project__c, Skill__r.Name, Skill__r.Display_Name__c'
       )
-      .filter('Project__c IN :projectIds')
+      .filter('Skill__r.Is_Verified__c = TRUE AND Project__c IN :projectIds')
       .orderBy('Skill__r.Name ASC')
       .rowLimit(MAX_SKILL_LINKS)
       .mode(QueryDefinitions.Mode.SYSTEM_MODE)
@@ -536,6 +539,7 @@ public with sharing class PortfolioGroundingService implements QueryDefinitions.
         'Experience_Highlight__c',
         'Description__c, Persona_Tag__c, Experience__r.Name, Experience__r.Employer__r.Name'
       )
+      .filter('Is_Verified__c = TRUE')
       .orderBy(
         'Experience__r.Is_Current_Role__c DESC, Experience__r.End_Date__c DESC NULLS FIRST, Sort_Order__c ASC'
       )

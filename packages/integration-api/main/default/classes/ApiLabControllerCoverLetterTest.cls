@@ -130,6 +130,7 @@ private class ApiLabControllerCoverLetterTest {
     );
     insert role;
     insert new Experience_Highlight__c(
+      Is_Verified__c = true,
       Name = 'Highlight',
       Experience__c = role.Id,
       Description__c = 'Led an API program, call (555) 014-2424 or leak.sentinel@example.com',

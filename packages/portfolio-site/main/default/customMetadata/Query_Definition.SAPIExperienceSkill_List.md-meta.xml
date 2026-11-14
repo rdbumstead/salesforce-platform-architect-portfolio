@@ -20,7 +20,7 @@
         <field>Filter__c</field>
         <value
       xsi:type="xsd:string"
-    >(IsDeleted = :hasExperienceId OR Experience__c = :experienceId)</value>
+    >Skill__r.Is_Verified__c = TRUE AND (IsDeleted = :hasExperienceId OR Experience__c = :experienceId)</value>
     </values>
     <values>
         <field>Order_By__c</field>

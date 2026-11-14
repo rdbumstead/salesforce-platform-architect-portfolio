@@ -76,6 +76,7 @@ private class ApiQueryDefinitionsTest {
     for (Integer i = 0; i < order.size(); i++) {
       highlights.add(
         new Experience_Highlight__c(
+          Is_Verified__c = true,
           Experience__c = current.Id,
           Name = 'Current ' + order[i],
           Description__c = 'Current highlight ' + order[i],
@@ -88,6 +89,7 @@ private class ApiQueryDefinitionsTest {
     }
     highlights.add(
       new Experience_Highlight__c(
+        Is_Verified__c = true,
         Experience__c = past.Id,
         Name = 'Past 2',
         Description__c = 'Past highlight 2',
@@ -97,6 +99,7 @@ private class ApiQueryDefinitionsTest {
     );
     highlights.add(
       new Experience_Highlight__c(
+        Is_Verified__c = true,
         Experience__c = past.Id,
         Name = 'Past 1',
         Description__c = 'Past highlight 1',
@@ -107,6 +110,7 @@ private class ApiQueryDefinitionsTest {
     insert highlights;
 
     Skill__c skill = new Skill__c(
+      Is_Verified__c = true,
       Name = 'Query Apex',
       Category__c = 'Backend',
       Proficiency__c = 5,
@@ -119,6 +123,7 @@ private class ApiQueryDefinitionsTest {
     );
 
     Project__c project = new Project__c(
+      Is_Verified__c = true,
       Name = 'Query Project',
       Status__c = 'Live – In Production',
       Is_Featured__c = true,

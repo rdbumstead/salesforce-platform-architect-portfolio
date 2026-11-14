@@ -31,17 +31,20 @@ private class PAPIPublicKeyTest {
       Contact__c = owner.Id
     );
     insert new Skill__c(
+      Is_Verified__c = true,
       Name = 'Key Apex',
       Category__c = 'Backend',
       Proficiency__c = 5
     );
     insert new Project__c(
+      Is_Verified__c = true,
       Name = 'Key Project',
       Status__c = 'Live – In Production',
       Is_Featured__c = true,
       Sort_Order__c = 1
     );
     insert new Certification__c(
+      Is_Verified__c = true,
       Name = 'Key Certification',
       Contact__c = owner.Id,
       Issuer__c = employer.Id,

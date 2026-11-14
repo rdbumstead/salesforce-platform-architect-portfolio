@@ -145,7 +145,8 @@ global with sharing class SAPIProject implements QueryDefinitions.Provider {
           'Business_Value__c, Live_URL__c, Repository_URL__c, Date_Completed__c'
       )
       .filter(
-        'Status__c IN (\'Live – In Production\', \'Live – Demo / Reference\', ' +
+        'Is_Verified__c = TRUE AND ' +
+          'Status__c IN (\'Live – In Production\', \'Live – Demo / Reference\', ' +
           '\'Active Development\') AND ' +
           '(IsDeleted = :hasStatus OR Status__c = :status) AND ' +
           '(IsDeleted = :hasIsFeatured OR Is_Featured__c = :isFeatured) AND ' +
@@ -171,7 +172,7 @@ global with sharing class SAPIProject implements QueryDefinitions.Provider {
           'Is_Featured__c, Live_URL__c, Repository_URL__c, Date_Completed__c, ' +
           'Sort_Order__c, Contact__c, Contact__r.Name, Contact__r.Public_Key__c'
       )
-      .filter('Id = :projectId')
+      .filter('Is_Verified__c = TRUE AND Id = :projectId')
       .mode(QueryDefinitions.Mode.SYSTEM_MODE)
       .rowLimit(1)
       .binds(new Map<String, Object>{ 'projectId' => null });

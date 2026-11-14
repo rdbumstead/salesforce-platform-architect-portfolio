@@ -676,6 +676,7 @@ private class ResumeControllerTest {
     Contact owner = [SELECT Id FROM Contact WHERE Is_Portfolio_Owner__c = TRUE];
     Account issuer = [SELECT Id FROM Account WHERE Name = 'Test Issuer'];
     insert new Certification__c(
+      Is_Verified__c = true,
       Name = 'Cert Retired',
       Contact__c = owner.Id,
       Issuer__c = issuer.Id,
@@ -1073,6 +1074,7 @@ private class ResumeControllerTest {
   static void getTimelineRoleEndedBeforeTheStartYearGetsNoHighlights() {
     PortfolioSettings.overrideNumber('Salesforce_Start_Year', 2022);
     insert new Experience_Highlight__c(
+      Is_Verified__c = true,
       Name = 'Older work',
       Experience__c = [SELECT Id FROM Experience__c WHERE Name = 'Older Role']
       .Id,
@@ -1119,6 +1121,7 @@ private class ResumeControllerTest {
   @isTest
   static void getTimelineCertificationBadgeFileIsTheFieldOrNull() {
     update new Certification__c(
+      Is_Verified__c = true,
       Id = [SELECT Id FROM Certification__c WHERE Name = 'Cert New']
       .Id,
       Badge_File__c = ' cert-new.webp '
@@ -1155,6 +1158,7 @@ private class ResumeControllerTest {
     String before = JSON.serialize(ResumeController.getResume(null));
 
     update new Certification__c(
+      Is_Verified__c = true,
       Id = [SELECT Id FROM Certification__c WHERE Name = 'Cert New']
       .Id,
       Badge_File__c = 'cert-new.webp'

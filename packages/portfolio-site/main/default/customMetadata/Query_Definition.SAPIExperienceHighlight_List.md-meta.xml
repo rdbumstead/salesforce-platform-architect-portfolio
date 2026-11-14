@@ -20,7 +20,7 @@
         <field>Filter__c</field>
         <value
       xsi:type="xsd:string"
-    >(IsDeleted = :hasExperienceId OR Experience__c = :experienceId) AND (IsDeleted = :hasPersonas OR (IsDeleted = :adminOff AND Persona_Tag__c INCLUDES ('Admin')) OR (IsDeleted = :developerOff AND Persona_Tag__c INCLUDES ('Developer')) OR (IsDeleted = :architectOff AND Persona_Tag__c INCLUDES ('Architect')))</value>
+    >Is_Verified__c = TRUE AND (IsDeleted = :hasExperienceId OR Experience__c = :experienceId) AND (IsDeleted = :hasPersonas OR (IsDeleted = :adminOff AND Persona_Tag__c INCLUDES ('Admin')) OR (IsDeleted = :developerOff AND Persona_Tag__c INCLUDES ('Developer')) OR (IsDeleted = :architectOff AND Persona_Tag__c INCLUDES ('Architect')))</value>
     </values>
     <values>
         <field>Order_By__c</field>

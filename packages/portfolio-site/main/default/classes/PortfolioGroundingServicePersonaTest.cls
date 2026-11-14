@@ -35,6 +35,7 @@ private class PortfolioGroundingServicePersonaTest {
       Boolean last = i == total - 1;
       highlights.add(
         new Experience_Highlight__c(
+          Is_Verified__c = true,
           Name = 'Highlight ' + i,
           Experience__c = role.Id,
           Description__c = last ? 'Tagged work item' : 'Work item ' + i,

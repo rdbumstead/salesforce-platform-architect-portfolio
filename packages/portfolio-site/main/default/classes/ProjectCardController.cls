@@ -653,7 +653,7 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
         'Project__c',
         'Pillar__c, Headline_Metric__c, Headline_Metric_Label__c, Headline_Metric_Source__c, Hero_Image_URL__c, Hero_Image_Alt__c, Challenge__c, Solution__c, Business_Value__c, Live_URL__c, Repository_URL__c'
       )
-      .filter('Pillar__c IN :pillarLetters')
+      .filter('Is_Verified__c = TRUE AND Pillar__c IN :pillarLetters')
       .orderBy(
         'Pillar__c ASC, Is_Featured__c DESC, Sort_Order__c ASC NULLS LAST, Name ASC'
       )
@@ -675,7 +675,7 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
         'Project__c',
         'Name, Home_Title__c, Client_Line__c, Case_Tags__c, Case_Metric__c, Case_Metric_Label__c, Case_Metric_Source__c, Challenge__c, Solution__c, Business_Value__c, Live_URL__c'
       )
-      .filter('Home_Sort__c != NULL')
+      .filter('Is_Verified__c = TRUE AND Home_Sort__c != NULL')
       .orderBy('Home_Sort__c ASC, Name ASC')
       .rowLimit(HOME_CARD_LIMIT)
       .mode(QueryDefinitions.Mode.SYSTEM_MODE);

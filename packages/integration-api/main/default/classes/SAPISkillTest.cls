@@ -11,6 +11,7 @@ private class SAPISkillTest {
   @TestSetup
   static void setup() {
     Skill__c s = new Skill__c(
+      Is_Verified__c = true,
       Name = 'Apex',
       Category__c = 'Backend',
       Proficiency__c = 5
@@ -144,6 +145,7 @@ private class SAPISkillTest {
     for (Integer i = 0; i < 2; i++) {
       more.add(
         new Skill__c(
+          Is_Verified__c = true,
           Name = 'Backend ' + i,
           Category__c = 'Backend',
           Proficiency__c = 3
@@ -152,6 +154,7 @@ private class SAPISkillTest {
     }
     more.add(
       new Skill__c(
+        Is_Verified__c = true,
         Name = 'Design',
         Category__c = 'Frontend',
         Proficiency__c = 2
@@ -159,6 +162,7 @@ private class SAPISkillTest {
     );
     more.add(
       new Skill__c(
+        Is_Verified__c = true,
         Name = 'Styling',
         Category__c = 'Frontend',
         Proficiency__c = 1
@@ -186,16 +190,19 @@ private class SAPISkillTest {
   static void filteredTotalStaysTheSameOnTheLastPage() {
     insert new List<Skill__c>{
       new Skill__c(
+        Is_Verified__c = true,
         Name = 'Backend 1',
         Category__c = 'Backend',
         Proficiency__c = 3
       ),
       new Skill__c(
+        Is_Verified__c = true,
         Name = 'Backend 2',
         Category__c = 'Backend',
         Proficiency__c = 3
       ),
       new Skill__c(
+        Is_Verified__c = true,
         Name = 'Design',
         Category__c = 'Frontend',
         Proficiency__c = 2
@@ -225,11 +232,13 @@ private class SAPISkillTest {
   static void unfilteredTotalCountsEverySkill() {
     insert new List<Skill__c>{
       new Skill__c(
+        Is_Verified__c = true,
         Name = 'Backend 1',
         Category__c = 'Backend',
         Proficiency__c = 3
       ),
       new Skill__c(
+        Is_Verified__c = true,
         Name = 'Design',
         Category__c = 'Frontend',
         Proficiency__c = 2

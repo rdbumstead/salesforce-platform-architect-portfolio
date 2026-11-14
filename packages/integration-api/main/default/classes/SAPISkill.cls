@@ -95,7 +95,10 @@ global with sharing class SAPISkill implements QueryDefinitions.Provider {
         'Id, Public_Key__c, Name, Display_Name__c, Category__c, Proficiency__c, ' +
         'Icon_Name__c, SVG_Path_Data__c, Color_Hex__c, Category_Order__c'
       )
-      .filter('(IsDeleted = :hasCategory OR Category__c = :category)')
+      .filter(
+        'Is_Verified__c = TRUE AND ' +
+        '(IsDeleted = :hasCategory OR Category__c = :category)'
+      )
       .orderBy('Proficiency__c DESC, Name ASC')
       .mode(QueryDefinitions.Mode.SYSTEM_MODE)
       .binds(listBinds(null));

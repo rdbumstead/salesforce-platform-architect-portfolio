@@ -570,7 +570,7 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
         'Experience_Highlight__c',
         'Experience__c, Description__c, Timeline_Text__c, Persona_Tag__c, Sort_Order__c, Admin_Sort_Order__c, Developer_Sort_Order__c, Architect_Sort_Order__c, Lock_Sort_Across_Personas__c'
       )
-      .filter('Experience__c IN :experienceIds')
+      .filter('Is_Verified__c = TRUE AND Experience__c IN :experienceIds')
       .orderBy('Sort_Order__c ASC')
       .mode(QueryDefinitions.Mode.SYSTEM_MODE)
       .binds(highlightBinds(new Set<Id>()));
@@ -591,6 +591,7 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
         'Skill__c',
         'Name, Display_Name__c, Category__c, Persona_Tag__c'
       )
+      .filter('Is_Verified__c = TRUE')
       .orderBy(
         'Category_Order__c ASC, Proficiency__c DESC NULLS LAST, Name ASC'
       )
@@ -608,6 +609,7 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
         'Certification__c',
         'Id, Name, Issuer__r.Name, Earned_Date__c, Is_Retired__c, Badge_File__c'
       )
+      .filter('Is_Verified__c = TRUE')
       .orderBy('Earned_Date__c DESC NULLS LAST, Name ASC')
       .mode(QueryDefinitions.Mode.SYSTEM_MODE);
   }

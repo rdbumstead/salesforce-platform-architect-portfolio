@@ -20,7 +20,7 @@
         <field>Filter__c</field>
         <value
       xsi:type="xsd:string"
-    >(IsDeleted = :hasCategory OR Category__c = :category)</value>
+    >Is_Verified__c = TRUE AND (IsDeleted = :hasCategory OR Category__c = :category)</value>
     </values>
     <values>
         <field>Order_By__c</field>

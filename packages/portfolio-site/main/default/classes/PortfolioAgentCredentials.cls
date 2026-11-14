@@ -181,6 +181,7 @@ public with sharing class PortfolioAgentCredentials implements QueryDefinitions.
         'Skill__c',
         'Name, Display_Name__c, Category__c'
       )
+      .filter('Is_Verified__c = TRUE')
       .orderBy(
         'Category_Order__c ASC, Proficiency__c DESC NULLS LAST, Name ASC'
       )
@@ -194,7 +195,7 @@ public with sharing class PortfolioAgentCredentials implements QueryDefinitions.
         'Certification__c',
         'Name, Issuer__r.Name, Earned_Date__c'
       )
-      .filter('Is_Retired__c = FALSE')
+      .filter('Is_Retired__c = FALSE AND Is_Verified__c = TRUE')
       .orderBy('Earned_Date__c DESC NULLS LAST, Name ASC')
       .rowLimit(100)
       .mode(QueryDefinitions.Mode.SYSTEM_MODE);

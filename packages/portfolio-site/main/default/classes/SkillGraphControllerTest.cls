@@ -21,6 +21,7 @@ private class SkillGraphControllerTest {
     }
     Contact owner = [SELECT Id FROM Contact LIMIT 1];
     Certification__c unlinked = new Certification__c(
+      Is_Verified__c = true,
       Name = 'Cert Unlinked',
       Contact__c = owner.Id
     );

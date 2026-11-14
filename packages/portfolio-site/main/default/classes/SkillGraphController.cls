@@ -76,6 +76,9 @@ public with sharing class SkillGraphController implements QueryDefinitions.Provi
         'Certification_Skill__c',
         'Id, Certification__c, Certification__r.Name, Certification__r.Is_Retired__c, Certification__r.Earned_Date__c, Skill__c'
       )
+      .filter(
+        'Certification__r.Is_Verified__c = TRUE AND Skill__r.Is_Verified__c = TRUE'
+      )
       .orderBy('Certification__r.Name ASC, Skill__c ASC')
       .mode(QueryDefinitions.Mode.SYSTEM_MODE);
   }

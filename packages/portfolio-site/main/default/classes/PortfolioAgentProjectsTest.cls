@@ -15,6 +15,7 @@ private class PortfolioAgentProjectsTest {
   private static void insertProjects() {
     insert new List<Project__c>{
       new Project__c(
+        Is_Verified__c = true,
         Name = 'Employer hub',
         Is_Featured__c = true,
         Sort_Order__c = 1,
@@ -29,6 +30,7 @@ private class PortfolioAgentProjectsTest {
         Client_Line__c = CLIENT
       ),
       new Project__c(
+        Is_Verified__c = true,
         Name = 'Literacy platform choice',
         Home_Sort__c = 2,
         Sort_Order__c = 2,
@@ -36,6 +38,7 @@ private class PortfolioAgentProjectsTest {
         Client_Line__c = CLIENT
       ),
       new Project__c(
+        Is_Verified__c = true,
         Name = 'Hidden side project',
         Is_Featured__c = false,
         Sort_Order__c = 3
@@ -115,6 +118,7 @@ private class PortfolioAgentProjectsTest {
     for (Integer i = 0; i < 9; i++) {
       many.add(
         new Project__c(
+          Is_Verified__c = true,
           Name = 'Project ' + i,
           Is_Featured__c = true,
           Sort_Order__c = i

@@ -474,7 +474,7 @@ global with sharing class PAPIProfile implements QueryDefinitions.Provider {
         'Experience_Highlight__c',
         'Id, Experience__c, Description__c'
       )
-      .filter('Experience__c IN :experienceIds')
+      .filter('Is_Verified__c = TRUE AND Experience__c IN :experienceIds')
       .orderBy('Sort_Order__c ASC')
       .mode(QueryDefinitions.Mode.SYSTEM_MODE)
       .binds(experienceBinds(new Set<Id>()));
@@ -490,6 +490,7 @@ global with sharing class PAPIProfile implements QueryDefinitions.Provider {
         'Skill__c',
         'Id, Public_Key__c, Name, Display_Name__c, Category__c, Proficiency__c, Icon_Name__c'
       )
+      .filter('Is_Verified__c = TRUE')
       .orderBy('Proficiency__c DESC, Name ASC')
       .rowLimit(MAX_SKILLS)
       .mode(QueryDefinitions.Mode.SYSTEM_MODE);
@@ -505,7 +506,7 @@ global with sharing class PAPIProfile implements QueryDefinitions.Provider {
         'Project__c',
         PAPIProjects.PROJECT_FIELDS
       )
-      .filter(PAPIProjects.LISTED_STATUS_FILTER)
+      .filter(PAPIProjects.LISTED_FILTER)
       .orderBy(PAPIProjects.PROJECT_ORDER)
       .rowLimit(50)
       .mode(QueryDefinitions.Mode.SYSTEM_MODE);
@@ -522,6 +523,7 @@ global with sharing class PAPIProfile implements QueryDefinitions.Provider {
         'Id, Public_Key__c, Name, Issuer__r.Name, Issuer__r.Public_Key__c, ' +
         'Earned_Date__c'
       )
+      .filter('Is_Verified__c = TRUE')
       .orderBy('Earned_Date__c DESC')
       .rowLimit(50)
       .mode(QueryDefinitions.Mode.SYSTEM_MODE);
@@ -570,7 +572,9 @@ global with sharing class PAPIProfile implements QueryDefinitions.Provider {
         'Experience_Skill__c',
         'Experience__c, Skill__r.Name'
       )
-      .filter('Experience__c IN :experienceIds')
+      .filter(
+        'Skill__r.Is_Verified__c = TRUE AND Experience__c IN :experienceIds'
+      )
       .mode(QueryDefinitions.Mode.SYSTEM_MODE)
       .binds(experienceBinds(new Set<Id>()));
   }

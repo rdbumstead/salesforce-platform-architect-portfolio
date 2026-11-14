@@ -173,7 +173,9 @@ public with sharing class PortfolioAgentProjects implements QueryDefinitions.Pro
         'Project__c',
         'Name, Pillar_Label__c, Challenge__c, Solution__c, Business_Value__c, Headline_Metric__c, Headline_Metric_Label__c, Status__c, Year_Completed__c'
       )
-      .filter('Is_Featured__c = TRUE OR Home_Sort__c != NULL')
+      .filter(
+        'Is_Verified__c = TRUE AND (Is_Featured__c = TRUE OR Home_Sort__c != NULL)'
+      )
       .orderBy(
         'Home_Sort__c ASC NULLS LAST, Sort_Order__c ASC NULLS LAST, Name ASC'
       )

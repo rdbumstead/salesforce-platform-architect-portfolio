@@ -98,7 +98,10 @@ global with sharing class SAPIExperienceSkill implements QueryDefinitions.Provid
           'Experience__r.Public_Key__c, Skill__c, Skill__r.Name, ' +
           'Skill__r.Public_Key__c, Skill__r.Category__c, Skill__r.Proficiency__c'
       )
-      .filter('(IsDeleted = :hasExperienceId OR Experience__c = :experienceId)')
+      .filter(
+        'Skill__r.Is_Verified__c = TRUE AND ' +
+        '(IsDeleted = :hasExperienceId OR Experience__c = :experienceId)'
+      )
       .orderBy('Skill__r.Proficiency__c DESC NULLS LAST, Skill__r.Name ASC')
       .mode(QueryDefinitions.Mode.SYSTEM_MODE)
       .binds(listBinds(null));

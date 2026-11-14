@@ -76,7 +76,8 @@ global with sharing class SAPICertification implements QueryDefinitions.Provider
           'Issuer__r.Public_Key__c, Earned_Date__c'
       )
       .filter(
-        '(IsDeleted = :hasContactName OR Contact__r.Name = :contactName) AND ' +
+        'Is_Verified__c = TRUE AND ' +
+          '(IsDeleted = :hasContactName OR Contact__r.Name = :contactName) AND ' +
           '(IsDeleted = :hasIssuerName OR Issuer__r.Name = :issuerName) AND ' +
           '(IsDeleted = :hasCertificationName OR Name = :certificationName)'
       )
