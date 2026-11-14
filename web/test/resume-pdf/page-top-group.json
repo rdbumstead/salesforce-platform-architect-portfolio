@@ -1,0 +1,110 @@
+{
+  "persona": "Developer",
+  "header": {
+    "name": "Avery Example",
+    "title": "Example Platform Developer",
+    "careerObjective": "A planted summary for the page break test.",
+    "linkedInUrl": null,
+    "gitHubUrl": null,
+    "trailheadUrl": null,
+    "portfolioUrl": "https://example.com/avery"
+  },
+  "roles": [
+    {
+      "id": "role-1",
+      "title": "Lead Developer",
+      "employer": "Example Labs",
+      "startDate": "2022-01-03",
+      "isCurrent": true,
+      "isRemote": true,
+      "isPartTime": false,
+      "highlights": [
+        "Planted highlight 1 that fills the first page so the next employer group breaks across two pages.",
+        "Planted highlight 2 that fills the first page so the next employer group breaks across two pages.",
+        "Planted highlight 3 that fills the first page so the next employer group breaks across two pages.",
+        "Planted highlight 4 that fills the first page so the next employer group breaks across two pages.",
+        "Planted highlight 5 that fills the first page so the next employer group breaks across two pages.",
+        "Planted highlight 6 that fills the first page so the next employer group breaks across two pages.",
+        "Planted highlight 7 that fills the first page so the next employer group breaks across two pages.",
+        "Planted highlight 8 that fills the first page so the next employer group breaks across two pages.",
+        "Planted highlight 9 that fills the first page so the next employer group breaks across two pages.",
+        "Planted highlight 10 that fills the first page so the next employer group breaks across two pages.",
+        "Planted highlight 11 that fills the first page so the next employer group breaks across two pages.",
+        "Planted highlight 12 that fills the first page so the next employer group breaks across two pages.",
+        "Planted highlight 13 that fills the first page so the next employer group breaks across two pages.",
+        "Planted highlight 14 that fills the first page so the next employer group breaks across two pages.",
+        "Planted highlight 15 that fills the first page so the next employer group breaks across two pages.",
+        "Planted highlight 16 that fills the first page so the next employer group breaks across two pages.",
+        "Planted highlight 17 that fills the first page so the next employer group breaks across two pages.",
+        "Planted highlight 18 that fills the first page so the next employer group breaks across two pages.",
+        "Planted highlight 19 that fills the first page so the next employer group breaks across two pages.",
+        "Planted highlight 20 that fills the first page so the next employer group breaks across two pages.",
+        "Planted highlight 21 that fills the first page so the next employer group breaks across two pages.",
+        "Planted highlight 22 that fills the first page so the next employer group breaks across two pages.",
+        "Planted highlight 23 that fills the first page so the next employer group breaks across two pages.",
+        "Planted highlight 24 that fills the first page so the next employer group breaks across two pages.",
+        "Planted highlight 25 that fills the first page so the next employer group breaks across two pages.",
+        "Planted highlight 26 that fills the first page so the next employer group breaks across two pages.",
+        "Planted highlight 27 that fills the first page so the next employer group breaks across two pages."
+      ]
+    },
+    {
+      "id": "role-2",
+      "title": "Support Analyst",
+      "employer": "Sample Training Institute",
+      "startDate": "2017-07-03",
+      "endDate": "2021-06-18",
+      "isCurrent": false,
+      "isRemote": false,
+      "isPartTime": false,
+      "highlights": [
+        "Planted highlight for the analyst role.",
+        "A second planted highlight for the analyst role."
+      ]
+    },
+    {
+      "id": "role-3",
+      "title": "Evening Tutor",
+      "employer": "Sample Training Institute",
+      "startDate": "2017-12-01",
+      "endDate": "2021-06-18",
+      "isCurrent": false,
+      "isRemote": false,
+      "isPartTime": true,
+      "highlights": []
+    },
+    {
+      "id": "role-4",
+      "title": "Project Helper",
+      "employer": "Sample Training Institute",
+      "startDate": "2017-01-02",
+      "endDate": "2017-07-02",
+      "isCurrent": false,
+      "isRemote": false,
+      "isPartTime": false,
+      "highlights": []
+    }
+  ],
+  "skillGroups": [
+    {
+      "category": "Planted",
+      "skills": ["Apex", "JavaScript"]
+    }
+  ],
+  "certifications": [
+    {
+      "name": "Example Certified Developer",
+      "issuer": "Example Issuer",
+      "isRetired": false,
+      "dateValue": "2023-05-01"
+    },
+    {
+      "name": "Example Retired Associate",
+      "issuer": "Example Issuer",
+      "isRetired": true,
+      "dateValue": "2020-02-01"
+    }
+  ],
+  "credentialVerificationUrl": "https://example.com/verify",
+  "education": []
+}

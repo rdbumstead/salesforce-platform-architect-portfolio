@@ -31,6 +31,7 @@ export const RESUME_LAYOUT = Object.freeze({
     "education"
   ]),
   labels: Object.freeze({
+    summary: "Summary",
     experience: "Experience",
     skills: "Skills",
     certifications: "Certifications",
