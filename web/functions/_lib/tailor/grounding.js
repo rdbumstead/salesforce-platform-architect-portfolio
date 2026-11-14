@@ -10,7 +10,7 @@
  *
  * Names: a run of name shaped words is one candidate. A word is name shaped when it starts with a
  * capital ("Salesforce"), has a capital after a small letter ("GitHub", "iOS") or mixes letters and
- * digits ("S3"). Hyphens split words ("AI-assisted" gives "AI"), slashes do not ("CI/CD").
+ * digits ("B2B"). Hyphens split words ("AI-assisted" gives "AI"), slashes do not ("CI/CD").
  * A run is grounded when the whole run appears in the evidence or the allow list, ignoring case
  * and as whole words. When it does not, each word is checked alone: a word found nowhere fails the
  * letter, and a run whose words are each found but never together is a warning, since that is

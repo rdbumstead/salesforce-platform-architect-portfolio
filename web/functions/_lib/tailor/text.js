@@ -104,7 +104,7 @@ function neighbours(text, start, end) {
 /**
  * Every number in a text: digits with an optional thousands comma, decimal, "~" or "$" in front
  * and "%", "+", "k" or "x" after, so "400+", "10,000+", "~90%" and "10k" all count, plus the
- * spelled out numbers zero to twenty. Digits joined to letters ("S3", "B2B") are names, not
+ * spelled out numbers zero to twenty. Digits joined to letters ("B2B", "Web3") are names, not
  * numbers. An ISO date ("2026-04") gives its year only. Each entry has the text as written and
  * its value, "10k" and "10,000" both 10000.
  */
