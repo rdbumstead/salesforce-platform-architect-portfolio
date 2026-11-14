@@ -178,10 +178,16 @@ jobs:
           sf apex run test --target-org ci-org --test-level RunLocalTests --code-coverage --wait 30 --json > apex-tests.json || true
           node scripts/coverage-gate.js --file apex-tests.json --min 90
 
-      # Validates the PR's delta against production, check only, with the local tests, signed
-      # in as the same user the fallback step below uses. A component or a test that fails
-      # only in production then stops the PR before the merge. It deploys nothing. In fallback
-      # mode the fallback step already runs this check, so this step runs in scratch mode only.
+      # Validates the PR's delta against production, check only, signed in as the same user the
+      # fallback step below uses. It runs the relevant tests (RunRelevantTests, a beta test
+      # level), the ones Salesforce picks from the delta and what depends on it, which takes
+      # two to three minutes where every local test took about ten. Each changed class and
+      # trigger must still reach 75% coverage from those tests. The scratch job above still
+      # runs every local test on every PR, and the deploy runs them all again after the merge,
+      # so a test outside the relevant set is still caught. A component, or a relevant test,
+      # that fails only in production stops the PR before the merge. It deploys nothing. In
+      # fallback mode the fallback step runs this check with every local test, because there
+      # it is the only test run the PR gets, so this step runs in scratch mode only.
       - name: Validate Delta Against Production (Check Only)
         id: prod_validate
         if: env.ORG_TYPE == 'scratch'
@@ -200,7 +206,7 @@ jobs:
           fi
 
           set +e
-          sf project deploy start --target-org portfolio --manifest prod-delta/package/package.xml "${DESTRUCTIVE[@]}" --dry-run --test-level RunLocalTests --wait 60 --json > prod-validate.json
+          sf project deploy start --target-org portfolio --manifest prod-delta/package/package.xml "${DESTRUCTIVE[@]}" --dry-run --test-level RunRelevantTests --wait 60 --json > prod-validate.json
           set -e
 
           # The CLI can lose track of a deploy that is still running, for example when Salesforce
