@@ -64,18 +64,28 @@ export async function loadInputs({ root = EVAL_DIR, includePrivate = true, snaps
   };
 }
 
-/** The blocklist through the validators' parser, or a plain split when they cannot load. */
+/**
+ * The blocklist terms through the validators' parser, which returns { ok, errors, warnings, terms }.
+ * A result that is not ok holds no terms, and the table then says the blocklist was not checked.
+ * A plain split is used only when the validators cannot load at all.
+ */
 export async function parseBlocklistSafely(raw, validators) {
   if (!raw) return [];
+  let parse;
   try {
-    const parse = validators?.parseBlocklist || (await loadValidators()).parseBlocklist;
-    return parse(raw);
+    parse = validators?.parseBlocklist || (await loadValidators()).parseBlocklist;
   } catch {
-    return String(raw)
-      .split(/[,\n]/)
-      .map((term) => term.trim())
-      .filter(Boolean);
+    parse = null;
   }
+  if (parse) {
+    const result = parse(raw);
+    if (Array.isArray(result)) return result;
+    return result && result.ok && Array.isArray(result.terms) ? result.terms : [];
+  }
+  return String(raw)
+    .split(/[,\n]/)
+    .map((term) => term.trim())
+    .filter(Boolean);
 }
 
 export function parseArgs(argv) {
