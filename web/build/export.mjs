@@ -55,6 +55,8 @@ export function connect(targetOrg) {
   return {
     orgId: result.id,
     username: result.username,
+    // A scratch org is the only kind the CLI reports with a Dev Hub and an expiry date.
+    isScratch: Boolean(result.devHubId && result.expirationDate),
     instanceUrl: result.instanceUrl.replace(/\/+$/, ''),
     token: result.accessToken,
     targetOrg,
@@ -358,6 +360,29 @@ export function snapshotCounts(snapshot) {
   };
 }
 
+/** The production org. Its Id starts this way whatever alias names it. */
+export const PRODUCTION_ORG_PREFIX = '00Dfj00000FSoCX';
+
+/**
+ * Why the fixture may not be written from this org, or null when it may. The fixture is tracked
+ * and public, so it is written only from a scratch org holding the seed data, never from
+ * production, whose snapshot holds real and unverified resume text.
+ * @param {{ orgId?: string, isScratch?: boolean, targetOrg?: string }} org what connect() knows
+ */
+export function fixtureRefusal(org) {
+  const name = (org && org.targetOrg) || 'the org';
+  if (!org || typeof org.orgId !== 'string' || !org.orgId) {
+    return `Refusing --write-fixture: the Id of ${name} is unknown.`;
+  }
+  if (org.orgId.startsWith(PRODUCTION_ORG_PREFIX)) {
+    return `Refusing --write-fixture: ${name} is the production org. The fixture is public and takes seed data from a scratch org only.`;
+  }
+  if (org.isScratch !== true) {
+    return `Refusing --write-fixture: ${name} is not a scratch org. The fixture is public and takes seed data from a scratch org only.`;
+  }
+  return null;
+}
+
 /**
  *   node build/export.mjs --snapshot                   export the snapshot to functions/_generated
  *   node build/export.mjs --snapshot --write-fixture   and refresh web/fixtures/resume-snapshot.json
@@ -369,7 +394,19 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     console.error('Usage: node build/export.mjs --snapshot [--write-fixture]');
     process.exit(1);
   }
-  exportSnapshot(connect(process.env.SF_TARGET_ORG))
+  let connection;
+  try {
+    connection = connect(process.env.SF_TARGET_ORG);
+  } catch (error) {
+    console.error(error.message);
+    process.exit(1);
+  }
+  const refusal = args.has('--write-fixture') ? fixtureRefusal(connection) : null;
+  if (refusal) {
+    console.error(refusal);
+    process.exit(1);
+  }
+  exportSnapshot(connection)
     .then((snapshot) => {
       const written = [writeSnapshot(snapshot)];
       if (args.has('--write-fixture')) {

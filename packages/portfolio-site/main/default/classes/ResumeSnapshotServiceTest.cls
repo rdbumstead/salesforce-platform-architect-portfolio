@@ -83,7 +83,19 @@ private class ResumeSnapshotServiceTest {
         );
       }
       insert skills;
-      insert new Project__c(Name = 'Invented Project', Sort_Order__c = 1);
+      insert new List<Project__c>{
+        new Project__c(
+          Name = 'Invented Project',
+          Sort_Order__c = 1,
+          Status__c = 'Active Development'
+        ),
+        new Project__c(Name = 'Unlisted Blank Project', Sort_Order__c = 2),
+        new Project__c(
+          Name = 'Unlisted Archived Project',
+          Sort_Order__c = 3,
+          Status__c = 'Archived'
+        )
+      };
       insert new Certification__c(
         Name = 'Invented Credential',
         Contact__c = owner.Id
@@ -302,6 +314,61 @@ private class ResumeSnapshotServiceTest {
           }
         ),
       'Item keys of the contract'
+    );
+  }
+
+  private static Set<String> projectTexts(
+    ResumeSnapshotService.Snapshot snapshot
+  ) {
+    Set<String> texts = new Set<String>();
+    for (ResumeSnapshotService.Item item : snapshot.items) {
+      if (item.itemType == 'project') {
+        texts.add(item.text);
+      }
+    }
+    return texts;
+  }
+
+  @isTest
+  static void shouldKeepAListedProjectWhenItsStatusIsShownOnTheSite() {
+    Test.startTest();
+    Set<String> texts = projectTexts(buildAsBuildUser());
+    Test.stopTest();
+    Assert.isTrue(texts.contains('Invented Project'), 'A listed project stays');
+  }
+
+  @isTest
+  static void shouldLeaveOutAProjectWhenItHasNoStatus() {
+    Test.startTest();
+    Set<String> texts = projectTexts(buildAsBuildUser());
+    Test.stopTest();
+    Assert.isFalse(
+      texts.contains('Unlisted Blank Project'),
+      'A project with no status is not on the site, so not in the snapshot'
+    );
+  }
+
+  @isTest
+  static void shouldLeaveOutAProjectWhenItsStatusIsNotListed() {
+    Test.startTest();
+    Set<String> texts = projectTexts(buildAsBuildUser());
+    Test.stopTest();
+    Assert.isFalse(
+      texts.contains('Unlisted Archived Project'),
+      'An archived project is not on the site, so not in the snapshot'
+    );
+  }
+
+  @isTest
+  static void shouldListTheSameStatusesAsTheSite() {
+    Assert.areEqual(
+      new Set<String>{
+        'Live – In Production',
+        'Live – Demo / Reference',
+        'Active Development'
+      },
+      ResumeSnapshotService.LISTED_PROJECT_STATUSES,
+      'The three statuses the public pages list'
     );
   }
 
