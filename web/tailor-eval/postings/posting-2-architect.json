@@ -1,0 +1,15 @@
+{
+  "id": "posting-2-architect",
+  "kind": "synthetic",
+  "company": "Ostravane Industries",
+  "title": "Salesforce Platform Architect",
+  "location": "Hybrid, three days a week in the office",
+  "text": "Ostravane Industries makes industrial equipment and runs sales, service and partner channels on several Salesforce orgs. We are hiring a Salesforce Platform Architect to own the technical direction across those orgs.\n\nResponsibilities\n- Set the multi-org architecture: which org owns which process, how data moves between orgs, and when to consolidate.\n- Design the security and sharing model across the orgs, including role hierarchy, sharing rules, permission set groups and external access for partners.\n- Define the integration strategy for the ERP, the data platform and partner systems, choosing between APIs, events and batch.\n- Run technical governance: the design authority, architecture decision records, release standards and code review rules for internal teams and vendors.\n- Mentor the internal developers and administrators.\n\nQualifications\n- Eight or more years on Salesforce, at least three as an architect over more than one org.\n- Deep knowledge of security and sharing at enterprise scale.\n- Integration architecture experience with REST, events and middleware.\n- Experience running technical governance across several teams.\n- Salesforce architect certifications are a plus.",
+  "canaries": [],
+  "expected": {
+    "notes": ["The selection changes from posting 1 to fit an architect role"],
+    "checks": {
+      "idSetDiffersFrom": "posting-1-engineer"
+    }
+  }
+}
