@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Is_Primary_Role__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description
+  >Marks the one role a tailored resume treats as the current role. Tick it on exactly one role, and only on a role that is also marked current. Its employer is the current employer in the resume snapshot, and the export fails when no role or more than one role is ticked.</description>
+    <inlineHelpText
+  >Tick on one current role only. Its employer becomes the current employer on a tailored resume.</inlineHelpText>
+    <label>Is Primary Role</label>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

@@ -1,0 +1,340 @@
+{
+  "items": [
+    {
+      "id": "seed-architect-headline",
+      "type": "headline",
+      "text": "Seed Architect Headline Unverified Variant",
+      "tags": [
+        "architecture"
+      ],
+      "priority": 2,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-engineer-headline",
+      "type": "headline",
+      "text": "Seed Engineer Headline Unverified Variant",
+      "tags": [
+        "ai-assisted-dev",
+        "ci-cd"
+      ],
+      "priority": 2,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-engineer-summary",
+      "type": "summary",
+      "text": "Seed engineer summary text that no page shows, kept unverified for the leak test.",
+      "tags": [],
+      "priority": 2,
+      "verified": false,
+      "visibility": "public"
+    },
+    {
+      "id": "hlt_59jmz942hj",
+      "type": "bullet",
+      "roleId": "exp_2ypfke9vni",
+      "text": "Seed admin highlight for the current role.",
+      "tags": [
+        "integration"
+      ],
+      "priority": 1,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "hlt_99it7mdmjf",
+      "type": "bullet",
+      "roleId": "exp_2ypfke9vni",
+      "text": "Seed developer highlight for the current role.",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "hlt_zxvwijyybk",
+      "type": "bullet",
+      "roleId": "exp_2ypfke9vni",
+      "text": "Seed architect highlight for the current role.",
+      "tags": [
+        "frontend"
+      ],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "hlt_yenq3c5a5p",
+      "type": "bullet",
+      "roleId": "exp_2ypfke9vni",
+      "text": "Seed highlight shared by every persona for the current role.",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "hlt_j9edrif3mr",
+      "type": "bullet",
+      "roleId": "exp_7y99mhppnf",
+      "text": "Seed admin highlight for the past role.",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "hlt_43mre6qfig",
+      "type": "bullet",
+      "roleId": "exp_7y99mhppnf",
+      "text": "Seed developer highlight for the past role.",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "hlt_m6syq3wpg8",
+      "type": "bullet",
+      "roleId": "exp_7y99mhppnf",
+      "text": "Seed architect highlight for the past role.",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "hlt_m55wrm452n",
+      "type": "bullet",
+      "roleId": "exp_7y99mhppnf",
+      "text": "Seed highlight shared by every persona for the past role.",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "hlt_qd8de6yjw3",
+      "type": "bullet",
+      "roleId": "exp_v798id96xr",
+      "text": "Seed highlight for the consulting role.",
+      "tags": [
+        "ci-cd",
+        "governance"
+      ],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "hlt_93xnd9bcex",
+      "type": "bullet",
+      "roleId": "exp_x3tjtrari4",
+      "text": "Seed highlight for the part time role.",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "skl_wct54n6ipz",
+      "type": "skill",
+      "text": "Seed Apex",
+      "tags": [
+        "backend"
+      ],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "skl_r62m8k42ht",
+      "type": "skill",
+      "text": "Seed Integration",
+      "tags": [
+        "frontend"
+      ],
+      "priority": 3,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "skl_xre7f5we4k",
+      "type": "skill",
+      "text": "Seed JavaScript",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "skl_3iri8tpkgb",
+      "type": "skill",
+      "text": "Seed Lightning Web Components",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "skl_gb3y66su2s",
+      "type": "skill",
+      "text": "Seed SLDS",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "skl_uztzjpjxvk",
+      "type": "skill",
+      "text": "Seed SOQL",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "prj_a2dgepkhkp",
+      "type": "project",
+      "text": "Employer Hub for an education provider",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "prj_zxbeisn26m",
+      "type": "project",
+      "text": "Home case study A",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "prj_awn4hyxs2k",
+      "type": "project",
+      "text": "Home case study B",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "prj_i53u93muhq",
+      "type": "project",
+      "text": "Home case study E",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "prj_66nzgvd59y",
+      "type": "project",
+      "text": "Literacy program platform for an adult literacy nonprofit",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "prj_egj9w2zx48",
+      "type": "project",
+      "text": "Seed Project Alpha",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "prj_m4urhzd398",
+      "type": "project",
+      "text": "Seed Project Beta",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "crt_pyhxpfttzq",
+      "type": "certification",
+      "text": "Seed Application Architect",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "crt_ft9zwrgdxa",
+      "type": "certification",
+      "text": "Seed Certified AI Associate",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "crt_cj9sfiah3n",
+      "type": "certification",
+      "text": "Seed Data Consultant",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "crt_8r46vdsnv5",
+      "type": "certification",
+      "text": "Seed Platform Developer I",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    }
+  ],
+  "roles": [
+    {
+      "id": "exp_2ypfke9vni",
+      "employer": "Seed Employer",
+      "title": "Seed Platform Architect",
+      "start": "2023-01-01",
+      "end": null,
+      "current": true
+    },
+    {
+      "id": "exp_7y99mhppnf",
+      "employer": "Seed Employer",
+      "title": "Seed Salesforce Developer",
+      "start": "2019-01-01",
+      "end": "2022-12-31",
+      "current": false
+    },
+    {
+      "id": "exp_v798id96xr",
+      "employer": "Seed Consulting Group",
+      "title": "Seed Integration Consultant",
+      "start": "2015-03-01",
+      "end": "2018-12-31",
+      "current": false
+    },
+    {
+      "id": "exp_x3tjtrari4",
+      "employer": "Seed Retail Systems",
+      "title": "Seed Support Analyst",
+      "start": "2012-06-01",
+      "end": "2015-02-28",
+      "current": false
+    }
+  ],
+  "owner": {
+    "name": "Seed Owner",
+    "currentEmployer": "Seed Employer"
+  },
+  "generatedAt": "2026-01-01T00:00:00.000Z",
+  "version": 1
+}

@@ -1,8 +1,9 @@
 /**
  * Export coverage gate. Fails when a component on a public page imports an Apex method or
  * runs a GraphQL query that neither the export nor the request time list covers, when the
- * Apex allowlist (SiteExportCalls) serves a call no component on a public page uses, or when
- * the read plan has a problem. Needs no Salesforce connection.
+ * Apex allowlist (SiteExportCalls) serves a call no component on a public page uses and the
+ * build only list does not name, when a public page imports a build only call, or when the
+ * read plan has a problem. Needs no Salesforce connection.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -10,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { bundle } from './bundle.mjs';
 import { readRoutes } from './routes.mjs';
 import { planRoute, UNEXPORTED_QUERIES, graphqlQueries } from './plan.mjs';
-import { REQUEST_TIME_CALLS, UNREACHABLE_CALLS } from './calls.mjs';
+import { BUILD_ONLY_CALLS, REQUEST_TIME_CALLS, UNREACHABLE_CALLS } from './calls.mjs';
 import { resourceIndex } from './resources.mjs';
 import { REPO_DIR, WEB_DIR, LWC_DIR } from './site-plugin.mjs';
 
@@ -29,7 +30,12 @@ export function compare({ imported, allowlist, queries, planned }) {
     if (!allowlist.has(call)) problems.push(`${call} is imported by a public page but the export does not serve it`);
   });
   [...allowlist].sort().forEach((call) => {
+    if (BUILD_ONLY_CALLS.has(call)) return;
     if (!imported.has(call)) problems.push(`${call} is on the export allowlist but no component on a public page imports it`);
+  });
+  [...BUILD_ONLY_CALLS.keys()].sort().forEach((call) => {
+    if (imported.has(call)) problems.push(`${call} is build only and must never be imported by a public page`);
+    if (!allowlist.has(call)) problems.push(`${call} is build only but the export allowlist does not serve it`);
   });
   queries.forEach((query) => {
     if (UNEXPORTED_QUERIES.has(query.name)) return;
