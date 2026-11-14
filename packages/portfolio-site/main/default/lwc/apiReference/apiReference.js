@@ -525,6 +525,7 @@ export default class ApiReference extends LightningElement {
   errorMessage = "";
   redocPromise;
   styleBaseline;
+  copiedStyleSignature;
   renderCount = 0;
   timeoutId;
 
@@ -994,6 +995,9 @@ export default class ApiReference extends LightningElement {
     const apply = () => {
       normaliseHeadingLevels(target, this.fullWidth ? 1 : 2);
       nameSectionLinks(target);
+      // Redoc adds style rules as new states first draw (a row opens, the phone menu
+      // opens). They land in the head after the first copy, so copy them again.
+      this.adoptRedocStyles(this.styleBaseline);
     };
     apply();
     if (this.redocObserver) {
@@ -1001,7 +1005,14 @@ export default class ApiReference extends LightningElement {
     }
     if (typeof MutationObserver === "function") {
       this.redocObserver = new MutationObserver(apply);
-      this.redocObserver.observe(target, { childList: true, subtree: true });
+      // Class changes are watched too, because a state change swaps a class and its new
+      // rules, and this callback writes no classes.
+      this.redocObserver.observe(target, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["class"]
+      });
     }
   }
 
@@ -1009,34 +1020,46 @@ export default class ApiReference extends LightningElement {
    * Redoc styles its markup with style tags it adds to document.head, which do not
    * reach inside this component's shadow root. Copy the rules of every style tag
    * added since before the first render into a style element next to the rendered
-   * reference. The rules are
-   * read from the CSSOM because styled-components inserts them with insertRule and
-   * leaves the tag text empty.
+   * reference. The rules are read from the CSSOM because styled-components inserts
+   * them with insertRule and leaves the tag text empty.
+   * Redoc keeps inserting rules after its first render, one set for each state it
+   * draws for the first time. This runs again after every change to the rendered
+   * reference, and rewrites the copy only when the number of rules has changed.
    */
   adoptRedocStyles(baseline) {
     const host = this.template.querySelector(".redoc-styles");
-    if (!host) {
+    if (!host || !baseline) {
       return;
     }
     const added = Array.from(document.head.querySelectorAll("style")).filter(
       (style) => !baseline.has(style)
     );
-    const text = added
-      .map((style) => {
-        let rules = "";
-        try {
-          rules = Array.from((style.sheet && style.sheet.cssRules) || [])
-            .map((rule) => rule.cssText)
-            .join("\n");
-        } catch {
-          rules = "";
-        }
-        return rules || style.textContent || "";
-      })
-      .join("\n");
-    host.textContent = "";
-    const element = document.createElement("style");
+    const parts = added.map((style) => {
+      let rules = "";
+      let count = 0;
+      try {
+        const list = Array.from((style.sheet && style.sheet.cssRules) || []);
+        count = list.length;
+        rules = list.map((rule) => rule.cssText).join("\n");
+      } catch {
+        rules = "";
+      }
+      return { text: rules || style.textContent || "", count };
+    });
+    const signature = `${parts.length}:${parts
+      .map((part) => `${part.count}/${part.text.length}`)
+      .join(",")}`;
+    const current = host.querySelector("style");
+    if (current && signature === this.copiedStyleSignature) {
+      return;
+    }
+    this.copiedStyleSignature = signature;
+    const text = parts.map((part) => part.text).join("\n");
+    const element = current || document.createElement("style");
     element.textContent = [text, REDOC_STYLE_OVERRIDES].join("\n");
-    host.appendChild(element);
+    if (!current) {
+      host.textContent = "";
+      host.appendChild(element);
+    }
   }
 }
