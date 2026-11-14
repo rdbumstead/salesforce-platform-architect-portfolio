@@ -58,12 +58,12 @@ export const JEST_GROUPS = [
     tests: 413
   },
   {
-    name: "API Lab, API reference and AI Lab",
-    tests: 235
+    name: "Skills, graphs and resume",
+    tests: 244
   },
   {
-    name: "Skills, graphs and resume",
-    tests: 209
+    name: "API Lab, API reference and AI Lab",
+    tests: 235
   },
   {
     name: "Contact and testimonial forms",

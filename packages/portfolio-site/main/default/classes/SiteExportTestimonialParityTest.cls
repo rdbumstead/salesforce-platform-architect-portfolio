@@ -40,7 +40,8 @@ private class SiteExportTestimonialParityTest {
               Category_Order__c,
               Display_Name__c,
               Proficiency__c,
-              Persona_Tag__c
+              Persona_Tag__c,
+              Selection_Priority__c
             FROM Skill__c
             ORDER BY Id
             LIMIT 200
