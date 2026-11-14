@@ -29,6 +29,8 @@ import {
   stability
 } from '../tailor-eval/score.mjs';
 
+/** An em dash or a semicolon. */
+const DASH_OR_SEMICOLON = new RegExp(`[${String.fromCharCode(0x2014)};]`);
 const WEB = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const EVAL = path.join(WEB, 'tailor-eval');
 const inputs = await loadInputs({ includePrivate: false });
@@ -52,7 +54,7 @@ function stubValidators({ selectionOk } = {}) {
       const count = text.split(/\s+/).filter(Boolean).length;
       if (count < 300 || count > 400) errors.push(error('WORD_COUNT', String(count)));
       if (text.split(/\n\s*\n/).filter((part) => part.trim()).length !== 5) errors.push(error('PARAGRAPHS'));
-      if (/[2014;]/.test(text)) errors.push(error('PUNCTUATION'));
+      if (DASH_OR_SEMICOLON.test(text)) errors.push(error('PUNCTUATION'));
       if (!text.includes(employer)) errors.push(error('EMPLOYER'));
       for (const term of blocklist) if (text.toLowerCase().includes(term.toLowerCase())) errors.push(error('BLOCKLIST', term));
       return result(errors);
@@ -104,7 +106,7 @@ test('snapshot items: unique readable ids, valid types, roles on bullets only, k
     } else assert.equal(item.roleId, undefined, `${item.id} has no role`);
     assert.deepEqual(Object.keys(item).sort(), keys.sort());
     assert.ok(typeof item.text === 'string' && item.text.trim(), item.id);
-    assert.doesNotMatch(item.text, /[2014;]/, item.id);
+    assert.doesNotMatch(item.text, DASH_OR_SEMICOLON, item.id);
     for (const tag of item.tags) assert.ok(CATEGORY_IDS.has(tag), `${item.id} tag ${tag}`);
     assert.ok([1, 2, 3].includes(item.priority), item.id);
     assert.equal(typeof item.verified, 'boolean');
@@ -209,7 +211,7 @@ test('the prompts hold the selector rules and the five paragraph structure, with
   assert.ok(COVER_LETTER_PROMPT.includes('300 to 400 words, exactly five paragraphs: opener, three evidence paragraphs (one per top requirement), close'));
   assert.match(COVER_LETTER_PROMPT, /If fewer than three requirements have evidence, still write exactly five paragraphs/);
   assert.doesNotMatch(COVER_LETTER_PROMPT, /250 to 350|four paragraphs/);
-  for (const prompt of [SELECTOR_PROMPT, COVER_LETTER_PROMPT]) assert.doesNotMatch(prompt, /[2014;]/);
+  for (const prompt of [SELECTOR_PROMPT, COVER_LETTER_PROMPT]) assert.doesNotMatch(prompt, DASH_OR_SEMICOLON);
   for (const role of snapshot.roles) assert.ok(!COVER_LETTER_PROMPT.includes(role.employer) && !SELECTOR_PROMPT.includes(role.employer), role.employer);
 });
 
