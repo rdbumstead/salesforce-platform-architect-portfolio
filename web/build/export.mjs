@@ -1,6 +1,8 @@
 /**
  * Reads the site's data from Salesforce through the allowlisted export (/site/export) and
- * the UI API GraphQL endpoint, as the build user the Salesforce CLI is signed in as.
+ * the UI API GraphQL endpoint, as the build user the Salesforce CLI is signed in as. The
+ * GraphQL rows then lose every unverified skill and project (see verified.mjs), found by a
+ * SOQL query for their Ids.
  *
  * The access token comes from `sf org display` and stays in memory. It is never printed,
  * written to a file or put in an error message. When the API refuses that token (some CLI
@@ -14,6 +16,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readKey } from '../src/shims/site-data.js';
 import { graphqlParams } from '../src/shims/graphql.js';
+import { VERIFIED_OBJECTS, unverifiedQuery, dropUnverified } from './verified.mjs';
 import { WEB_DIR } from './site-plugin.mjs';
 
 export const DATA_DIR = path.join(WEB_DIR, '.data');
@@ -166,6 +169,29 @@ export async function graphqlCall(connection, query, variables) {
   return { data: decodeEntities(body.data), errors: [] };
 }
 
+/**
+ * The Ids of every unverified skill and project, through the REST query endpoint as the build
+ * user, who can read Is_Verified__c on both objects. This is a SOQL read and not an export call
+ * on purpose: no page imports it, so it does not belong on the export allowlist, and it needs
+ * no Apex. A failed read fails the build, so unverified rows are never published by mistake.
+ * @returns {Promise<Set<string>>}
+ */
+export async function unverifiedIds(connection) {
+  const ids = new Set();
+  for (const object of VERIFIED_OBJECTS) {
+    let url = `${connection.instanceUrl}/services/data/${API_VERSION}/query?q=${encodeURIComponent(unverifiedQuery(object))}`;
+    while (url) {
+      const { status, body } = await request(connection, url);
+      if (status !== 200 || !body || !Array.isArray(body.records)) {
+        throw new Error(`Reading the unverified ${object} Ids failed (HTTP ${status})`);
+      }
+      body.records.forEach((record) => ids.add(record.Id));
+      url = body.nextRecordsUrl ? `${connection.instanceUrl}${body.nextRecordsUrl}` : null;
+    }
+  }
+  return ids;
+}
+
 /** The key a read is filed under, the same key the browser shims look up. */
 export function keyOf(read) {
   if (read.call === 'graphql') {
@@ -183,16 +209,22 @@ export async function runReads(connection, reads) {
   reads.forEach((read) => unique.set(keyOf(read), read));
   const queue = [...unique.entries()];
   const results = {};
+  const unverified = queue.some(([, read]) => read.call === 'graphql') ? await unverifiedIds(connection) : new Set();
+  let dropped = 0;
   async function worker() {
     while (queue.length) {
       const [key, read] = queue.shift();
-      results[key] =
-        read.call === 'graphql'
-          ? await graphqlCall(connection, read.query, read.variables)
-          : await exportCall(connection, read.call, read.params);
+      if (read.call === 'graphql') {
+        const filtered = dropUnverified(await graphqlCall(connection, read.query, read.variables), unverified);
+        dropped += filtered.dropped;
+        results[key] = filtered.response;
+      } else {
+        results[key] = await exportCall(connection, read.call, read.params);
+      }
     }
   }
   await Promise.all(Array.from({ length: PARALLEL }, worker));
+  console.log(`Verified filter: ${unverified.size} unverified skills and projects, ${dropped} GraphQL rows dropped`);
   return results;
 }
 

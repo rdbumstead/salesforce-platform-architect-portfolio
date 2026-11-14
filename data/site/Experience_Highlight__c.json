@@ -12,7 +12,8 @@
       "Persona_Tag__c": "Admin",
       "Sort_Order__c": 1,
       "Lock_Sort_Across_Personas__c": false,
-      "Admin_Sort_Order__c": 1
+      "Admin_Sort_Order__c": 1,
+      "Is_Verified__c": true
     },
     {
       "attributes": {
@@ -26,7 +27,8 @@
       "Persona_Tag__c": "Developer",
       "Sort_Order__c": 2,
       "Lock_Sort_Across_Personas__c": false,
-      "Developer_Sort_Order__c": 1
+      "Developer_Sort_Order__c": 1,
+      "Is_Verified__c": true
     },
     {
       "attributes": {
@@ -39,7 +41,8 @@
       "Persona_Tag__c": "Architect",
       "Sort_Order__c": 3,
       "Lock_Sort_Across_Personas__c": false,
-      "Architect_Sort_Order__c": 1
+      "Architect_Sort_Order__c": 1,
+      "Is_Verified__c": true
     },
     {
       "attributes": {
@@ -54,7 +57,8 @@
       "Lock_Sort_Across_Personas__c": false,
       "Admin_Sort_Order__c": 2,
       "Developer_Sort_Order__c": 2,
-      "Architect_Sort_Order__c": 2
+      "Architect_Sort_Order__c": 2,
+      "Is_Verified__c": true
     },
     {
       "attributes": {
@@ -67,7 +71,8 @@
       "Persona_Tag__c": "Admin",
       "Sort_Order__c": 1,
       "Lock_Sort_Across_Personas__c": false,
-      "Admin_Sort_Order__c": 1
+      "Admin_Sort_Order__c": 1,
+      "Is_Verified__c": true
     },
     {
       "attributes": {
@@ -80,7 +85,8 @@
       "Persona_Tag__c": "Developer",
       "Sort_Order__c": 2,
       "Lock_Sort_Across_Personas__c": false,
-      "Developer_Sort_Order__c": 1
+      "Developer_Sort_Order__c": 1,
+      "Is_Verified__c": true
     },
     {
       "attributes": {
@@ -93,7 +99,8 @@
       "Persona_Tag__c": "Architect",
       "Sort_Order__c": 3,
       "Lock_Sort_Across_Personas__c": false,
-      "Architect_Sort_Order__c": 1
+      "Architect_Sort_Order__c": 1,
+      "Is_Verified__c": true
     },
     {
       "attributes": {
@@ -108,7 +115,8 @@
       "Lock_Sort_Across_Personas__c": false,
       "Admin_Sort_Order__c": 2,
       "Developer_Sort_Order__c": 2,
-      "Architect_Sort_Order__c": 2
+      "Architect_Sort_Order__c": 2,
+      "Is_Verified__c": true
     },
     {
       "attributes": {
@@ -122,7 +130,8 @@
       "Persona_Tag__c": "Architect",
       "Sort_Order__c": 1,
       "Lock_Sort_Across_Personas__c": false,
-      "Architect_Sort_Order__c": 1
+      "Architect_Sort_Order__c": 1,
+      "Is_Verified__c": true
     },
     {
       "attributes": {
@@ -136,7 +145,8 @@
       "Persona_Tag__c": "Admin",
       "Sort_Order__c": 1,
       "Lock_Sort_Across_Personas__c": false,
-      "Admin_Sort_Order__c": 1
+      "Admin_Sort_Order__c": 1,
+      "Is_Verified__c": true
     }
   ]
 }
