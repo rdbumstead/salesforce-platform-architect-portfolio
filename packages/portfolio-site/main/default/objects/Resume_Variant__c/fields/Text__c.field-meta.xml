@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Text__c</fullName>
+    <description
+  >The wording of the headline or summary exactly as the resume prints it.</description>
+    <inlineHelpText
+  >One line for a headline, two or three sentences for a summary. Up to 1,000 characters.</inlineHelpText>
+    <label>Text</label>
+    <length>1000</length>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>LongTextArea</type>
+    <visibleLines>4</visibleLines>
+</CustomField>

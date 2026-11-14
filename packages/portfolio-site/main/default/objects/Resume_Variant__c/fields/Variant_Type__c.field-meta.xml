@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Variant_Type__c</fullName>
+    <description
+  >Whether the variant is a headline, the one line under the name, or a summary, the short paragraph at the top of the resume.</description>
+    <inlineHelpText
+  >Headline for the title line, Summary for the opening paragraph.</inlineHelpText>
+    <label>Variant Type</label>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Headline</fullName>
+                <default>false</default>
+                <label>Headline</label>
+            </value>
+            <value>
+                <fullName>Summary</fullName>
+                <default>false</default>
+                <label>Summary</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>
