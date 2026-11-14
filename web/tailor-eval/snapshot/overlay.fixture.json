@@ -164,6 +164,7 @@
       "id": "headline-engineer",
       "type": "headline",
       "text": "Senior Salesforce Engineer | Platform Architecture and AI-Assisted Development",
+      "titleFamily": "engineer",
       "tags": ["ai-assisted-dev", "architecture"],
       "priority": 1,
       "verified": false
@@ -172,6 +173,7 @@
       "id": "headline-architect",
       "type": "headline",
       "text": "Salesforce Platform Architect",
+      "titleFamily": "architect",
       "tags": ["architecture"],
       "priority": 1,
       "verified": false
@@ -180,6 +182,7 @@
       "id": "headline-consultant",
       "type": "headline",
       "text": "Senior Salesforce Solution Consultant | Education Cloud",
+      "titleFamily": "consultant",
       "tags": ["higher-ed"],
       "priority": 1,
       "verified": false
@@ -397,7 +400,9 @@
     {
       "id": "project-platform-architect-portfolio",
       "type": "project",
-      "text": "Platform Architect Portfolio: Salesforce APIs behind a public front end on Cloudflare Pages, PR validation in scratch orgs, auto-deploy via GitHub Actions, Delivery page aggregating pipeline results",
+      "text": "Platform Architect Portfolio",
+      "value": "Gives a reviewer one place to see the APIs, the front end and the delivery pipeline working together, so the claims on the resume can be checked against running work instead of taken on trust.",
+      "solution": "Salesforce APIs serve a public front end on Cloudflare Pages. Every pull request is validated in a fresh scratch org before it can merge, and a GitHub Actions pipeline deploys the result automatically. A Delivery page gathers the latest pipeline results, so the state of the build is visible on the site itself without anyone writing a status report by hand.",
       "tags": ["ci-cd", "integration", "frontend", "architecture"],
       "priority": 1,
       "verified": false
@@ -405,7 +410,9 @@
     {
       "id": "project-work-experience-api",
       "type": "project",
-      "text": "Work Experience API: Apex REST system and process APIs, published OpenAPI specs, rate limits and audit trails",
+      "text": "Work Experience API",
+      "value": "Lets other systems read the resume data through a documented contract, with limits and an audit trail, so a consumer knows what it will get and the owner can see who asked.",
+      "solution": "Apex REST resources split into system and process APIs. Each one is described by a published OpenAPI spec, every call passes through a rate limiter, and each request leaves an audit record. The specs are generated from the same source as the code, so the documentation and the behaviour cannot drift apart without a failing check.",
       "tags": ["integration", "governance", "backend"],
       "priority": 1,
       "verified": false
@@ -413,7 +420,9 @@
     {
       "id": "project-setup-salesforce-cli",
       "type": "project",
-      "text": "Setup Salesforce CLI: open-source GitHub Action",
+      "text": "Setup Salesforce CLI",
+      "value": "Saves other teams the setup steps for the Salesforce CLI in their own pipelines, so a new workflow can start running checks in minutes rather than after a day of scripting.",
+      "solution": "An open source GitHub Action that installs and caches the Salesforce CLI, signs in to an org from a stored secret, and hands the session to the next step. It is versioned with tagged releases, so a pipeline can pin the version it trusts and upgrade when it is ready.",
       "tags": ["ci-cd"],
       "priority": 2,
       "verified": false
@@ -421,7 +430,9 @@
     {
       "id": "project-resume-as-code",
       "type": "project",
-      "text": "Resume as Code: CI/CD pipeline for resume generation",
+      "text": "Resume as Code",
+      "value": "Keeps the resume in step with the portfolio records, so a change to a role or a project reaches the resume without anyone retyping it.",
+      "solution": "A CI/CD pipeline reads the resume records, renders the document from a template and checks the output before it is published. A failed check stops the release, so a broken or stale resume never replaces the last good one.",
       "tags": ["ci-cd"],
       "priority": 2,
       "verified": false
@@ -429,7 +440,9 @@
     {
       "id": "project-governed-document-pipeline",
       "type": "project",
-      "text": "Governed document pipeline: AI selects content, code enforces rules, a human approves the output",
+      "text": "Governed document pipeline",
+      "value": "Lets AI help draft a document while code keeps it inside the rules and a person still signs it off, so speed does not cost accuracy.",
+      "solution": "A model selects content from approved records only. Code then checks every rule the document must meet, from length to grounding, and refuses anything that breaks one. A human approves the final output before it goes anywhere, and every step is logged so the decision can be traced later.",
       "tags": ["governance", "agentic-ai"],
       "priority": 2,
       "verified": false

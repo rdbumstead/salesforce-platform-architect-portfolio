@@ -2,7 +2,10 @@
  * @description       : Builds the resume snapshot the static build exports for the tailored
  *                      resume: the owner, every role, and every selectable item (headline and
  *                      summary variants, role bullets, skills, projects, certifications) with its
- *                      tags, priority, verified flag and visibility. Only a user holding the
+ *                      tags, priority, verified flag and visibility. Headline and summary items
+ *                      also carry their title family. Project items also carry their business
+ *                      value and solution text, null when blank, so a letter can quote what a
+ *                      project changed. The metric fields are not read. Only a user holding the
  *                      Site_Build_Export permission may build it. Item records are read in user
  *                      mode, so that user also needs the resume fields Portfolio_Site_Build
  *                      grants, and the site guest can read none of them. The export
@@ -79,12 +82,18 @@ public with sharing class ResumeSnapshotService {
     public Boolean current;
   }
 
-  /** One selectable item. roleId is set on bullets only. */
+  /**
+   * One selectable item. roleId is set on bullets only, titleFamily on headlines and summaries
+   * only, and value and solution on projects only.
+   */
   public class Item {
     public String id;
     public String itemType;
     public String roleId;
     public String text;
+    public String titleFamily;
+    public String value;
+    public String solution;
     public List<String> tags = new List<String>();
     public Integer priority;
     public Boolean verified;
@@ -210,6 +219,7 @@ public with sharing class ResumeSnapshotService {
         Public_Key__c,
         Variant_Type__c,
         Text__c,
+        Title_Family__c,
         Requirement_Tags__c,
         Selection_Priority__c,
         Is_Verified__c,
@@ -224,7 +234,9 @@ public with sharing class ResumeSnapshotService {
           'The variant ' + label(variant) + ' has no Variant_Type__c.'
         );
       }
-      items.add(toItem(variant, itemType, variant.Text__c));
+      Item item = toItem(variant, itemType, variant.Text__c);
+      item.titleFamily = blankToNull(variant.Title_Family__c);
+      items.add(item);
     }
   }
 
@@ -274,6 +286,8 @@ public with sharing class ResumeSnapshotService {
         Id,
         Name,
         Public_Key__c,
+        Business_Value__c,
+        Solution__c,
         Requirement_Tags__c,
         Selection_Priority__c,
         Is_Verified__c,
@@ -283,7 +297,10 @@ public with sharing class ResumeSnapshotService {
       WITH USER_MODE
       ORDER BY Name ASC
     ]) {
-      items.add(toItem(project, TYPE_PROJECT, project.Name));
+      Item item = toItem(project, TYPE_PROJECT, project.Name);
+      item.value = blankToNull(project.Business_Value__c);
+      item.solution = blankToNull(project.Solution__c);
+      items.add(item);
     }
   }
 
@@ -341,6 +358,12 @@ public with sharing class ResumeSnapshotService {
     return item;
   }
 
+  /** Text on one line with its spacing collapsed, or null when blank. */
+  @TestVisible
+  private static String blankToNull(String value) {
+    return String.isBlank(value) ? null : value.normalizeSpace();
+  }
+
   private static void checkUniqueIds(List<Item> items) {
     Set<String> seen = new Set<String>();
     for (Item item : items) {
@@ -388,6 +411,13 @@ public with sharing class ResumeSnapshotService {
         entry.put('roleId', item.roleId);
       }
       entry.put('text', item.text);
+      if (item.itemType == TYPE_HEADLINE || item.itemType == TYPE_SUMMARY) {
+        entry.put('titleFamily', item.titleFamily);
+      }
+      if (item.itemType == TYPE_PROJECT) {
+        entry.put('value', item.value);
+        entry.put('solution', item.solution);
+      }
       entry.put('tags', item.tags);
       entry.put('priority', item.priority);
       entry.put('verified', item.verified);

@@ -9,6 +9,7 @@ This folder measures how well a model picks resume evidence for a job posting an
 - `categories.json` lists the requirement categories used as tags. Those marked proposed wait for the owner.
 - `postings/` holds four synthetic postings with invented company names and eight injection variants built on them. Each file states its expected outcomes. None holds a gold selection.
 - `gold/README.md` describes the gold files the owner writes.
+- `routes.json` holds the routing policies. See "Routing" below.
 - `prices.json` holds the list prices for the cost estimate, each with its source and whether it was read.
 - `run-eval.mjs` runs the postings through the providers. `score.mjs` turns the runs into the metric table.
 - `lib/` holds the pipeline, the providers and the one adapter that reaches the validators.
@@ -24,11 +25,14 @@ node tailor-eval/run-eval.mjs --providers fake
 
 runs every posting through the fake provider, five times each, in both modes. Real providers need their keys in the environment and refuse to start without them:
 
-| Provider                           | Environment                                                                                             | Command                                                |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| Gemini API                         | `TAILOR_EVAL_GEMINI_KEY`, optional `TAILOR_EVAL_GEMINI_MODEL`                                           | `node tailor-eval/run-eval.mjs --providers gemini`     |
-| Cloudflare Workers AI              | `TAILOR_EVAL_CF_ACCOUNT_ID`, `TAILOR_EVAL_CF_TOKEN` (Workers AI scope), optional `TAILOR_EVAL_CF_MODEL` | `node tailor-eval/run-eval.mjs --providers workers-ai` |
-| Any paid chat completions endpoint | `TAILOR_EVAL_PAID_URL`, `TAILOR_EVAL_PAID_KEY`, `TAILOR_EVAL_PAID_MODEL`                                | `node tailor-eval/run-eval.mjs --providers paid`       |
+| Provider                            | Environment                                                                                                                                  | Command                                                |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| Gemini API                          | `TAILOR_EVAL_GEMINI_KEY`, optional `TAILOR_EVAL_GEMINI_MODEL`                                                                                | `node tailor-eval/run-eval.mjs --providers gemini`     |
+| Cloudflare Workers AI               | `TAILOR_EVAL_CF_ACCOUNT_ID`, `TAILOR_EVAL_CF_TOKEN` (Workers AI scope), optional `TAILOR_EVAL_CF_MODEL`                                      | `node tailor-eval/run-eval.mjs --providers workers-ai` |
+| Any paid chat completions endpoint  | `TAILOR_EVAL_PAID_URL`, `TAILOR_EVAL_PAID_KEY`, `TAILOR_EVAL_PAID_MODEL`                                                                     | `node tailor-eval/run-eval.mjs --providers paid`       |
+| Claude (owner mode comparison only) | `TAILOR_EVAL_CLAUDE_KEY`, optional `TAILOR_EVAL_CLAUDE_MODEL` (default `claude-opus-5-5`) and `TAILOR_EVAL_CLAUDE_EFFORT` (default `medium`) | `node tailor-eval/run-eval.mjs --providers claude`     |
+
+The Claude provider calls the Anthropic SDK with server side fallbacks on and no SDK retries, so the router decides what follows a failure. It bills per call, so the public policy refuses it, as it refuses `paid` (E19).
 
 Set `SITE_DENYLIST` the same way the site build does, or the client name check is skipped and the table says so. Other options: `--postings all|synthetic|injection|<ids>`, `--repeats <n>`, `--mode both|owner|visitor`, `--out <folder>`, `--timeout-ms <ms>`.
 
@@ -37,6 +41,24 @@ To score a results file again, for example after adding gold files:
 ```sh
 node tailor-eval/score.mjs tailor-eval/private/runs/<file>.json
 ```
+
+## Routing
+
+The router is the first layer of the pipeline. A request goes to the first route in a policy and falls to the next on an outage (a network error, an HTTP 5xx or a timeout), a quota refusal (an HTTP 429 or a quota message), a validator failure after the usual retry, a missing key or any other refused call. Every policy ends at the local template, which needs no model.
+
+The router works on whole runs, not single calls, because a validator failure is only known once the selector or the letter has been checked and retried. Each route runs the full selector and letter, and the router reads the result before it tries the next one.
+
+Policies live in `routes.json`, so changing the order is a config edit. `public` tries Workers AI, then Gemini, then the template. `owner` holds an order the owner edits. Each policy can set `budgetMs`, the whole wait allowed (115 seconds by default), `floorMs`, the least time that must be left for a model route to start, `routeTimeoutMs`, the most one route may take, and `stopCodes`, validator codes that end the run instead of falling through. The validators flag no posting injection today, so `stopCodes` is empty. A policy that names an unknown provider, has an empty list, repeats a route or does not end with `template` is refused on load with a plain message. Agentforce is refused for now because it needs the org.
+
+Run a policy from `web/`:
+
+```sh
+node tailor-eval/run-eval.mjs --router public
+```
+
+With no keys set, Workers AI and Gemini are skipped as missing keys and the run reaches the template. Every router record carries `route.answeredBy` and `route.trace`, one step per route with its outcome, a short reason, its wait and its validator codes. The trace holds no posting text, letter text, key or provider message. The scorer adds `routeAnswers` and `routeOutcomes` to the table, and counts leaks in the routes that fell through as well as in the one that answered.
+
+The template lives in `functions/_lib/tailor/template.js`, so a Pages Function can import it later. It started as a port of the site's Apex class `LocalTemplateService` and follows the same letter rules as a model letter: five paragraphs, 300 to 400 words, the current employer named, and every number and product name grounded in the selected evidence. It is built by fixed rules with no model. It opens with the role and the current employer, writes three evidence paragraphs that start from the highest ranked requirements with evidence, strong first, and closes with a sentence saying no model wrote it. Each paragraph quotes up to two selected bullets or projects, and no item appears twice. A project is quoted by its value text, as "My Name project gives..." when the value starts with a verb and "On my Name project, " and the value otherwise, and its solution follows as "How it works: ..." when the letter needs more length. Long text is cut at a sentence. The template route tops the selection up to three projects that have value or solution text, from the projects the mode may show. Skills are listed in one sentence, never quoted as sentences. Only when the evidence runs out does it add sentences from a neutral set of five, each once, that make no claim about the owner. On the committed sample snapshot every owner run passes. Every visitor run falls 74 to 84 words short of 300 and ends as `template validator` on `letter.word_count`, because every sample project comes from the overlay and is unverified, so a visitor sees none. The owner's name comes from the snapshot owner or the `ownerName` input. The start year is an input with no default and goes in only when the evidence carries that year. The Apex has no selector step, so the template route answers the selector call with the harness's rule built selection. Topic routing is not built. `orderRoutes` in `lib/router.mjs` is where it would plug in.
 
 ## Building the real snapshot
 
@@ -70,14 +92,21 @@ The builder writes a snapshot built from any reads or overlay other than the com
     }
   ],
   "readItems": {
-    "an-item-id-the-builder-makes": { "tags": ["category ids"], "priority": 1 }
+    "an-item-id-the-builder-makes": {
+      "tags": ["category ids"],
+      "priority": 1,
+      "titleFamily": "headlines and summaries only, optional"
+    }
   },
   "items": [
     {
       "id": "readable-id",
       "type": "headline | summary | bullet | skill | project | certification",
       "roleId": "bullets only",
-      "text": "...",
+      "text": "... (a project's name, for a project)",
+      "titleFamily": "headlines and summaries only: engineer, architect, consultant or admin, optional",
+      "value": "projects only: what the project changed, optional",
+      "solution": "projects only: how it works, optional",
       "tags": [],
       "priority": 2,
       "verified": false
@@ -88,10 +117,11 @@ The builder writes a snapshot built from any reads or overlay other than the com
 
 - `roles` maps every role in the reads to a readable id. A role is matched by its employer and title, never by its position. The reads also carry each role's record id, but that id belongs to one org and differs between the fixture and the real org, so the overlay does not use it.
 - The builder makes the ids of read items itself: `headline-site-title` and `summary-site` from the header, `<roleId>-highlight-<n>` for highlights, `skill-<name>` and `cert-<name>`. Highlights carry no key of their own in the reads, so `<n>` is the highlight's place within its role, and it moves if the highlights are reordered. `readItems` sets tags and priority on these ids. An id left out gets no tags and priority 2.
+- Every headline and summary in the snapshot carries `titleFamily`, and every project carries `value` and `solution`, each null when the overlay leaves it out. The same keys come from `ResumeSnapshotService` in the org. A snapshot built before these keys existed is refused on load, so rebuild it.
 - `items` are the added items. Each must say `verified: false`, and the builder marks it unverified whatever it says. Only public items belong here. Private items never go in a file in the checkout.
 - "The current role" is the role marked current whose employer is the owner's current employer. When the reads mark one role current, it is that one. When they mark more, `currentRoleId` names it. Either way the builder takes the owner's current employer from that role.
 
-The build fails, naming each problem, when an item is not public, two ids collide, an overlay role or bullet names a role the reads do not hold, a role in the reads has no overlay id, several roles are current and `currentRoleId` is missing or names a role that is not current, more than one current role has the current employer, an added item is not `verified: false`, a `readItems` id is not one the reads produce, a tag is not in `categories.json`, or a priority is not 1, 2 or 3.
+The build fails, naming each problem, when an item is not public, two ids collide, an overlay role or bullet names a role the reads do not hold, a role in the reads has no overlay id, several roles are current and `currentRoleId` is missing or names a role that is not current, more than one current role has the current employer, an added item is not `verified: false`, a `readItems` id is not one the reads produce, a tag is not in `categories.json`, a priority is not 1, 2 or 3, or an item sets `titleFamily`, `value` or `solution` on a type that does not carry it.
 
 An invented example, for a reads file whose only current role is at "Example Works":
 

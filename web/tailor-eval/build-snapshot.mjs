@@ -74,6 +74,27 @@ export function collectReads(reads) {
  * Builds and checks the snapshot. Throws SnapshotError listing every problem found.
  * categories, when given, is the list of known tag ids.
  */
+/** Keys only some item types carry, with null when the record has no value. */
+export const TYPE_KEYS = { titleFamily: ['headline', 'summary'], value: ['project'], solution: ['project'] };
+
+const textOrNull = (value) => (typeof value === 'string' && value.trim() ? value.trim().split(/\s+/).join(' ') : null);
+
+/** An item in contract key order, with the keys its type carries. */
+function shapeItem({ id, type, roleId, text, titleFamily, value, solution, tags, priority, verified, visibility }) {
+  return {
+    id,
+    type,
+    ...(type === 'bullet' ? { roleId } : {}),
+    text,
+    ...(TYPE_KEYS.titleFamily.includes(type) ? { titleFamily: textOrNull(titleFamily) } : {}),
+    ...(type === 'project' ? { value: textOrNull(value), solution: textOrNull(solution) } : {}),
+    tags,
+    priority,
+    verified,
+    visibility
+  };
+}
+
 export function buildSnapshot(reads, overlay, { generatedAt = new Date().toISOString(), categories } = {}) {
   const problems = [];
   const { header, roles: readRoles, skills, certifications } = collectReads(reads);
@@ -124,15 +145,16 @@ export function buildSnapshot(reads, overlay, { generatedAt = new Date().toISOSt
   for (const id of Object.keys(settings)) if (!readIds.has(id)) problems.push(`Overlay readItems names ${id}, which the reads do not produce.`);
   const fromReads = readItems
     .filter((item) => typeof item.text === 'string' && item.text.trim())
-    .map((item) => ({ ...item, tags: settings[item.id]?.tags || [], priority: settings[item.id]?.priority ?? DEFAULT_PRIORITY, verified: true, visibility: 'public' }));
+    .map((item) => shapeItem({ ...item, titleFamily: settings[item.id]?.titleFamily, tags: settings[item.id]?.tags || [], priority: settings[item.id]?.priority ?? DEFAULT_PRIORITY, verified: true, visibility: 'public' }));
 
   // Items the overlay adds, never verified.
   const added = (overlay.items || []).map((item) => {
     if (item.verified !== false) problems.push(`Overlay item ${item.id} must say verified: false.`);
     if (item.visibility !== undefined && item.visibility !== 'public') problems.push(`Overlay item ${item.id} says visibility ${item.visibility}. Only public items may be in a snapshot.`);
     if (item.type === 'bullet' && !roleIds.has(item.roleId)) problems.push(`Overlay item ${item.id} attaches to role ${item.roleId}, which the reads do not hold.`);
-    const { id, type, roleId, text, tags = [], priority = DEFAULT_PRIORITY } = item;
-    return { id, type, ...(type === 'bullet' ? { roleId } : {}), text, tags, priority, verified: false, visibility: 'public' };
+    for (const key of Object.keys(TYPE_KEYS)) if (item[key] !== undefined && !TYPE_KEYS[key].includes(item.type)) problems.push(`Overlay item ${item.id} is a ${item.type} and must not set ${key}.`);
+    const { tags = [], priority = DEFAULT_PRIORITY } = item;
+    return shapeItem({ ...item, tags, priority, verified: false, visibility: 'public' });
   });
 
   // Reads first, then the overlay, grouped by type.
@@ -164,6 +186,11 @@ export function snapshotProblems(snapshot, { categories, extraTypes = [] } = {})
     if (item.visibility !== 'public') problems.push(`Item ${item.id} says visibility ${item.visibility}. Only public items may be in a snapshot.`);
     if (item.type === 'bullet' && !(snapshot.roles || []).some((role) => role.id === item.roleId)) problems.push(`Bullet ${item.id} names role ${item.roleId}, which the snapshot does not hold.`);
     if (item.type !== 'bullet' && item.roleId !== undefined) problems.push(`Item ${item.id} is not a bullet and must not name a role.`);
+    for (const [key, types] of Object.entries(TYPE_KEYS)) {
+      if (types.includes(item.type) && !(key in item)) problems.push(`Item ${item.id} is a ${item.type} and must carry ${key}, text or null. Rebuild the snapshot.`);
+      if (!types.includes(item.type) && key in item) problems.push(`Item ${item.id} is a ${item.type} and must not carry ${key}.`);
+      if (key in item && !(item[key] === null || (typeof item[key] === 'string' && item[key].trim()))) problems.push(`Item ${item.id} has ${key} that is not text or null.`);
+    }
     if (typeof item.text !== 'string' || !item.text.trim()) problems.push(`Item ${item.id} has no text.`);
     if (![1, 2, 3].includes(item.priority)) problems.push(`Item ${item.id} has priority ${item.priority}, which is not 1, 2 or 3.`);
     if (typeof item.verified !== 'boolean') problems.push(`Item ${item.id} has no verified flag.`);

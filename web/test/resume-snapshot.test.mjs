@@ -46,7 +46,12 @@ test('the check refuses each break of the contract', () => {
     [(s) => (s.items[0].type = 'award'), 'type must be one of'],
     [(s) => (s.items.find((i) => i.type === 'skill').roleId = 'x'), 'not a bullet but names a role'],
     [(s) => (s.items.find((i) => i.type === 'bullet').roleId = 'nope'), 'role the snapshot does not hold'],
-    [(s) => (s.items[0].titleFamily = 'engineer'), 'keys the contract does not define'],
+    [(s) => (s.items[0].colour = 'blue'), 'keys the contract does not define'],
+    [(s) => (s.items.find((i) => i.type === 'skill').titleFamily = 'engineer'), 'must not carry titleFamily'],
+    [(s) => (s.items.find((i) => i.type === 'bullet').value = 'A value'), 'must not carry value'],
+    [(s) => delete s.items.find((i) => i.type === 'headline').titleFamily, 'must carry titleFamily'],
+    [(s) => delete s.items.find((i) => i.type === 'project').solution, 'must carry solution'],
+    [(s) => (s.items.find((i) => i.type === 'project').value = 5), 'value must be text or null'],
     [(s) => (s.owner.currentEmployer = 'Somewhere Else'), "No current role has the owner's current employer"],
     [(s) => (s.version = 2), 'version must be 1'],
     [(s) => delete s.items, 'items must be a list']
@@ -67,7 +72,9 @@ test('the export answer is put in contract order, with a missing end and role as
     roles: [{ title: 'Role', id: 'r1', employer: 'Sample Employer', start: '2020-01-01', current: true }],
     items: [
       { id: 'b1', type: 'bullet', text: 'A bullet', tags: [], priority: 2, verified: false, visibility: 'public' },
-      { id: 's1', type: 'skill', text: 'A skill', tags: ['backend'], priority: 1, verified: true, visibility: 'public' }
+      { id: 's1', type: 'skill', text: 'A skill', tags: ['backend'], priority: 1, verified: true, visibility: 'public' },
+      { id: 'h1', type: 'headline', text: 'A headline', tags: [], priority: 1, verified: true, visibility: 'public' },
+      { id: 'p1', type: 'project', text: 'A project', value: 'What it changed.', tags: [], priority: 1, verified: true, visibility: 'public' }
     ]
   };
   const snapshot = normalizeSnapshot(raw);
@@ -75,6 +82,12 @@ test('the export answer is put in contract order, with a missing end and role as
   assert.equal(snapshot.roles[0].end, null);
   assert.equal(snapshot.items[0].roleId, null);
   assert.ok(!('roleId' in snapshot.items[1]), 'only bullets carry roleId');
+  assert.deepEqual(Object.keys(snapshot.items[2]), ['id', 'type', 'text', 'titleFamily', 'tags', 'priority', 'verified', 'visibility']);
+  assert.equal(snapshot.items[2].titleFamily, null, 'a headline with no family gets null');
+  assert.deepEqual(Object.keys(snapshot.items[3]), ['id', 'type', 'text', 'value', 'solution', 'tags', 'priority', 'verified', 'visibility']);
+  assert.equal(snapshot.items[3].value, 'What it changed.');
+  assert.equal(snapshot.items[3].solution, null, 'a missing solution is null');
+  assert.ok(!('titleFamily' in snapshot.items[1]) && !('value' in snapshot.items[1]), 'a skill carries neither');
   assert.ok(checkSnapshot(snapshot).some((problem) => problem.includes('role the snapshot does not hold')));
 });
 

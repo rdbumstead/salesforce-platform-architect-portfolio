@@ -88,7 +88,17 @@ private class ResumeSnapshotServiceTest {
         new Project__c(
           Name = 'Invented Project',
           Sort_Order__c = 1,
-          Status__c = 'Active Development'
+          Status__c = 'Active Development',
+          Business_Value__c = 'Cut the  wait for an invented' +
+            String.fromCharArray(new List<Integer>{ 10 }) +
+            'team.',
+          Solution__c = 'An invented   solution.'
+        ),
+        new Project__c(
+          Name = 'Invented Bare Project',
+          Sort_Order__c = 4,
+          Status__c = 'Active Development',
+          Business_Value__c = '   '
         ),
         new Project__c(Name = 'Unlisted Blank Project', Sort_Order__c = 2),
         new Project__c(
@@ -225,7 +235,7 @@ private class ResumeSnapshotServiceTest {
     }
     Assert.areEqual(BULK_SKILLS, counts.get('skill'), 'Every skill is read');
     Assert.areEqual(3, counts.get('bullet'), 'Every bullet is read');
-    Assert.areEqual(1, counts.get('project'), 'The project is read');
+    Assert.areEqual(2, counts.get('project'), 'Both listed projects are read');
     Assert.areEqual(1, counts.get('certification'), 'The credential is read');
     Assert.areEqual(1, counts.get('headline'), 'The headline is read');
     Assert.areEqual(1, counts.get('summary'), 'The summary is read');
@@ -329,6 +339,97 @@ private class ResumeSnapshotServiceTest {
         ),
       'Item keys of the contract'
     );
+  }
+
+  private static ResumeSnapshotService.Item itemWithText(
+    ResumeSnapshotService.Snapshot snapshot,
+    String text
+  ) {
+    for (ResumeSnapshotService.Item item : snapshot.items) {
+      if (item.text == text) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  @isTest
+  static void shouldCarryProjectValueAndSolutionOnOneLine() {
+    Test.startTest();
+    ResumeSnapshotService.Snapshot snapshot = buildAsBuildUser();
+    Test.stopTest();
+    ResumeSnapshotService.Item project = itemWithText(
+      snapshot,
+      'Invented Project'
+    );
+    Assert.areEqual(
+      'Cut the wait for an invented team.',
+      project.value,
+      'The business value, spacing collapsed'
+    );
+    Assert.areEqual(
+      'An invented solution.',
+      project.solution,
+      'The solution, spacing collapsed'
+    );
+  }
+
+  @isTest
+  static void shouldLeaveProjectValueNullWhenBlank() {
+    Test.startTest();
+    ResumeSnapshotService.Snapshot snapshot = buildAsBuildUser();
+    Test.stopTest();
+    ResumeSnapshotService.Item bare = itemWithText(
+      snapshot,
+      'Invented Bare Project'
+    );
+    Assert.isNull(bare.value, 'A blank value is null');
+    Assert.isNull(bare.solution, 'A missing solution is null');
+  }
+
+  @isTest
+  static void shouldCarryTheTitleFamilyOnVariants() {
+    Test.startTest();
+    ResumeSnapshotService.Snapshot snapshot = buildAsBuildUser();
+    Test.stopTest();
+    Assert.areEqual(
+      'engineer',
+      itemWithText(snapshot, 'An invented headline').titleFamily,
+      'The headline family'
+    );
+    Assert.areEqual(
+      'engineer',
+      itemWithText(snapshot, 'An invented summary.').titleFamily,
+      'The summary family'
+    );
+  }
+
+  @isTest
+  static void shouldWriteTheNewKeysOnlyOnTheirTypes() {
+    Map<String, Object> contract;
+    Test.startTest();
+    System.runAs(buildUser()) {
+      contract = ResumeSnapshotService.getSnapshot();
+    }
+    Test.stopTest();
+    Integer checked = 0;
+    for (Object raw : (List<Object>) contract.get('items')) {
+      Map<String, Object> item = (Map<String, Object>) raw;
+      String itemType = (String) item.get('type');
+      Boolean variant = itemType == 'headline' || itemType == 'summary';
+      Assert.areEqual(
+        variant,
+        item.containsKey('titleFamily'),
+        'titleFamily on variants only: ' + item.get('id')
+      );
+      Assert.areEqual(
+        itemType == 'project',
+        item.containsKey('value') && item.containsKey('solution'),
+        'value and solution on projects only: ' + item.get('id')
+      );
+      checked++;
+    }
+    Assert.isTrue(checked > 0, 'Items were checked');
   }
 
   private static Set<String> projectTexts(
