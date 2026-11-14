@@ -4,7 +4,8 @@ This folder measures how well a model picks resume evidence for a job posting an
 
 ## What is here
 
-- `snapshot/resume-snapshot.json` stands in for the resume export. Items that come from the fixture data start verified. Every item added from the owner's content list starts unverified until the owner confirms it.
+- `snapshot/resume-snapshot.json` is the snapshot built from the fixture reads, which hold sample data only. `snapshot/overlay.fixture.json` is the overlay it is built with. Items that come from the reads start verified. Every item the overlay adds starts unverified until the owner confirms it. A test rebuilds the snapshot and fails if the committed file differs.
+- `build-snapshot.mjs` builds a snapshot from resume reads and an overlay. See "Building the real snapshot" below.
 - `categories.json` lists the requirement categories used as tags. Those marked proposed wait for the owner.
 - `postings/` holds four synthetic postings with invented company names and eight injection variants built on them. Each file states its expected outcomes. None holds a gold selection.
 - `gold/README.md` describes the gold files the owner writes.
@@ -35,6 +36,101 @@ To score a results file again, for example after adding gold files:
 
 ```sh
 node tailor-eval/score.mjs tailor-eval/private/runs/<file>.json
+```
+
+## Building the real snapshot
+
+The committed snapshot is sample data, so a real evaluation needs a snapshot built from the real public resume. It stays out of the repository. Everything below goes under `web/tailor-eval/private/`.
+
+1. Get the reads. `npm run export --prefix web`, signed in to the org as the site build user, writes `web/.data/reads.json`, which git already ignores. The builder needs the `ResumeController.getHeader` read and the three `ResumeController.getResume` reads (Architect, Developer, Admin) from it.
+2. Write the overlay at `web/tailor-eval/private/overlay.json` in the format below.
+3. Build, from `web/`:
+
+```sh
+node tailor-eval/build-snapshot.mjs --reads .data/reads.json --overlay tailor-eval/private/overlay.json --out tailor-eval/private/resume-snapshot.json
+```
+
+4. Run against it: `node tailor-eval/run-eval.mjs --providers <name> --snapshot tailor-eval/private/resume-snapshot.json`
+
+The builder writes a snapshot built from any reads or overlay other than the committed fixture pair only to a path git ignores, or to a path outside the repository.
+
+### The overlay
+
+```json
+{
+  "generatedAt": "optional, a fixed date for a repeatable build",
+  "currentRoleId": "the role id that is the current role, needed when the reads mark more than one role current",
+  "roles": [
+    {
+      "id": "readable-role-id",
+      "match": {
+        "employer": "Employer as in the reads",
+        "title": "Title as in the reads"
+      }
+    }
+  ],
+  "readItems": {
+    "an-item-id-the-builder-makes": { "tags": ["category ids"], "priority": 1 }
+  },
+  "items": [
+    {
+      "id": "readable-id",
+      "type": "headline | summary | bullet | skill | project | certification",
+      "roleId": "bullets only",
+      "text": "...",
+      "tags": [],
+      "priority": 2,
+      "verified": false
+    }
+  ]
+}
+```
+
+- `roles` maps every role in the reads to a readable id. A role is matched by its employer and title, never by its position. The reads also carry each role's record id, but that id belongs to one org and differs between the fixture and the real org, so the overlay does not use it.
+- The builder makes the ids of read items itself: `headline-site-title` and `summary-site` from the header, `<roleId>-highlight-<n>` for highlights, `skill-<name>` and `cert-<name>`. Highlights carry no key of their own in the reads, so `<n>` is the highlight's place within its role, and it moves if the highlights are reordered. `readItems` sets tags and priority on these ids. An id left out gets no tags and priority 2.
+- `items` are the added items. Each must say `verified: false`, and the builder marks it unverified whatever it says. Only public items belong here. Private items never go in a file in the checkout.
+- "The current role" is the role marked current whose employer is the owner's current employer. When the reads mark one role current, it is that one. When they mark more, `currentRoleId` names it. Either way the builder takes the owner's current employer from that role.
+
+The build fails, naming each problem, when an item is not public, two ids collide, an overlay role or bullet names a role the reads do not hold, a role in the reads has no overlay id, several roles are current and `currentRoleId` is missing or names a role that is not current, more than one current role has the current employer, an added item is not `verified: false`, a `readItems` id is not one the reads produce, a tag is not in `categories.json`, or a priority is not 1, 2 or 3.
+
+An invented example, for a reads file whose only current role is at "Example Works":
+
+```json
+{
+  "roles": [
+    {
+      "id": "example-works-engineer",
+      "match": { "employer": "Example Works", "title": "Platform Engineer" }
+    },
+    {
+      "id": "sample-college-admin",
+      "match": { "employer": "Sample College", "title": "CRM Administrator" }
+    }
+  ],
+  "readItems": {
+    "example-works-engineer-highlight-1": { "tags": ["ci-cd"], "priority": 1 },
+    "skill-apex": { "tags": ["backend"], "priority": 1 }
+  },
+  "items": [
+    {
+      "id": "headline-engineer",
+      "type": "headline",
+      "text": "Platform Engineer | Example headline",
+      "tags": ["architecture"],
+      "priority": 1,
+      "verified": false
+    },
+    {
+      "id": "example-works-release-pipeline",
+      "type": "bullet",
+      "roleId": "example-works-engineer",
+      "text": "Example bullet about a release pipeline",
+      "tags": ["ci-cd"],
+      "priority": 1,
+      "verified": false
+    }
+  ]
+}
 ```
 
 ## The metrics
