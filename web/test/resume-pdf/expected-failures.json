@@ -1,0 +1,8 @@
+[
+  {
+    "variant": "*",
+    "check": "order",
+    "problem": "missing: Summary",
+    "reason": "The ATS text keeps a Summary heading over the career objective and the PDF draws the objective under the header with no heading. Known, left for the owner."
+  }
+]
