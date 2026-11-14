@@ -119,6 +119,12 @@ export function pickPostings(postings, which) {
   return postings.filter((posting) => ids.includes(posting.id));
 }
 
+/** One line per run. A failed run names its validator error codes, never their text. */
+export function runLine(record) {
+  const outcome = record.error ? [record.error.code, (record.error.codes || []).join(', ')].filter(Boolean).join(' ') : record.letter?.finalOk ? 'done' : `LETTER_FAILED ${(record.letter?.codes || []).join(', ')}`;
+  return `${record.provider} ${record.mode} ${record.postingId} #${record.repeat} ${outcome} ${record.waitMs.total} ms`;
+}
+
 /** Every run, in order: provider, mode, posting, repeat. */
 export async function runEval({ providers, postings, snapshot, modes, repeats, validators, blocklist = [], categories, timeoutMs = WAIT_LIMIT_MS, now, onRun }) {
   const records = [];
@@ -156,7 +162,7 @@ async function main(argv) {
     blocklist,
     categories: inputs.categories,
     timeoutMs: args.timeoutMs,
-    onRun: (record) => console.error(`${record.provider} ${record.mode} ${record.postingId} #${record.repeat} ${record.error ? record.error.code : 'done'} ${record.waitMs.total} ms`)
+    onRun: (record) => console.error(runLine(record))
   });
   const scored = scoreRuns(records, { ...inputs, blocklist });
   fs.mkdirSync(args.out, { recursive: true });

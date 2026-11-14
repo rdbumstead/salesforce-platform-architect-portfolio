@@ -41,6 +41,11 @@ export function selectedIds(selection) {
   return [...new Set(ids.filter((id) => typeof id === 'string' && id))];
 }
 
+/** The error codes of a validator result, each once, in order. Codes only, never the text. */
+export function errorCodes(result) {
+  return [...new Set((result?.errors || []).map((error) => error.code))];
+}
+
 /** evidenceTexts are the texts the grounding check reads, so the letter sees exactly that set. */
 export function letterMessage(posting, view, selection, evidenceTexts, mode) {
   const current = currentRole(view);
@@ -135,8 +140,9 @@ export async function runOne({ provider, posting, snapshot, mode, validators, bl
     record.selector.firstOk = record.selector.attempts[0].ok;
     record.selector.finalOk = check.ok;
     record.selector.blocksExport = check.blocksExport;
+    record.selector.codes = check.ok ? [] : errorCodes(check);
     record.waitMs.selector = now() - started;
-    if (!selection) throw Object.assign(new Error('The selector gave no usable selection.'), { code: 'NO_SELECTION' });
+    if (!selection) throw Object.assign(new Error('The selector gave no usable selection.'), { code: 'NO_SELECTION', codes: record.selector.codes });
 
     const byId = new Map(snapshot.items.map((item) => [item.id, item]));
     const evidenceTexts = validators.selectedEvidenceTexts(selection, snapshot);
@@ -160,6 +166,7 @@ export async function runOne({ provider, posting, snapshot, mode, validators, bl
     record.letter.text = letter;
     record.letter.firstOk = record.letter.attempts[0].ok && record.letter.attempts[0].grounding.ok;
     record.letter.finalOk = letterCheck.ok && grounding.ok;
+    record.letter.codes = record.letter.finalOk ? [] : [...new Set([...errorCodes(letterCheck), ...errorCodes(grounding)])];
     record.grounding = grounding;
     record.waitMs.letter = now() - letterStart;
 
@@ -169,7 +176,7 @@ export async function runOne({ provider, posting, snapshot, mode, validators, bl
       .join('\n');
     record.resume = validators.validateResume(resumeText, { selection, snapshot });
   } catch (error) {
-    record.error = { code: controller.signal.aborted ? 'TIMEOUT' : error.code || 'CALL_FAILED', message: error.message };
+    record.error = { code: controller.signal.aborted ? 'TIMEOUT' : error.code || 'CALL_FAILED', codes: error.codes || [], message: error.message };
   } finally {
     clearTimeout(timer);
     record.waitMs.total = now() - started;

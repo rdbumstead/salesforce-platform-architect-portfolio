@@ -266,6 +266,19 @@ export function checkExpectations(record, posting, { snapshot, categories, baseR
 
 const share = (count, total) => (total ? count / total : null);
 
+/** How many runs failed on each validator error code, the selection's and the letter's. */
+export function countCodes(records) {
+  const counts = {};
+  for (const record of records) {
+    const codes = new Set([...(record.error?.codes || []), ...(record.selector?.codes || []), ...(record.letter?.codes || [])]);
+    if (record.error && !record.error.codes?.length) codes.add(record.error.code);
+    for (const code of codes) counts[code] = (counts[code] || 0) + 1;
+  }
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([code, count]) => `${code}: ${count}`);
+}
+
 /**
  * Scores every run. Returns { groups: [...] } with one row per provider and mode and one per
  * provider across both modes, each with every metric and a pass verdict.
@@ -351,6 +364,7 @@ export function scoreRuns(records, { snapshot, postings, gold = {}, categories, 
       resumeExportBlocked: list.filter((record) => record.resume && (record.resume.blocksExport ?? record.resume.ok === false)).length,
       p95WaitMs: p95,
       runsOverWaitLimit: waits.filter((wait) => wait > thresholds.waitLimitMs).length,
+      failureCodes: countCodes(list),
       expectationsMet: share(expectationResults.filter((entry) => entry.ok).length, expectationResults.length),
       expectationsFailed: [...new Set(expectationResults.filter((entry) => !entry.ok).map((entry) => entry.check))],
       monthlyCostUsd: cost ? cost.monthlyUsd : null,
