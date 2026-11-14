@@ -3,21 +3,15 @@
     <sharingGuestRules>
         <fullName>Guest_Read_All_Projects</fullName>
         <accessLevel>Read</accessLevel>
-        <booleanFilter>1 OR 2</booleanFilter>
         <criteriaItems>
-            <field>Sort_Order__c</field>
-            <operation>greaterOrEqual</operation>
-            <value>0</value>
-        </criteriaItems>
-        <criteriaItems>
-            <field>Sort_Order__c</field>
-            <operation>lessThan</operation>
-            <value>0</value>
+            <field>Is_Verified__c</field>
+            <operation>equals</operation>
+            <value>True</value>
         </criteriaItems>
         <description
-    >Shares every record read only with the site guest. Sort_Order__c is required, so every record matches.</description>
+    >Shares verified projects read only with the site guest. An unverified project and its skill links and assets stay hidden from the guest on every read, GraphQL included. The API name is older than the criteria and is kept so a deploy updates this rule in place.</description>
         <includeHVUOwnedRecords>false</includeHVUOwnedRecords>
-        <label>Guest Read All Projects</label>
+        <label>Guest Read Verified Projects</label>
         <sharedTo>
             <guestUser>Portfolio</guestUser>
         </sharedTo>
