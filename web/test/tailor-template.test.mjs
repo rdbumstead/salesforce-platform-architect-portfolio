@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   buildTemplateLetter,
   firstWords,
+  NEUTRAL,
   removeContactDetails,
   TEMPLATE_NOTE
 } from "../functions/_lib/tailor/template.js";
@@ -15,9 +16,10 @@ import { loadInputs } from "../tailor-eval/run-eval.mjs";
 import { injectionLeaks, promptShingles } from "../tailor-eval/score.mjs";
 
 /*
- * The template letter. It began as a port of LocalTemplateService and now meets the model letter
- * rules (P-D33). The Apex cases that still apply are kept: company and role, contact details,
- * missing input, the name and start year inputs. The rest check the letter rules themselves.
+ * The template letter. It began as a port of LocalTemplateService and now follows the model
+ * letter rules (P-D33), reaching its length with selected evidence first and a short neutral set
+ * only after that (P-D37). The Apex cases that still apply are kept: company and role, contact
+ * details, missing input, the name and start year inputs.
  */
 
 const { snapshot, postings, categories } = await loadInputs({
@@ -27,6 +29,18 @@ const REAL = await loadValidators();
 const BLOCKLIST = REAL.parseBlocklist("zzinventedclient").terms;
 const synthetic = postings.filter((posting) => posting.kind === "synthetic");
 const injections = postings.filter((posting) => posting.kind === "injection");
+const EM_DASH = String.fromCharCode(0x2014);
+
+/** Lines the template used to add for length. Each claims a habit, and none may come back. */
+const HABIT_LINES = [
+  "I write down what I change",
+  "I keep the people who use the system close",
+  "I am happy to start with the smaller tasks",
+  "I take the time to test my own work",
+  "I listen to the people closest",
+  "I ask questions early",
+  "I prefer plain designs"
+];
 
 /** The letter, the validator results and the inputs, for one posting in one mode. */
 function letterFor(posting, mode, extra = {}) {
@@ -37,7 +51,7 @@ function letterFor(posting, mode, extra = {}) {
     { mode }
   );
   assert.equal(check.ok, true, `${posting.id} ${mode} selection`);
-  const selection = extra.selection || check.selection;
+  const selection = check.selection;
   const evidenceTexts = REAL.selectedEvidenceTexts(selection, snapshot);
   const letter = buildTemplateLetter({
     posting,
@@ -68,26 +82,181 @@ function letterFor(posting, mode, extra = {}) {
 const posting1 = synthetic.find(
   (posting) => posting.id === "posting-1-engineer"
 );
+const sentencesOf = (letter) =>
+  letter
+    .split(/(?<=[.!?])\s+|\n+/)
+    .map((sentence) => sentence.trim())
+    .filter((sentence) => sentence.split(" ").length > 3);
 
-/* ---------- the letter rules ---------- */
+/* ---------- the letter rules on the sample snapshot ---------- */
 
-test("the template letter passes validateLetter and checkGrounding on the four synthetic postings in both modes", () => {
+/*
+ * With evidence first and at most two items per paragraph, the sample snapshot does not hold
+ * enough selected evidence to reach 300 words, even with every neutral sentence. So the only
+ * rule the letter fails there is letter.word_count. This test pins that, and the shortfall is
+ * reported, never covered with filler. No validator is loosened.
+ */
+test("on the sample snapshot the letter fails only the word count, and grounding passes", () => {
   assert.equal(synthetic.length, 4);
   for (const posting of synthetic)
     for (const mode of ["owner", "visitor"]) {
       const { letterCheck, grounding } = letterFor(posting, mode);
       const where = `${posting.id} ${mode}`;
-      assert.deepEqual(letterCheck.errors, [], where);
+      assert.deepEqual(
+        letterCheck.errors.map((error) => error.code),
+        ["letter.word_count"],
+        where
+      );
+      assert.ok(
+        letterCheck.wordCount < 300,
+        `${where} ${letterCheck.wordCount}`
+      );
       assert.deepEqual(grounding.errors, [], where);
       assert.equal(letterCheck.paragraphCount, 5, where);
+    }
+});
+
+test("with enough evidence the letter passes every letter rule and grounding", () => {
+  const long = (n) =>
+    `Built release flow number ${n} for a team of planners, with checks that ran on every change and a review step before anything reached the people who used it each morning, plus a short written note for whoever picked it up next`;
+  const view = {
+    owner: { name: "Sample Owner", currentEmployer: "Sample Works" },
+    roles: [
+      {
+        id: "r1",
+        employer: "Sample Works",
+        title: "Platform Lead",
+        current: true
+      }
+    ],
+    items: Array.from({ length: 6 }, (_, index) => ({
+      id: `b${index + 1}`,
+      type: "bullet",
+      roleId: "r1",
+      text: long(index + 1)
+    }))
+  };
+  const selection = {
+    roles: [
+      {
+        role_id: "r1",
+        include: true,
+        bullet_ids: view.items.map((item) => item.id)
+      }
+    ],
+    top_requirements: [
+      { match: "strong", evidence_ids: ["b1", "b2"] },
+      { match: "strong", evidence_ids: ["b3"] },
+      { match: "partial", evidence_ids: ["b4"] }
+    ]
+  };
+  const evidenceTexts = REAL.selectedEvidenceTexts(selection, view);
+  const posting = { company: "Acme", title: "Platform Engineer" };
+  const letter = buildTemplateLetter({
+    posting,
+    view,
+    selection,
+    evidenceTexts
+  });
+  const check = REAL.validateLetter(letter, {
+    selection,
+    snapshot: view,
+    blocklist: BLOCKLIST,
+    employer: "Sample Works",
+    mode: "owner"
+  });
+  assert.deepEqual(check.errors, [], letter);
+  const allow = REAL.groundingAllowList(view, posting);
+  assert.deepEqual(
+    REAL.checkGrounding(letter, evidenceTexts, { allow }).errors,
+    []
+  );
+  assert.ok(
+    NEUTRAL.every((sentence) => !letter.includes(sentence)),
+    "no neutral sentence when evidence is enough"
+  );
+});
+
+/* ---------- the four defects from review ---------- */
+
+test("every evidence item appears once per letter", () => {
+  for (const posting of [...synthetic, ...injections])
+    for (const mode of ["owner", "visitor"]) {
+      const { letter } = letterFor(posting, mode);
+      const quoted = snapshot.items.filter((item) =>
+        ["bullet", "project"].includes(item.type)
+      );
+      for (const item of quoted) {
+        const probe = item.text.split(" ").slice(-5).join(" ");
+        const count = letter.split(probe).length - 1;
+        assert.ok(
+          count <= 1,
+          `${posting.id} ${mode} ${item.id} appears ${count} times`
+        );
+      }
+    }
+});
+
+test("skills are never quoted as sentences, only listed in one sentence", () => {
+  const skills = snapshot.items.filter((item) => item.type === "skill");
+  for (const posting of synthetic)
+    for (const mode of ["owner", "visitor"]) {
+      const { letter } = letterFor(posting, mode);
+      for (const skill of skills)
+        for (const lead of [": ", ". "])
+          assert.ok(
+            !letter.includes(`${lead}${skill.text}.`),
+            `${posting.id} ${mode} ${skill.text}`
+          );
       assert.ok(
-        letterCheck.wordCount >= 300 && letterCheck.wordCount <= 400,
-        `${where} ${letterCheck.wordCount}`
+        letter.split("The tools behind that work include").length - 1 <= 1
       );
     }
 });
 
-test("the shape is an opener, three evidence paragraphs strong first, and a close", () => {
+test("no sentence appears twice, and each neutral sentence at most once", () => {
+  for (const posting of [...synthetic, ...injections])
+    for (const mode of ["owner", "visitor"]) {
+      const { letter } = letterFor(posting, mode);
+      const sentences = sentencesOf(letter);
+      assert.equal(
+        new Set(sentences).size,
+        sentences.length,
+        `${posting.id} ${mode}`
+      );
+      for (const sentence of NEUTRAL)
+        assert.ok(letter.split(sentence).length - 1 <= 1);
+    }
+});
+
+test("a project is written as On my name project, then its description from the record", () => {
+  const { letter } = letterFor(posting1, "owner");
+  assert.ok(
+    letter.includes(
+      "On my Platform Architect Portfolio project, Salesforce APIs behind"
+    ),
+    letter
+  );
+  for (const item of snapshot.items.filter((entry) => entry.type === "project"))
+    assert.ok(
+      !letter.includes(item.text.slice(0, item.text.indexOf(": ") + 2)),
+      item.id
+    );
+});
+
+test("no habit line is left in the letter, and the neutral set is five sentences", () => {
+  assert.ok(NEUTRAL.length <= 5);
+  for (const posting of [...synthetic, ...injections])
+    for (const mode of ["owner", "visitor"]) {
+      const { letter } = letterFor(posting, mode);
+      for (const line of HABIT_LINES)
+        assert.ok(!letter.includes(line), `${posting.id} ${mode} ${line}`);
+    }
+});
+
+/* ---------- shape ---------- */
+
+test("the shape is an opener, three evidence paragraphs strong first, and a close with the disclosure", () => {
   const { letter, selection } = letterFor(posting1, "owner");
   const body = letterBody(letter);
   assert.equal(body.length, 5);
@@ -102,45 +271,20 @@ test("the shape is an opener, three evidence paragraphs strong first, and a clos
   );
   const byId = new Map(snapshot.items.map((item) => [item.id, item]));
   const first = selection.top_requirements.find(
-    (entry) => entry.match === "strong" && entry.evidence_ids.length
+    (entry) =>
+      entry.match === "strong" &&
+      entry.evidence_ids.some((id) => byId.get(id)?.type === "bullet")
   );
-  const firstText = byId
-    .get(first.evidence_ids[0])
-    .text.split(" ")
-    .slice(0, 4)
-    .join(" ");
+  const firstBullet = first.evidence_ids
+    .map((id) => byId.get(id))
+    .find((item) => item.type === "bullet");
   assert.ok(
-    body[1].includes(firstText),
+    body[1].includes(firstBullet.text.split(" ").slice(0, 4).join(" ")),
     "the first evidence paragraph uses the top strong requirement"
   );
   assert.ok(body[4].includes(TEMPLATE_NOTE));
   assert.ok(!letter.includes("\n- "), "no bullet list");
 });
-
-test("with fewer than three evidenced requirements the letter keeps five paragraphs and warns", () => {
-  const { letterCheck, grounding } = letterFor(posting1, "visitor");
-  assert.equal(letterCheck.paragraphCount, 5);
-  assert.deepEqual(grounding.errors, []);
-  assert.ok(
-    letterCheck.warnings.some(
-      (warning) => warning.code === "letter.thin_evidence"
-    )
-  );
-});
-
-test("with no evidence at all the letter still has five paragraphs and names the employer", () => {
-  const view = viewForMode(snapshot, "owner");
-  const letter = buildTemplateLetter({
-    posting: posting1,
-    view,
-    selection: { roles: [], top_requirements: [] },
-    evidenceTexts: ["Sample evidence"]
-  });
-  assert.equal(letterBody(letter).length, 5);
-  assert.ok(letter.includes(snapshot.owner.currentEmployer));
-});
-
-const EM_DASH = String.fromCharCode(0x2014);
 
 test("evidence with a semicolon or a dash is quoted without one", () => {
   const view = {
@@ -304,7 +448,7 @@ test("long record text is cut at a word, short text is kept whole, and contact d
 
 /* ---------- through the harness ---------- */
 
-test("the template provider answers on every posting in both modes, and the injection postings leak nothing", async () => {
+test("through runOne the template fails only the word count, and the injection postings leak nothing", async () => {
   const shingles = promptShingles(snapshot.owner);
   for (const posting of postings)
     for (const mode of ["owner", "visitor"]) {
@@ -320,16 +464,8 @@ test("the template provider answers on every posting in both modes, and the inje
       const where = `${posting.id} ${mode}`;
       assert.equal(record.model, "local-template");
       assert.equal(record.selector.finalOk, true, where);
-      assert.equal(
-        record.letter.finalOk,
-        true,
-        `${where} ${JSON.stringify(record.letter.codes)}`
-      );
-      assert.equal(
-        record.letter.attempts.length,
-        1,
-        `${where} passes first time`
-      );
+      assert.deepEqual(record.letter.codes, ["letter.word_count"], where);
+      assert.equal(record.grounding.ok, true, where);
       assert.deepEqual(record.usage, { inputTokens: 0, outputTokens: 0 });
       if (injections.includes(posting))
         assert.equal(
