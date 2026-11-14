@@ -7,6 +7,7 @@ import {
   SNAPSHOT_FILE,
   checkSnapshot,
   exportSnapshot,
+  fixtureRefusal,
   normalizeSnapshot,
   readFixtureSnapshot,
   snapshotCounts,
@@ -212,4 +213,30 @@ test('a fixture build never puts an unverified item that no page shows into dist
     if (hadSnapshot) fs.writeFileSync(SNAPSHOT_FILE, before);
     else fs.rmSync(SNAPSHOT_FILE, { force: true });
   }
+});
+
+test('the fixture is written only from a scratch org, and never from production', () => {
+  const scratch = { orgId: '00DE200000dSvkuMAC', isScratch: true, targetOrg: 'sample-scratch' };
+  assert.equal(fixtureRefusal(scratch), null);
+  const production = fixtureRefusal({ orgId: '00Dfj00000FSoCXEAZ', isScratch: true, targetOrg: 'sample' });
+  assert.match(production, /^Refusing --write-fixture: sample is the production org/);
+  assert.match(fixtureRefusal({ orgId: '00Dfj00000FSoCX', isScratch: false }), /production org/);
+  assert.match(fixtureRefusal({ orgId: '00DA0000000abcd', isScratch: false, targetOrg: 'dev' }), /dev is not a scratch org/);
+  assert.match(fixtureRefusal({ orgId: '00DA0000000abcd', targetOrg: 'dev' }), /not a scratch org/);
+  assert.match(fixtureRefusal({ isScratch: true }), /Id of the org is unknown/);
+  assert.match(fixtureRefusal(null), /unknown/);
+});
+
+test('the export command refuses --write-fixture before it reads or writes anything', async () => {
+  const { spawnSync } = await import('node:child_process');
+  const fixture = path.join(WEB_DIR, 'fixtures', 'resume-snapshot.json');
+  const before = fs.readFileSync(fixture);
+  // No org is named, so connect() refuses first. The run must end with exit 1 and leave the fixture alone.
+  const run = spawnSync(process.execPath, [path.join(WEB_DIR, 'build', 'export.mjs'), '--snapshot', '--write-fixture'], {
+    env: { ...process.env, SF_TARGET_ORG: '' },
+    encoding: 'utf8'
+  });
+  assert.equal(run.status, 1);
+  assert.match(run.stderr, /SF_TARGET_ORG/);
+  assert.deepEqual(fs.readFileSync(fixture), before);
 });
