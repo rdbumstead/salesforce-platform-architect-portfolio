@@ -670,6 +670,7 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 | [ADR-039](../adr/039-api-v2-and-the-v1-sunset.md)                                      | API v2 and the v1 Sunset                                        | Accepted           | [Live](../../packages/integration-api/main/default/classes/ApiVersionTest.cls)                                        |
 | [ADR-040](../adr/040-versionless-api-urls.md)                                          | Versionless API URLs                                            | Accepted           | [Live](../../packages/integration-api/main/default/classes/ApiRouting.cls)                                            |
 | [ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)                 | Headless Static Front End on Cloudflare Pages                   | Accepted           | [Live](../../docs/guides/cutover-runbook.md)                                                                          |
+| [ADR-043](../adr/043-provider-router-for-tailored-letters.md)                          | A Provider Router for Tailored Letters                          | Accepted           | Designed                                                                                                              |
 
 </details>
 
