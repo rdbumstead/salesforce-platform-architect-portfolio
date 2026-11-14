@@ -363,7 +363,8 @@ export function nameSectionLinks(root) {
  * the pinned spec switch (--reference-menu-top, measured after each render) and scrolls on its
  * own, never taller than the viewport below that line. Redoc writes its own top and height
  * inline from scrollYOffset, so these win with !important. Below 50rem Redoc folds the menu
- * behind its own menu button, which these rules leave alone.
+ * behind its own menu button. When open it is fixed with no left set, so it would start at the
+ * page gutter and run off the right edge. It is pinned to the left edge instead.
  * The menu never hands its scroll on to the page behind it. Browsers that support
  * overscroll-behavior stop it with the first rule, and menuScrollsPage below stops it
  * in the rest.
@@ -374,7 +375,8 @@ export const REDOC_STYLE_OVERRIDES = [
   ".menu-content, .menu-content > div { overscroll-behavior: contain; }",
   "@media (min-width: 50rem) { .redoc-panel_full .menu-content {",
   " top: var(--reference-menu-top, 0px) !important;",
-  " height: calc(100vh - var(--reference-menu-top, 0px)) !important; } }"
+  " height: calc(100vh - var(--reference-menu-top, 0px)) !important; } }",
+  "@media (max-width: 49.99rem) { .menu-content { left: 0; } }"
 ].join("\n");
 
 /**

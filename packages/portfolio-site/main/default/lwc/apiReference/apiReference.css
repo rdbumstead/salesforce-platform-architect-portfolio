@@ -93,7 +93,12 @@
   color: var(--pf-body);
 }
 
-.inline-link {
+/* The site's own link rule (a:link:not(i), outside this component) outranks a plain class
+   rule and takes the underline away, which leaves the link told apart by colour alone. So
+   the rule is repeated on :link and :visited. */
+.inline-link,
+.inline-link:link,
+.inline-link:visited {
   color: var(--pf-accent);
   text-decoration: underline;
 }
