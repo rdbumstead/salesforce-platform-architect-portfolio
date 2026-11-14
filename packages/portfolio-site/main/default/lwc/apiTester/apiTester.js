@@ -549,6 +549,8 @@ export default class ApiTester extends LightningElement {
   paintedBody;
   paintedTarget;
   revealPending = false;
+  /** True after a run started by the Execute button, until focus is back on it. */
+  restoreExecuteFocus = false;
 
   email = "";
   purpose = "";
@@ -669,6 +671,24 @@ export default class ApiTester extends LightningElement {
   renderedCallback() {
     this.paintBody();
     this.revealAnswer();
+    this.returnFocusToExecute();
+  }
+
+  /**
+   * Execute is disabled while a request runs, which drops focus to the page. Once the request
+   * has finished and the button is enabled again, focus goes back to it. It never moves into
+   * the answer, and it does not scroll, so the scroll to the summary stays where it landed.
+   */
+  returnFocusToExecute() {
+    if (!this.restoreExecuteFocus || this.isLoading) {
+      return;
+    }
+    const button = this.template.querySelector("button.execute-button");
+    if (!button || button.disabled) {
+      return;
+    }
+    this.restoreExecuteFocus = false;
+    button.focus({ preventScroll: true });
   }
 
   /** Scrolls a new answer into view on a phone, where it can land below the fold. */
@@ -1279,10 +1299,12 @@ export default class ApiTester extends LightningElement {
     this.handleExecute();
   }
 
-  async handleExecute() {
+  async handleExecute(event) {
     if (this.isExecuteDisabled) {
       return;
     }
+    // Only a press on Execute itself. A call made for the next page has no event.
+    this.restoreExecuteFocus = Boolean(event);
     this.isLoading = true;
     this.invokeError = "";
     this.result = undefined;

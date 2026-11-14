@@ -569,6 +569,38 @@ describe("c-api-tester phone sections", () => {
     }
   });
 
+  it("puts focus back on Execute when the run finishes, and never inside the answer", async () => {
+    for (const phone of [true, false]) {
+      mockMatchMedia(phone);
+      invoke.mockResolvedValue({
+        statusCode: 200,
+        latencyMs: 12,
+        headers: {},
+        body: "[]"
+      });
+      const element = create();
+      await flush();
+      const execute = $(element, "button.execute-button");
+      execute.focus();
+      execute.click();
+      // The button is disabled while the request runs, which drops focus.
+      await flush();
+      await flush();
+
+      expect($(element, ".status-value").textContent).toBe("200");
+      expect(execute.disabled).toBe(false);
+      expect(element.shadowRoot.activeElement).toBe(execute);
+      expect(
+        $$(element, ".section-panel").some((panel) =>
+          panel.contains(element.shadowRoot.activeElement)
+        )
+      ).toBe(false);
+      while (document.body.firstChild) {
+        document.body.removeChild(document.body.firstChild);
+      }
+    }
+  });
+
   it("opens the details after a failed run too", async () => {
     mockMatchMedia(true);
     invoke.mockRejectedValue(new Error("down"));
