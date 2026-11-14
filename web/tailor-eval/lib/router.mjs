@@ -12,10 +12,9 @@
  * { name, model, complete({ kind, system, user, context, signal }) }.
  *
  * The local template: the site's last step is LocalTemplateService, an Apex class that reads
- * the org. It cannot be imported here, so the template is a provider shaped object passed in
- * as an option. run-eval passes evalTemplate() below, which builds the letter from the
- * snapshot with fixed rules and no model. It stands in for the Apex template and is not a port
- * of it.
+ * the org. Its letter is ported to functions/_lib/tailor/template.js, which takes the snapshot
+ * instead of the org. templateProvider() below wraps that port in the provider shape and is
+ * the default template route. A test can still pass its own template as an option.
  *
  * Policies are config in routes.json, never code. Each one lists its routes in order and ends
  * with "template". Agentforce is a possible route later, but it needs the org, so it has no
@@ -28,10 +27,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildTemplateLetter } from "../../functions/_lib/tailor/template.js";
+import { buildFakeSelection } from "./fake.mjs";
 import { runOne, WAIT_LIMIT_MS } from "./pipeline.mjs";
 import {
   createProvider,
-  fakeProvider,
   MissingKeyError,
   PROVIDER_NAMES
 } from "./providers.mjs";
@@ -237,16 +237,28 @@ export function orderRoutes(policy) {
 }
 
 /**
- * The local template for the evaluation: rule built from the snapshot, no model, no network.
- * It stands in for the site's Apex LocalTemplateService.
+ * The template route: the port of LocalTemplateService in the provider shape, with no model
+ * and no network. The Apex has no selector step, because PortfolioGroundingService ranks the
+ * records itself. Here the selector call answers with the harness's rule built selection, and
+ * the letter call writes the ported letter from it. options passes ownerName, ownerTitle,
+ * startYear and certificationCount to the port. startYear has no default, see template.js.
  */
-export function evalTemplate() {
-  const inner = fakeProvider();
+export function templateProvider(options = {}) {
   return {
     name: TEMPLATE_ROUTE,
     model: "local-template",
-    complete: (call) => inner.complete(call),
-    reset: () => inner.reset()
+    async complete({ kind, context }) {
+      const usage = { inputTokens: 0, outputTokens: 0 };
+      if (kind === "selector")
+        return { text: JSON.stringify(buildFakeSelection(context)), usage };
+      const text = buildTemplateLetter({
+        ...options,
+        posting: context.posting,
+        view: context.snapshot,
+        selection: context.selection
+      });
+      return { text, usage };
+    }
   };
 }
 
@@ -256,12 +268,12 @@ export function evalTemplate() {
  *
  * options:
  *   build(name)  makes the provider for a route. Defaults to createProvider with env and fetch.
- *   template     the provider shaped local template. Defaults to evalTemplate().
+ *   template     the provider shaped local template. Defaults to templateProvider().
  *   env, fetch   passed to the default build, so tests inject both.
  */
 export function createRouter(
   policy,
-  { build, template = evalTemplate(), env = process.env, fetch } = {}
+  { build, template = templateProvider(), env = process.env, fetch } = {}
 ) {
   const make =
     build ||
