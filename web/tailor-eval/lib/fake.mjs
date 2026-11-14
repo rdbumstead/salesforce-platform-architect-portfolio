@@ -37,7 +37,6 @@ export function buildFakeSelection({ posting, snapshot, categories }) {
   const family = titleFamily(posting.title);
   const headline = items.find((item) => item.id === `headline-${family}`) || items.find((item) => item.type === 'headline');
   const summary = items.find((item) => item.type === 'summary');
-  const current = currentRole(snapshot) || snapshot.roles[0];
   const topIds = new Set(ranked.map((entry) => entry.id));
   const scored = (list) =>
     [...list].sort((a, b) => {
@@ -45,7 +44,9 @@ export function buildFakeSelection({ posting, snapshot, categories }) {
       const hitB = b.tags.some((tag) => topIds.has(tag)) ? 0 : 1;
       return hitA - hitB || byPriority(a, b);
     });
-  const currentBullets = scored(items.filter((item) => item.type === 'bullet' && item.roleId === current.id)).slice(0, 4);
+  // The selection validator holds every role marked current to the current role's 4 to 6
+  // bullets, so the fake gives each of them four.
+  const bulletsFor = (role) => (role.current ? scored(items.filter((item) => item.type === 'bullet' && item.roleId === role.id)).slice(0, 4) : []);
   const requirements = ranked.map((entry) => {
     const evidence = items.filter((item) => item.type !== 'headline' && item.type !== 'summary' && item.tags.includes(entry.id)).sort(byPriority).slice(0, 2);
     const label = categories.find((category) => category.id === entry.id)?.label || entry.id;
@@ -62,7 +63,7 @@ export function buildFakeSelection({ posting, snapshot, categories }) {
     top_requirements: requirements,
     headline_id: headline?.id || '',
     summary_id: summary?.id || '',
-    roles: snapshot.roles.map((role) => ({ role_id: role.id, include: role.id === current.id, bullet_ids: role.id === current.id ? currentBullets.map((item) => item.id) : [] })),
+    roles: snapshot.roles.map((role) => ({ role_id: role.id, include: role.current, bullet_ids: bulletsFor(role).map((item) => item.id) })),
     skill_ids: skills.map((item) => item.id),
     project_ids: projects.map((item) => item.id),
     hard_filter_flags: flags,
@@ -70,10 +71,11 @@ export function buildFakeSelection({ posting, snapshot, categories }) {
   };
 }
 
-/** context: { posting, snapshot, selection, evidence: [{ id, text }] } */
-export function buildFakeLetter({ posting, snapshot, selection, evidence }) {
+/** context: { posting, snapshot, selection, evidenceTexts }, the texts the letter may draw on. */
+export function buildFakeLetter({ posting, snapshot, selection, evidenceTexts }) {
   const current = currentRole(snapshot);
-  const byId = new Map(evidence.map((entry) => [entry.id, entry.text]));
+  const allowed = new Set(evidenceTexts);
+  const byId = new Map(snapshot.items.filter((item) => allowed.has(item.text)).map((item) => [item.id, item.text]));
   const withEvidence = (selection.top_requirements || []).filter((entry) => entry.match !== 'gap' && entry.evidence_ids.some((id) => byId.has(id)));
   const body = withEvidence.slice(0, 3).map((entry) => {
     const text = entry.evidence_ids.filter((id) => byId.has(id)).map((id) => byId.get(id).replace(/\.$/, ''));
