@@ -456,6 +456,7 @@ private class ContentGenerationControllerTest {
   static void coverLetterPromptCarriesPortfolioFactsWhenRecordsExist() {
     switchAgentforce(false);
     insert new Project__c(
+      Is_Verified__c = true,
       Name = 'Integration Hub',
       Sort_Order__c = 1,
       Is_Featured__c = true,

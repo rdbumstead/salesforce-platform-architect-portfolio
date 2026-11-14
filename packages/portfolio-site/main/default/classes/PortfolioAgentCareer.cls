@@ -212,7 +212,7 @@ public with sharing class PortfolioAgentCareer implements QueryDefinitions.Provi
         'Experience_Highlight__c',
         'Experience__c, Description__c, Persona_Tag__c, Sort_Order__c'
       )
-      .filter('Experience__c IN :experienceIds')
+      .filter('Is_Verified__c = TRUE AND Experience__c IN :experienceIds')
       .orderBy('Sort_Order__c ASC NULLS LAST')
       .rowLimit(500)
       .mode(QueryDefinitions.Mode.SYSTEM_MODE)

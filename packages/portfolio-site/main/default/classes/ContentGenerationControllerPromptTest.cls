@@ -239,6 +239,7 @@ private class ContentGenerationControllerPromptTest {
   static void groundingFactsAreIncluded() {
     useFallbackInstruction();
     insert new Project__c(
+      Is_Verified__c = true,
       Name = 'Integration Hub',
       Sort_Order__c = 1,
       Is_Featured__c = true,

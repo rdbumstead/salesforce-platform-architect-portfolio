@@ -141,7 +141,8 @@ global with sharing class SAPIExperienceHighlight implements QueryDefinitions.Pr
           'Persona_Tag__c'
       )
       .filter(
-        '(IsDeleted = :hasExperienceId OR Experience__c = :experienceId) AND ' +
+        'Is_Verified__c = TRUE AND ' +
+          '(IsDeleted = :hasExperienceId OR Experience__c = :experienceId) AND ' +
           '(IsDeleted = :hasPersonas OR ' +
           '(IsDeleted = :adminOff AND Persona_Tag__c INCLUDES (\'Admin\')) OR ' +
           '(IsDeleted = :developerOff AND ' +

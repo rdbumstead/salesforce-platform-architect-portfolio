@@ -136,12 +136,14 @@ public with sharing class SiteGuestTestSupport {
 
     insert new List<Certification__c>{
       new Certification__c(
+        Is_Verified__c = true,
         Name = 'Cert Old',
         Contact__c = owner.Id,
         Issuer__c = issuer.Id,
         Earned_Date__c = Date.newInstance(2020, 6, 1)
       ),
       new Certification__c(
+        Is_Verified__c = true,
         Name = 'Cert New',
         Contact__c = owner.Id,
         Issuer__c = issuer.Id,
@@ -157,10 +159,12 @@ public with sharing class SiteGuestTestSupport {
     );
 
     Project__c first = new Project__c(
+      Is_Verified__c = true,
       Name = 'Test Project One',
       Sort_Order__c = 1
     );
     Project__c second = new Project__c(
+      Is_Verified__c = true,
       Name = 'Test Project Two',
       Sort_Order__c = 2
     );
@@ -199,6 +203,7 @@ public with sharing class SiteGuestTestSupport {
     Integer sortOrder
   ) {
     return new Experience_Highlight__c(
+      Is_Verified__c = true,
       Name = description,
       Experience__c = role.Id,
       Description__c = description,
@@ -216,6 +221,7 @@ public with sharing class SiteGuestTestSupport {
     String displayName
   ) {
     return new Skill__c(
+      Is_Verified__c = true,
       Name = name,
       Category__c = category,
       Category_Order__c = categoryOrder,

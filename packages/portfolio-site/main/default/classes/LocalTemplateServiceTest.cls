@@ -76,6 +76,7 @@ private class LocalTemplateServiceTest {
     String text
   ) {
     return new Experience_Highlight__c(
+      Is_Verified__c = true,
       Name = 'Highlight ' + sortOrder,
       Experience__c = roleId,
       Description__c = text,
@@ -92,6 +93,7 @@ private class LocalTemplateServiceTest {
     Boolean retired
   ) {
     return new Certification__c(
+      Is_Verified__c = true,
       Name = name,
       Contact__c = ownerId,
       Issuer__c = issuerId,
@@ -255,6 +257,7 @@ private class LocalTemplateServiceTest {
   @IsTest
   static void aFeaturedProjectIsAFactWhenNoHighlightIs() {
     insert new Project__c(
+      Is_Verified__c = true,
       Name = 'Sentinel Portfolio Project',
       Is_Featured__c = true,
       Status__c = 'Active Development',

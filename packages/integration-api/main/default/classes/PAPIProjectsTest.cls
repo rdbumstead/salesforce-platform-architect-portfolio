@@ -11,6 +11,7 @@ private class PAPIProjectsTest {
   @TestSetup
   static void setup() {
     Project__c proj = new Project__c(
+      Is_Verified__c = true,
       Name = 'Featured Project',
       Status__c = 'Live – In Production',
       Is_Featured__c = true,
@@ -21,6 +22,7 @@ private class PAPIProjectsTest {
     insert proj;
 
     Project__c nonFeatured = new Project__c(
+      Is_Verified__c = true,
       Name = 'Regular Project',
       Status__c = 'Live – Demo / Reference',
       Is_Featured__c = false,
@@ -28,7 +30,11 @@ private class PAPIProjectsTest {
     );
     insert nonFeatured;
 
-    Skill__c skill = new Skill__c(Name = 'LWC', Proficiency__c = 5);
+    Skill__c skill = new Skill__c(
+      Is_Verified__c = true,
+      Name = 'LWC',
+      Proficiency__c = 5
+    );
     insert skill;
 
     Project_Skill__c ps = new Project_Skill__c(

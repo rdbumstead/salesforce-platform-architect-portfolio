@@ -22,6 +22,7 @@ private class ProjectCardControllerHomeTest {
     Boolean featured
   ) {
     return new Project__c(
+      Is_Verified__c = true,
       Name = name,
       Home_Sort__c = homeSort,
       Is_Featured__c = featured,
@@ -373,6 +374,7 @@ private class ProjectCardControllerHomeTest {
   @IsTest
   static void shouldKeepTheHeadlineFieldsOnThePillarCards() {
     Project__c row = new Project__c(
+      Is_Verified__c = true,
       Name = 'Pillar row',
       Pillar__c = 'A',
       Sort_Order__c = 1,
@@ -484,6 +486,7 @@ private class ProjectCardControllerHomeTest {
       deployRun('2', 'Failure')
     };
     Project__c row = new Project__c(
+      Is_Verified__c = true,
       Name = 'Delivery pillar',
       Pillar__c = 'E',
       Sort_Order__c = 1,
@@ -649,6 +652,7 @@ private class ProjectCardControllerHomeTest {
       deployRunAt('2', 'Success', T0.addMinutes(1))
     };
     insert new Project__c(
+      Is_Verified__c = true,
       Name = 'Delivery pillar',
       Pillar__c = 'E',
       Sort_Order__c = 1,

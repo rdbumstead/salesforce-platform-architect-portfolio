@@ -16,7 +16,9 @@
     </values>
     <values>
         <field>Filter__c</field>
-        <value xsi:type="xsd:string">Project__c IN :projectIds</value>
+        <value
+      xsi:type="xsd:string"
+    >Skill__r.Is_Verified__c = TRUE AND Project__c IN :projectIds</value>
     </values>
     <values>
         <field>Order_By__c</field>

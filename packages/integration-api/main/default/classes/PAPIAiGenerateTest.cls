@@ -294,6 +294,7 @@ private class PAPIAiGenerateTest {
   @IsTest
   static void coverLetterPromptIsGroundedOnFeaturedProjects() {
     insert new Project__c(
+      Is_Verified__c = true,
       Name = 'Grounding Sentinel Project',
       Sort_Order__c = 1,
       Is_Featured__c = true,

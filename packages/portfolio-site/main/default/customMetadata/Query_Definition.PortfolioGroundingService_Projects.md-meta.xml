@@ -20,7 +20,7 @@
         <field>Filter__c</field>
         <value
       xsi:type="xsd:string"
-    >Is_Featured__c = TRUE AND Status__c IN :liveStatuses</value>
+    >Is_Featured__c = TRUE AND Is_Verified__c = TRUE AND Status__c IN :liveStatuses</value>
     </values>
     <values>
         <field>Order_By__c</field>

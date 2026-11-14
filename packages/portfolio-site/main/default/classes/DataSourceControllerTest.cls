@@ -31,6 +31,7 @@ private class DataSourceControllerTest {
     for (Integer i = 0; i < howMany; i++) {
       skills.add(
         new Skill__c(
+          Is_Verified__c = true,
           Name = category + ' ' + i,
           Category__c = category,
           Category_Order__c = 1,

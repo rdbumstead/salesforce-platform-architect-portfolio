@@ -130,6 +130,7 @@ private class SAPIExperienceTest {
     exp.End_Date__c = Date.today();
     update exp;
     insert new Experience_Highlight__c(
+      Is_Verified__c = true,
       Experience__c = exp.Id,
       Name = 'Highlight',
       Description__c = 'Delivered the platform',

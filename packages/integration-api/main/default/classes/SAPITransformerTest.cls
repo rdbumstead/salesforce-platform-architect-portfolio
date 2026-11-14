@@ -43,6 +43,7 @@ private class SAPITransformerTest {
   @IsTest
   static void shouldFormatDatesWhenPresent() {
     Certification__c cert = new Certification__c(
+      Is_Verified__c = true,
       Name = 'Cert',
       Earned_Date__c = Date.newInstance(2024, 5, 15)
     );
@@ -62,6 +63,7 @@ private class SAPITransformerTest {
   @IsTest
   static void shouldMapSkillParentWhenJunctionHasSkill() {
     Skill__c skill = new Skill__c(
+      Is_Verified__c = true,
       Name = 'Apex',
       Category__c = 'Backend',
       Proficiency__c = 5
@@ -72,7 +74,10 @@ private class SAPITransformerTest {
     );
     Certification_Skill__c certLink = new Certification_Skill__c(
       Skill__r = skill,
-      Certification__r = new Certification__c(Name = 'Cert')
+      Certification__r = new Certification__c(
+        Is_Verified__c = true,
+        Name = 'Cert'
+      )
     );
 
     Map<String, Object> expRow = SAPITransformer.toExperienceSkills(

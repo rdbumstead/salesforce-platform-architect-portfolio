@@ -98,7 +98,10 @@ global with sharing class SAPIProjectAsset implements QueryDefinitions.Provider 
           'Project__r.Public_Key__c, Type__c, External_URL__c, Alt_Text__c, ' +
           'Sort_Order__c'
       )
-      .filter('(IsDeleted = :hasProjectId OR Project__c = :projectId)')
+      .filter(
+        'Project__r.Is_Verified__c = TRUE AND ' +
+        '(IsDeleted = :hasProjectId OR Project__c = :projectId)'
+      )
       .orderBy('Sort_Order__c ASC NULLS LAST, Name ASC')
       .mode(QueryDefinitions.Mode.SYSTEM_MODE)
       .binds(listBinds(null));

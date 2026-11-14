@@ -551,6 +551,7 @@ private class SchemaServiceTest {
   @isTest
   static void assetUrlFieldAcceptsResourcePath() {
     Project__c project = new Project__c(
+      Is_Verified__c = true,
       Name = 'Schema Test Project',
       Sort_Order__c = 1
     );

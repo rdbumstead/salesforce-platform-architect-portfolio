@@ -75,6 +75,9 @@ public with sharing class ApiLabOptionsController implements QueryDefinitions.Pr
     'Active Development'
   };
 
+  // Projects and certifications the SAPI lists skip when unverified, so the options skip them too.
+  private static final String VERIFIED_FILTER = 'Is_Verified__c = TRUE';
+
   private static final String READ_OWNERS = 'owners';
   private static final String READ_EXPERIENCES = 'experiences';
   private static final String READ_PROJECTS = 'projects';
@@ -108,7 +111,7 @@ public with sharing class ApiLabOptionsController implements QueryDefinitions.Pr
     READ_PROJECTS => new OptionRead(
       'Project__c',
       new List<String>{ 'Id', 'Public_Key__c', 'Name', 'Status__c' },
-      null
+      VERIFIED_FILTER
     ),
     READ_ACCOUNTS => new OptionRead(
       'Account',
@@ -126,7 +129,7 @@ public with sharing class ApiLabOptionsController implements QueryDefinitions.Pr
         'Issuer__c',
         'Issuer__r.Name'
       },
-      null
+      VERIFIED_FILTER
     ),
     READ_EDUCATION => new OptionRead(
       'Education__c',

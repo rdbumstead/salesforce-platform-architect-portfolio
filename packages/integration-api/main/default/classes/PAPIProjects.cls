@@ -18,10 +18,17 @@ global with sharing class PAPIProjects implements QueryDefinitions.Provider {
   /** Every Project__c field the EnrichedProject schema reads. PAPIProfile reads the same. */
   public static final String PROJECT_FIELDS = 'Id, Public_Key__c, Name, Challenge__c, Solution__c, Business_Value__c, Status__c, Hero_Image_URL__c, Live_URL__c, Repository_URL__c, Date_Completed__c, Is_Featured__c, Pillar_Label__c';
 
-  /** The statuses a visitor may see. PAPIProfile filters on the same. */
+  /** The statuses a visitor may see. LISTED_FILTER adds the verified check to it. */
   public static final String LISTED_STATUS_FILTER =
     'Status__c IN (\'Live – In Production\', \'Live – Demo / Reference\', ' +
     '\'Active Development\')';
+
+  /**
+   * The projects a visitor may see: verified and in a listed status. PAPIProfile filters on
+   * the same. An unverified project never reaches the public API.
+   */
+  public static final String LISTED_FILTER =
+    'Is_Verified__c = TRUE AND ' + LISTED_STATUS_FILTER;
 
   /** The project order. PAPIProfile uses the same. */
   public static final String PROJECT_ORDER = 'Sort_Order__c ASC NULLS LAST, Name ASC';
@@ -208,7 +215,7 @@ global with sharing class PAPIProjects implements QueryDefinitions.Provider {
   @TestVisible
   private static QueryDefinitions.QueryDefault featuredDefault() {
     return new QueryDefinitions.QueryDefault('Project__c', PROJECT_FIELDS)
-      .filter('Is_Featured__c = TRUE AND ' + LISTED_STATUS_FILTER)
+      .filter('Is_Featured__c = TRUE AND ' + LISTED_FILTER)
       .orderBy(PROJECT_ORDER)
       .rowLimit(10)
       .mode(QueryDefinitions.Mode.SYSTEM_MODE);
@@ -222,7 +229,7 @@ global with sharing class PAPIProjects implements QueryDefinitions.Provider {
   @TestVisible
   private static QueryDefinitions.QueryDefault allDefault() {
     return new QueryDefinitions.QueryDefault('Project__c', PROJECT_FIELDS)
-      .filter(LISTED_STATUS_FILTER)
+      .filter(LISTED_FILTER)
       .orderBy(PROJECT_ORDER)
       .rowLimit(50)
       .mode(QueryDefinitions.Mode.SYSTEM_MODE);
@@ -239,7 +246,7 @@ global with sharing class PAPIProjects implements QueryDefinitions.Provider {
         'Project_Skill__c',
         'Project__c, Skill__r.Name'
       )
-      .filter('Project__c IN :projectIds')
+      .filter('Skill__r.Is_Verified__c = TRUE AND Project__c IN :projectIds')
       .mode(QueryDefinitions.Mode.SYSTEM_MODE)
       .binds(projectBinds(new Set<Id>()));
   }

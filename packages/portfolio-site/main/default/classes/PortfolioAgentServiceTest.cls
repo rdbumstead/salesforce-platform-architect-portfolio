@@ -36,6 +36,7 @@ private class PortfolioAgentServiceTest {
 
     // 4. Experience Highlight
     Experience_Highlight__c highlight = new Experience_Highlight__c(
+      Is_Verified__c = true,
       Name = 'Highlight 1',
       Experience__c = job.Id,
       Description__c = 'Reduced deploy time',
@@ -55,6 +56,7 @@ private class PortfolioAgentServiceTest {
 
     // 6. Certification
     Certification__c cert = new Certification__c(
+      Is_Verified__c = true,
       Name = 'Salesforce Architect',
       Contact__c = c.Id,
       Issuer__c = employer.Id,
@@ -64,6 +66,7 @@ private class PortfolioAgentServiceTest {
 
     // 7. Skill
     Skill__c apex = new Skill__c(
+      Is_Verified__c = true,
       Name = 'Apex',
       Proficiency__c = 3,
       Category_Order__c = 1
@@ -72,6 +75,7 @@ private class PortfolioAgentServiceTest {
 
     // 8. Project
     Project__c proj = new Project__c(
+      Is_Verified__c = true,
       Name = 'Portfolio Site',
       Contact__c = c.Id,
       Challenge__c = 'Need a job',

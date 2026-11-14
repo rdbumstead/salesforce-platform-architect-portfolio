@@ -16,7 +16,9 @@
     </values>
     <values>
         <field>Filter__c</field>
-        <value xsi:type="xsd:string">Experience__c IN :experienceIds</value>
+        <value
+      xsi:type="xsd:string"
+    >Is_Verified__c = TRUE AND Experience__c IN :experienceIds</value>
     </values>
     <values>
         <field>Order_By__c</field>

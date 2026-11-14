@@ -39,6 +39,7 @@ private class PAPIProfileTest {
 
     // Create Skill
     Skill__c skill = new Skill__c(
+      Is_Verified__c = true,
       Name = 'Apex',
       Category__c = 'Backend',
       Proficiency__c = 5
@@ -47,6 +48,7 @@ private class PAPIProfileTest {
 
     // Create Project
     Project__c proj = new Project__c(
+      Is_Verified__c = true,
       Name = 'Test Project',
       Status__c = 'Live – In Production',
       Sort_Order__c = 1,
@@ -398,6 +400,7 @@ private class PAPIProfileTest {
     insert issuer;
     Contact owner = [SELECT Id FROM Contact WHERE Is_Portfolio_Owner__c = TRUE];
     insert new Certification__c(
+      Is_Verified__c = true,
       Name = 'Platform Developer I',
       Issuer__c = issuer.Id,
       Contact__c = owner.Id,
@@ -426,12 +429,14 @@ private class PAPIProfileTest {
     insert issuer;
     Contact owner = [SELECT Id FROM Contact WHERE Is_Portfolio_Owner__c = TRUE];
     Certification__c linked = new Certification__c(
+      Is_Verified__c = true,
       Name = 'Platform Developer I',
       Issuer__c = issuer.Id,
       Contact__c = owner.Id,
       Earned_Date__c = Date.today().addMonths(-6)
     );
     Certification__c bare = new Certification__c(
+      Is_Verified__c = true,
       Name = 'Associate',
       Issuer__c = issuer.Id,
       Contact__c = owner.Id,
@@ -440,6 +445,7 @@ private class PAPIProfileTest {
     insert new List<Certification__c>{ linked, bare };
     Skill__c apex = [SELECT Id FROM Skill__c WHERE Name = 'Apex'];
     Skill__c lwc = new Skill__c(
+      Is_Verified__c = true,
       Name = 'LWC',
       Category__c = 'Frontend',
       Proficiency__c = 4
@@ -482,6 +488,7 @@ private class PAPIProfileTest {
     insert issuer;
     Contact owner = [SELECT Id FROM Contact WHERE Is_Portfolio_Owner__c = TRUE];
     Certification__c cert = new Certification__c(
+      Is_Verified__c = true,
       Name = 'Platform Developer I',
       Issuer__c = issuer.Id,
       Contact__c = owner.Id,
@@ -515,6 +522,7 @@ private class PAPIProfileTest {
     insert issuer;
     Contact owner = [SELECT Id FROM Contact WHERE Is_Portfolio_Owner__c = TRUE];
     Certification__c cert = new Certification__c(
+      Is_Verified__c = true,
       Name = 'Platform Developer I',
       Issuer__c = issuer.Id,
       Contact__c = owner.Id,

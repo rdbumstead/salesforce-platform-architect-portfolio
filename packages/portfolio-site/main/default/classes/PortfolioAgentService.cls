@@ -67,6 +67,7 @@ public with sharing class PortfolioAgentService {
             (
               SELECT Description__c, Persona_Tag__c
               FROM Experience_Highlights__r
+              WHERE Is_Verified__c = TRUE
               ORDER BY Sort_Order__c ASC
             )
           FROM Work_Experiences__r
@@ -80,6 +81,7 @@ public with sharing class PortfolioAgentService {
         (
           SELECT Name, Issuer__r.Name, Earned_Date__c
           FROM Certifications__r
+          WHERE Is_Verified__c = TRUE
           ORDER BY Earned_Date__c DESC
         )
       FROM Contact
@@ -111,10 +113,11 @@ public with sharing class PortfolioAgentService {
         (
           SELECT Skill__r.Name, Skill__r.Proficiency__c
           FROM Project_Skills__r
+          WHERE Skill__r.Is_Verified__c = TRUE
           ORDER BY Skill__r.Proficiency__c DESC
         )
       FROM Project__c
-      WHERE Contact__c = :contactId
+      WHERE Contact__c = :contactId AND Is_Verified__c = TRUE
       ORDER BY Sort_Order__c ASC
     ];
 

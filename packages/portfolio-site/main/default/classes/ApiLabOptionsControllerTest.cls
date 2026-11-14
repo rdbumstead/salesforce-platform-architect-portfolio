@@ -86,18 +86,21 @@ private class ApiLabOptionsControllerTest {
 
     insert new List<Project__c>{
       new Project__c(
+        Is_Verified__c = true,
         Name = LIVE_PROJECT,
         Status__c = 'Live – In Production',
         Contact__c = owner.Id,
         Sort_Order__c = 1
       ),
       new Project__c(
+        Is_Verified__c = true,
         Name = BUILDING_PROJECT,
         Status__c = 'Active Development',
         Contact__c = owner.Id,
         Sort_Order__c = 2
       ),
       new Project__c(
+        Is_Verified__c = true,
         Name = ARCHIVED_PROJECT,
         Status__c = 'Archived',
         Contact__c = owner.Id,
@@ -107,11 +110,13 @@ private class ApiLabOptionsControllerTest {
 
     insert new List<Certification__c>{
       new Certification__c(
+        Is_Verified__c = true,
         Name = CERT_ONE,
         Contact__c = owner.Id,
         Issuer__c = certIssuer.Id
       ),
       new Certification__c(
+        Is_Verified__c = true,
         Name = CERT_TWO,
         Contact__c = holder.Id,
         Issuer__c = certIssuer.Id

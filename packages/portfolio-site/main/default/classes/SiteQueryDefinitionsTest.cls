@@ -19,6 +19,7 @@ private class SiteQueryDefinitionsTest {
   static void setup() {
     SiteGuestTestSupport.createResumeGraph();
     insert new Project__c(
+      Is_Verified__c = true,
       Name = 'Grounding Project',
       Sort_Order__c = 3,
       Is_Featured__c = true,

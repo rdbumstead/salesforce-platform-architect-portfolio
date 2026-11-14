@@ -204,6 +204,7 @@ public class SapiTestData {
 
     insert new List<Experience_Highlight__c>{
       new Experience_Highlight__c(
+        Is_Verified__c = true,
         Name = 'Release automation',
         Experience__c = expOne.Id,
         Description__c = 'Built the CI pipeline.',
@@ -211,6 +212,7 @@ public class SapiTestData {
         Sort_Order__c = 1
       ),
       new Experience_Highlight__c(
+        Is_Verified__c = true,
         Name = 'API layer',
         Experience__c = expOne.Id,
         Description__c = 'Designed the system API.',
@@ -218,6 +220,7 @@ public class SapiTestData {
         Sort_Order__c = 2
       ),
       new Experience_Highlight__c(
+        Is_Verified__c = true,
         Name = 'Data model',
         Experience__c = expTwo.Id,
         Description__c = 'Owned the data model.',
@@ -227,12 +230,14 @@ public class SapiTestData {
     };
 
     Skill__c apex = new Skill__c(
+      Is_Verified__c = true,
       Name = SKILL_APEX,
       Category__c = 'Backend',
       Proficiency__c = 5,
       Category_Order__c = 10
     );
     Skill__c lwc = new Skill__c(
+      Is_Verified__c = true,
       Name = SKILL_LWC,
       Category__c = 'Frontend',
       Proficiency__c = 4,
@@ -241,11 +246,13 @@ public class SapiTestData {
     insert new List<Skill__c>{ apex, lwc };
 
     Project__c projOne = new Project__c(
+      Is_Verified__c = true,
       Name = PROJECT_ONE,
       Contact__c = owner.Id,
       Sort_Order__c = 1
     );
     Project__c projTwo = new Project__c(
+      Is_Verified__c = true,
       Name = PROJECT_TWO,
       Contact__c = owner.Id,
       Sort_Order__c = 2
@@ -291,12 +298,14 @@ public class SapiTestData {
     };
 
     Certification__c certOne = new Certification__c(
+      Is_Verified__c = true,
       Name = CERT_ONE,
       Contact__c = owner.Id,
       Issuer__c = employer.Id,
       Earned_Date__c = Date.newInstance(2024, 5, 15)
     );
     Certification__c certTwo = new Certification__c(
+      Is_Verified__c = true,
       Name = CERT_TWO,
       Contact__c = other.Id,
       Issuer__c = university.Id,

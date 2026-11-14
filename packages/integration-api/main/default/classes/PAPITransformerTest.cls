@@ -218,6 +218,7 @@ private class PAPITransformerTest {
   @IsTest
   static void transformProjectCarriesThePillarLabel() {
     insert new Project__c(
+      Is_Verified__c = true,
       Name = 'Pillar Project',
       Status__c = 'Live – In Production',
       Sort_Order__c = 1,
@@ -262,6 +263,7 @@ private class PAPITransformerTest {
   @IsTest
   static void transformProjectLabelsAnUnassignedPillar() {
     insert new Project__c(
+      Is_Verified__c = true,
       Name = 'Loose Project',
       Status__c = 'Live – In Production',
       Sort_Order__c = 1
@@ -301,6 +303,7 @@ private class PAPITransformerTest {
   @IsTest
   static void transformSkillUsesTheDisplayNameWhenFilled() {
     Skill__c skill = new Skill__c(
+      Is_Verified__c = true,
       Name = 'Apex',
       Display_Name__c = 'Salesforce Apex'
     );
@@ -317,7 +320,7 @@ private class PAPITransformerTest {
 
   @IsTest
   static void transformSkillFallsBackToTheNameWhenDisplayNameIsBlank() {
-    Skill__c skill = new Skill__c(Name = 'Apex');
+    Skill__c skill = new Skill__c(Is_Verified__c = true, Name = 'Apex');
 
     Map<String, Object> result = PAPITransformer.transformSkill(skill);
 

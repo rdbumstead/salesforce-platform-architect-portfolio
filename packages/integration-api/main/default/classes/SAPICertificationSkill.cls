@@ -102,8 +102,10 @@ global with sharing class SAPICertificationSkill implements QueryDefinitions.Pro
           'Skill__r.Public_Key__c, Skill__r.Category__c, Skill__r.Proficiency__c'
       )
       .filter(
-        '(IsDeleted = :hasCertificationId OR ' +
-        'Certification__c = :certificationId)'
+        'Certification__r.Is_Verified__c = TRUE AND ' +
+          'Skill__r.Is_Verified__c = TRUE AND ' +
+          '(IsDeleted = :hasCertificationId OR ' +
+          'Certification__c = :certificationId)'
       )
       .orderBy('Skill__r.Proficiency__c DESC NULLS LAST, Skill__r.Name ASC')
       .mode(QueryDefinitions.Mode.SYSTEM_MODE)

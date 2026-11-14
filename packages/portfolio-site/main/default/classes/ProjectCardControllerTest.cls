@@ -22,6 +22,7 @@ private class ProjectCardControllerTest {
     Integer sortOrder
   ) {
     return new Project__c(
+      Is_Verified__c = true,
       Name = name,
       Pillar__c = letter,
       Is_Featured__c = featured,

@@ -34,7 +34,8 @@
         "SAPITestimonialTest",
         "SAPITransformerTest",
         "OpenApiDocumentTest",
-        "ApiRoutesTest"
+        "ApiRoutesTest",
+        "ApiVerifiedReadsTest"
       ]
     },
     {
@@ -70,6 +71,7 @@
         "SiteActionsResourceTest",
         "SiteExport*",
         "ResumeControllerTest",
+        "VerifiedPublicReadsTest",
         "ResumeSnapshotServiceTest"
       ]
     },

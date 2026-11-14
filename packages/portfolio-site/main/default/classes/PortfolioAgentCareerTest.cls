@@ -52,6 +52,7 @@ private class PortfolioAgentCareerTest {
     String text
   ) {
     return new Experience_Highlight__c(
+      Is_Verified__c = true,
       Name = 'Highlight ' + sortOrder,
       Experience__c = roleId,
       Description__c = text,
@@ -157,7 +158,10 @@ private class PortfolioAgentCareerTest {
   static void blankHighlightsAreSkipped() {
     List<String> picked = PortfolioAgentCareer.pickHighlights(
       new List<Experience_Highlight__c>{
-        new Experience_Highlight__c(Description__c = '  ')
+        new Experience_Highlight__c(
+          Is_Verified__c = true,
+          Description__c = '  '
+        )
       },
       'Architect'
     );

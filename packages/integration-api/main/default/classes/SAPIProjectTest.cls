@@ -11,6 +11,7 @@ private class SAPIProjectTest {
   @TestSetup
   static void setup() {
     Project__c proj = new Project__c(
+      Is_Verified__c = true,
       Name = 'Portfolio',
       Status__c = 'Live – In Production',
       Pillar__c = 'A',
@@ -281,6 +282,7 @@ private class SAPIProjectTest {
     first.Contact__c = people[0].Id;
     update first;
     insert new Project__c(
+      Is_Verified__c = true,
       Name = 'Second Project',
       Status__c = 'Active Development',
       Pillar__c = 'A',
@@ -344,6 +346,7 @@ private class SAPIProjectTest {
     for (Integer i = 0; i < 2; i++) {
       more.add(
         new Project__c(
+          Is_Verified__c = true,
           Name = 'Live ' + i,
           Status__c = 'Live – In Production',
           Pillar__c = 'A',
@@ -353,6 +356,7 @@ private class SAPIProjectTest {
     }
     more.add(
       new Project__c(
+        Is_Verified__c = true,
         Name = 'In build',
         Status__c = 'Active Development',
         Pillar__c = 'A',
@@ -388,6 +392,7 @@ private class SAPIProjectTest {
   @IsTest
   static void unfilteredTotalCountsEveryListedProject() {
     insert new Project__c(
+      Is_Verified__c = true,
       Name = 'In build',
       Status__c = 'Active Development',
       Pillar__c = 'A',

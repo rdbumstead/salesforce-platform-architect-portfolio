@@ -98,7 +98,11 @@ global with sharing class SAPIProjectSkill implements QueryDefinitions.Provider 
           'Project__r.Public_Key__c, Skill__c, Skill__r.Name, ' +
           'Skill__r.Public_Key__c, Skill__r.Category__c, Skill__r.Proficiency__c'
       )
-      .filter('(IsDeleted = :hasProjectId OR Project__c = :projectId)')
+      .filter(
+        'Project__r.Is_Verified__c = TRUE AND ' +
+          'Skill__r.Is_Verified__c = TRUE AND ' +
+          '(IsDeleted = :hasProjectId OR Project__c = :projectId)'
+      )
       .orderBy('Skill__r.Proficiency__c DESC NULLS LAST, Skill__r.Name ASC')
       .mode(QueryDefinitions.Mode.SYSTEM_MODE)
       .binds(listBinds(null));

@@ -38,6 +38,7 @@ private class PAPIResumeTest {
     insert exp;
 
     Experience_Highlight__c h = new Experience_Highlight__c(
+      Is_Verified__c = true,
       Experience__c = exp.Id,
       Name = 'Highlight 1',
       Description__c = 'Did great things',
@@ -47,6 +48,7 @@ private class PAPIResumeTest {
     insert h;
 
     Skill__c skill = new Skill__c(
+      Is_Verified__c = true,
       Name = 'Apex',
       Category__c = 'Backend',
       Proficiency__c = 5
@@ -57,6 +59,7 @@ private class PAPIResumeTest {
     insert sfAccount;
 
     Certification__c cert = new Certification__c(
+      Is_Verified__c = true,
       Name = 'Platform Developer I',
       Issuer__c = sfAccount.Id,
       Contact__c = c.Id,
@@ -325,18 +328,21 @@ private class PAPIResumeTest {
     apex.Category_Order__c = 2;
     update apex;
     Skill__c soql = new Skill__c(
+      Is_Verified__c = true,
       Name = 'SOQL',
       Category__c = 'Backend',
       Category_Order__c = 2,
       Proficiency__c = 3
     );
     Skill__c flows = new Skill__c(
+      Is_Verified__c = true,
       Name = 'Flow',
       Category__c = 'Process Automation',
       Category_Order__c = 1,
       Proficiency__c = 4
     );
     Skill__c unlinked = new Skill__c(
+      Is_Verified__c = true,
       Name = 'Unlinked Skill',
       Category__c = 'Backend',
       Category_Order__c = 2,
@@ -385,12 +391,14 @@ private class PAPIResumeTest {
     apex.Persona_Tag__c = 'Developer;Architect';
     update apex;
     Skill__c flows = new Skill__c(
+      Is_Verified__c = true,
       Name = 'Flow',
       Category__c = 'Process Automation',
       Proficiency__c = 4,
       Persona_Tag__c = 'Admin'
     );
     Skill__c git = new Skill__c(
+      Is_Verified__c = true,
       Name = 'Git',
       Category__c = 'Backend',
       Proficiency__c = 3

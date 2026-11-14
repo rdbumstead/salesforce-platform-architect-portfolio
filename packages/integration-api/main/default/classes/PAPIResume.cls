@@ -454,7 +454,7 @@ global with sharing class PAPIResume implements QueryDefinitions.Provider {
         'Experience_Highlight__c',
         'Experience__c, Description__c, Persona_Tag__c'
       )
-      .filter('Experience__c IN :experienceIds')
+      .filter('Is_Verified__c = TRUE AND Experience__c IN :experienceIds')
       .orderBy('Sort_Order__c ASC')
       .mode(QueryDefinitions.Mode.SYSTEM_MODE)
       .binds(new Map<String, Object>{ 'experienceIds' => new Set<Id>() });
@@ -470,7 +470,9 @@ global with sharing class PAPIResume implements QueryDefinitions.Provider {
         'Experience_Skill__c',
         'Skill__c, Skill__r.Name, Skill__r.Category__c, Skill__r.Persona_Tag__c'
       )
-      .filter('Experience__c IN :printedRoleIds')
+      .filter(
+        'Skill__r.Is_Verified__c = TRUE AND Experience__c IN :printedRoleIds'
+      )
       .orderBy(
         'Skill__r.Category_Order__c ASC NULLS LAST, ' +
           'Skill__r.Category__c ASC NULLS LAST, ' +
@@ -491,6 +493,7 @@ global with sharing class PAPIResume implements QueryDefinitions.Provider {
         'Certification__c',
         'Name, Issuer__r.Name, Earned_Date__c'
       )
+      .filter('Is_Verified__c = TRUE')
       .orderBy('Earned_Date__c DESC')
       .rowLimit(10)
       .mode(QueryDefinitions.Mode.SYSTEM_MODE);

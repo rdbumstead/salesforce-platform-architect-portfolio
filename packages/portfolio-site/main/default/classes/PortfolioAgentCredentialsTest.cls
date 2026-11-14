@@ -13,17 +13,19 @@ private class PortfolioAgentCredentialsTest {
   private static void insertCredentials() {
     insert new List<Skill__c>{
       new Skill__c(
+        Is_Verified__c = true,
         Name = 'Apex',
         Category__c = 'Backend',
         Category_Order__c = 1
       ),
       new Skill__c(
+        Is_Verified__c = true,
         Name = 'LWC',
         Display_Name__c = 'Lightning Web Components',
         Category__c = 'Frontend',
         Category_Order__c = 2
       ),
-      new Skill__c(Name = 'Flow', Category_Order__c = 3)
+      new Skill__c(Is_Verified__c = true, Name = 'Flow', Category_Order__c = 3)
     };
     Contact owner = new Contact(LastName = 'Owner');
     Account issuer = new Account(Name = 'Salesforce');
@@ -31,6 +33,7 @@ private class PortfolioAgentCredentialsTest {
     insert issuer;
     insert new List<Certification__c>{
       new Certification__c(
+        Is_Verified__c = true,
         Name = 'Platform Developer I',
         Contact__c = owner.Id,
         Issuer__c = issuer.Id,
@@ -38,6 +41,7 @@ private class PortfolioAgentCredentialsTest {
         Is_Retired__c = false
       ),
       new Certification__c(
+        Is_Verified__c = true,
         Name = 'Retired Cert',
         Contact__c = owner.Id,
         Issuer__c = issuer.Id,

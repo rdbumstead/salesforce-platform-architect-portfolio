@@ -18,6 +18,7 @@ private class PortfolioGroundingServiceTest {
 
   private static Project__c project(Integer index, String challenge) {
     return new Project__c(
+      Is_Verified__c = true,
       Name = 'Project ' + index,
       Sort_Order__c = Math.mod(index, 999),
       Is_Featured__c = true,
@@ -87,6 +88,7 @@ private class PortfolioGroundingServiceTest {
     };
     insert projects;
     Skill__c skill = new Skill__c(
+      Is_Verified__c = true,
       Name = 'Kafka',
       Category__c = 'Integration',
       Category_Order__c = 1
@@ -124,6 +126,7 @@ private class PortfolioGroundingServiceTest {
     );
     insert role;
     insert new Experience_Highlight__c(
+      Is_Verified__c = true,
       Name = 'Highlight',
       Experience__c = role.Id,
       Description__c = 'Led an API program, reach me at ' + SENTINEL_EMAIL,
@@ -160,6 +163,7 @@ private class PortfolioGroundingServiceTest {
     );
     insert role;
     insert new Experience_Highlight__c(
+      Is_Verified__c = true,
       Name = 'Highlight',
       Experience__c = role.Id,
       Description__c = 'Led an API program, call ' + SENTINEL_PHONE,
