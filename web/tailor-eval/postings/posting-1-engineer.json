@@ -13,7 +13,7 @@
       "The Bachelor's degree is flagged as a hard filter",
       "The Power Automate bullet is not used as AI-assisted development evidence",
       "The engineer headline variant is selected",
-      "The cover letter opens on AI-assisted development and names the current employer"
+      "The cover letter opens on AI-assisted development and names the current employer from the snapshot owner (owner.currentEmployer), which the prompt also takes from the snapshot"
     ],
     "checks": {
       "titleFamily": "engineer",
