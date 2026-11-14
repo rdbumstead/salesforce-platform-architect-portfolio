@@ -4,10 +4,12 @@
  * Errors: an em dash, an en dash used as a dash, a semicolon, a banned phrase, "distressed",
  * "troubled" or "failing", a body outside 300 to 400 words, a body that is not exactly five
  * paragraphs, a blocklisted term, a letter that never names the current employer, any invisible
- * character, and a word that mixes Latin letters with Cyrillic or Greek ones.
+ * character, and a word that mixes Latin letters with Cyrillic or Greek ones. In visitor mode a
+ * [VERIFY] marker is an error too, because visitors see nothing unverified. Owner mode is the
+ * default.
  *
- * Warnings: each [VERIFY] marker, which the owner resolves before export, a spaced hyphen
- * standing in for a dash, and a selection with fewer than three requirements that have evidence. With
+ * Warnings: in owner mode each [VERIFY] marker, which the owner resolves before export, a spaced
+ * hyphen standing in for a dash, and a selection with fewer than three requirements that have evidence. With
  * fewer than three the letter keeps five paragraphs and the opener and close carry more, so the
  * thin evidence is reported and does not fail the letter.
  *
@@ -52,6 +54,7 @@ import {
 export const WORD_RANGE = [300, 400];
 export const PARAGRAPHS = 5;
 export const MIN_EVIDENCED_REQUIREMENTS = 3;
+export const LETTER_MODES = ["visitor", "owner"];
 
 export const BANNED_PHRASES = [
   "aligns with",
@@ -262,10 +265,24 @@ function evidencedRequirements(selection) {
 
 export function validateLetter(
   text,
-  { selection, snapshot, blocklist, employer } = {}
+  { selection, snapshot, blocklist, employer, mode = "owner" } = {}
 ) {
   const errors = [];
   const warnings = [];
+  if (!LETTER_MODES.includes(mode)) {
+    errors.push(
+      issue(
+        "letter.mode",
+        `mode must be one of ${LETTER_MODES.join(", ")}`,
+        String(mode)
+      )
+    );
+    return finish(errors, warnings, {
+      wordCount: 0,
+      paragraphCount: 0,
+      verifyItems: []
+    });
+  }
   if (typeof text !== "string" || !text.trim()) {
     errors.push(issue("letter.empty", "The letter is empty", ""));
     return finish(errors, warnings, {
@@ -357,11 +374,25 @@ export function validateLetter(
   const verifyItems = every(/\[VERIFY\b[^\]\n]*\]?/iu, letter).map(
     (match) => match[0]
   );
-  verifyItems.forEach((marker) =>
-    warnings.push(
-      issue("letter.verify", "A [VERIFY] item needs the owner's check", marker)
-    )
-  );
+  verifyItems.forEach((marker) => {
+    if (mode === "visitor") {
+      errors.push(
+        issue(
+          "letter.visitor_verify",
+          "Visitor mode shows nothing unverified, so a [VERIFY] item fails the letter",
+          marker
+        )
+      );
+    } else {
+      warnings.push(
+        issue(
+          "letter.verify",
+          "A [VERIFY] item needs the owner's check",
+          marker
+        )
+      );
+    }
+  });
 
   if (!selection || !Array.isArray(selection.top_requirements)) {
     errors.push(

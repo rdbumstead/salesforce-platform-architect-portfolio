@@ -17,7 +17,8 @@ export {
   BANNED_PHRASES,
   BANNED_WORDS,
   WORD_RANGE,
-  PARAGRAPHS
+  PARAGRAPHS,
+  LETTER_MODES
 } from "./validate-letter.js";
 export { validateResume } from "./validate-resume.js";
 export {

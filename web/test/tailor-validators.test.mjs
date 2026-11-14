@@ -681,3 +681,20 @@ test('selection: text around a fenced block, or two blocks, still fails as inval
   }
 });
 
+// ---------- letter mode ----------
+
+test('letter: visitor mode refuses a [VERIFY] marker, owner mode lists it', () => {
+  const text = letterWith(3, 'It cut onboarding time [VERIFY: by how much].');
+  const visitor = validateLetter(text, letterOptions({ mode: 'visitor' }));
+  assert.equal(visitor.ok, false);
+  assert.deepEqual(offending(visitor, 'letter.visitor_verify'), ['[VERIFY: by how much]']);
+  const owner = validateLetter(text, letterOptions({ mode: 'owner' }));
+  assert.equal(owner.ok, true);
+  assert.deepEqual(warned(owner, 'letter.verify'), ['[VERIFY: by how much]']);
+  assert.equal(validateLetter(text, letterOptions()).ok, true, 'owner is the default');
+  assert.equal(validateLetter(LETTER, letterOptions({ mode: 'visitor' })).ok, true);
+});
+
+test('letter: a mode other than visitor or owner fails closed', () => {
+  assert.deepEqual(offending(validateLetter(LETTER, letterOptions({ mode: 'admin' })), 'letter.mode'), ['admin']);
+});
