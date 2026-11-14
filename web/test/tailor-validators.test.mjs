@@ -525,7 +525,7 @@ test('grounding: a planted number fails with the number', () => {
   for (const [sentence, planted] of [['It served 500+ staff.', '500+'], ['It cut time by ~95%.', '~95%'], ['It reached 40,000+ members.', '40,000+'], ['It took four weeks.', 'four'], ['It ran 7 releases.', '7']]) {
     const result = checkGrounding(letterWith(3, sentence), evidence(), { allow: allow() });
     assert.deepEqual(result.errors.map((entry) => entry.code), ['grounding.number'], sentence);
-    assert.match(result.errors[0].message, new RegExp(`"${planted.replace(/[+.~]/g, '\\$&')}"`), sentence);
+    assert.ok(result.errors[0].message.includes(`"${planted}"`), sentence);
   }
 });
 
