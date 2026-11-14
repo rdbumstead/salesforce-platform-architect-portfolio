@@ -339,6 +339,20 @@ describe("c-skill-network (Large form factor)", () => {
     );
   });
 
+  it("names each chip from its visible name, with the meta row left to the label", async () => {
+    const element = await mountWithData();
+    const chip = chipByName(element, "Apex");
+    const label = chip.getAttribute("aria-label");
+
+    // The name is the only visible text voice control has to match, so the label starts with it.
+    expect(chip.querySelector(".chip-name").textContent).toBe("Apex");
+    expect(label.startsWith("Apex")).toBe(true);
+    // The proficiency, years and evidence are in the label already, so the visual row is hidden.
+    expect(chip.querySelector(".chip-meta").getAttribute("aria-hidden")).toBe(
+      "true"
+    );
+  });
+
   it("lists the roles and projects of a selected chip and tracks skill_selected", async () => {
     const element = await mountWithData();
 

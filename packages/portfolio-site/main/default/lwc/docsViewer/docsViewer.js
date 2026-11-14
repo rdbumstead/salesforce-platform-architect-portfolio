@@ -337,8 +337,10 @@ export default class DocsViewer extends LightningElement {
       key: d.key,
       title: d.title,
       badge: badgeFor(d.key),
-      // Said whole, so a row inside the closed Decisions group still has a name.
-      label: `${badgeFor(d.key)}: ${d.title}`,
+      // Starts with the title, the text voice control can say, then the badge, so a row inside the
+      // closed Decisions group still says which record it is. The badge is hidden from assistive
+      // technology in the markup because the name already carries it.
+      label: `${d.title}, ${badgeFor(d.key)}`,
       href: docHref(d.key)
     }));
   }
