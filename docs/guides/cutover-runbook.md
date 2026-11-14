@@ -126,13 +126,14 @@ Alternative that I make myself, in the repository: change `crons = ["*/5 * * * *
 
 ## 4. Rollback for two weeks
 
-Nothing in Salesforce changed, so this takes minutes.
+This takes minutes. Do step 1 before step 2, because with the redirect and the Page Rule both on, a visitor loops between the two hosts.
 
-1. Turn the Page Rule `*ryanbumstead.com/*` (Rules, Page Rules) back on. This alone restores the redirect. The rule forwards at the edge whatever the DNS record points at, which held on 2026-11-09 while both records already pointed at `ryanbumstead.pages.dev`. The www Redirect Rule can stay, a `www` request then takes two hops.
-2. Remove `ryanbumstead.com` and `www.ryanbumstead.com` as custom domains from the Pages project. If that also removes their DNS records, put back the two records the cutover replaced, `CNAME @` and `CNAME www`, both to `ryan-bumstead-dev-ed.develop.my.site.com` and both Proxied. Without a proxied record the Page Rule has nothing to act on.
-3. Check the home page and one deep link land on the Experience Cloud site with the path kept.
-4. Restore the warmer only if the Salesforce site needs waking. Once section 3 has retired it, that means restoring `scripts/cache-warmer.js`, `config/wrangler.toml` and `deploy-worker.yml` from git history and running the workflow.
-5. Leave the Pages project and its `*.pages.dev` address as they are.
+1. Switch the returning visitor redirect off. Setup, Custom Metadata Types, Portfolio Setting, Manage Records, `Site_Redirect_Enabled`, set Number Value to 0 and save. The Salesforce site reads it on every load. Open the Salesforce site at `/portfolio/resume` in a private window and check it stays there. Then set the record to 0 in source, or the next deploy turns it on again.
+2. Turn the Page Rule `*ryanbumstead.com/*` (Rules, Page Rules) back on. This alone restores the redirect. The rule forwards at the edge whatever the DNS record points at, which held on 2026-11-09 while both records already pointed at `ryanbumstead.pages.dev`. The www Redirect Rule can stay, a `www` request then takes two hops.
+3. Remove `ryanbumstead.com` and `www.ryanbumstead.com` as custom domains from the Pages project. If that also removes their DNS records, put back the two records the cutover replaced, `CNAME @` and `CNAME www`, both to `ryan-bumstead-dev-ed.develop.my.site.com` and both Proxied. Without a proxied record the Page Rule has nothing to act on.
+4. Check the home page and one deep link land on the Experience Cloud site with the path kept.
+5. Restore the warmer only if the Salesforce site needs waking. Once section 3 has retired it, that means restoring `scripts/cache-warmer.js`, `config/wrangler.toml` and `deploy-worker.yml` from git history and running the workflow.
+6. Leave the Pages project and its `*.pages.dev` address as they are.
 
 ## 5. After two weeks with no rollback
 
