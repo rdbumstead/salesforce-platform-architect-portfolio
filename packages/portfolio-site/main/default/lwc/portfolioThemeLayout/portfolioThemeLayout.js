@@ -97,7 +97,7 @@ export const TOUR_HEADING_POLL_MS = 100;
 // The line under the tour row in the "How it's built" menu.
 export const TOUR_MENU_NOTE = "Five stops, with one task on each";
 
-/** The query parameter the redirect adds, with the value that says the Salesforce site sent the visitor. */
+/** The query parameter the redirect adds, and the value that says the Salesforce site sent the visitor. */
 export const ARRIVAL_PARAM = "from";
 export const ARRIVAL_VALUE = "sf";
 
@@ -177,6 +177,39 @@ export function wantsToStay(search) {
     return asked;
   }
 }
+
+/**
+ * Removes from=sf from the address bar without a page load, so the first page view and every
+ * later one carry a clean address. Other parameters and the hash stay.
+ * @param {{pathname: string, search: string, hash: string}} where the page address
+ * @param {{state: any, replaceState: Function}} history the window history
+ * @returns {boolean} true when the visitor arrived from the Salesforce site
+ */
+export function stripArrival(where, history) {
+  try {
+    const query = new URLSearchParams(where.search || "");
+    if (query.get(ARRIVAL_PARAM) !== ARRIVAL_VALUE) {
+      return false;
+    }
+    query.delete(ARRIVAL_PARAM);
+    const rest = query.toString();
+    history.replaceState(
+      history.state,
+      "",
+      `${where.pathname}${rest ? `?${rest}` : ""}${where.hash || ""}`
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Read while the module loads, before the analytics tag has sent its first page view. Only
+// the static site is ever sent here, so the Salesforce site never strips anything.
+let arrivedFromSalesforce =
+  IS_STATIC && typeof window !== "undefined"
+    ? stripArrival(window.location, window.history)
+    : false;
 
 /**
  * Builds a site relative href from the community base path and a route URL.
@@ -472,7 +505,9 @@ export default class PortfolioThemeLayout extends LightningElement {
     if (this.chosenTheme) {
       this.applyTheme(this.chosenTheme);
     }
-    if (!IS_STATIC) {
+    if (IS_STATIC) {
+      this.reportArrival();
+    } else {
       this.redirectVisitor();
     }
     forgetStoredMotion();
@@ -484,6 +519,16 @@ export default class PortfolioThemeLayout extends LightningElement {
     window.addEventListener("resize", this._onScroll, { passive: true });
     window.addEventListener("popstate", this._onPopState);
     this.routeUrl = currentRouteUrl();
+  }
+
+  /**
+   * Records the arrival of a visitor the Salesforce site sent here, once per page load.
+   */
+  reportArrival() {
+    if (arrivedFromSalesforce) {
+      arrivedFromSalesforce = false;
+      trackEvent(EVENTS.REDIRECT_ARRIVED, { source: ARRIVAL_VALUE });
+    }
   }
 
   /**
