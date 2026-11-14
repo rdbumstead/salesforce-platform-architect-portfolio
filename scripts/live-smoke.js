@@ -56,6 +56,13 @@
 // before it counts as failed, because a WebKit page load now and then logs one transient error
 // that a second load does not repeat. A real defect fails both loads.
 //
+// That second load must not hide a flake, so a row that failed its first load and passed its
+// second is reported as a first load warning. Each warning names the route, engine, size (and
+// colour scheme for an accessibility row) and the first load's failure text. The JSON body
+// carries them in "warnings", each also goes to stderr, and the summary line ends with their
+// count ("first load warnings: N", also when it is 0). A warning never fails the run. A row that
+// fails both loads is a failure, and carries its first load's text in "firstLoadFailure".
+//
 // It fails fast on a page that is not there. A row whose page does not answer 200, or whose
 // page has no site layout, fails at once, with no component waits and no second load. Before
 // any row, the home page is loaded once, and when it does not answer 200 with the site layout
@@ -575,19 +582,98 @@ async function homeProblem(browser) {
   }
 }
 
-async function checkRow(browser, engine, route, viewport) {
-  let attempt = await checkOnce(browser, route, viewport);
+/**
+ * Says in one line why a load failed: its error, status, components that did not show, console
+ * errors and axe violations. This is the text a first load warning carries.
+ * @param {object} attempt one load's result
+ * @returns {string} the failure text, never empty
+ */
+function describeFailure(attempt) {
+  const parts = [];
+  if (attempt.error) {
+    parts.push(attempt.error);
+  }
+  if (attempt.status === null) {
+    parts.push("no response");
+  } else if (attempt.status !== undefined && attempt.status !== 200) {
+    parts.push(`status ${attempt.status}`);
+  }
+  if (attempt.layout === false) {
+    parts.push("no site layout");
+  }
+  for (const [tag, state] of Object.entries(attempt.components || {})) {
+    if (state !== "visible" && state !== "empty") {
+      parts.push(`${tag} ${state}`);
+    }
+  }
+  for (const message of attempt.errors || []) {
+    parts.push(`console: ${message}`);
+  }
+  for (const violation of attempt.violations || []) {
+    parts.push(`axe ${violation.rule} on ${violation.count}`);
+  }
+  return parts.join(", ") || "failed with no reason recorded";
+}
+
+/**
+ * Runs a load, and when it fails in a way worth a second look, runs it once more. A flake that
+ * the second load clears is not lost: the first load's failure text comes back with the result.
+ * @param {Function} once runs one load and resolves its result, which carries a boolean pass
+ * @param {Function} retryable says whether a failed result deserves a second load
+ * @returns {Promise<object>} the last result, the loads run and the first failure text, if any
+ */
+async function loadWithRetry(once, retryable) {
+  let attempt = await once();
   let attempts = 1;
-  // A missing page fails at once. Only a component or console failure is loaded again.
-  if (!attempt.pass && !attempt.missingPage) {
-    attempt = await checkOnce(browser, route, viewport);
+  let firstLoadFailure;
+  if (!attempt.pass && retryable(attempt)) {
+    firstLoadFailure = describeFailure(attempt);
+    attempt = await once();
     attempts = 2;
   }
+  return { attempt, attempts, firstLoadFailure };
+}
+
+/**
+ * The rows that failed their first load and passed their second. They stay passing rows, and
+ * each is also named here so a flake shows in the report and the daily run.
+ * @param {object[]} rows the run's rows
+ * @returns {object[]} one warning per recovered row
+ */
+function warningsFrom(rows) {
+  return (rows || [])
+    .filter((row) => row.pass && row.firstLoadFailure)
+    .map((row) => ({
+      warning: "first load failed",
+      browser: row.browser,
+      route: row.route,
+      viewport: row.viewport,
+      ...(row.scheme ? { scheme: row.scheme } : {}),
+      firstLoad: row.firstLoadFailure
+    }));
+}
+
+/**
+ * The summary line's ending for the warnings, always present so a clean run shows its zero.
+ * @param {object[]} warnings the run's warnings
+ * @returns {string} the text to append to the summary line
+ */
+function warningCountText(warnings) {
+  return `, first load warnings: ${warnings.length}`;
+}
+
+async function checkRow(browser, engine, route, viewport) {
+  // A missing page fails at once. Only a component or console failure is loaded again.
+  const { attempt, attempts, firstLoadFailure } = await loadWithRetry(
+    () => checkOnce(browser, route, viewport),
+    (failed) => !failed.missingPage
+  );
   return {
     browser: engine,
     route: route.path,
     viewport: viewport.name,
     attempts,
+    ...(firstLoadFailure ? { firstLoadFailure } : {}),
     ...attempt
   };
 }
@@ -856,17 +942,16 @@ async function tourOnce(browser, viewport) {
 }
 
 async function tourRow(browser, engine, viewport) {
-  let attempt = await tourOnce(browser, viewport);
-  let attempts = 1;
-  if (!attempt.pass && !attempt.missingPage) {
-    attempt = await tourOnce(browser, viewport);
-    attempts = 2;
-  }
+  const { attempt, attempts, firstLoadFailure } = await loadWithRetry(
+    () => tourOnce(browser, viewport),
+    (failed) => !failed.missingPage
+  );
   return {
     browser: engine,
     route: "tour",
     viewport: viewport.name,
     attempts,
+    ...(firstLoadFailure ? { firstLoadFailure } : {}),
     ...attempt
   };
 }
@@ -942,23 +1027,18 @@ async function axeOnce(browser, route, viewport, scheme) {
 }
 
 async function axeRow(browser, engine, route, viewport, scheme) {
-  let attempt = await axeOnce(browser, route, viewport, scheme);
-  let attempts = 1;
   // A real violation fails every load. Only a load problem is tried once more.
-  if (
-    !attempt.pass &&
-    attempt.violations.length === 0 &&
-    !attempt.missingPage
-  ) {
-    attempt = await axeOnce(browser, route, viewport, scheme);
-    attempts = 2;
-  }
+  const { attempt, attempts, firstLoadFailure } = await loadWithRetry(
+    () => axeOnce(browser, route, viewport, scheme),
+    (failed) => failed.violations.length === 0 && !failed.missingPage
+  );
   return {
     browser: engine,
     route: `axe ${route.path}`,
     viewport: viewport.name,
     scheme,
     attempts,
+    ...(firstLoadFailure ? { firstLoadFailure } : {}),
     ...attempt
   };
 }
@@ -1073,6 +1153,13 @@ async function main() {
   }
 
   const failed = rows.filter((row) => !row.pass);
+  const warnings = warningsFrom(rows);
+  for (const warning of warnings) {
+    console.error(
+      `live smoke warning: ${warning.browser} ${warning.route} ${warning.viewport}` +
+        `${warning.scheme ? ` ${warning.scheme}` : ""} failed its first load and passed its second: ${warning.firstLoad}`
+    );
+  }
   const ok = rows.length > 0 && failed.length === 0;
   const summary =
     `live smoke: ${ok ? "PASS" : "FAIL"}, ${rows.length - failed.length} of ` +
@@ -1084,7 +1171,8 @@ async function main() {
             `${row.browser} ${row.route || ""} ${row.viewport || ""} ${row.scheme || ""}`.trim()
           )
           .join("; ")}`
-      : "");
+      : "") +
+    warningCountText(warnings);
   finish(
     {
       ok,
@@ -1092,6 +1180,7 @@ async function main() {
       base: BASE,
       checkedAt: new Date().toISOString(),
       failed: failed.length,
+      warnings,
       rows
     },
     ok ? 0 : 1
@@ -1110,7 +1199,11 @@ module.exports = {
   shouldStripUpgrade,
   stripUpgradeHeaders,
   parseFeatures,
-  routesFor
+  routesFor,
+  describeFailure,
+  loadWithRetry,
+  warningsFrom,
+  warningCountText
 };
 
 if (require.main === module) {
