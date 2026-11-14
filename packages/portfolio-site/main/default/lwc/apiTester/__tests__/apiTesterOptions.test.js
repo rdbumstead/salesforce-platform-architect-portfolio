@@ -470,7 +470,7 @@ describe("c-api-tester phone sections", () => {
     );
   });
 
-  it("folds the response details under a closed section after a call", async () => {
+  it("opens the response details on its own after a call, and the disclosure follows", async () => {
     mockMatchMedia(true);
     invoke.mockResolvedValue({
       statusCode: 200,
@@ -487,18 +487,111 @@ describe("c-api-tester phone sections", () => {
     expect($(element, ".status-value").textContent).toBe("200");
     const button = disclosure(element, "response");
     expect(button.textContent.trim()).toBe("Response details");
-    expect(button.getAttribute("aria-expanded")).toBe("false");
+    expect(button.getAttribute("aria-expanded")).toBe("true");
     const panel = $(element, `[id="${button.getAttribute("aria-controls")}"]`);
-    expect(panel.hidden).toBe(true);
+    expect(panel.hidden).toBe(false);
     expect(panel.querySelector(".header-panel")).not.toBeNull();
+    // Opened by code, so only the run is recorded and no toggle event is sent.
+    expect(trackEvent).toHaveBeenCalledTimes(1);
+    expect(trackEvent.mock.calls[0][0]).toBe("api_test_executed");
+  });
 
+  it("opens the details again on every run, even after a manual close", async () => {
+    mockMatchMedia(true);
+    invoke.mockResolvedValue({
+      statusCode: 200,
+      latencyMs: 12,
+      headers: { "X-Request-Id": "r-1" },
+      body: "[]"
+    });
+    const element = create();
+    await flush();
+    $(element, "button.execute-button").click();
+    await flush();
+    await flush();
+
+    const button = disclosure(element, "response");
     button.click();
     await flush();
-    expect(panel.hidden).toBe(false);
+    expect(button.getAttribute("aria-expanded")).toBe("false");
+    expect(
+      $(element, `[id="${button.getAttribute("aria-controls")}"]`).hidden
+    ).toBe(true);
+    // The press is recorded, because it is the visitor's own.
     expect(trackEvent).toHaveBeenLastCalledWith("api_lab_section_toggled", {
       section: "response",
-      expanded: true
+      expanded: false
     });
+
+    $(element, "button.execute-button").click();
+    await flush();
+    await flush();
+    const again = disclosure(element, "response");
+    expect(again.getAttribute("aria-expanded")).toBe("true");
+    expect(
+      $(element, `[id="${again.getAttribute("aria-controls")}"]`).hidden
+    ).toBe(false);
+    const toggles = trackEvent.mock.calls.filter(
+      ([name]) => name === "api_lab_section_toggled"
+    );
+    expect(toggles).toHaveLength(1);
+  });
+
+  it("scrolls to the summary, not the details, and leaves the other sections as they were", async () => {
+    mockMatchMedia(true);
+    invoke.mockResolvedValue({
+      statusCode: 200,
+      latencyMs: 12,
+      headers: {},
+      body: "[]"
+    });
+    const scrolled = [];
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function scroll() {
+      scrolled.push(this.className);
+    };
+    try {
+      const element = create();
+      await flush();
+      $(element, "button.execute-button").click();
+      await flush();
+      await flush();
+
+      expect(scrolled).toHaveLength(1);
+      expect(scrolled[0]).toContain("result-summary");
+      ["filters", "advanced", "token"].forEach((section) =>
+        expect(disclosure(element, section).getAttribute("aria-expanded")).toBe(
+          "false"
+        )
+      );
+    } finally {
+      Element.prototype.scrollIntoView = original;
+    }
+  });
+
+  it("opens the details after a failed run too", async () => {
+    mockMatchMedia(true);
+    invoke.mockRejectedValue(new Error("down"));
+    const element = create();
+    await flush();
+    $(element, "button.execute-button").click();
+    await flush();
+    await flush();
+
+    expect($(element, ".invoke-error")).not.toBeNull();
+    // A later good run then shows its details with no tap.
+    invoke.mockResolvedValue({
+      statusCode: 200,
+      latencyMs: 5,
+      headers: {},
+      body: "[]"
+    });
+    $(element, "button.execute-button").click();
+    await flush();
+    await flush();
+    expect(disclosure(element, "response").getAttribute("aria-expanded")).toBe(
+      "true"
+    );
   });
 
   it("shows every section open with no disclosure on desktop", async () => {

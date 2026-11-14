@@ -1309,6 +1309,12 @@ export default class ApiTester extends LightningElement {
       });
     } finally {
       this.isLoading = false;
+      if (this.isPhone) {
+        // Every run on a phone opens Response details again, even after a manual close, because
+        // each run is a new answer. Set in code, so no api_lab_section_toggled event is sent,
+        // which counts presses only. The scroll below still lands on the summary.
+        this.openSections = { ...this.openSections, [SECTION_RESPONSE]: true };
+      }
       this.revealPending = this.isPhone;
     }
   }
