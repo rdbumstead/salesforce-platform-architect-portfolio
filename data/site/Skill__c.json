@@ -10,7 +10,8 @@
       "Category_Order__c": 1,
       "Proficiency__c": 5,
       "Color_Hex__c": "#1B96FF",
-      "Persona_Tag__c": "Developer;Architect"
+      "Persona_Tag__c": "Developer;Architect",
+      "Is_Verified__c": true
     },
     {
       "attributes": {
@@ -22,7 +23,8 @@
       "Category_Order__c": 1,
       "Proficiency__c": 4,
       "Color_Hex__c": "#1B96FF",
-      "Persona_Tag__c": "Developer"
+      "Persona_Tag__c": "Developer",
+      "Is_Verified__c": true
     },
     {
       "attributes": {
@@ -35,7 +37,8 @@
       "Proficiency__c": 3,
       "Color_Hex__c": "#1B96FF",
       "Display_Name__c": "Seed Integration",
-      "Persona_Tag__c": "Architect"
+      "Persona_Tag__c": "Architect",
+      "Is_Verified__c": true
     },
     {
       "attributes": {
@@ -48,7 +51,8 @@
       "Proficiency__c": 5,
       "Color_Hex__c": "#04844B",
       "Display_Name__c": "Seed Lightning Web Components",
-      "Persona_Tag__c": "Developer"
+      "Persona_Tag__c": "Developer",
+      "Is_Verified__c": true
     },
     {
       "attributes": {
@@ -59,7 +63,8 @@
       "Category__c": "Frontend",
       "Category_Order__c": 2,
       "Proficiency__c": 4,
-      "Color_Hex__c": "#04844B"
+      "Color_Hex__c": "#04844B",
+      "Is_Verified__c": true
     },
     {
       "attributes": {
@@ -71,7 +76,8 @@
       "Category_Order__c": 2,
       "Proficiency__c": 3,
       "Color_Hex__c": "#04844B",
-      "Persona_Tag__c": "Admin"
+      "Persona_Tag__c": "Admin",
+      "Is_Verified__c": true
     }
   ]
 }

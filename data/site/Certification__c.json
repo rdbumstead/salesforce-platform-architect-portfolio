@@ -10,7 +10,8 @@
       "Issuer__c": "@SeedInstituteRef",
       "Earned_Date__c": "2021-06-01",
       "Badge_File__c": "platform-administrator.webp",
-      "Is_Retired__c": false
+      "Is_Retired__c": false,
+      "Is_Verified__c": true
     },
     {
       "attributes": {
@@ -21,7 +22,8 @@
       "Contact__c": "@SeedOwnerRef",
       "Issuer__c": "@SeedInstituteRef",
       "Earned_Date__c": "2020-07-22",
-      "Is_Retired__c": true
+      "Is_Retired__c": true,
+      "Is_Verified__c": true
     },
     {
       "attributes": {
@@ -32,7 +34,8 @@
       "Contact__c": "@SeedOwnerRef",
       "Issuer__c": "@SeedInstituteRef",
       "Earned_Date__c": "2022-09-15",
-      "Is_Retired__c": false
+      "Is_Retired__c": false,
+      "Is_Verified__c": true
     },
     {
       "attributes": {
@@ -43,7 +46,8 @@
       "Contact__c": "@SeedOwnerRef",
       "Issuer__c": "@SeedInstituteRef",
       "Earned_Date__c": "2024-03-10",
-      "Is_Retired__c": false
+      "Is_Retired__c": false,
+      "Is_Verified__c": true
     }
   ]
 }
