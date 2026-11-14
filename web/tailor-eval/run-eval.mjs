@@ -12,6 +12,8 @@
  *   --out        folder for results. Default tailor-eval/private/runs. A folder inside the
  *                repository must be ignored by git, or nothing is written.
  *   --timeout-ms the wait allowed for the selector plus the letter. Default 115000.
+ *   --snapshot   the snapshot to select from. Default the committed one built from the fixture
+ *                reads. A real one lives under tailor-eval/private/ (see build-snapshot.mjs).
  *
  * Real providers read their keys from the environment (see lib/providers.mjs) and refuse to
  * start without them. The client blocklist comes from SITE_DENYLIST, never from a file.
@@ -20,6 +22,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { MODES, runOne, WAIT_LIMIT_MS } from './lib/pipeline.mjs';
+import { assertSnapshot, COMMITTED_SNAPSHOT } from './build-snapshot.mjs';
 import { assertPrivateFolder } from './lib/private.mjs';
 import { createProvider, PROVIDER_NAMES } from './lib/providers.mjs';
 import { loadValidators } from './lib/validators.mjs';
@@ -43,16 +46,18 @@ function readFolder(dir) {
     .map((name) => readJson(path.join(dir, name)));
 }
 
-/** Snapshot, categories, prices, postings and gold files. Private ones only when asked. */
-export async function loadInputs({ root = EVAL_DIR, includePrivate = true } = {}) {
+/** Snapshot, categories, prices, postings and gold files. Private ones only when asked. The snapshot is checked against the contract. */
+export async function loadInputs({ root = EVAL_DIR, includePrivate = true, snapshotPath } = {}) {
   const privateDir = path.join(root, 'private');
   const postings = readFolder(path.join(root, 'postings'));
   if (includePrivate) postings.push(...readFolder(path.join(privateDir, 'postings')).map((posting) => ({ ...posting, private: true })));
   const gold = {};
   if (includePrivate) for (const file of readFolder(path.join(privateDir, 'gold'))) gold[file.postingId] = file;
+  const categories = readJson(path.join(root, 'categories.json')).categories;
+  const snapshot = assertSnapshot(readJson(snapshotPath || path.join(root, 'snapshot', 'resume-snapshot.json')), { categories: categories.map((category) => category.id) });
   return {
-    snapshot: readJson(path.join(root, 'snapshot', 'resume-snapshot.json')),
-    categories: readJson(path.join(root, 'categories.json')).categories,
+    snapshot,
+    categories,
     prices: readJson(path.join(root, 'prices.json')),
     postings,
     gold
@@ -74,7 +79,7 @@ export async function parseBlocklistSafely(raw, validators) {
 }
 
 export function parseArgs(argv) {
-  const args = { providers: ['fake'], postings: 'all', repeats: DEFAULT_REPEATS, mode: 'both', out: path.join(PRIVATE_DIR, 'runs'), timeoutMs: WAIT_LIMIT_MS };
+  const args = { providers: ['fake'], postings: 'all', repeats: DEFAULT_REPEATS, mode: 'both', out: path.join(PRIVATE_DIR, 'runs'), timeoutMs: WAIT_LIMIT_MS, snapshot: COMMITTED_SNAPSHOT };
   for (let i = 0; i < argv.length; i += 1) {
     const [flag, inline] = argv[i].split('=');
     const value = inline ?? argv[(i += 1)];
@@ -85,6 +90,7 @@ export function parseArgs(argv) {
     else if (flag === '--mode') args.mode = value;
     else if (flag === '--out') args.out = path.resolve(value);
     else if (flag === '--timeout-ms') args.timeoutMs = Number(value);
+    else if (flag === '--snapshot') args.snapshot = path.resolve(value);
     else throw new Error(`Unknown option ${flag}.`);
   }
   if (!Number.isInteger(args.repeats) || args.repeats < 1) throw new Error('--repeats must be a whole number of 1 or more.');
@@ -122,7 +128,7 @@ export async function runEval({ providers, postings, snapshot, modes, repeats, v
 async function main(argv) {
   const args = parseArgs(argv);
   assertPrivateFolder(args.out);
-  const inputs = await loadInputs();
+  const inputs = await loadInputs({ snapshotPath: args.snapshot });
   const postings = pickPostings(inputs.postings, args.postings);
   const providers = args.providers.map((name) => createProvider(name));
   const validators = await loadValidators();

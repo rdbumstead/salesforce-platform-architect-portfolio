@@ -399,7 +399,7 @@ async function main(argv) {
   }
   const { loadInputs, parseBlocklistSafely } = await import('./run-eval.mjs');
   const results = JSON.parse(fs.readFileSync(file, 'utf8'));
-  const inputs = await loadInputs({ includePrivate: true });
+  const inputs = await loadInputs({ includePrivate: true, snapshotPath: results.args?.snapshot });
   const blocklist = await parseBlocklistSafely(process.env.SITE_DENYLIST);
   const scored = scoreRuns(results.records, { ...inputs, blocklist });
   const out = file.replace(/\.json$/, '') + '.summary.json';
