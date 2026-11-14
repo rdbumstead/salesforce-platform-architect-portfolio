@@ -82,6 +82,17 @@ jobs:
                 console.log(parts.join(", "));
               }
             ' >> "$GITHUB_STEP_SUMMARY"
+            node -e '
+              const body = JSON.parse(require("fs").readFileSync("smoke.json", "utf8"));
+              const warnings = body.warnings || [];
+              if (warnings.length) {
+                console.log("");
+                console.log(`**First load warnings (${warnings.length})**: rows that failed their first load and passed their second`);
+                for (const w of warnings) {
+                  console.log(`- ${w.browser} ${w.route} ${w.viewport}${w.scheme ? " " + w.scheme : ""}: ${w.firstLoad}`);
+                }
+              }
+            ' >> "$GITHUB_STEP_SUMMARY"
           fi
 
           exit $CODE

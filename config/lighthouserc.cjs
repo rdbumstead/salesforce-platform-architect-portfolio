@@ -1,11 +1,11 @@
 /* eslint-env node */
 // Base URL without a trailing slash. Every route below is appended to it.
-// The default is the site itself, not ryanbumstead.com, because that domain is a
-// 301 that sends every path to the home page.
-const base = (
-  process.env.TARGET_URL ||
-  "https://ryan-bumstead-dev-ed.develop.my.site.com/portfolio"
-).replace(/\/+$/, "");
+// The default is the live site. The Salesforce site now sends its visitors on to it,
+// so a run aimed there would score the static site under the wrong host.
+const base = (process.env.TARGET_URL || "https://ryanbumstead.com").replace(
+  /\/+$/,
+  ""
+);
 const routes = [
   "/",
   "/resume",
