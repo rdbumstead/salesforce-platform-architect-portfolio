@@ -1,21 +1,21 @@
 @import "c/sectionHeading";
+@import "c/nativeControls";
+@import "c/panel";
+@import "c/pill";
 
 /*
  * Colours, fonts, radii and spacing come only from the --pf- design
  * tokens, so the board follows the light and dark themes. Every element that sets a
- * background also sets its text colour. Issue keys and the age label use the mono font.
+ * background also sets its text colour. Issue keys and the age label use the mono font. The box
+ * is the shared panel (c/panel), the tabs are the shared tabs and Show all the shared quiet
+ * button (c/nativeControls), and the badge and the Epic tag are the shared pill (c/pill).
  */
 :host {
   display: block;
 }
 
 .roadmap {
-  background-color: var(--pf-surface);
-  color: var(--pf-text);
   font-family: var(--pf-font-sans);
-  padding: var(--pf-space-4);
-  border: 1px solid var(--pf-border);
-  border-radius: var(--pf-radius);
   overflow-wrap: anywhere;
 }
 
@@ -49,7 +49,7 @@
 
 .age-label {
   color: var(--pf-muted);
-  font-size: 0.875rem;
+  font-size: var(--pf-font-caption, 14px);
 }
 
 .age-stale {
@@ -58,15 +58,6 @@
   border-radius: var(--pf-radius-sm);
   padding: 0 var(--pf-space-1);
   font-weight: 700;
-}
-
-.status-badge {
-  display: inline-block;
-  padding: var(--pf-space-1) var(--pf-space-2);
-  border-radius: var(--pf-radius-sm);
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
 }
 
 .badge-simulated {
@@ -80,13 +71,13 @@
   color: var(--pf-warn-text);
 }
 
-/* The switch: a native checkbox with role="switch", at least 24 by 24 px, inside its
-   label so a click anywhere on the text toggles it. */
+/* The switch: a native checkbox with role="switch", 24 by 24 px, inside its label so a click
+   anywhere on the text toggles it. The label is the 44 px target. */
 .simulate-switch {
   display: inline-flex;
   align-items: center;
   gap: var(--pf-space-2);
-  min-height: 44px;
+  min-height: var(--pf-control-height, 44px);
   color: var(--pf-body);
   cursor: pointer;
 }
@@ -100,7 +91,7 @@
 }
 
 .simulate-input:focus-visible {
-  outline: 2px solid var(--pf-accent);
+  outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
 }
 
@@ -108,14 +99,24 @@
    takes no space. */
 .status-note {
   color: var(--pf-body);
-  font-size: 0.875rem;
+  font-size: var(--pf-font-caption, 14px);
   margin: 0;
 }
 
+/* Loading and empty notes: 14 px in the muted colour. */
 .roadmap-message {
-  color: var(--pf-text);
+  color: var(--pf-muted);
+  font-size: var(--pf-font-caption, 14px);
   margin: 0;
   padding: var(--pf-space-2) 0;
+}
+
+/* The site's one error look: a filled box in the error colours. */
+.roadmap-message.roadmap-error {
+  padding: var(--pf-space-3);
+  background-color: var(--pf-error);
+  color: var(--pf-error-text);
+  border-radius: var(--pf-radius-sm);
 }
 
 /* Three equal columns on a wide screen. Below 768px they stack into one column, so
@@ -156,8 +157,9 @@
 
 .column-title {
   color: var(--pf-text);
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: var(--pf-font-card, 17px);
+  font-weight: var(--pf-weight-card, 600);
+  line-height: var(--pf-line-card, 1.3);
   margin: 0 0 var(--pf-space-2);
 }
 
@@ -170,7 +172,7 @@
 .column-empty {
   color: var(--pf-muted);
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--pf-font-caption, 14px);
 }
 
 .card-list {
@@ -212,80 +214,59 @@
   font-size: 0.75rem;
 }
 
-.epic-label {
-  background-color: var(--pf-chip);
-  color: var(--pf-chip-text);
-  border-radius: var(--pf-radius-sm);
-  padding: 0 var(--pf-space-2);
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
 .card-summary {
   color: var(--pf-text);
+  font-size: var(--pf-font-body, 16px);
+  line-height: var(--pf-line-body, 1.6);
   margin: var(--pf-space-1) 0 0;
 }
 
 .card-parent {
   color: var(--pf-muted);
-  font-size: 0.75rem;
+  font-size: var(--pf-font-meta, 12px);
   margin: var(--pf-space-1) 0 0;
 }
 
-/* The Done column's "Show all" control. A real button, at least 44 px high. */
+/* The Done column's "Show all" control, the shared quiet button. */
 .show-all {
-  min-height: 44px;
   margin-top: var(--pf-space-2);
-  padding: 0 var(--pf-space-4);
-  border: 1px solid var(--pf-border);
-  border-radius: var(--pf-radius-sm);
-  background: transparent;
-  color: var(--pf-text);
-  font: inherit;
-  font-size: 1rem;
-  font-weight: 400;
-  line-height: 1.5;
-  cursor: pointer;
-}
-
-.show-all:focus-visible {
-  outline: 2px solid var(--pf-accent);
-  outline-offset: 2px;
 }
 
 /* One sentence under the header says what the switch does. */
 .simulate-hint {
   color: var(--pf-muted);
-  font-size: 0.875rem;
+  font-size: var(--pf-font-caption, 14px);
   margin: 0 0 var(--pf-space-2);
 }
 
-/* The tabs show only below 768 px, where the three columns become one panel at a time. */
+/* The tabs show only below 768 px, where the three columns become one panel at a time. They
+   are the shared tabs (nc-tablist, nc-tab), shared out evenly on one line. */
 .roadmap-tabs {
-  display: flex;
+  flex-wrap: nowrap;
   gap: var(--pf-space-1);
   margin-top: var(--pf-space-2);
-  border-bottom: 1px solid var(--pf-border);
 }
 
 .tab {
   flex: 1 1 0;
+  gap: 0;
   min-width: 0;
-  min-height: 44px;
   padding: 0 var(--pf-space-2);
-  border: 1px solid var(--pf-border);
-  border-bottom: 0;
-  border-radius: var(--pf-radius-sm) var(--pf-radius-sm) 0 0;
-  background-color: var(--pf-surface);
-  color: var(--pf-text);
-  font: inherit;
-  font-size: 0.875rem;
-  cursor: pointer;
+  font-size: var(--pf-font-caption, 14px);
+}
+
+/* The count starts with a space, which a flex item would drop, so the space is kept. */
+.tab-count {
+  white-space: pre;
 }
 
 /* On a narrow phone the count drops under the name on all three tabs, so no tab wraps on its
    own and the labels sit on the same lines. */
 @media (max-width: 479.98px) {
+  .tab {
+    flex-direction: column;
+  }
+
   .tab-count {
     display: block;
   }
@@ -296,18 +277,6 @@
     padding: 0 var(--pf-space-1);
     font-size: 0.8125rem;
   }
-}
-
-.tab-active {
-  background-color: var(--pf-chip);
-  color: var(--pf-chip-text);
-  border-color: var(--pf-accent);
-  box-shadow: inset 0 -3px 0 var(--pf-accent);
-}
-
-.tab:focus-visible {
-  outline: 2px solid var(--pf-accent);
-  outline-offset: 2px;
 }
 
 .column-title[data-tour-anchor]:focus {

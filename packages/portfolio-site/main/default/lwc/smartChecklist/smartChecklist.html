@@ -1,5 +1,5 @@
 <template>
-  <section class="checklist" aria-labelledby="governance-heading">
+  <section class="checklist pf-panel" aria-labelledby="governance-heading">
     <h2 class="heading section-heading" id="governance-heading">
       Governance checklist
     </h2>
@@ -10,7 +10,7 @@
       </p>
     </template>
     <template lwc:elseif={hasError}>
-      <p class="note" role="status">
+      <p class="note note-error" role="status">
         The pipeline status could not be loaded. No item is shown as passed.
       </p>
     </template>

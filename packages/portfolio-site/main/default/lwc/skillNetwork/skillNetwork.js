@@ -993,14 +993,6 @@ export default class SkillNetwork extends LightningElement {
     return String(this.isGraph);
   }
 
-  get matrixButtonClass() {
-    return this.isMatrix ? "view-button is-on" : "view-button";
-  }
-
-  get graphButtonClass() {
-    return this.isGraph ? "view-button is-on" : "view-button";
-  }
-
   // ---------- persona filter ----------
 
   get showPersonaFilter() {
@@ -1020,7 +1012,7 @@ export default class SkillNetwork extends LightningElement {
           label: option.label,
           value: option.value,
           pressed: String(on),
-          className: on ? "persona-button is-on" : "persona-button"
+          className: "nc-toggle persona-button"
         };
       }
     );
@@ -1056,7 +1048,7 @@ export default class SkillNetwork extends LightningElement {
         label: view.label,
         value: view.value,
         pressed: String(on),
-        className: on ? "persona-button is-on" : "persona-button"
+        className: "nc-toggle persona-button"
       };
     });
   }
@@ -1322,7 +1314,7 @@ export default class SkillNetwork extends LightningElement {
       ]
         .filter(Boolean)
         .join(", "),
-      className: selected ? "chip is-selected" : "chip"
+      className: "nc-toggle chip"
     };
   }
 

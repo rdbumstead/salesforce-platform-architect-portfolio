@@ -94,7 +94,7 @@
                     <template lwc:if={control.isPills}>
                       <fieldset class="pill-group" data-param={control.name}>
                         <legend class="param-label">{control.name}</legend>
-                        <div class="pill-row">
+                        <div class="nc-toggle-group pill-row">
                           <template for:each={control.pills} for:item="pill">
                             <button
                               key={pill.key}
@@ -181,7 +181,7 @@
                     <code class="chosen-text">{pill.text}</code>
                     <button
                       type="button"
-                      class="remove-pill"
+                      class="nc-button nc-button_ghost remove-pill"
                       aria-label={pill.removeLabel}
                       data-name={pill.name}
                       onclick={handleRemovePill}
@@ -310,10 +310,14 @@
               </dl>
 
               <h3 class="slds-text-title_caps slds-m-top_small">Body</h3>
-              <div class="view-toggle" role="group" aria-label="Body view">
+              <div
+                class="nc-toggle-group view-toggle"
+                role="group"
+                aria-label="Body view"
+              >
                 <button
                   type="button"
-                  class={rawViewClass}
+                  class="nc-toggle view-button"
                   data-view="raw"
                   aria-pressed={rawPressed}
                   onclick={handleViewClick}
@@ -322,7 +326,7 @@
                 </button>
                 <button
                   type="button"
-                  class={renderedViewClass}
+                  class="nc-toggle view-button"
                   data-view="rendered"
                   aria-pressed={renderedPressed}
                   onclick={handleViewClick}
@@ -367,7 +371,7 @@
               <template lwc:if={hasNextPage}>
                 <button
                   type="button"
-                  class="next-page-button"
+                  class="nc-button nc-button_secondary next-page-button"
                   onclick={handleNextPage}
                 >
                   Next page

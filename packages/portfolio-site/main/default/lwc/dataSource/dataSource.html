@@ -2,7 +2,7 @@
   <div class="marker" onkeydown={handleKeydown} onfocusout={handleFocusOut}>
     <button
       type="button"
-      class="marker-button"
+      class="nc-button nc-button_ghost marker-button"
       aria-expanded={expanded}
       aria-controls={panelId}
       aria-label={buttonLabel}
@@ -37,7 +37,7 @@
       <button
         lwc:if={hasModelObjects}
         type="button"
-        class="model-button"
+        class="nc-button nc-button_ghost model-button"
         aria-haspopup="dialog"
         onclick={handleOpenModel}
       >
@@ -50,7 +50,11 @@
             >{wording.guideLinkText}</a
           >
         </span>
-        <button type="button" class="close-button" onclick={handleClose}>
+        <button
+          type="button"
+          class="nc-button close-button"
+          onclick={handleClose}
+        >
           {wording.closeButton}
         </button>
       </p>
@@ -74,7 +78,7 @@
         </h2>
         <button
           type="button"
-          class="model-close-button"
+          class="nc-button model-close-button"
           onclick={handleCloseModel}
         >
           {wording.closeButton}
@@ -84,7 +88,7 @@
         <p lwc:if={modelLoading} class="model-loading" role="status">
           {wording.modelLoading}
         </p>
-        <p lwc:if={modelFailed} class="model-loading" role="alert">
+        <p lwc:if={modelFailed} class="model-loading model-error" role="alert">
           {wording.modelFailed}
         </p>
         <template lwc:if={visualizerConstructor}>

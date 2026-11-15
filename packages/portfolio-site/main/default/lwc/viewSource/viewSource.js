@@ -185,7 +185,7 @@ export default class ViewSource extends LightningElement {
         tag: describeFile(file.path, this.allPaths).tag,
         selected: selected ? "true" : "false",
         tabIndex: selected ? "0" : "-1",
-        className: selected ? "tab tab_selected" : "tab"
+        className: "nc-tab tab"
       };
     });
   }

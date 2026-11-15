@@ -2,7 +2,7 @@
   <template lwc:if={hasFiles}>
     <button
       type="button"
-      class="view-source-button"
+      class="nc-button nc-button_ghost view-source-button"
       aria-haspopup="dialog"
       onclick={handleOpen}
     >
@@ -24,12 +24,16 @@
             <h2 id="view-source-heading" class="dialog-heading" tabindex="-1">
               {heading}
             </h2>
-            <button type="button" class="close-button" onclick={handleClose}>
+            <button
+              type="button"
+              class="nc-button close-button"
+              onclick={handleClose}
+            >
               Close
             </button>
           </header>
           <div
-            class="tab-list"
+            class="nc-tablist tab-list"
             role="tablist"
             aria-label="Files"
             onkeydown={handleTabKeydown}

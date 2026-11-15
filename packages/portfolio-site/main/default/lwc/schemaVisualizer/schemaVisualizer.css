@@ -1,19 +1,18 @@
+@import "c/nativeControls";
+@import "c/panel";
+
 /*
  * Colours, fonts, radii and spacing come only from the --pf- design
  * tokens, so the diagram follows the light and dark themes. The SVG takes its colours
- * from these classes too. Controls are at least 44 px high.
+ * from these classes too. The box is the shared panel (c/panel), the scope switch the shared
+ * toggle tray and Close the shared secondary button (c/nativeControls), all 44 px.
  */
 :host {
   display: block;
 }
 
 .erd {
-  background-color: var(--pf-surface);
-  color: var(--pf-text);
   font-family: var(--pf-font-sans);
-  border: 1px solid var(--pf-border);
-  border-radius: var(--pf-radius);
-  padding: var(--pf-space-4);
   overflow-wrap: anywhere;
 }
 
@@ -37,8 +36,9 @@
 
 .erd-title {
   color: var(--pf-text);
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-size: var(--pf-font-panel, 20px);
+  font-weight: var(--pf-weight-panel, 700);
+  line-height: var(--pf-line-panel, 1.3);
   margin: 0;
 }
 
@@ -49,39 +49,15 @@
   }
 }
 
-.scope-toggle {
-  display: inline-flex;
-  border: 1px solid var(--pf-border);
-  border-radius: var(--pf-radius-sm);
-  overflow: hidden;
-}
-
-.scope-button {
-  min-height: 44px;
-  min-width: 44px;
-  padding: 0 var(--pf-space-4);
-  background-color: var(--pf-surface);
-  color: var(--pf-body);
-  border: 0;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.scope-button_on {
-  background-color: var(--pf-btn);
-  color: var(--pf-btn-text);
-}
-
-.scope-button:focus-visible,
-.object-button:focus-visible,
-.panel-close:focus-visible {
-  outline: 2px solid var(--pf-accent);
+.object-button:focus-visible {
+  outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
 }
 
+/* Loading and empty notes: 14 px in the muted colour. */
 .status {
   color: var(--pf-muted);
+  font-size: var(--pf-font-caption, 14px);
   margin: var(--pf-space-3) 0;
 }
 
@@ -95,7 +71,7 @@
 .caption {
   color: var(--pf-muted);
   font-family: var(--pf-font-mono);
-  font-size: 0.875rem;
+  font-size: var(--pf-font-caption, 14px);
   margin: 0 0 var(--pf-space-3);
 }
 
@@ -192,7 +168,7 @@
   margin: var(--pf-space-3) 0 0;
   padding: 0;
   color: var(--pf-body);
-  font-size: 0.875rem;
+  font-size: var(--pf-font-caption, 14px);
 }
 
 .legend-item {
@@ -233,21 +209,10 @@
 
 .panel-title {
   color: var(--pf-text);
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: var(--pf-font-card, 17px);
+  font-weight: var(--pf-weight-card, 600);
+  line-height: var(--pf-line-card, 1.3);
   margin: 0;
-}
-
-.panel-close {
-  min-height: 44px;
-  min-width: 44px;
-  padding: 0 var(--pf-space-3);
-  background-color: var(--pf-chip);
-  color: var(--pf-chip-text);
-  border: 0;
-  border-radius: var(--pf-radius-sm);
-  font: inherit;
-  cursor: pointer;
 }
 
 .table-wrap {
@@ -258,7 +223,7 @@
 .fields {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.875rem;
+  font-size: var(--pf-font-caption, 14px);
   color: var(--pf-body);
 }
 
@@ -298,8 +263,9 @@
 
 .list-title {
   color: var(--pf-text);
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: var(--pf-font-card, 17px);
+  font-weight: var(--pf-weight-card, 600);
+  line-height: var(--pf-line-card, 1.3);
   margin: 0 0 var(--pf-space-2);
 }
 

@@ -817,7 +817,7 @@ export default class ApiTester extends LightningElement {
         value: option,
         key: `${param.name}=${option}`,
         pressed: value === option ? "true" : "false",
-        className: value === option ? "pill pill_selected" : "pill"
+        className: "nc-toggle param-pill"
       }));
     }
     if (kind === KIND_SELECT) {
@@ -1060,14 +1060,6 @@ export default class ApiTester extends LightningElement {
 
   get renderedPressed() {
     return this.isRawView ? "false" : "true";
-  }
-
-  get rawViewClass() {
-    return this.isRawView ? "view-button view-button_selected" : "view-button";
-  }
-
-  get renderedViewClass() {
-    return this.isRawView ? "view-button" : "view-button view-button_selected";
   }
 
   get renderedFields() {

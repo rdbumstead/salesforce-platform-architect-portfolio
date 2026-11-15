@@ -1,6 +1,10 @@
+@import "c/nativeControls";
+
 /*
  * Skills page styles. Every colour is a --pf- site token, so both themes
- * follow the toggle. The graph is SVG, and its fills and strokes come from these classes, so no
+ * follow the toggle. The view switch is the shared toggle tray, the tier and persona filters
+ * and the skill chips are shared toggles keyed on aria-pressed, and the graph controls and
+ * Close are the shared secondary button (c/nativeControls). Every one is 44 px. The graph is SVG, and its fills and strokes come from these classes, so no
  * colour lives in the JavaScript. The only motion is the chips fading on a persona change and the
  * skill detail fading in, both opacity only and both off under prefers-reduced-motion. The graph
  * view eases only after a button press, from the JavaScript.
@@ -26,82 +30,32 @@
   font-weight: 700;
 }
 
-/* Matrix | Graph switch. Primary controls, 44 px high. */
+/* The site's one error look: a filled box in the error colours. */
+.state-error {
+  padding: var(--pf-space-3);
+  background-color: var(--pf-error);
+  color: var(--pf-error-text);
+  border-radius: var(--pf-radius-sm);
+}
+
+/* Matrix | Graph switch, the shared toggle tray. */
 .view-switch {
-  display: inline-flex;
   margin-bottom: var(--pf-space-4);
-  border: 1px solid var(--pf-border);
-  border-radius: var(--pf-radius);
-  background: var(--pf-subtle);
-  padding: var(--pf-space-1);
-  gap: var(--pf-space-1);
 }
 
 .view-button {
-  min-height: 44px;
   min-width: 88px;
-  padding: 0 var(--pf-space-4);
-  border: 1px solid transparent;
-  border-radius: var(--pf-radius-sm);
-  background: transparent;
-  color: var(--pf-body);
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
 }
 
-.view-button.is-on {
-  background: var(--pf-btn);
-  color: var(--pf-btn-text);
-}
-
-.view-button:focus-visible,
-.chip:focus-visible,
-.selection-close:focus-visible {
-  outline: 2px solid var(--pf-accent);
-  outline-offset: 2px;
-}
-
-/* Persona filter. Pills 44 px high, the chosen one filled like the view switch. */
+/* The tier and persona filters, each a shared row of toggles. */
 .persona-filter {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--pf-space-2);
   margin-bottom: var(--pf-space-2);
-}
-
-.persona-button {
-  min-height: 44px;
-  padding: 0 var(--pf-space-4);
-  border: 1px solid var(--pf-border);
-  border-radius: var(--pf-radius-lg);
-  background: var(--pf-chip);
-  color: var(--pf-chip-text);
-  font: inherit;
-  font-size: 0.875rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.persona-button:hover {
-  border-color: var(--pf-accent);
-}
-
-.persona-button.is-on {
-  border-color: var(--pf-btn);
-  background: var(--pf-btn);
-  color: var(--pf-btn-text);
-}
-
-.persona-button:focus-visible {
-  outline: 2px solid var(--pf-accent);
-  outline-offset: 2px;
 }
 
 .persona-summary,
 .persona-empty {
   margin: 0 0 var(--pf-space-3);
-  font-size: 0.875rem;
+  font-size: var(--pf-font-caption, 14px);
   color: var(--pf-muted);
 }
 
@@ -147,31 +101,15 @@
   list-style: none;
 }
 
-/* Chips are at least 32 px high, above the 24 px floor. */
+/* A skill chip is a shared toggle, 44 px high, with its name and meta on one line. The chosen
+   chip has the solid pressed fill, keyed on aria-pressed. */
 .chip {
-  display: inline-flex;
-  align-items: baseline;
-  gap: var(--pf-space-2);
-  min-height: 32px;
+  justify-content: flex-start;
   padding: var(--pf-space-1) var(--pf-space-3);
-  border: 1px solid var(--pf-border);
-  border-radius: var(--pf-radius-lg);
-  background: var(--pf-chip);
-  color: var(--pf-chip-text);
-  font: inherit;
-  font-size: 0.875rem;
+  font-size: var(--pf-font-caption, 14px);
+  font-weight: 400;
+  line-height: 1.5;
   text-align: left;
-  cursor: pointer;
-}
-
-.chip:hover {
-  border-color: var(--pf-accent);
-}
-
-.chip.is-selected {
-  border: 2px solid var(--pf-accent);
-  background: var(--pf-surface);
-  color: var(--pf-text);
 }
 
 .chip-name {
@@ -214,29 +152,21 @@
 
 .selection-title {
   margin: 0;
-  font-size: 1.125rem;
-  font-weight: 700;
-}
-
-.selection-close {
-  min-height: 32px;
-  padding: 0 var(--pf-space-3);
-  border: 1px solid var(--pf-border);
-  border-radius: var(--pf-radius-sm);
-  background: var(--pf-subtle);
-  color: var(--pf-body);
-  font: inherit;
-  cursor: pointer;
+  font-size: var(--pf-font-panel, 20px);
+  font-weight: var(--pf-weight-panel, 700);
+  line-height: var(--pf-line-panel, 1.3);
 }
 
 .selection-summary {
   margin: var(--pf-space-2) 0 var(--pf-space-3);
   color: var(--pf-body);
+  font-size: var(--pf-font-body, 16px);
+  line-height: var(--pf-line-body, 1.6);
 }
 
 .selection-label {
   margin: var(--pf-space-3) 0 var(--pf-space-1);
-  font-size: 0.875rem;
+  font-size: var(--pf-font-caption, 14px);
   font-weight: 600;
   color: var(--pf-muted);
 }
@@ -259,7 +189,7 @@
 }
 
 .selection-title:focus-visible {
-  outline: 2px solid var(--pf-accent);
+  outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
 }
 
@@ -307,7 +237,7 @@
 .graph-hint,
 .graph-selection {
   margin: 0 0 var(--pf-space-2);
-  font-size: 0.875rem;
+  font-size: var(--pf-font-caption, 14px);
   color: var(--pf-muted);
 }
 
@@ -316,39 +246,22 @@
   color: var(--pf-body);
 }
 
+/* The site's one error look: a filled box in the error colours. */
 .graph-error {
-  margin-bottom: var(--pf-space-2);
-  color: var(--pf-text);
+  margin: 0 0 var(--pf-space-2);
+  padding: var(--pf-space-3);
+  background-color: var(--pf-error);
+  color: var(--pf-error-text);
+  border-radius: var(--pf-radius-sm);
 }
 
-/* Zoom in, Zoom out, Fit and Reset layout. Real buttons, 44 px high like the view switch. */
+/* Zoom in, Zoom out, Fit and Reset layout: shared secondary buttons, 44 px high. */
 .graph-controls {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--pf-space-2);
   margin-bottom: var(--pf-space-2);
-}
-
-.graph-control {
-  min-height: 44px;
-  padding: 0 var(--pf-space-4);
-  border: 1px solid var(--pf-border);
-  border-radius: var(--pf-radius-sm);
-  background: var(--pf-subtle);
-  color: var(--pf-body);
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.graph-control:hover {
-  border-color: var(--pf-accent);
-}
-
-.graph-control:focus-visible {
-  outline: 2px solid var(--pf-accent);
-  outline-offset: 2px;
 }
 
 .zoom-level {
@@ -367,7 +280,7 @@
 }
 
 .graph-wrapper:focus-visible {
-  outline: 2px solid var(--pf-accent);
+  outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
 }
 
@@ -519,7 +432,7 @@
   margin: var(--pf-space-2) 0 0;
   padding: 0;
   list-style: none;
-  font-size: 0.875rem;
+  font-size: var(--pf-font-caption, 14px);
   color: var(--pf-body);
 }
 

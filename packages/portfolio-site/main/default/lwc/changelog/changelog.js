@@ -72,8 +72,14 @@ export function parseMessage(message) {
 }
 
 const STATUS_BADGES = {
-  SIMULATED: { label: "Simulated", className: "status-badge badge-simulated" },
-  DEGRADED: { label: "Degraded", className: "status-badge badge-degraded" }
+  SIMULATED: {
+    label: "Simulated",
+    className: "pill status-badge badge-simulated"
+  },
+  DEGRADED: {
+    label: "Degraded",
+    className: "pill status-badge badge-degraded"
+  }
 };
 
 export const STATUS_NOTES = {
