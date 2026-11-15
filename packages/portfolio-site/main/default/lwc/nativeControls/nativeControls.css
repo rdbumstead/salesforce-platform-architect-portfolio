@@ -4,6 +4,10 @@
  * 32 px base components with 44 px native controls, so every field and button that sits in one
  * row lines up. Colours come from the --pf- tokens the theme layout sets, so light and dark
  * follow the visitor's theme. Field edges use --pf-muted for a 3:1 edge against the surface.
+ * Besides fields and buttons it holds the quiet button (nc-button_ghost), toggles (nc-toggle,
+ * nc-toggle-group) and tabs (nc-tab, nc-tablist). Every one is at least 44 px
+ * (--pf-control-height) both ways, rings on --pf-focus on keyboard focus only, and has a
+ * disabled look. Section 2.21 of the Technical Guide lists what each class is for.
  */
 
 .nc-field {
@@ -150,6 +154,174 @@ a.nc-button_secondary:visited:hover {
   background-color: var(--pf-subtle);
   border-color: var(--pf-muted);
   color: var(--pf-text);
+}
+
+/*
+ * The quiet button, used with nc-button: "nc-button nc-button_ghost". No fill, a hairline edge
+ * and regular weight, for a small utility action such as View source or Analytics events.
+ * Hover turns the edge to the accent colour. A host that needs a smaller line sets
+ * --nc-ghost-size and --nc-ghost-padding, as the footer does, and the target stays 44 px.
+ */
+.nc-button_ghost,
+a.nc-button_ghost,
+a.nc-button_ghost:link,
+a.nc-button_ghost:visited {
+  padding-inline: var(--nc-ghost-padding, var(--pf-space-4));
+  background-color: transparent;
+  color: var(--pf-text);
+  border-color: var(--pf-border);
+  font-size: var(--nc-ghost-size, 1rem);
+  font-weight: 400;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.nc-button_ghost:hover:not(:disabled),
+a.nc-button_ghost:hover,
+a.nc-button_ghost:link:hover,
+a.nc-button_ghost:visited:hover {
+  background-color: transparent;
+  border-color: var(--pf-accent);
+  color: var(--pf-text);
+}
+
+/*
+ * A toggle or filter button, any button that carries aria-pressed. Unpressed it looks like
+ * nc-button_secondary. Pressed it takes the solid primary fill, keyed on aria-pressed so the
+ * look and the state a screen reader hears cannot drift apart.
+ */
+.nc-toggle {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--pf-space-2);
+  min-height: var(--pf-control-height, 44px);
+  min-width: var(--pf-control-height, 44px);
+  padding: 0 var(--pf-space-4);
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  border: 1px solid var(--pf-muted);
+  border-radius: var(--pf-radius-sm);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.nc-toggle:hover:not(:disabled) {
+  background-color: var(--pf-subtle);
+}
+
+.nc-toggle[aria-pressed="true"] {
+  background-color: var(--pf-btn);
+  color: var(--pf-btn-text);
+  border-color: var(--pf-btn);
+}
+
+.nc-toggle[aria-pressed="true"]:hover:not(:disabled) {
+  background-color: var(--pf-btn-hover);
+  border-color: var(--pf-btn-hover);
+}
+
+/*
+ * A row of toggles that belong together, such as a set of filters. The tray modifier draws the
+ * segmented switch the skills view uses: the toggles sit borderless on a tinted tray and only
+ * the pressed one is filled.
+ */
+.nc-toggle-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pf-space-2);
+}
+
+.nc-toggle-group_tray {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--pf-space-1);
+  padding: var(--pf-space-1);
+  background-color: var(--pf-subtle);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius);
+}
+
+.nc-toggle-group_tray .nc-toggle {
+  background-color: transparent;
+  color: var(--pf-body);
+  border-color: transparent;
+}
+
+/* On the tinted tray a subtle hover would not show, so the hovered toggle lifts to the surface. */
+.nc-toggle-group_tray .nc-toggle:hover:not(:disabled) {
+  background-color: var(--pf-surface);
+}
+
+.nc-toggle-group_tray .nc-toggle[aria-pressed="true"] {
+  background-color: var(--pf-btn);
+  color: var(--pf-btn-text);
+  border-color: var(--pf-btn);
+}
+
+.nc-toggle-group_tray .nc-toggle[aria-pressed="true"]:hover:not(:disabled) {
+  background-color: var(--pf-btn-hover);
+  border-color: var(--pf-btn-hover);
+}
+
+/*
+ * Tabs: a container with role="tablist" and the class nc-tablist, holding buttons with
+ * role="tab", the class nc-tab and aria-selected. The selected tab is tinted with an accent edge
+ * and an accent bar along its foot, so a tab never looks like a pressed toggle.
+ */
+.nc-tablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pf-space-2);
+}
+
+.nc-tab {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--pf-space-2);
+  min-height: var(--pf-control-height, 44px);
+  min-width: var(--pf-control-height, 44px);
+  padding: 0 var(--pf-space-4);
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-sm);
+  font: inherit;
+  cursor: pointer;
+}
+
+.nc-tab:hover:not(:disabled) {
+  background-color: var(--pf-subtle);
+}
+
+.nc-tab[aria-selected="true"],
+.nc-tab[aria-selected="true"]:hover:not(:disabled) {
+  background-color: var(--pf-chip);
+  color: var(--pf-chip-text);
+  border-color: var(--pf-accent);
+  box-shadow: inset 0 -3px 0 var(--pf-accent);
+}
+
+/* One focus ring and one disabled look for the toggles and the tabs, the same as nc-button. */
+.nc-toggle:focus-visible,
+.nc-tab:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
+}
+
+.nc-toggle:disabled,
+.nc-toggle-group_tray .nc-toggle:disabled,
+.nc-tab:disabled {
+  background-color: var(--pf-chip);
+  color: var(--pf-chip-text);
+  border-color: var(--pf-chip);
+  box-shadow: none;
+  cursor: not-allowed;
 }
 
 /* A label kept for screen readers where the design shows none. */
