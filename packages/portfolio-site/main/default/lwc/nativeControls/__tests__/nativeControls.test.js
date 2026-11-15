@@ -135,4 +135,31 @@ describe("c/nativeControls", () => {
       at('.nc-tab[aria-selected="true"]')
     );
   });
+  it("gives toggles and tabs a held down look while they are clicked or tapped", () => {
+    expect(CSS).toMatch(
+      /\.nc-toggle:active:not\(:disabled\),\s*\.nc-toggle-group_tray \.nc-toggle:active:not\(:disabled\),\s*\.nc-tab:active:not\(:disabled\)\s*\{[^}]*box-shadow: inset/
+    );
+    expect(CSS).toMatch(
+      /\.nc-toggle\[aria-pressed="true"\]:active:not\(:disabled\)[^{]*\{[^}]*background-color: var\(--pf-btn-hover\)/
+    );
+  });
+
+  it("keeps a chosen toggle or tab looking chosen, faded, on a paused form", () => {
+    const toggle = CSS.match(
+      /\.nc-toggle\[aria-pressed="true"\]:disabled,[^{]*\{([^}]*)\}/
+    );
+    expect(toggle).not.toBeNull();
+    expect(toggle[1]).toMatch(/background-color: var\(--pf-btn\)/);
+    expect(toggle[1]).toMatch(/opacity: 0\.55/);
+    const tab = CSS.match(
+      /\.nc-tab\[aria-selected="true"\]:disabled\s*\{([^}]*)\}/
+    );
+    expect(tab).not.toBeNull();
+    expect(tab[1]).toMatch(/inset 0 -3px 0 var\(--pf-accent\)/);
+    expect(tab[1]).toMatch(/opacity: 0\.55/);
+    // The chosen look comes after the plain disabled look, so it wins on a paused form.
+    expect(
+      CSS.indexOf('.nc-toggle[aria-pressed="true"]:disabled')
+    ).toBeGreaterThan(CSS.indexOf(".nc-toggle:disabled"));
+  });
 });
