@@ -104,6 +104,21 @@ describe("c-contact-form", () => {
     );
   });
 
+  it("draws its box, heading and fields from the shared styles", async () => {
+    const element = createComponent();
+    await flushPromises();
+    expect(q(element, "section").classList.contains("pf-panel")).toBe(true);
+    const heading = q(element, '[data-id="heading"]');
+    expect(heading.classList.contains("section-heading")).toBe(true);
+    expect(heading.classList.contains("section-heading-panel")).toBe(true);
+    for (const id of ["firstName", "lastName", "email", "company", "message"]) {
+      expect(
+        q(element, `[name="${id}"]`).classList.contains("nc-control")
+      ).toBe(true);
+    }
+    expect(element.shadowRoot.querySelector(".field-input")).toBeNull();
+  });
+
   it("sets the native limits to the server limits", async () => {
     const element = createComponent();
     await flushPromises();

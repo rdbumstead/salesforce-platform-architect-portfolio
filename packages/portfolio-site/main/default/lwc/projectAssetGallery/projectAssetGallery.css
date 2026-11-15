@@ -4,7 +4,13 @@
  * targets. The tracks are auto-fit, so a short row stretches to fill the width and leaves no
  * empty column. Screenshots are mostly white, so an overlay multiplies the page background
  * over each image: it does nothing in the light theme and dims the image a little in the dark.
+ * The gallery sits in a c/panel box with the panel size heading of c/sectionHeading, as the
+ * walkthrough under it on the Business Architecture page does, and the file kind tag is c/pill.
  */
+@import "c/panel";
+@import "c/sectionHeading";
+@import "c/pill";
+
 :host {
   display: block;
 }
@@ -15,9 +21,6 @@
 }
 
 .gallery-title {
-  color: var(--pf-text);
-  font-size: 1.25rem;
-  font-weight: 700;
   margin: 0 0 var(--pf-space-3);
 }
 
@@ -84,14 +87,9 @@
   text-decoration: underline;
 }
 
+/* The pill shape and colours come from c/pill. The kind stays in the code face. */
 .asset-kind {
-  display: inline-block;
-  background-color: var(--pf-chip);
-  color: var(--pf-chip-text);
-  border-radius: var(--pf-radius-sm);
-  padding: 0 var(--pf-space-2);
   font-family: var(--pf-font-mono);
-  font-size: 0.75rem;
 }
 
 .asset-unavailable {
@@ -101,7 +99,7 @@
 .asset-status {
   display: block;
   color: var(--pf-muted);
-  font-size: 0.875rem;
+  font-size: var(--pf-font-caption, 14px);
   margin-top: var(--pf-space-1);
 }
 

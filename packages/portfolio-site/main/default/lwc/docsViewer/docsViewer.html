@@ -20,7 +20,9 @@
         <template for:each={groups} for:item="group">
           <section key={group.key} class="doc-group" data-group={group.key}>
             <template lwc:if={group.isOpenGroup}>
-              <h2 class="doc-group-title">{group.label}</h2>
+              <h2 class="doc-group-title section-heading section-heading-panel">
+                {group.label}
+              </h2>
               <ul class="doc-list" aria-label={group.label}>
                 <template for:each={group.items} for:item="item">
                   <li key={item.key} class="doc-list-item">

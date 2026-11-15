@@ -1018,7 +1018,12 @@ describe("c-footer", () => {
       const css = readFileSync(join(__dirname, "..", "footer.css"), "utf8");
       expect(css).toMatch(/\.chip \{[^}]*user-select: none/);
       expect(css).toMatch(/\.chip:focus-visible/);
-      expect(css).toMatch(/min-height: 32px/);
+      expect(css).toMatch(
+        /\.chip \{[^}]*min-height: var\(--pf-control-height, 44px\)/
+      );
+      expect(css).toMatch(
+        /\.back-to-top \{[^}]*min-height: var\(--pf-control-height, 44px\)/
+      );
     });
 
     it("keeps Back to top last in the tab order", async () => {

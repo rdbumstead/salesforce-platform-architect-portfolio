@@ -1,5 +1,5 @@
 <template>
-  <section class="contact" aria-labelledby="contact-heading">
+  <section class="contact pf-panel" aria-labelledby="contact-heading">
     <div id="contact" class="contact-heading-wrap">
       <h2
         id="contact-heading"
@@ -27,11 +27,11 @@
       <form class="contact-form" onsubmit={handleSubmit} novalidate>
         <div class="field-row">
           <div class="field">
-            <label class="field-label" for="firstName">First name</label>
+            <label class="nc-label" for="firstName">First name</label>
             <input
               disabled={paused}
               id="firstName"
-              class="field-input"
+              class="nc-control"
               name="firstName"
               type="text"
               required
@@ -45,7 +45,7 @@
             <template lwc:if={firstNameError}>
               <p
                 id="firstName-error"
-                class="field-error"
+                class="nc-error"
                 data-id="firstName-error"
               >
                 {firstNameError}
@@ -53,11 +53,11 @@
             </template>
           </div>
           <div class="field">
-            <label class="field-label" for="lastName">Last name</label>
+            <label class="nc-label" for="lastName">Last name</label>
             <input
               disabled={paused}
               id="lastName"
-              class="field-input"
+              class="nc-control"
               name="lastName"
               type="text"
               required
@@ -69,11 +69,7 @@
               oninput={handleInput}
             />
             <template lwc:if={lastNameError}>
-              <p
-                id="lastName-error"
-                class="field-error"
-                data-id="lastName-error"
-              >
+              <p id="lastName-error" class="nc-error" data-id="lastName-error">
                 {lastNameError}
               </p>
             </template>
@@ -81,11 +77,11 @@
         </div>
 
         <div class="field">
-          <label class="field-label" for="email">Email</label>
+          <label class="nc-label" for="email">Email</label>
           <input
             disabled={paused}
             id="email"
-            class="field-input"
+            class="nc-control"
             name="email"
             type="email"
             required
@@ -96,22 +92,20 @@
             value={form.email}
             oninput={handleInput}
           />
-          <p id="email-hint" class="field-hint">
-            Ryan replies to this address.
-          </p>
+          <p id="email-hint" class="nc-hint">Ryan replies to this address.</p>
           <template lwc:if={emailError}>
-            <p id="email-error" class="field-error" data-id="email-error">
+            <p id="email-error" class="nc-error" data-id="email-error">
               {emailError}
             </p>
           </template>
         </div>
 
         <div class="field">
-          <label class="field-label" for="company">Company (optional)</label>
+          <label class="nc-label" for="company">Company (optional)</label>
           <input
             disabled={paused}
             id="company"
-            class="field-input"
+            class="nc-control"
             name="company"
             type="text"
             autocomplete="organization"
@@ -122,18 +116,18 @@
             oninput={handleInput}
           />
           <template lwc:if={companyError}>
-            <p id="company-error" class="field-error" data-id="company-error">
+            <p id="company-error" class="nc-error" data-id="company-error">
               {companyError}
             </p>
           </template>
         </div>
 
         <div class="field">
-          <label class="field-label" for="message">Message</label>
+          <label class="nc-label" for="message">Message</label>
           <textarea
             disabled={paused}
             id="message"
-            class="field-input field-textarea"
+            class="nc-control"
             name="message"
             required
             rows="5"
@@ -142,9 +136,9 @@
             aria-describedby="message-count message-error"
             oninput={handleInput}
           ></textarea>
-          <p id="message-count" class="field-hint">{messageCount}</p>
+          <p id="message-count" class="nc-hint">{messageCount}</p>
           <template lwc:if={messageError}>
-            <p id="message-error" class="field-error" data-id="message-error">
+            <p id="message-error" class="nc-error" data-id="message-error">
               {messageError}
             </p>
           </template>

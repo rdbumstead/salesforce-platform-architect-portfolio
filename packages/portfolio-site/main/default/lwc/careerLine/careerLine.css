@@ -1,5 +1,6 @@
 @import "c/sectionHeading";
 @import "c/nativeControls";
+@import "c/pill";
 /*
  * The work timeline under the home hero, on the --pf- site tokens only. A time to scale ribbon
  * with newest on the left, over a full width list of employer rows that each open to their
@@ -282,15 +283,10 @@
   overflow-wrap: anywhere;
 }
 
+/* The shape and type of the Now and Part time tags come from c/pill. This sets the gap
+   before the Now dot and each tag's colours. */
 .pill {
-  display: inline-flex;
-  align-items: center;
   gap: 6px;
-  padding: 1px 9px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 20px;
 }
 
 .pill-now {

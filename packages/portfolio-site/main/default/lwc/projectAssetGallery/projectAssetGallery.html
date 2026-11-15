@@ -6,9 +6,11 @@
       ongalleryread={handleRead}
     ></lwc:component>
   </template>
-  <section lwc:if={showGallery} class="gallery" aria-label={heading}>
+  <section lwc:if={showGallery} class="gallery pf-panel" aria-label={heading}>
     <template lwc:if={hasHeading}>
-      <h2 class="gallery-title">{heading}</h2>
+      <h2 class="gallery-title section-heading section-heading-panel">
+        {heading}
+      </h2>
     </template>
 
     <div lwc:if={isLoading} class="skeleton" aria-hidden="true"></div>
@@ -48,7 +50,7 @@
               data-type={asset.type}
               onclick={handleOpen}
             >
-              <span class="asset-kind">Document</span>
+              <span class="asset-kind pill">Document</span>
               <span class="asset-name">{asset.name}</span>
             </a>
           </template>
@@ -61,14 +63,14 @@
               data-type={asset.type}
               onclick={handleOpen}
             >
-              <span class="asset-kind">{asset.type}</span>
+              <span class="asset-kind pill">{asset.type}</span>
               <span class="asset-name">{asset.name}</span>
               <span class="assistive">, opens in a new tab</span>
             </a>
           </template>
           <template lwc:if={asset.isUnavailable}>
             <p class="asset-unavailable">
-              <span class="asset-kind">{asset.type}</span>
+              <span class="asset-kind pill">{asset.type}</span>
               <span class="asset-name">{asset.name}</span>
               <span class="asset-status">Not available yet</span>
             </p>

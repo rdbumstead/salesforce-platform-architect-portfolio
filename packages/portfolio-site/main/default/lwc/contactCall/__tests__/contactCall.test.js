@@ -82,6 +82,15 @@ describe("c-contact-call", () => {
     ).toBe("Write any time.");
   });
 
+  it("sits in the subtle panel with the panel size heading", () => {
+    const element = render();
+    const panel = element.shadowRoot.querySelector(".contact-call__panel");
+    expect(panel.classList.contains("pf-panel")).toBe(true);
+    expect(panel.classList.contains("pf-panel_subtle")).toBe(true);
+    const heading = element.shadowRoot.querySelector("h2");
+    expect(heading.classList.contains("section-heading-panel")).toBe(true);
+  });
+
   it("names its section by the heading", () => {
     const element = render();
     const section = element.shadowRoot.querySelector("section");

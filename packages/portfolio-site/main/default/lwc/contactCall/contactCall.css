@@ -1,10 +1,15 @@
 @import "c/nativeControls";
+@import "c/panel";
+@import "c/sectionHeading";
 
 /*
- * Built on the --pf- site tokens, as contactForm is, so the line follows the light and dark
- * theme. It sits in the shared page width column, left aligned like every other section,
- * and the link is a filled button, the page's strongest call to action. Every element that
- * sets a background also sets its text colour.
+ * Built on the --pf- site tokens and the shared styles, as contactForm is, so the line follows
+ * the light and dark theme. It sits in the shared page width column, left aligned like every
+ * other section, and the link is a filled button, the page's strongest call to action. The box
+ * is c/panel with the subtle fill (pf-panel pf-panel_subtle), the one panel on the site kept
+ * that way on purpose, and the heading is the panel size of c/sectionHeading, the same as the
+ * contact form's "Get in touch" on /contact. Every element that sets a background also sets
+ * its text colour.
  */
 :host {
   display: block;
@@ -23,25 +28,12 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--pf-space-4);
-  padding: var(--pf-space-6);
-  background-color: var(--pf-subtle);
-  color: var(--pf-text);
-  border: 1px solid var(--pf-border);
-  border-radius: var(--pf-radius-lg);
   overflow-wrap: anywhere;
 }
 
 .contact-call__copy {
   flex: 1 1 20rem;
   min-width: 0;
-}
-
-.contact-call__heading {
-  margin: 0;
-  color: var(--pf-text);
-  font-size: 22px;
-  line-height: 1.3;
-  font-weight: 700;
 }
 
 .contact-call__text {
@@ -51,12 +43,6 @@
 
 .contact-call__note {
   margin: 4px 0 0;
-  font-size: 14px;
+  font-size: var(--pf-font-caption, 14px);
   color: var(--pf-muted);
-}
-
-@media (max-width: 559.98px) {
-  .contact-call__panel {
-    padding: var(--pf-space-5);
-  }
 }
