@@ -70,6 +70,14 @@ const STEPS = [
     commands: [{ ci: "npm run docs:verify", special: "api-docs" }]
   },
   {
+    name: "API budget scripts",
+    paths: ["scripts/api-reserve*", "scripts/export-needs-production*"],
+    commands: [
+      { ci: "node --test scripts/api-reserve.test.js" },
+      { ci: "node --test scripts/export-needs-production.test.js" }
+    ]
+  },
+  {
     name: "Internal references",
     paths: [
       "packages/**",
