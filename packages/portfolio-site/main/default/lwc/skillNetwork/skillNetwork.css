@@ -241,6 +241,17 @@
   color: var(--pf-muted);
 }
 
+/* The line that says which roles, projects and certifications the tier leaves out. */
+.graph-hidden-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pf-space-2);
+  margin: 0 0 var(--pf-space-2);
+  font-size: var(--pf-font-caption, 14px);
+  color: var(--pf-text);
+}
+
 .graph-selection {
   margin-top: var(--pf-space-2);
   color: var(--pf-body);

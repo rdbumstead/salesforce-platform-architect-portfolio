@@ -1258,10 +1258,129 @@ export default class SkillNetwork extends LightningElement {
     );
   }
 
-  // Roles, projects and certifications always show. A skill shows when it passes the filters.
+  // A skill shows when it passes the filters. A role, project or certification shows while at
+  // least one of its skills shows, so the graph never draws one with nothing linked to it.
   isNodeShown(id) {
     const skill = this.model && this.model.skills.get(id);
-    return skill ? this.isSkillShown(skill) : true;
+    if (skill) {
+      return this.isSkillShown(skill);
+    }
+    if (!this.model || !this.filterActive) {
+      return true;
+    }
+    const linked = this.linkedSkillIds().get(id);
+    return (
+      Boolean(linked) &&
+      linked.some((skillId) => this.isSkillShownById(skillId))
+    );
+  }
+
+  isSkillShownById(id) {
+    const skill = this.model.skills.get(id);
+    return Boolean(skill) && this.isSkillShown(skill);
+  }
+
+  // The skills behind each role, project and certification, built once per model.
+  linkedSkillIds() {
+    if (this._linkedFor !== this.model) {
+      const map = new Map();
+      this.model.links.forEach((link) => {
+        if (!map.has(link.target)) {
+          map.set(link.target, []);
+        }
+        map.get(link.target).push(link.source);
+      });
+      this._linked = map;
+      this._linkedFor = this.model;
+    }
+    return this._linked;
+  }
+
+  // The roles, projects and certifications the filters leave with no skill, by kind.
+  hiddenWorkNodes() {
+    if (!this.model || !this.filterActive) {
+      return [];
+    }
+    const kinds = [
+      ["role", this.model.roles],
+      ["project", this.model.projects],
+      ["certification", this.model.certifications]
+    ];
+    return kinds.flatMap(([kind, items]) =>
+      [...items.values()]
+        .filter((item) => !this.isNodeShown(item.id))
+        .map((item) => ({ id: item.id, kind }))
+    );
+  }
+
+  // The narrowest wider tier view that shows every hidden role, project and certification
+  // under the current persona, or null when no tier view would.
+  get revealView() {
+    const hidden = this.hiddenWorkNodes();
+    if (!hidden.length || !this.tiersActive) {
+      return null;
+    }
+    const current = tierView(this.tierChoice);
+    const linked = this.linkedSkillIds();
+    const wider = TIER_VIEWS.filter((view) => view.rank > current.rank);
+    return (
+      wider.find((view) =>
+        hidden.every((node) =>
+          (linked.get(node.id) || []).some((skillId) => {
+            const skill = this.model.skills.get(skillId);
+            return (
+              Boolean(skill) &&
+              this.matchesPersona(skill) &&
+              isInView(this.tierOfSkill(skill), view.value)
+            );
+          })
+        )
+      ) || null
+    );
+  }
+
+  // "2 roles and 1 certification have no skills in Core, so the graph leaves them out."
+  get hiddenNote() {
+    const hidden = this.hiddenWorkNodes();
+    if (!hidden.length) {
+      return "";
+    }
+    const words = [
+      ["role", "roles"],
+      ["project", "projects"],
+      ["certification", "certifications"]
+    ]
+      .map(([kind, plural]) => {
+        const count = hidden.filter((node) => node.kind === kind).length;
+        return count ? `${count} ${count === 1 ? kind : plural}` : "";
+      })
+      .filter(Boolean);
+    const list =
+      words.length > 1
+        ? `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}`
+        : words[0];
+    const verb = hidden.length === 1 ? "has" : "have";
+    const pronoun = hidden.length === 1 ? "it" : "them";
+    return `${list} ${verb} no skills${this.tierPhrase}${this.personaPhrase}, so the graph leaves ${pronoun} out.`;
+  }
+
+  get showHiddenNote() {
+    return this.showGraphCanvas && Boolean(this.hiddenNote);
+  }
+
+  get revealLabel() {
+    const view = this.revealView;
+    return view ? `Show ${view.label}` : "";
+  }
+
+  handleRevealClick() {
+    const view = this.revealView;
+    if (!view) {
+      return;
+    }
+    this.changeFilter(() => {
+      this.tierChoice = view.value;
+    });
   }
 
   get categoryRows() {
