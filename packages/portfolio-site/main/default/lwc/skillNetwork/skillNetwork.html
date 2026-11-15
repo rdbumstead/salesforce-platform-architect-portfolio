@@ -62,24 +62,20 @@
         </template>
 
         <template lwc:if={showTierFilter}>
-          <fieldset class="tier-filter">
-            <legend class="tier-legend">Show skills</legend>
-            <div class="tier-options">
-              <template for:each={tierOptions} for:item="option">
-                <label key={option.key} class={option.className}>
-                  <input
-                    type="radio"
-                    class="tier-input"
-                    name="skill-tier"
-                    value={option.value}
-                    checked={option.checked}
-                    onchange={handleTierChange}
-                  />
-                  <span class="tier-label">{option.label}</span>
-                </label>
-              </template>
-            </div>
-          </fieldset>
+          <div class="persona-filter" role="group" aria-label="Show skills">
+            <template for:each={tierButtons} for:item="option">
+              <button
+                key={option.key}
+                type="button"
+                class={option.className}
+                data-value={option.value}
+                aria-pressed={option.pressed}
+                onclick={handleTierClick}
+              >
+                {option.label}
+              </button>
+            </template>
+          </div>
         </template>
 
         <template lwc:if={showPersonaFilter}>
