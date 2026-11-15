@@ -39,10 +39,14 @@
 
       <template lwc:else>
         <template lwc:if={showSwitch}>
-          <div class="view-switch" role="group" aria-label="Skills view">
+          <div
+            class="nc-toggle-group nc-toggle-group_tray view-switch"
+            role="group"
+            aria-label="Skills view"
+          >
             <button
               type="button"
-              class={matrixButtonClass}
+              class="nc-toggle view-button"
               data-view="matrix"
               aria-pressed={matrixPressed}
               onclick={handleViewClick}
@@ -51,7 +55,7 @@
             </button>
             <button
               type="button"
-              class={graphButtonClass}
+              class="nc-toggle view-button"
               data-view="graph"
               aria-pressed={graphPressed}
               onclick={handleViewClick}
@@ -62,7 +66,11 @@
         </template>
 
         <template lwc:if={showTierFilter}>
-          <div class="persona-filter" role="group" aria-label="Show skills">
+          <div
+            class="nc-toggle-group persona-filter"
+            role="group"
+            aria-label="Show skills"
+          >
             <template for:each={tierButtons} for:item="option">
               <button
                 key={option.key}
@@ -80,7 +88,7 @@
 
         <template lwc:if={showPersonaFilter}>
           <div
-            class="persona-filter"
+            class="nc-toggle-group persona-filter"
             role="group"
             aria-label="Filter skills by persona"
           >
@@ -119,7 +127,9 @@
                   <template for:each={row.chips} for:item="chip">
                     <li key={chip.id} class={chip.itemClass}>
                       <template lwc:if={chip.isLeaving}>
-                        <span class="chip chip-ghost" aria-hidden="true"
+                        <span
+                          class="nc-toggle chip chip-ghost"
+                          aria-hidden="true"
                           >{chip.name}</span
                         >
                       </template>
@@ -173,7 +183,7 @@
                         </h3>
                         <button
                           type="button"
-                          class="selection-close"
+                          class="nc-button nc-button_secondary selection-close"
                           onclick={handleClearSelection}
                         >
                           Close
@@ -260,7 +270,7 @@
                 >
                   <button
                     type="button"
-                    class="graph-control"
+                    class="nc-button nc-button_secondary graph-control"
                     data-action="zoom-in"
                     onclick={handleZoomIn}
                   >
@@ -268,7 +278,7 @@
                   </button>
                   <button
                     type="button"
-                    class="graph-control"
+                    class="nc-button nc-button_secondary graph-control"
                     data-action="zoom-out"
                     onclick={handleZoomOut}
                   >
@@ -276,7 +286,7 @@
                   </button>
                   <button
                     type="button"
-                    class="graph-control"
+                    class="nc-button nc-button_secondary graph-control"
                     data-action="fit"
                     onclick={handleFit}
                   >
@@ -284,7 +294,7 @@
                   </button>
                   <button
                     type="button"
-                    class="graph-control"
+                    class="nc-button nc-button_secondary graph-control"
                     data-action="reset-layout"
                     onclick={handleResetLayout}
                   >

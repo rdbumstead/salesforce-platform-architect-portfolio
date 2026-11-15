@@ -103,9 +103,18 @@ test("the card header keeps the actions on the row and wraps only when they do n
   );
   assert.match(css, /\.header\s*\{[^}]*flex-wrap:\s*wrap/);
   assert.match(css, /\.actions\s*\{[^}]*margin-left:\s*auto/);
-  assert.match(css, /border-radius:\s*0\.25rem/);
-  assert.match(css, /box-shadow:\s*0 2px 2px 0 rgba\(0, 0, 0, 0\.1\)/);
   assert.match(css, /\.header\s*\{[^}]*padding:\s*0\.75rem 1rem 0/);
+});
+
+test("the card has the site's panel look: surface fill, 12px corner and no shadow", () => {
+  const css = fs.readFileSync(
+    path.join(LIGHTNING_DIR, "card/card.css"),
+    "utf8"
+  );
+  const card = css.match(/\.card\s*\{([^}]*)\}/)[1];
+  assert.match(card, /background:\s*var\(--pf-surface,/);
+  assert.match(card, /border-radius:\s*var\(--pf-radius, 12px\)/);
+  assert.match(card, /box-shadow:\s*none/);
 });
 
 test("the card does not add an outer margin, the page section owns the gutter", () => {
@@ -122,9 +131,12 @@ test("the card follows the site theme through the variables the platform card re
     "utf8"
   );
   const card = css.match(/\.card\s*\{([^}]*)\}/)[1];
-  assert.match(card, /background:\s*var\(--dxp-g-root,/);
-  assert.match(card, /border:\s*1px solid var\(--dxp-g-neutral-1,/);
-  assert.match(card, /color:\s*var\(--dxp-g-root-contrast,/);
+  assert.match(card, /background:\s*var\(--pf-surface, var\(--dxp-g-root,/);
+  assert.match(
+    card,
+    /border:\s*1px solid var\(--pf-border, var\(--dxp-g-neutral-1,/
+  );
+  assert.match(card, /color:\s*var\(--pf-text, var\(--dxp-g-root-contrast,/);
 });
 
 test("no stand in sets a background, border or text colour without a theme variable", () => {

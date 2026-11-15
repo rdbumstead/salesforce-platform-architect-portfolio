@@ -1,8 +1,12 @@
+@import "c/nativeControls";
+
 /*
  * Colours come only from the --pf- site tokens, which hold the light and dark values.
  * Every element that sets a background also sets its text colour from the matching pair.
- * The button and the close button are at least 44 px high. The marker reads at body size and
- * body weight, like View source, so it never outweighs the title it sits beside.
+ * The buttons are the shared ones (c/nativeControls): the marker and the data model button
+ * are the quiet button, the two Close buttons the primary button, all 44 px. The marker reads
+ * at body size and body weight, like View source, so it never outweighs the title it sits
+ * beside. It keeps its own wrapping so the counts can drop under the words.
  */
 :host {
   display: inline-flex;
@@ -19,47 +23,20 @@
   max-width: 100%;
 }
 
-.marker-button,
-.close-button,
-.model-button,
-.model-close-button {
-  min-height: 44px;
-  min-width: 44px;
-  padding: 0 var(--pf-space-4);
-  border-radius: var(--pf-radius-sm);
-  font: inherit;
-  cursor: pointer;
-}
-
 .marker-button {
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
-  box-sizing: border-box;
   max-width: 100%;
   padding-block: var(--pf-space-1);
   gap: var(--pf-space-1) var(--pf-space-2);
-  background-color: transparent;
-  color: var(--pf-text);
-  border: 1px solid var(--pf-border);
-  font-size: 1rem;
-  font-weight: 400;
-  line-height: 1.5;
   text-align: left;
   white-space: normal;
 }
 
-.marker-button:hover {
-  border-color: var(--pf-accent);
-}
-
-.marker-button:focus-visible,
-.close-button:focus-visible,
-.model-button:focus-visible,
-.model-close-button:focus-visible,
 .dialog-heading:focus-visible,
 .model-link:focus-visible {
-  outline: 2px solid var(--pf-focus, var(--pf-accent));
+  outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
 }
 
@@ -114,15 +91,17 @@
 
 .panel-heading {
   margin: 0 0 var(--pf-space-2);
-  font-size: 1.125rem;
-  font-weight: 700;
+  font-size: var(--pf-font-panel, 20px);
+  font-weight: var(--pf-weight-panel, 700);
+  line-height: var(--pf-line-panel, 1.3);
   color: var(--pf-text);
 }
 
 .sources-heading {
   margin: var(--pf-space-3) 0 var(--pf-space-2);
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: var(--pf-font-card, 17px);
+  font-weight: var(--pf-weight-card, 600);
+  line-height: var(--pf-line-card, 1.3);
   color: var(--pf-text);
 }
 
@@ -130,6 +109,8 @@
   margin: 0;
   color: var(--pf-body);
   background-color: var(--pf-surface);
+  font-size: var(--pf-font-body, 16px);
+  line-height: var(--pf-line-body, 1.6);
 }
 
 .sources {
@@ -172,23 +153,8 @@
 .model-button {
   display: block;
   margin-top: var(--pf-space-3);
-  background-color: transparent;
-  color: var(--pf-text);
-  border: 1px solid var(--pf-border);
-  font-weight: 400;
   text-align: left;
-}
-
-.model-button:hover {
-  border-color: var(--pf-accent);
-}
-
-.close-button,
-.model-close-button {
-  background-color: var(--pf-btn);
-  color: var(--pf-btn-text);
-  border: 0;
-  font-weight: 700;
+  white-space: normal;
 }
 
 .dialog {
@@ -232,8 +198,9 @@
 
 .dialog-heading {
   margin: 0;
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-size: var(--pf-font-panel, 20px);
+  font-weight: var(--pf-weight-panel, 700);
+  line-height: var(--pf-line-panel, 1.3);
   color: var(--pf-text);
 }
 
@@ -253,10 +220,20 @@
   }
 }
 
+/* The loading note: 14 px in the muted colour. */
 .model-loading {
   margin: 0;
   padding: var(--pf-space-4);
-  color: var(--pf-text);
+  color: var(--pf-muted);
+  font-size: var(--pf-font-caption, 14px);
+}
+
+/* The site's one error look: a filled box in the error colours. */
+.model-loading.model-error {
+  padding: var(--pf-space-3);
+  background-color: var(--pf-error);
+  color: var(--pf-error-text);
+  border-radius: var(--pf-radius-sm);
 }
 
 /* On a phone the panel opens in the flow under the button, so it never leaves the screen. */

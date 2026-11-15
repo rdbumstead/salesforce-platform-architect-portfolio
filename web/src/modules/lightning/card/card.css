@@ -1,14 +1,19 @@
 :host {
   display: block;
 }
-/* The platform card reads the same site theme variables, so both follow the light and dark sets. */
+/*
+ * The card has the site's panel look (c/panel): the surface fill, a 1 px border edge, the 12 px
+ * corner and no shadow. The surface fill is what lifts the card off the page in dark mode,
+ * where the page background alone left an unfilled box. The site tokens come first and the
+ * theme variables the platform card reads are the fallbacks, so both follow light and dark.
+ */
 .card {
   box-sizing: border-box;
-  background: var(--dxp-g-root, #ffffff);
-  border: 1px solid var(--dxp-g-neutral-1, #e5e7eb);
-  border-radius: 0.25rem;
-  box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.1);
-  color: var(--dxp-g-root-contrast, inherit);
+  background: var(--pf-surface, var(--dxp-g-root, #ffffff));
+  border: 1px solid var(--pf-border, var(--dxp-g-neutral-1, #e5e7eb));
+  border-radius: var(--pf-radius, 12px);
+  box-shadow: none;
+  color: var(--pf-text, var(--dxp-g-root-contrast, inherit));
 }
 .header {
   box-sizing: border-box;

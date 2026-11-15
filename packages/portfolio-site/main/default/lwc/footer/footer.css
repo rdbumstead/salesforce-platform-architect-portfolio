@@ -32,8 +32,15 @@
   align-items: baseline;
 }
 
-/* The buttons take the shared text button spec (44 px, 1rem, 16 px padding) from their own
-   components, so the footer sets nothing on them but where they start. */
+/* The buttons are the shared quiet button (nc-button_ghost in c/nativeControls), drawn by
+   their own components. The footer picks their text size and side padding through the two
+   ghost hooks, which reach the buttons through the shadow boundary, and sets nothing else on
+   them but where they start. The tap target stays 44 px. */
+.metrics-head {
+  --nc-ghost-size: 1rem;
+  --nc-ghost-padding: var(--pf-space-4);
+}
+
 .metrics-head c-view-source {
   margin-inline-start: 0;
 }
@@ -66,13 +73,14 @@
   align-items: center;
 }
 
-/* A chip is a button: label, a short status and a chevron. It is never text to select. */
+/* A chip is a button: label, a short status and a chevron. It is never text to select. Like
+   every control on the site it is at least 44 px high (--pf-control-height). */
 .chip {
   display: inline-flex;
   align-items: center;
   gap: var(--pf-space-2);
   box-sizing: border-box;
-  min-height: 32px;
+  min-height: var(--pf-control-height, 44px);
   padding: 0 var(--pf-space-3);
   border: 1px solid var(--pf-border);
   border-radius: var(--pf-radius-sm);
@@ -388,8 +396,11 @@ a.target:hover,
   color: var(--pf-accent);
 }
 
+/* Back to top is a control, not a link in a line of text, so it takes the 44 px target. */
 .back-to-top {
   gap: 4px;
+  min-width: var(--pf-control-height, 44px);
+  min-height: var(--pf-control-height, 44px);
   padding: 0;
   border: 0;
   background: transparent;

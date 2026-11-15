@@ -1,35 +1,27 @@
 @import "c/nativeControls";
+@import "c/panel";
+@import "c/sectionHeading";
 
 /*
- * Built on the --pf- site tokens, so the form follows the light and dark
- * theme. Every element that sets a background also sets its text colour. Input borders and the
- * switch track use the muted token, which keeps the 3:1 contrast a control boundary needs.
+ * Built on the --pf- site tokens and the shared styles, as contactForm is, so the form follows
+ * the light and dark theme. The box is c/panel (pf-panel), the heading is the panel size of
+ * c/sectionHeading, the fields, labels, hints and errors are c/nativeControls (nc-control and
+ * the rest) and the two writing modes are nc-toggle buttons. The shared module has no switch,
+ * so the vibe switch below is the one look this file draws itself, from the tokens, at the
+ * 44 px target. Every element that sets a background also sets its text colour. The switch
+ * track uses the muted token, which keeps the 3:1 contrast a control boundary needs.
  */
 :host {
   display: block;
-  --form-surface: var(--pf-surface);
-  --form-text: var(--pf-text);
-  --form-muted: var(--pf-muted);
-  --form-border: var(--pf-muted);
-  --form-brand: var(--pf-btn);
-  --form-brand-text: var(--pf-btn-text);
 }
 
 .testimonial {
-  background-color: var(--form-surface);
-  color: var(--form-text);
-  padding: 1rem;
-  border: 1px solid var(--pf-border);
-  border-radius: var(--pf-radius);
   max-width: 40rem;
   margin: 0 auto;
   overflow-wrap: anywhere;
 }
 
 .testimonial-title {
-  color: var(--form-text);
-  font-size: 1.25rem;
-  font-weight: 700;
   margin: 0 0 var(--pf-space-3);
 }
 
@@ -39,7 +31,7 @@
 }
 
 .testimonial-intro {
-  color: var(--form-muted);
+  color: var(--pf-muted);
   margin: 0 0 1rem;
 }
 
@@ -47,42 +39,15 @@
   margin-bottom: 1rem;
 }
 
-.field-label {
-  display: block;
-  color: var(--form-text);
-  font-weight: 700;
-  margin-bottom: 0.25rem;
+.nc-control option {
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
 }
 
-.field-input {
-  box-sizing: border-box;
-  width: 100%;
-  background-color: var(--form-surface);
-  color: var(--form-text);
-  border: 1px solid var(--form-border);
-  border-radius: 0.25rem;
-  padding: 0.5rem;
-  font: inherit;
-}
-
-.field-input:focus {
-  outline: 2px solid var(--pf-focus);
-  outline-offset: 1px;
-}
-
-.field-input option {
-  background-color: var(--form-surface);
-  color: var(--form-text);
-}
-
-.field-textarea {
-  resize: vertical;
-}
-
-.field-hint,
+/* A box's count under it, from c/fieldLimit, set like a hint. */
 .field-limit {
-  color: var(--form-muted);
-  font-size: 0.875rem;
+  color: var(--pf-muted);
+  font-size: var(--pf-font-caption, 14px);
   margin: 0.25rem 0 0;
 }
 
@@ -92,44 +57,24 @@
   font-weight: 600;
 }
 
-/* Build a sentence or write my own: two buttons, the pressed one filled. Each is 44 px high. */
-.mode-options {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.mode-option {
-  min-height: 44px;
-  padding: 0 1rem;
-  background-color: var(--form-surface);
-  color: var(--form-text);
-  border: 1px solid var(--form-border);
-  border-radius: var(--pf-radius-sm);
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.mode-option[aria-pressed="true"] {
-  background-color: var(--form-brand);
-  color: var(--form-brand-text);
-  border-color: var(--form-brand);
-}
-
-.mode-option:focus-visible {
-  outline: 2px solid var(--pf-focus);
-  outline-offset: 2px;
-}
-
+/*
+ * The vibe switch, a button with role="switch" and aria-checked. The look is keyed on
+ * aria-checked, as the shared toggles are keyed on aria-pressed. The whole button is the
+ * target, at least 44 px both ways (--pf-control-height), with the same focus ring and
+ * disabled cursor as the shared controls.
+ */
 .vibe-toggle {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background-color: var(--form-surface);
-  color: var(--form-text);
+  min-height: var(--pf-control-height, 44px);
+  min-width: var(--pf-control-height, 44px);
+  padding: 0 var(--pf-space-2) 0 0;
+  background-color: transparent;
+  color: var(--pf-text);
   border: none;
-  padding: 0;
+  border-radius: var(--pf-radius-sm);
   font: inherit;
   cursor: pointer;
 }
@@ -139,13 +84,22 @@
   outline-offset: 2px;
 }
 
+.vibe-toggle:disabled {
+  color: var(--pf-muted);
+  cursor: not-allowed;
+}
+
 .vibe-track {
   position: relative;
   display: inline-block;
   width: 2.5rem;
   height: 1.25rem;
-  border-radius: 0.625rem;
+  border-radius: var(--pf-radius-pill, 999px);
   background-color: var(--pf-muted);
+}
+
+.vibe-toggle:disabled .vibe-track {
+  background-color: var(--pf-chip);
 }
 
 .vibe-thumb {
@@ -174,7 +128,7 @@
 }
 
 .vibe-value {
-  color: var(--form-text);
+  color: inherit;
   font-weight: 700;
 }
 
@@ -184,7 +138,6 @@
 
 .message {
   margin: 1rem 0 0;
-  background-color: var(--form-surface);
 }
 
 .message-success {
@@ -200,8 +153,8 @@
   border-radius: var(--pf-radius-sm);
   margin: 0 0 1rem;
   padding: 0.75rem 1rem 1rem;
-  background-color: var(--form-surface);
-  color: var(--form-text);
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
   /* A fieldset is as wide as its widest content by default. This lets it shrink to a phone. */
   min-width: 0;
   min-inline-size: 0;
@@ -231,7 +184,7 @@
 }
 
 .blank-label {
-  color: var(--form-text);
+  color: var(--pf-text);
   font-weight: 700;
   min-width: 6rem;
 }
@@ -245,15 +198,14 @@
   width: auto;
   min-width: 0;
   max-width: 100%;
-  min-height: 44px;
 }
 
 .preview {
   margin: 1rem 0 0;
   padding: 0.5rem 0.75rem;
   border-left: 3px solid var(--pf-accent);
-  background-color: var(--form-surface);
-  color: var(--form-text);
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
   font-style: italic;
 }
 
@@ -270,19 +222,9 @@
   opacity: 0;
 }
 
-.field-error {
-  color: var(--pf-error-text);
-  font-size: 0.875rem;
-  margin: 0.25rem 0 0;
-}
-
 .blank-error {
   flex: 1 1 100%;
   margin: 0;
-}
-
-.field-input[aria-invalid="true"] {
-  border-color: var(--pf-error-text);
 }
 
 .visually-hidden {
@@ -302,8 +244,8 @@
   margin: 1rem 0 0;
   padding: 1rem;
   border-left: 3px solid var(--pf-ok);
-  background-color: var(--form-surface);
-  color: var(--form-text);
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
   animation: thanks-in 0.3s ease-out;
 }
 
@@ -339,8 +281,8 @@
 
 .paused-note {
   margin: 1.25rem 0 0;
-  color: var(--form-muted);
-  font-size: 0.875rem;
+  color: var(--pf-muted);
+  font-size: var(--pf-font-caption, 14px);
 }
 
 .paused-text {

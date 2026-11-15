@@ -1,12 +1,16 @@
 <template>
-  <section class="erd" aria-label="Data model">
+  <section class="erd pf-panel" aria-label="Data model">
     <div class="erd-header">
       <div class="erd-title-row">
         <h2 lwc:if={showTitle} class="erd-title">{title}</h2>
         <c-view-source source-key="schemaVisualizer"></c-view-source>
       </div>
       <template lwc:if={showScopeToggle}>
-        <div class="scope-toggle" role="group" aria-label="Schema scope">
+        <div
+          class="nc-toggle-group nc-toggle-group_tray scope-toggle"
+          role="group"
+          aria-label="Schema scope"
+        >
           <template for:each={scopeButtons} for:item="button">
             <button
               key={button.value}
@@ -153,7 +157,7 @@
             <h3 class="panel-title">{panelHeading}</h3>
             <button
               type="button"
-              class="panel-close"
+              class="nc-button nc-button_secondary panel-close"
               onclick={handleClosePanel}
             >
               Close

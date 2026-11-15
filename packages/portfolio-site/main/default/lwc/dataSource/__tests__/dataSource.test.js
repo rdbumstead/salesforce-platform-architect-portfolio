@@ -557,7 +557,8 @@ describe("c-data-source", () => {
       return start < 0 ? "" : css.slice(start, css.indexOf("}", start));
     };
     expect(rule(":host")).toContain("max-width: 100%");
-    expect(css).toContain("min-height: 44px");
+    // The 44 px height comes from the shared button the marker uses.
+    expect(css).toContain('@import "c/nativeControls";');
     const buttonRule = rule(".marker-button");
     expect(buttonRule).toContain("flex-wrap: wrap");
     expect(buttonRule).toContain("max-width: 100%");

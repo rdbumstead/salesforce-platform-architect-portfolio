@@ -252,9 +252,8 @@ export default class TestimonialSubmit extends LightningElement {
   }
 
   get titleClass() {
-    return this.showForm
-      ? "testimonial-title testimonial-title_lede"
-      : "testimonial-title";
+    const base = "section-heading section-heading-panel testimonial-title";
+    return this.showForm ? `${base} testimonial-title_lede` : base;
   }
 
   get showForm() {

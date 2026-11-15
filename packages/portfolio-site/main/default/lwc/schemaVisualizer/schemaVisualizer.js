@@ -437,7 +437,7 @@ export default class SchemaVisualizer extends LightningElement {
       return {
         ...scope,
         pressed: pressed ? "true" : "false",
-        className: pressed ? "scope-button scope-button_on" : "scope-button"
+        className: "nc-toggle scope-button"
       };
     });
   }

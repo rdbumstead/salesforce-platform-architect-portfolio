@@ -158,7 +158,24 @@ describe("c-api-reference", () => {
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}/);
     expect(css).toMatch(/@import "c\/nativeControls"/);
     expect(css).not.toMatch(/\.open-reference \{/);
-    expect(css).toMatch(/\.spec-button \{[^}]*min-height: 44px/);
+    // The switches take the shared 44 px toggle look, so no local button rule is left.
+    expect(css).not.toMatch(/\.spec-button(_selected)? \{/);
+  });
+
+  it("draws the version and specification switches as shared toggles keyed on aria-pressed", async () => {
+    const element = createComponent();
+    await flushPromises();
+    const buttons = [
+      ...element.shadowRoot.querySelectorAll(".nc-toggle-group button")
+    ];
+    expect(buttons.length).toBeGreaterThan(2);
+    buttons.forEach((button) => {
+      expect(button.className).toBe("nc-toggle spec-button");
+      expect(["true", "false"]).toContain(button.getAttribute("aria-pressed"));
+    });
+    expect(
+      buttons.filter((b) => b.getAttribute("aria-pressed") === "true")
+    ).toHaveLength(2);
   });
 
   it("loads nothing before the visitor opens the reference", async () => {

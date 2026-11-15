@@ -1,27 +1,21 @@
 @import "c/nativeControls";
+@import "c/panel";
+@import "c/sectionHeading";
 
 /*
- * Built on the --pf- site tokens, as testimonialSubmit is, so the form
- * follows the light and dark theme. Every element that sets a background also sets its text
- * colour. Input borders use the muted token for the 3:1 contrast a control boundary needs.
+ * Built on the --pf- site tokens and the shared styles, as testimonialSubmit is, so the form
+ * follows the light and dark theme. The box is c/panel (pf-panel), the heading is the panel
+ * size of c/sectionHeading, and the fields, labels, hints and errors are c/nativeControls
+ * (nc-control and the rest), so their height, corner, focus ring and disabled look come from
+ * one place. This file sets layout only. Every element that sets a background also sets its
+ * text colour.
  */
 :host {
   display: block;
-  --form-surface: var(--pf-surface);
-  --form-text: var(--pf-text);
-  --form-muted: var(--pf-muted);
-  --form-border: var(--pf-muted);
-  --form-brand: var(--pf-btn);
-  --form-brand-text: var(--pf-btn-text);
 }
 
 .contact {
   position: relative;
-  background-color: var(--form-surface);
-  color: var(--form-text);
-  padding: 1rem;
-  border: 1px solid var(--pf-border);
-  border-radius: var(--pf-radius);
   max-width: 40rem;
   margin: 2rem auto 0;
   overflow-wrap: anywhere;
@@ -32,9 +26,6 @@
 }
 
 .contact-title {
-  color: var(--form-text);
-  font-size: 1.25rem;
-  font-weight: 700;
   margin: 0 0 var(--pf-space-3);
 }
 
@@ -43,13 +34,8 @@
   margin-bottom: 0.25rem;
 }
 
-.contact-title:focus-visible {
-  outline: 2px solid var(--pf-focus);
-  outline-offset: 2px;
-}
-
 .contact-intro {
-  color: var(--form-muted);
+  color: var(--pf-muted);
   margin: 0 0 1rem;
 }
 
@@ -69,38 +55,9 @@
   margin-bottom: 1rem;
 }
 
-.field-label {
-  display: block;
-  color: var(--form-text);
-  font-weight: 700;
-  margin-bottom: 0.25rem;
-}
-
-.field-input {
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 44px;
-  background-color: var(--form-surface);
-  color: var(--form-text);
-  border: 1px solid var(--form-border);
-  border-radius: 0.25rem;
-  padding: 0.5rem;
-  font: inherit;
-}
-
-.field-input:focus {
-  outline: 2px solid var(--pf-focus);
-  outline-offset: 1px;
-}
-
-.field-textarea {
-  resize: vertical;
-}
-
-.field-hint,
 .privacy {
-  color: var(--form-muted);
-  font-size: 0.875rem;
+  color: var(--pf-muted);
+  font-size: var(--pf-font-caption, 14px);
   margin: 0.25rem 0 0;
 }
 
@@ -123,7 +80,6 @@
 
 .message {
   margin: 1rem 0 0;
-  background-color: var(--form-surface);
 }
 
 .message p {
@@ -131,7 +87,7 @@
 }
 
 .message-success {
-  color: var(--form-text);
+  color: var(--pf-text);
 }
 
 .success-title {
@@ -141,16 +97,6 @@
 
 .message-error {
   color: var(--pf-error-text);
-}
-
-.field-error {
-  color: var(--pf-error-text);
-  font-size: 0.875rem;
-  margin: 0.25rem 0 0;
-}
-
-.field-input[aria-invalid="true"] {
-  border-color: var(--pf-error-text);
 }
 
 /* The thank you panel fades in. Opacity only, and not at all under reduced motion. */
@@ -180,8 +126,8 @@
 
 .paused-note {
   margin: 1.25rem 0 0;
-  color: var(--form-muted);
-  font-size: 0.875rem;
+  color: var(--pf-muted);
+  font-size: var(--pf-font-caption, 14px);
 }
 
 .paused-text {

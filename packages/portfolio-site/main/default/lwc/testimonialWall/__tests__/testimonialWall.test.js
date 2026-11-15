@@ -94,6 +94,30 @@ describe("c-testimonial-wall", () => {
     expect(q(element, "section")).toBeNull();
   });
 
+  it("marks the host empty while there is nothing to show, so it takes no gap", async () => {
+    const element = createComponent();
+    expect(element.classList.contains("is-empty")).toBe(true);
+    getApprovedTestimonials.emit(ITEMS);
+    await flushPromises();
+    expect(element.classList.contains("is-empty")).toBe(false);
+    getApprovedTestimonials.emit([]);
+    await flushPromises();
+    expect(element.classList.contains("is-empty")).toBe(true);
+  });
+
+  it("draws the filter as shared toggles and the tone as the shared pill", async () => {
+    const element = createComponent();
+    getApprovedTestimonials.emit(ITEMS);
+    await flushPromises();
+    const buttons = [...element.shadowRoot.querySelectorAll(".filter button")];
+    expect(buttons.length).toBe(2);
+    buttons.forEach((button) => {
+      expect(button.classList.contains("nc-toggle")).toBe(true);
+    });
+    expect(q(element, ".tone").classList.contains("pill")).toBe(true);
+    expect(q(element, "h2").classList.contains("section-heading")).toBe(true);
+  });
+
   it("shows every approved testimonial by default, each in its tone", async () => {
     const element = createComponent();
     getApprovedTestimonials.emit(ITEMS);

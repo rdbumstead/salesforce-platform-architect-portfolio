@@ -108,6 +108,8 @@
   --pf-radius-sm: 8px;
   --pf-radius: 12px;
   --pf-radius-lg: 16px;
+  /* Fully round ends, for a tag or pill (c/pill). Buttons, toggles and fields stay at 8 px. */
+  --pf-radius-pill: 999px;
 
   --pf-space-1: 4px;
   --pf-space-2: 8px;
@@ -115,6 +117,44 @@
   --pf-space-4: 16px;
   --pf-space-5: 24px;
   --pf-space-6: 32px;
+
+  /*
+   * Type scale, the house values the layout audit of 2026-11-15 measured. Each role has a size
+   * token, and a heading role has its weight and line height too. A size ending in -sm is the
+   * same role under 768 px wide, which a component sets in its own media query. The same in
+   * light and dark, so the dark blocks below do not repeat them.
+   */
+  /* The page title, one h1 per page (c/pageIntro, the docs and message pages, the hero). */
+  --pf-font-page: 40px;
+  --pf-font-page-sm: 32px;
+  --pf-weight-page: 600;
+  --pf-line-page: 1.15;
+  /* A section heading, the h2 that opens a page section (c/sectionHeading). */
+  --pf-font-section: 32px;
+  --pf-font-section-sm: 26px;
+  --pf-weight-section: 700;
+  --pf-line-section: 1.2;
+  /* A heading inside a panel, an h2 or h3 (c/sectionHeading with section-heading-panel). */
+  --pf-font-panel: 20px;
+  --pf-weight-panel: 700;
+  --pf-line-panel: 1.3;
+  /* The title of one card in a grid of cards, such as a case study card. */
+  --pf-font-card: 17px;
+  --pf-weight-card: 600;
+  --pf-line-card: 1.3;
+  /* Running text. */
+  --pf-font-body: 16px;
+  --pf-line-body: 1.6;
+  /* The one or two sentences under a page title. */
+  --pf-font-lead: 18px;
+  --pf-line-lead: 1.65;
+  /* A caption, hint or note under a figure or a control. */
+  --pf-font-caption: 14px;
+  /* Small print: a date, a count, the text inside a pill. */
+  --pf-font-meta: 12px;
+
+  /* The touch target every control meets, in both directions (c/nativeControls). */
+  --pf-control-height: 44px;
 
   /*
    * DXP globals mapped onto the tokens, so base components and Builder follow the theme.

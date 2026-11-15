@@ -2,9 +2,10 @@ import { LightningElement, api } from "lwc";
 
 /**
  * Native stand in for lightning-card. It follows the platform layout measured on the live
- * site: a bordered, lightly shadowed card with an icon, a title and an actions slot on one
- * header row, then the body, then an optional footer. The actions sit at the right end of the
- * row and drop under the title only when the row has no room for both.
+ * site, an icon, a title and an actions slot on one header row, then the body, then an
+ * optional footer. The actions sit at the right end of the row and drop under the title only
+ * when the row has no room for both. The box itself has the site's panel look (c/panel), not
+ * the platform's.
  */
 export default class Card extends LightningElement {
   @api title;

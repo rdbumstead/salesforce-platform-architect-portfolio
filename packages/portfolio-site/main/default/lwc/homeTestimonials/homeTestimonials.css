@@ -1,12 +1,20 @@
 @import "c/sectionHeading";
 @import "c/nativeControls";
+@import "c/pill";
 /*
  * Home page testimonials, on the --pf- site tokens only, in heroBanner's section style and the
- * wall's card tones. Every element that sets a background also sets its text colour. The two
- * tones differ in typeface, the accent edge and the tone tag, never in colour alone.
+ * wall's card tones. The tone tag is c/pill. Every element that sets a background also sets
+ * its text colour. The two tones differ in typeface, the accent edge and the tone tag, never
+ * in colour alone.
  */
 :host {
   display: block;
+}
+
+/* With no quotes the section renders nothing, and the host takes no space either, so the home
+   page keeps one gap between the credentials and Get in touch instead of two. */
+:host(.is-empty) {
+  display: none;
 }
 
 .home-testimonials {
@@ -107,14 +115,6 @@
 .author {
   color: var(--pf-text);
   font-weight: 700;
-}
-
-.tone {
-  background-color: var(--pf-chip);
-  color: var(--pf-chip-text);
-  border-radius: var(--pf-radius-sm);
-  padding: 0 0.5rem;
-  font-size: 0.875rem;
 }
 
 .wall-action {

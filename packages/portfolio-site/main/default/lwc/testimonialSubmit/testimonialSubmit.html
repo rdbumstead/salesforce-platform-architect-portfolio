@@ -1,5 +1,5 @@
 <template>
-  <section class="testimonial" aria-labelledby="testimonial-heading">
+  <section class="testimonial pf-panel" aria-labelledby="testimonial-heading">
     <h2 id="testimonial-heading" class={titleClass}>Leave a Review</h2>
 
     <template lwc:if={isSent}>
@@ -16,11 +16,11 @@
 
       <form class="testimonial-form" onsubmit={handleSubmit} novalidate>
         <div class="field">
-          <label class="field-label" for="authorName">Your name</label>
+          <label class="nc-label" for="authorName">Your name</label>
           <input
             disabled={paused}
             id="authorName"
-            class="field-input"
+            class="nc-control"
             name="authorName"
             type="text"
             required
@@ -41,7 +41,7 @@
           <template lwc:if={authorNameError}>
             <p
               id="authorName-error"
-              class="field-error"
+              class="nc-error"
               data-id="authorName-error"
             >
               {authorNameError}
@@ -50,13 +50,13 @@
         </div>
 
         <div class="field">
-          <label class="field-label" for="authorTitle"
+          <label class="nc-label" for="authorTitle"
             >Your title (optional)</label
           >
           <input
             disabled={paused}
             id="authorTitle"
-            class="field-input"
+            class="nc-control"
             name="authorTitle"
             type="text"
             autocomplete="organization-title"
@@ -76,7 +76,7 @@
           <template lwc:if={authorTitleError}>
             <p
               id="authorTitle-error"
-              class="field-error"
+              class="nc-error"
               data-id="authorTitle-error"
             >
               {authorTitleError}
@@ -85,7 +85,7 @@
         </div>
 
         <div class="field vibe-field">
-          <span class="field-label" id="vibe-label">{vibeLabel}</span>
+          <span class="nc-label" id="vibe-label">{vibeLabel}</span>
           <button
             type="button"
             disabled={paused}
@@ -102,21 +102,21 @@
             ></span>
             <span class="vibe-value" aria-hidden="true">{vibeValue}</span>
           </button>
-          <p id="vibe-hint" class="field-hint">{vibeHint}</p>
+          <p id="vibe-hint" class="nc-hint">{vibeHint}</p>
           <p class="visually-hidden" aria-live="polite" data-id="vibe-status">
             {vibeAnnouncement}
           </p>
         </div>
 
         <div class="field mode-field" role="group" aria-labelledby="mode-label">
-          <span class="field-label" id="mode-label"
+          <span class="nc-label" id="mode-label"
             >How would you like to write it?</span
           >
-          <div class="mode-options">
+          <div class="mode-options nc-toggle-group">
             <button
               type="button"
               disabled={paused}
-              class="mode-option"
+              class="mode-option nc-toggle"
               data-mode="builder"
               data-id="mode-builder"
               aria-pressed={builderPressed}
@@ -127,7 +127,7 @@
             <button
               type="button"
               disabled={paused}
-              class="mode-option"
+              class="mode-option nc-toggle"
               data-mode="own"
               data-id="mode-own"
               aria-pressed={ownPressed}
@@ -140,13 +140,13 @@
 
         <template lwc:if={isOwnWords}>
           <div class="field" data-id="own-words">
-            <label class="field-label" for="relationship-own"
+            <label class="nc-label" for="relationship-own"
               >How do you know Ryan?</label
             >
             <select
               disabled={paused}
               id="relationship-own"
-              class="field-input"
+              class="nc-control"
               name="relationship"
               required
               aria-invalid={relationshipInvalid}
@@ -169,7 +169,7 @@
             <template lwc:if={relationshipError}>
               <p
                 id="relationship-own-error"
-                class="field-error"
+                class="nc-error"
                 data-id="relationship-error"
               >
                 {relationshipError}
@@ -177,11 +177,11 @@
             </template>
           </div>
           <div class="field">
-            <label class="field-label" for="ownWords">Your review</label>
+            <label class="nc-label" for="ownWords">Your review</label>
             <textarea
               disabled={paused}
               id="ownWords"
-              class="field-input field-textarea"
+              class="nc-control"
               name="ownWords"
               rows="4"
               required
@@ -198,11 +198,7 @@
               {ownWordsLimit.text}
             </p>
             <template lwc:if={ownWordsError}>
-              <p
-                id="ownWords-error"
-                class="field-error"
-                data-id="ownWords-error"
-              >
+              <p id="ownWords-error" class="nc-error" data-id="ownWords-error">
                 {ownWordsError}
               </p>
             </template>
@@ -217,7 +213,7 @@
           </template>
 
           <fieldset class="sentence" data-id="sentence">
-            <legend class="field-label sentence-legend">
+            <legend class="nc-label sentence-legend">
               Your sentence: I'm a [relationship], and Ryan [strength]. The
               result? [outcome]
             </legend>
@@ -226,7 +222,7 @@
               <select
                 disabled={paused}
                 id="relationship"
-                class="field-input blank-input"
+                class="nc-control blank-input"
                 name="relationship"
                 required
                 aria-invalid={relationshipInvalid}
@@ -249,7 +245,7 @@
               <template lwc:if={relationshipError}>
                 <p
                   id="relationship-error"
-                  class="field-error blank-error"
+                  class="nc-error blank-error"
                   data-id="relationship-error"
                 >
                   {relationshipError}
@@ -261,7 +257,7 @@
               <select
                 disabled={paused}
                 id="strength"
-                class="field-input blank-input"
+                class="nc-control blank-input"
                 name="strength"
                 required
                 aria-invalid={strengthInvalid}
@@ -284,7 +280,7 @@
               <template lwc:if={strengthError}>
                 <p
                   id="strength-error"
-                  class="field-error blank-error"
+                  class="nc-error blank-error"
                   data-id="strength-error"
                 >
                   {strengthError}
@@ -296,7 +292,7 @@
               <select
                 disabled={paused}
                 id="outcome"
-                class="field-input blank-input"
+                class="nc-control blank-input"
                 name="outcome"
                 required
                 aria-invalid={outcomeInvalid}
@@ -317,7 +313,7 @@
               <template lwc:if={outcomeError}>
                 <p
                   id="outcome-error"
-                  class="field-error blank-error"
+                  class="nc-error blank-error"
                   data-id="outcome-error"
                 >
                   {outcomeError}
@@ -330,13 +326,13 @@
           </fieldset>
 
           <div class="field">
-            <label class="field-label" for="note"
+            <label class="nc-label" for="note"
               >Anything to add? (optional)</label
             >
             <textarea
               disabled={paused}
               id="note"
-              class="field-input field-textarea"
+              class="nc-control"
               name="note"
               rows="3"
               maxlength={maxNoteLength}
@@ -348,7 +344,7 @@
               {noteLimit.text}
             </p>
             <template lwc:if={noteError}>
-              <p id="note-error" class="field-error" data-id="note-error">
+              <p id="note-error" class="nc-error" data-id="note-error">
                 {noteError}
               </p>
             </template>

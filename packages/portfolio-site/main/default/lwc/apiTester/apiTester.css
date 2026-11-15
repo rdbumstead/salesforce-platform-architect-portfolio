@@ -5,7 +5,9 @@
  * Every element that sets a background also sets its text colour from the matching token
  * pair. The response box uses the code pair. Buttons are at least 44 px high. The endpoint,
  * Advanced, Email and Purpose fields, the parameter fields and the Execute and Request token
- * buttons take their look from c/nativeControls, and this file sets only their layout.
+ * buttons take their look from c/nativeControls, and this file sets only their layout. So do
+ * the parameter values and the Raw JSON or Rendered switch, which are shared toggles keyed on
+ * aria-pressed, Next page (secondary) and Remove (the quiet button).
  */
 /*
  * The answer is scrolled to on a phone, under the sticky site header, so it stops one header
@@ -27,6 +29,13 @@
 .console-container h3,
 .field-label {
   color: var(--pf-text);
+}
+
+/* A heading inside the card, such as Call the API, at the card title size. */
+.console-container h2.slds-text-heading_small {
+  font-size: var(--pf-font-card, 17px);
+  font-weight: var(--pf-weight-card, 600);
+  line-height: var(--pf-line-card, 1.3);
 }
 
 /*
@@ -85,33 +94,11 @@
 }
 
 .view-toggle {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--pf-space-2);
   margin-bottom: var(--pf-space-2);
 }
 
-.view-button {
-  min-height: 44px;
-  padding: 0 var(--pf-space-4);
-  background-color: var(--pf-surface);
-  color: var(--pf-text);
-  border: 1px solid var(--pf-border);
-  border-radius: var(--pf-radius-sm);
-  font: inherit;
-  cursor: pointer;
-}
-
-.view-button_selected {
-  background-color: var(--pf-chip);
-  color: var(--pf-chip-text);
-  border-color: var(--pf-accent);
-  font-weight: 700;
-}
-
-.view-button:focus-visible,
 .rendered-text:focus-visible {
-  outline: 2px solid var(--pf-accent);
+  outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
 }
 
@@ -127,7 +114,7 @@
 
 .rendered-path {
   font-family: var(--pf-font-mono);
-  font-size: 0.75rem;
+  font-size: var(--pf-font-meta, 12px);
   color: var(--pf-muted);
   margin-bottom: var(--pf-space-1);
 }
@@ -154,6 +141,14 @@
 .text-error {
   background-color: var(--pf-error);
   color: var(--pf-error-text);
+}
+
+/* The site's one error look for a message: a filled box in the error colours. */
+.catalog-error,
+.invoke-error,
+.token-error {
+  padding: var(--pf-space-3);
+  border-radius: var(--pf-radius-sm);
 }
 
 .result-box {
@@ -193,7 +188,7 @@
   overflow-wrap: anywhere;
 }
 
-/* Query parameter controls. Pills and buttons are 44 px high. */
+/* Query parameter controls. The values and buttons are 44 px high. */
 .param-section h3 {
   margin-bottom: var(--pf-space-2);
 }
@@ -226,9 +221,6 @@
 }
 
 .pill-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--pf-space-2);
   margin-top: auto;
 }
 
@@ -246,9 +238,9 @@
   display: block;
   margin-bottom: var(--pf-space-1);
   font-family: var(--pf-font-sans);
-  font-size: 0.875rem;
+  font-size: var(--pf-font-caption, 14px);
   font-weight: 400;
-  color: var(--pf-body);
+  color: var(--pf-muted);
 }
 
 .param-field {
@@ -261,33 +253,14 @@
   margin-top: auto;
 }
 
-.pill,
-.remove-pill,
-.next-page-button {
-  min-height: 44px;
-  min-width: 44px;
+/* A parameter value is a shared toggle: pressing it sets the value, pressing it again clears it. */
+.param-pill {
   padding: 0 var(--pf-space-3);
-  background-color: var(--pf-surface);
-  color: var(--pf-text);
-  border: 1px solid var(--pf-border);
-  border-radius: 999px;
-  font: inherit;
-  cursor: pointer;
 }
 
-.pill_selected {
-  background-color: var(--pf-chip);
-  color: var(--pf-chip-text);
-  border-color: var(--pf-accent);
-  font-weight: 700;
-}
-
-.pill:focus-visible,
-.remove-pill:focus-visible,
-.next-page-button:focus-visible,
 .result-box:focus-visible,
 .curl-block:focus-visible {
-  outline: 2px solid var(--pf-accent);
+  outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
 }
 
@@ -300,6 +273,7 @@
   list-style: none;
 }
 
+/* A chosen value with its Remove button. It holds a control, so it is a chip and not a pill. */
 .chosen-pill {
   display: inline-flex;
   align-items: center;
@@ -307,7 +281,11 @@
   padding-left: var(--pf-space-3);
   background-color: var(--pf-chip);
   color: var(--pf-chip-text);
-  border-radius: 999px;
+  border-radius: var(--pf-radius-sm);
+}
+
+.remove-pill {
+  --nc-ghost-padding: var(--pf-space-3);
 }
 
 .chosen-text,
@@ -326,8 +304,6 @@
 
 .next-page-button {
   margin-top: var(--pf-space-2);
-  border-radius: var(--pf-radius-sm);
-  font-weight: 700;
 }
 
 .response-code {
@@ -422,7 +398,7 @@
 }
 
 .disclosure:focus-visible {
-  outline: 2px solid var(--pf-accent);
+  outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
 }
 
@@ -442,9 +418,11 @@
   border-radius: var(--pf-radius-sm);
 }
 
+/* The empty note: 14 px in the muted colour. */
 .response-empty-text {
   margin: 0;
-  color: var(--pf-body);
+  color: var(--pf-muted);
+  font-size: var(--pf-font-caption, 14px);
 }
 
 /* A call in flight: the word and a thin bar. The bar moves by transform alone. */
@@ -575,7 +553,7 @@
   color: var(--pf-code-text);
   border-radius: var(--pf-radius-sm);
   font-family: var(--pf-font-mono);
-  font-size: 0.875rem;
+  font-size: var(--pf-font-caption, 14px);
 }
 
 .curl-code {

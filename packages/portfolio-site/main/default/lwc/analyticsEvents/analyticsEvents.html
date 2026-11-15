@@ -1,7 +1,7 @@
 <template>
   <button
     type="button"
-    class="open-button"
+    class="nc-button nc-button_ghost open-button"
     aria-haspopup="dialog"
     onclick={handleOpen}
   >
@@ -27,7 +27,11 @@
           >
             {words.HEADING}
           </h2>
-          <button type="button" class="close-button" onclick={handleClose}>
+          <button
+            type="button"
+            class="nc-button close-button"
+            onclick={handleClose}
+          >
             {words.CLOSE}
           </button>
         </header>
