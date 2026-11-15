@@ -1,7 +1,8 @@
 /**
  * @description       : Unit tests for the arrival of a redirected visitor in portfolioThemeLayout,
  *                      on the static site: from=sf is removed from the address bar while the
- *                      module loads, other parameters stay, the arrival event is sent once, and a
+ *                      module loads, other parameters stay, the arrival event is sent once, the
+ *                      old cached 301 is cleared once on arrival, and a
  *                      page with no from=sf sends nothing and never asks Salesforce for the
  *                      redirect settings.
  * @author            : Ryan Bumstead
@@ -13,6 +14,8 @@
 import { createElement } from "@lwc/engine-dom";
 import Layout, {
   ARRIVAL_ATTRIBUTE,
+  CACHE_RESET_PATH,
+  healRedirectCache,
   readArrival,
   stripArrival
 } from "c/portfolioThemeLayout";
@@ -71,6 +74,14 @@ jest.mock(
 );
 
 describe("c-portfolio-theme-layout arrival on the static site", () => {
+  const fetcher = jest.fn(() => Promise.resolve({ ok: true }));
+  beforeAll(() => {
+    window.fetch = fetcher;
+  });
+  afterAll(() => {
+    delete window.fetch;
+  });
+
   it("removed from=sf from the address bar while the module loaded, keeping the rest", () => {
     expect(
       window.location.pathname + window.location.search + window.location.hash
@@ -90,8 +101,43 @@ describe("c-portfolio-theme-layout arrival on the static site", () => {
     });
   });
 
+  it("clears the old 301 once on arrival, then reloads Home", async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(fetcher.mock.calls[0][0]).toBe(CACHE_RESET_PATH);
+    expect(fetcher.mock.calls[0][1]).toMatchObject({ method: "POST" });
+    expect(fetcher.mock.calls[1]).toEqual([
+      "/",
+      { cache: "reload", credentials: "same-origin" }
+    ]);
+  });
+
   it("never reads the redirect settings on the static site", () => {
     expect(getRedirect).not.toHaveBeenCalled();
+  });
+});
+
+describe("healRedirectCache", () => {
+  it("still reloads Home when the cache reset fails", async () => {
+    const fetcher = jest
+      .fn()
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValueOnce({ ok: true });
+    await healRedirectCache(fetcher);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(fetcher.mock.calls[1][0]).toBe("/");
+  });
+
+  it("never rejects, even when fetch throws at once or the reload fails", async () => {
+    await expect(
+      healRedirectCache(() => {
+        throw new Error("blocked");
+      })
+    ).resolves.toBeUndefined();
+    await expect(
+      healRedirectCache(() => Promise.reject(new Error("offline")))
+    ).resolves.toBeUndefined();
   });
 });
 

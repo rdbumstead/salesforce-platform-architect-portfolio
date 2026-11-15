@@ -269,6 +269,40 @@ export function readArrival(where, history, root) {
   return stripArrival(where, history) || marked;
 }
 
+/** The function that answers with Clear-Site-Data, and the page the old 301 most often covers. */
+export const CACHE_RESET_PATH = "/api/cache-reset";
+export const HOME_PATH = "/";
+
+/**
+ * Removes a 301 to the Salesforce site that the browser kept from before the cutover. Such a
+ * browser follows the old 301 for Home without asking the server, which is how this visitor
+ * was sent back here. The function's Clear-Site-Data header clears the whole cache for the
+ * site, and the reload of Home replaces the old 301 in a browser that ignores the header.
+ * @param {Function} fetcher the fetch function
+ * @returns {Promise<void>} settles when both requests are done, and never rejects
+ */
+export function healRedirectCache(fetcher) {
+  try {
+    return Promise.resolve(
+      fetcher(CACHE_RESET_PATH, {
+        method: "POST",
+        cache: "no-store",
+        credentials: "same-origin"
+      })
+    )
+      .catch(() => {})
+      .then(() =>
+        fetcher(HOME_PATH, { cache: "reload", credentials: "same-origin" })
+      )
+      .then(
+        () => {},
+        () => {}
+      );
+  } catch {
+    return Promise.resolve();
+  }
+}
+
 // Read while the module loads. Only the static site is ever sent here, so the Salesforce site
 // never strips anything.
 let arrivedFromSalesforce =
@@ -634,12 +668,16 @@ export default class PortfolioThemeLayout extends LightningElement {
   }
 
   /**
-   * Records the arrival of a visitor the Salesforce site sent here, once per page load.
+   * Records the arrival of a visitor the Salesforce site sent here, once per page load, and
+   * clears the old 301 that sent them there, so the next click on Home stays on this site.
    */
   reportArrival() {
     if (arrivedFromSalesforce) {
       arrivedFromSalesforce = false;
       trackEvent(EVENTS.REDIRECT_ARRIVED, { source: ARRIVAL_VALUE });
+      if (typeof window.fetch === "function") {
+        healRedirectCache(window.fetch.bind(window));
+      }
     }
   }
 

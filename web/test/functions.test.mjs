@@ -14,6 +14,7 @@ import { onRequest as labToken } from '../functions/api/lab/token.js';
 import { onRequest as glassBox } from '../functions/api/live/glass-box.js';
 import { onRequest as pipelineStatus } from '../functions/api/live/pipeline-status.js';
 import { onRequest as features } from '../functions/api/features.js';
+import { onRequest as cacheReset } from '../functions/api/cache-reset.js';
 import { labPathsText, PATHS_FILE } from '../build/lab-paths.mjs';
 import { captureLab, captureSnapshot, copyRecorded, hasSecrets } from '../build/recorded.mjs';
 import { labKey } from '../src/shims/api-client.js';
@@ -429,4 +430,15 @@ test('the sample footer readings are copied only into a fixture build', () => {
   assert.deepEqual(held, { recordedAt: null, snapshot: null });
   assert.notEqual(held.sample, true);
   assert.ok(fs.existsSync(path.join(real, 'recorded/cover-letter.json')));
+});
+
+test('cache reset clears the site cache on POST only and is never cached', async () => {
+  const done = await cacheReset({ request: new Request(`${PROD}/api/cache-reset`, { method: 'POST' }) });
+  assert.equal(done.status, 204);
+  assert.equal(done.headers.get('Clear-Site-Data'), '"cache"');
+  assert.equal(done.headers.get('Cache-Control'), 'no-store');
+  const read = await cacheReset({ request: new Request(`${PROD}/api/cache-reset`) });
+  assert.equal(read.status, 405);
+  assert.equal(read.headers.get('Allow'), 'POST');
+  assert.equal(read.headers.get('Clear-Site-Data'), null, 'a GET from a link or a crawler clears nothing');
 });
