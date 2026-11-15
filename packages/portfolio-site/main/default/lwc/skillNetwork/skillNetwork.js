@@ -34,7 +34,7 @@
  *                      changes. Skills also sit in three tiers, "Core", "Extended" and "Full
  *                      toolkit" (skillTiers.js), from Skill__c.Selection_Priority__c read by a
  *                      query of its own and the links behind each skill. The page opens on Core,
- *                      and a native radio choice widens it to Core and Extended, then to every
+ *                      and a button group like the persona filter widens it to Core and Extended, then to every
  *                      skill. The choice shows only once at least one skill has a priority, and
  *                      the skills wait for that query so the page never narrows after it draws.
  *                      Both filters apply together, and one polite line counts what shows.
@@ -1047,23 +1047,22 @@ export default class SkillNetwork extends LightningElement {
     );
   }
 
-  // One native radio per view, narrowest first.
-  get tierOptions() {
+  // One button per view, narrowest first, styled and announced like the persona filter.
+  get tierButtons() {
     return TIER_VIEWS.map((view) => {
       const on = view.value === this.tierChoice;
       return {
         key: view.value,
-        id: `skill-tier-${view.value}`,
         label: view.label,
         value: view.value,
-        checked: on,
-        className: on ? "tier-option is-on" : "tier-option"
+        pressed: String(on),
+        className: on ? "persona-button is-on" : "persona-button"
       };
     });
   }
 
-  handleTierChange(event) {
-    const value = tierView(event.target.value).value;
+  handleTierClick(event) {
+    const value = tierView(event.currentTarget.dataset.value).value;
     if (value === this.tierChoice) {
       return;
     }

@@ -1,6 +1,6 @@
 /**
- * @description       : Unit tests for the skill tiers on the Skills page: the native radio
- *                      choice, Core as the default view, widening to Core and Extended and then
+ * @description       : Unit tests for the skill tiers on the Skills page: the button group
+ *                      choice, styled like the persona filter, Core as the default view, widening to Core and Extended and then
  *                      to every skill, the polite count, the evidence rule with certification
  *                      links, the empty state, the persona filter beside it, and the graph's list.
  * @author            : Ryan Bumstead
@@ -150,14 +150,17 @@ function chipNames(element) {
   );
 }
 
-function radios(element) {
-  return [...element.shadowRoot.querySelectorAll("input.tier-input")];
+function tierButtons(element) {
+  return [
+    ...element.shadowRoot.querySelectorAll('[aria-label="Show skills"] button')
+  ];
 }
 
 async function choose(element, value) {
-  const radio = radios(element).find((input) => input.value === value);
-  radio.checked = true;
-  radio.dispatchEvent(new CustomEvent("change"));
+  const button = tierButtons(element).find(
+    (item) => item.dataset.value === value
+  );
+  button.click();
   await flushPromises();
 }
 
@@ -192,22 +195,32 @@ describe("c-skill-network tiers", () => {
     expect(chipNames(element)).toHaveLength(5);
   });
 
-  it("offers the views as native radios under a visible legend, Core chosen", async () => {
+  it("offers the views as pressed buttons in a labelled group like the persona filter, Core chosen", async () => {
     const element = await mount();
 
-    const fieldset = element.shadowRoot.querySelector("fieldset.tier-filter");
-    expect(fieldset.querySelector("legend").textContent).toBe("Show skills");
-    const inputs = radios(element);
-    expect(inputs.map((input) => input.type)).toEqual([
-      "radio",
-      "radio",
-      "radio"
+    const group = element.shadowRoot.querySelector(
+      '[aria-label="Show skills"]'
+    );
+    expect(group.getAttribute("role")).toBe("group");
+    expect(group.classList.contains("persona-filter")).toBe(true);
+    const buttons = tierButtons(element);
+    expect(buttons.map((button) => button.type)).toEqual([
+      "button",
+      "button",
+      "button"
+    ]);
+    expect(buttons.map((button) => button.textContent.trim())).toEqual([
+      "Core",
+      "Core and Extended",
+      "Full toolkit"
     ]);
     expect(
-      inputs.map((input) => input.closest("label").textContent.trim())
-    ).toEqual(["Core", "Core and Extended", "Full toolkit"]);
-    expect(inputs.map((input) => input.checked)).toEqual([true, false, false]);
-    expect(new Set(inputs.map((input) => input.name)).size).toBe(1);
+      buttons.map((button) => button.getAttribute("aria-pressed"))
+    ).toEqual(["true", "false", "false"]);
+    expect(
+      buttons.every((button) => button.classList.contains("persona-button"))
+    ).toBe(true);
+    expect(element.shadowRoot.querySelector('input[type="radio"]')).toBeNull();
   });
 
   it("opens on Core: priority 1 with at least two links", async () => {
