@@ -32,7 +32,9 @@ export const MESSAGES = {
   noLive:
     "The live reading is switched off, so this shows the build time snapshot only.",
   noCoverLetter: "The sample cover letter is not in this build.",
-  network: "The request could not be sent. Check your connection and try again."
+  network:
+    "The request could not be sent. Check your connection and try again.",
+  busy: "The live version is resting for now. Try again later."
 };
 
 /** Request time call to route. `turnstile` adds the token, `feature` is the switch that gates it. */
@@ -151,6 +153,34 @@ export function createRequestHandler(options = {}) {
     throw apexError("This feature is switched off right now.", 503);
   }
 
+  /**
+   * The recorded copy, when the live call was stopped for the API budget. The sample letter
+   * says in its attempts why it is shown. A call with no recorded copy keeps the function's
+   * own message.
+   */
+  async function fallbackToRecorded(call, params, message) {
+    let value;
+    try {
+      value = await recorded(call, params);
+    } catch (error) {
+      throw apexError(message || MESSAGES.network, 503);
+    }
+    if (call === "ApiLabController.generateCoverLetter" && value) {
+      return {
+        ...value,
+        attempts: [
+          {
+            provider: value.provider || "Recorded sample",
+            outcome: "Served",
+            ms: 0,
+            detail: `${message || MESSAGES.busy} This is the saved sample letter instead.`
+          }
+        ]
+      };
+    }
+    return value;
+  }
+
   async function handle(call, params) {
     const route = ROUTES[call];
     if (!route)
@@ -193,6 +223,9 @@ export function createRequestHandler(options = {}) {
       Object.prototype.hasOwnProperty.call(payload, "result")
     )
       return payload.result;
+    // Past the org's daily API budget a function says so and points at the recorded copy.
+    if (payload && payload.fallback === "recorded")
+      return fallbackToRecorded(call, params, payload.message);
     const message =
       payload && typeof payload.message === "string"
         ? payload.message
