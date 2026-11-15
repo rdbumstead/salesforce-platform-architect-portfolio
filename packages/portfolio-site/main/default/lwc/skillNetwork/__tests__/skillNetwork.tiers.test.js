@@ -2,7 +2,8 @@
  * @description       : Unit tests for the skill tiers on the Skills page: the button group
  *                      choice, styled like the persona filter, Core as the default view, widening to Core and Extended and then
  *                      to every skill, the polite count, the evidence rule with certification
- *                      links, the empty state, the persona filter beside it, and the graph's list.
+ *                      links, the empty state, the persona filter beside it, the graph's list, and
+ *                      the roles, projects and certifications a view leaves with no skill.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -344,6 +345,57 @@ describe("c-skill-network tiers", () => {
       "Lightning Web Components"
     ]);
     expect(items.some((text) => text.includes(", Role."))).toBe(true);
+  });
+
+  it("leaves out a role with no skill in the view, says so, and widens to show it", async () => {
+    const element = await mount();
+    element.shadowRoot.querySelector('.view-button[data-view="graph"]').click();
+    await flushPromises();
+    const roles = () =>
+      [...element.shadowRoot.querySelectorAll(".network-node")]
+        .map((item) => item.textContent)
+        .filter((text) => text.includes(", Role."))
+        .map((text) => text.split(",")[0])
+        .sort();
+    const note = () => element.shadowRoot.querySelector(".graph-hidden-note");
+
+    // The Analyst links only Data Cloud, which is in Full toolkit.
+    expect(roles()).toEqual(["Architect", "Senior Developer"]);
+    expect(note().textContent).toContain(
+      "1 role has no skills in Core, so the graph leaves it out."
+    );
+    const reveal = note().querySelector("button.graph-reveal");
+    expect(reveal.textContent).toBe("Show Full toolkit");
+
+    reveal.click();
+    await flushPromises();
+    expect(roles()).toEqual(["Analyst", "Architect", "Senior Developer"]);
+    expect(note()).toBeNull();
+    const pressed = tierButtons(element).find(
+      (button) => button.getAttribute("aria-pressed") === "true"
+    );
+    expect(pressed.dataset.value).toBe("full");
+  });
+
+  it("names every kind it leaves out and offers no button when no tier would show them", async () => {
+    const element = await mount(payload(PRIORITIES, { a01S1: "Architect" }));
+    element.shadowRoot.querySelector('.view-button[data-view="graph"]').click();
+    await flushPromises();
+    const architect = [
+      ...element.shadowRoot.querySelectorAll(
+        '[aria-label="Filter skills by persona"] button'
+      )
+    ].find((button) => button.textContent.trim() === "Platform Architect");
+    architect.click();
+    await flushPromises();
+    await choose(element, "full");
+
+    // Only Apex is tagged, and it links to both projects and two of the three roles.
+    const note = element.shadowRoot.querySelector(".graph-hidden-note");
+    expect(note.textContent).toContain(
+      "1 role has no skills for Platform Architect, so the graph leaves it out."
+    );
+    expect(note.querySelector("button")).toBeNull();
   });
 
   it("never names a tier low, weak or minor", async () => {

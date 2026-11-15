@@ -262,6 +262,20 @@
                 Fit shows the whole graph, and Reset layout puts every node
                 back.
               </p>
+              <template lwc:if={showHiddenNote}>
+                <p class="graph-hidden-note">
+                  <span>{hiddenNote}</span>
+                  <template lwc:if={revealLabel}>
+                    <button
+                      type="button"
+                      class="nc-button nc-button_ghost graph-reveal"
+                      onclick={handleRevealClick}
+                    >
+                      {revealLabel}
+                    </button>
+                  </template>
+                </p>
+              </template>
               <template lwc:if={canZoom}>
                 <div
                   class="graph-controls"
