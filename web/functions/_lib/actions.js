@@ -35,13 +35,14 @@ export function busy(fallback) {
 }
 
 /**
- * One org call under the visitor ceiling (budget.js). Returns the outcome, or null when the
- * budget stopped the call or the org refused it for its daily cap.
+ * One org call under the visitor ceiling (budget.js). Returns { outcome }, or { stopped } with
+ * the reason (refused, ceiling or visitors) when the budget stopped the call or the org refused
+ * it for its daily cap.
  */
 async function budgetedCall(context, call) {
   const { env } = context;
   const gate = await checkBudget(env);
-  if (!gate.allowed) return null;
+  if (!gate.allowed) return { stopped: gate.reason };
   const outcome = await callAction(env, call);
   // A call that never reached Salesforce (not set up, network down) spends nothing.
   if (outcome.upstream !== 0)
@@ -51,7 +52,7 @@ async function budgetedCall(context, call) {
           ? context.waitUntil.bind(context)
           : undefined
     });
-  return outcome.limited ? null : outcome;
+  return outcome.limited ? { stopped: "refused" } : { outcome };
 }
 
 export function sendResult(outcome) {
@@ -70,7 +71,9 @@ export function sendResult(outcome) {
  * @param {object} context Pages Functions context
  * @param {object} options feature (switch name), action, turnstile (bool), build(fields) returning
  *   the body to forward or an error string, timeoutMs, fallback (bool: the browser has a
- *   recorded copy to show when the API budget stops the call)
+ *   recorded copy to show when the API budget stops the call), onStopped(context, forward,
+ *   reason) answering for the function itself when the budget stops the call, with a Response,
+ *   or null to fall back to the soft answer
  */
 export async function handlePost(context, options) {
   const { request, env } = context;
@@ -102,7 +105,7 @@ export async function handlePost(context, options) {
   }
   const forward = options.build ? options.build(fields) : fields;
   if (typeof forward === "string") return failure("BAD_REQUEST", forward);
-  const outcome = await budgetedCall(context, {
+  const { outcome, stopped } = await budgetedCall(context, {
     action: options.action,
     method: "POST",
     body: forward,
@@ -110,7 +113,13 @@ export async function handlePost(context, options) {
     ipHash: await ipHash(request, env),
     timeoutMs: options.timeoutMs
   });
-  if (!outcome) return busy(Boolean(options.fallback));
+  if (stopped) {
+    if (typeof options.onStopped === "function") {
+      const own = await options.onStopped(context, forward, stopped);
+      if (own) return own;
+    }
+    return busy(Boolean(options.fallback));
+  }
   return sendResult(outcome);
 }
 
@@ -127,13 +136,13 @@ export async function handleCachedGet(context, { feature, action, seconds }) {
     const hit = await store.match(key).catch(() => undefined);
     if (hit) return hit;
   }
-  const outcome = await budgetedCall(context, {
+  const { outcome, stopped } = await budgetedCall(context, {
     action,
     method: "GET",
     requestId: request.headers.get("X-Request-Id") || undefined
   });
   // The live reads all have a recorded copy or a plain message in the browser.
-  if (!outcome) return busy(true);
+  if (stopped) return busy(true);
   const response = sendResult(outcome);
   if (!outcome.ok) return response;
   const cacheable = new Response(response.body, response);
