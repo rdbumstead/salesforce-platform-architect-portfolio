@@ -204,10 +204,16 @@ function defaultRun(file, args) {
   );
 }
 
+// The shell sees these arguments on Windows, so only plain characters are passed at all. An org
+// alias or a flag never needs anything else, and refusing is safer than escaping.
 function quote(arg) {
-  return /^[A-Za-z0-9._\-/:=]+$/.test(arg)
-    ? arg
-    : `"${String(arg).replace(/"/g, '\\"')}"`;
+  const text = String(arg);
+  if (!/^[A-Za-z0-9._\-/:=@]+$/.test(text)) {
+    throw new Error(
+      `Refusing an argument with characters the shell could read: ${text}`
+    );
+  }
+  return text;
 }
 
 /**
