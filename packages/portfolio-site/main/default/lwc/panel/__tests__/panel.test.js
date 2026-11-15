@@ -33,6 +33,9 @@ describe("c/panel", () => {
     expect(CSS).toMatch(
       /\.pf-panel\.pf-panel_subtle\s*\{[^}]*background-color: var\(--pf-subtle\)/
     );
+    expect(CSS).toMatch(
+      /\.pf-panel\.pf-panel_subtle\s*\{[^}]*padding: var\(--pf-space-6\)/
+    );
   });
 
   it("uses a prefixed class, because several components have a panel class of their own", () => {

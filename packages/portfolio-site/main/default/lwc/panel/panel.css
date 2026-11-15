@@ -8,9 +8,9 @@
  * 1 px --pf-border edge, the 12 px --pf-radius corner, 16 px of padding and no shadow. A
  * component sets its own layout inside and keeps the box as it is.
  *
- * The subtle modifier fills with --pf-subtle instead. It is kept for the home page's
- * "Get in touch" panel, the one deliberate exception (owner, 2026-11-15). Do not use it to
- * make another panel stand out.
+ * The subtle modifier fills with --pf-subtle instead and keeps 32 px of padding, so the call to
+ * action has room. It is kept for the home page's "Get in touch" panel, the one deliberate
+ * exception (owner, 2026-11-15). Do not use it to make another panel stand out.
  */
 .pf-panel {
   box-sizing: border-box;
@@ -23,5 +23,6 @@
 }
 
 .pf-panel.pf-panel_subtle {
+  padding: var(--pf-space-6);
   background-color: var(--pf-subtle);
 }
