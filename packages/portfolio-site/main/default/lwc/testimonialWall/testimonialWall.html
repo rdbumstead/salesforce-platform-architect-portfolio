@@ -1,17 +1,23 @@
 <template>
   <template lwc:if={hasItems}>
     <section class="wall" aria-labelledby="wall-heading">
-      <div class="title-row">
-        <h2 id="wall-heading" class="wall-title">What people say</h2>
+      <div class="title-row heading-row">
+        <h2 id="wall-heading" class="section-heading wall-title">
+          What people say
+        </h2>
         <c-data-source
           source-keys="TestimonialController_Approved"
-          class="card-source"
+          class="card-source heading-badge-end"
         ></c-data-source>
       </div>
-      <div class="filter" role="group" aria-label="Show testimonials">
+      <div
+        class="filter nc-toggle-group"
+        role="group"
+        aria-label="Show testimonials"
+      >
         <button
           type="button"
-          class="filter-button"
+          class="filter-button nc-toggle"
           aria-pressed={allPressed}
           data-filter="all"
           data-id="filter-all"
@@ -21,7 +27,7 @@
         </button>
         <button
           type="button"
-          class="filter-button"
+          class="filter-button nc-toggle"
           aria-pressed={professionalPressed}
           data-filter="professional"
           data-id="filter-professional"
@@ -47,7 +53,7 @@
                   <template lwc:if={item.byline}>
                     <span class="detail">{item.byline}</span>
                   </template>
-                  <span class="tone">{item.toneLabel}</span>
+                  <span class="tone pill">{item.toneLabel}</span>
                 </figcaption>
               </figure>
             </li>

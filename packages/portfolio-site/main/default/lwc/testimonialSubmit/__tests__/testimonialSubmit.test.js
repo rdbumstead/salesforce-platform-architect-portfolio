@@ -144,6 +144,29 @@ describe("c-testimonial-submit", () => {
     jest.clearAllMocks();
   });
 
+  it("draws its box, heading, fields and mode buttons from the shared styles", async () => {
+    const element = await ready();
+    expect(q(element, "section").classList.contains("pf-panel")).toBe(true);
+    expect(q(element, "h2").classList.contains("section-heading-panel")).toBe(
+      true
+    );
+    const fields = element.shadowRoot.querySelectorAll(
+      "form input:not([tabindex='-1']), form select, form textarea"
+    );
+    expect(fields.length).toBeGreaterThan(0);
+    fields.forEach((field) => {
+      expect(field.classList.contains("nc-control")).toBe(true);
+    });
+    ["mode-builder", "mode-own"].forEach((id) => {
+      expect(
+        q(element, `[data-id="${id}"]`).classList.contains("nc-toggle")
+      ).toBe(true);
+    });
+    expect(q(element, '[data-id="vibe-toggle"]').getAttribute("role")).toBe(
+      "switch"
+    );
+  });
+
   it("holds the sentence in one fieldset whose legend reads it, each blank labelled", async () => {
     const element = await ready();
     const fieldset = q(element, "fieldset");
@@ -426,7 +449,7 @@ describe("c-testimonial-submit", () => {
     const toggle = q(element, '[data-id="vibe-toggle"]');
     expect(toggle.getAttribute("role")).toBe("switch");
     expect(toggle.getAttribute("aria-checked")).toBe("false");
-    const label = q(element, ".vibe-field .field-label");
+    const label = q(element, ".vibe-field .nc-label");
     expect(label.textContent.trim()).toBe("Casual vibe");
     // The switch is named by that label alone, and the visible state is hidden from the name.
     expect(toggle.getAttribute("aria-labelledby").replace(/-\d+$/, "")).toBe(
@@ -443,7 +466,7 @@ describe("c-testimonial-submit", () => {
     expect(toggle.getAttribute("aria-checked")).toBe("true");
     expect(label.textContent.trim()).toBe("Casual vibe");
     expect(q(element, ".vibe-value").textContent).toBe("On");
-    expect(q(element, ".vibe-field .field-hint").textContent).toBe(
+    expect(q(element, ".vibe-field .nc-hint").textContent).toBe(
       "Casual shows the fun phrases."
     );
     expect(q(element, '[data-id="vibe-status"]').textContent.trim()).toBe(

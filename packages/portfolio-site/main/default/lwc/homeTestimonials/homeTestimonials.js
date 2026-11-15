@@ -36,6 +36,10 @@ const RELATIONSHIP_LABELS = {
 export default class HomeTestimonials extends LightningElement {
   items = [];
 
+  connectedCallback() {
+    this.markEmpty();
+  }
+
   @wire(getHomeTestimonials)
   wiredTestimonials({ data, error }) {
     if (Array.isArray(data)) {
@@ -47,6 +51,15 @@ export default class HomeTestimonials extends LightningElement {
       // On an error the quotes stay hidden.
       this.items = [];
     }
+    this.markEmpty();
+  }
+
+  /**
+   * Hides the host while there are no quotes, so it takes no gap on the page. The class goes
+   * on the host itself, where the page puts the space under each section.
+   */
+  markEmpty() {
+    this.classList.toggle("is-empty", !this.hasItems);
   }
 
   get hasItems() {

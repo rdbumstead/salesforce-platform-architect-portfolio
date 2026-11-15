@@ -104,43 +104,13 @@
   gap: var(--pf-space-2);
 }
 
-/* The links that move between stops take the native button look. The site's own link rule
-   outranks a class on a link and clears its fill and colour, so these state the same fill,
-   colour and hover the button look gives a button, with the same tokens. */
+/* The links that move between stops take the native button look from c/nativeControls,
+   link colours and hover included (a.nc-button matches :link and :visited itself and outranks
+   the site's link rule). This sets layout only (ADR-037). */
 .tour-move {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  text-decoration: none;
-}
-
-.tour-bar .tour-move.nc-button:link,
-.tour-bar .tour-move.nc-button:visited {
-  background-color: var(--pf-btn);
-  color: var(--pf-btn-text);
-  text-decoration: none;
-}
-
-.tour-bar .tour-move.nc-button:link:hover,
-.tour-bar .tour-move.nc-button:visited:hover {
-  background-color: var(--pf-btn-hover);
-  border-color: var(--pf-btn-hover);
-  color: var(--pf-btn-text);
-  text-decoration: none;
-}
-
-.tour-bar .tour-move.nc-button_secondary:link,
-.tour-bar .tour-move.nc-button_secondary:visited {
-  background-color: var(--pf-surface);
-  border-color: var(--pf-muted);
-  color: var(--pf-text);
-}
-
-.tour-bar .tour-move.nc-button_secondary:link:hover,
-.tour-bar .tour-move.nc-button_secondary:visited:hover {
-  background-color: var(--pf-subtle);
-  border-color: var(--pf-muted);
-  color: var(--pf-text);
 }
 
 .tour-end {

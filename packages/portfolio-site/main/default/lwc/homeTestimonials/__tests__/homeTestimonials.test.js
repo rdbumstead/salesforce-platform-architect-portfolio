@@ -116,6 +116,22 @@ describe("c-home-testimonials", () => {
     expect(section()).toBeNull();
   });
 
+  it("marks the host empty while there are no quotes, so it takes no gap", async () => {
+    const element = render();
+    expect(element.classList.contains("is-empty")).toBe(true);
+    getHomeTestimonials.emit([]);
+    await flush();
+    expect(element.classList.contains("is-empty")).toBe(true);
+
+    getHomeTestimonials.emit(QUOTES);
+    await flush();
+    expect(element.classList.contains("is-empty")).toBe(false);
+
+    getHomeTestimonials.error();
+    await flush();
+    expect(element.classList.contains("is-empty")).toBe(true);
+  });
+
   it("no longer holds the credentials strip, the Trailhead link or the references line", async () => {
     const element = render();
     getHomeTestimonials.emit([]);

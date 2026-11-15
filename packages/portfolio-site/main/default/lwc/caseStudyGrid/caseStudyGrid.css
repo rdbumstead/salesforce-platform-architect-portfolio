@@ -15,8 +15,8 @@
   padding: 0;
   color: var(--pf-text);
   font-family: var(--pf-font-sans);
-  font-size: 16px;
-  line-height: 1.6;
+  font-size: var(--pf-font-body, 16px);
+  line-height: var(--pf-line-body, 1.6);
   overflow-wrap: anywhere;
 }
 
@@ -27,11 +27,13 @@
   padding: 32px 0;
 }
 
-/* A one or two sentence intro runs to the section's width, like the page leads. */
+/* A one or two sentence intro runs to the section's width, like the page leads, at the body
+   size in the muted colour. */
 .section-intro {
   margin: var(--pf-space-2) 0 var(--pf-space-6);
   max-width: 60rem;
   color: var(--pf-muted);
+  font-size: var(--pf-font-body, 16px);
   text-wrap: pretty;
 }
 
@@ -141,20 +143,21 @@
 }
 
 .metric-label {
-  font-size: 12px;
+  font-size: var(--pf-font-meta, 12px);
   color: var(--pf-muted);
 }
 
+/* The title of one card in the grid, from the card tokens. */
 .card-title {
   margin: 0;
-  font-size: 17px;
-  line-height: 1.3;
-  font-weight: 600;
+  font-size: var(--pf-font-card, 17px);
+  line-height: var(--pf-line-card, 1.3);
+  font-weight: var(--pf-weight-card, 600);
   color: var(--pf-text);
 }
 
 .client {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--pf-font-meta, 12px);
   color: var(--pf-muted);
 }

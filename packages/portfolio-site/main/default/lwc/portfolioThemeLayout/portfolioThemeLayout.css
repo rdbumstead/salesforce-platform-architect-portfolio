@@ -293,8 +293,9 @@
   display: flex;
   align-items: center;
   gap: var(--pf-space-2) var(--pf-space-4);
-  /* The arrow's width plus the gap after it: how far the links slide while it is hidden. */
-  --shell-arrow-room: 42px;
+  /* The arrow's width (the 44 px target) plus the gap after it: how far the links slide while
+     it is hidden. */
+  --shell-arrow-room: calc(var(--pf-control-height, 44px) + 2px);
 }
 
 /* The site's link rule in dxp-slds-extensions.css (a:link:not(...), specificity 0,2,2)
@@ -336,7 +337,7 @@
 .site-brand {
   display: inline-flex;
   align-items: center;
-  min-height: 40px;
+  min-height: var(--pf-control-height, 44px);
   color: var(--pf-text);
   font-weight: 600;
   font-size: 15px;
@@ -365,11 +366,14 @@
   gap: 2px;
 }
 
+/* Every header link and button is at least 44 px high (--pf-control-height), the target every
+   control on the site meets. The bar's own height does not change, since its content row was
+   already 44 px. */
 .nav-link {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 40px;
+  min-height: var(--pf-control-height, 44px);
   padding: 0 var(--pf-space-3);
   border: 0;
   border-radius: var(--pf-radius-sm);
@@ -408,10 +412,11 @@
   transform: rotate(180deg);
 }
 
+/* 8 px under the 44 px toggle. */
 .pillar-menu {
   position: absolute;
   right: 0;
-  top: 48px;
+  top: calc(var(--pf-control-height, 44px) + 8px);
   width: 340px;
   max-width: calc(100vw - 32px);
   padding: 6px;
@@ -542,8 +547,8 @@
 }
 
 .icon-button {
-  width: 40px;
-  height: 40px;
+  width: var(--pf-control-height, 44px);
+  height: var(--pf-control-height, 44px);
   border: 0;
   border-radius: var(--pf-radius-sm);
   background: transparent;
@@ -632,7 +637,6 @@
 
   .nav-link {
     width: 100%;
-    min-height: 44px;
     font-size: 16px;
   }
 

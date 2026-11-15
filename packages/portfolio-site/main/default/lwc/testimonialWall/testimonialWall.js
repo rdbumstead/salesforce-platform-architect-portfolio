@@ -32,6 +32,10 @@ export default class TestimonialWall extends LightningElement {
   items = [];
   filter = FILTER_ALL;
 
+  connectedCallback() {
+    this.markEmpty();
+  }
+
   @wire(getApprovedTestimonials)
   wiredTestimonials({ data, error }) {
     if (data) {
@@ -39,6 +43,15 @@ export default class TestimonialWall extends LightningElement {
     } else if (error) {
       this.items = [];
     }
+    this.markEmpty();
+  }
+
+  /**
+   * Hides the host while there is nothing to show, so it takes no gap on the page. The class
+   * goes on the host itself, where the page puts the space under each section.
+   */
+  markEmpty() {
+    this.classList.toggle("is-empty", !this.hasItems);
   }
 
   get hasItems() {

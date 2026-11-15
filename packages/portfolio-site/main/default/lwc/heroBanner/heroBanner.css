@@ -46,11 +46,13 @@
   color: var(--pf-muted);
 }
 
+/* The page h1 size and weight (--pf-font-page, --pf-weight-page), as c/pageIntro has. The
+   line height stays a little tighter, so the slots measured below keep their place. */
 .hero-name {
   margin: 0;
-  font-size: 40px;
+  font-size: var(--pf-font-page, 40px);
   line-height: 1.1;
-  font-weight: 700;
+  font-weight: var(--pf-weight-page, 600);
   letter-spacing: -0.02em;
   color: var(--pf-text);
 }
@@ -95,49 +97,19 @@
 
 .proof-item {
   padding: 4px 12px;
-  border-radius: 999px;
+  border-radius: var(--pf-radius-pill, 999px);
   background: var(--pf-chip);
   color: var(--pf-chip-text);
   font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
 
-/* The nc-button look comes from c/nativeControls. These anchors need the flex layout and no
-   underline a button element has by default. The site's link rule in dxp-slds-extensions.css
-   (a:link:not(...), specificity 0,2,2) outranks a plain class rule and empties the button fill,
-   so the colours are repeated on :link and :visited, in both themes. */
+/* The button look, link colours included, comes from c/nativeControls (a.nc-button matches
+   :link and :visited itself). These anchors set layout only (ADR-037). */
 .hero-button {
   display: inline-flex;
-  font-size: 16px;
   align-items: center;
   gap: var(--pf-space-2);
-  text-decoration: none;
-}
-
-.hero-button:link,
-.hero-button:visited {
-  background-color: var(--pf-btn);
-  border-color: var(--pf-btn);
-  color: var(--pf-btn-text);
-}
-
-.hero-button:link:hover,
-.hero-button:visited:hover {
-  background-color: var(--pf-btn-hover);
-  border-color: var(--pf-btn-hover);
-}
-
-.hero-button.nc-button_secondary:link,
-.hero-button.nc-button_secondary:visited {
-  background-color: var(--pf-surface);
-  border-color: var(--pf-muted);
-  color: var(--pf-text);
-}
-
-.hero-button.nc-button_secondary:link:hover,
-.hero-button.nc-button_secondary:visited:hover {
-  background-color: var(--pf-subtle);
-  border-color: var(--pf-muted);
 }
 
 /* The panel is as wide as the value sentence above it: the same 58ch at the same 17px, with
@@ -151,7 +123,7 @@
   margin-top: 6px;
   padding: var(--pf-space-4);
   border: 1px solid var(--pf-border);
-  border-radius: 12px;
+  border-radius: var(--pf-radius);
   font-size: 17px;
 }
 
@@ -270,7 +242,7 @@
   }
 
   .hero-name {
-    font-size: 32px;
+    font-size: var(--pf-font-page-sm, 32px);
   }
 
   .hero-line {
