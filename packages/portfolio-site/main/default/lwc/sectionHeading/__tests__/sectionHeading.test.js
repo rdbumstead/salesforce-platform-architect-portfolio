@@ -26,12 +26,27 @@ function css(name) {
 describe("c/sectionHeading", () => {
   it("sets the heading at 32px, 26px under 768px, with the focus styles and the heading row", () => {
     const shared = css("sectionHeading");
-    expect(shared).toMatch(/\.section-heading \{[^}]*font-size: 32px/);
     expect(shared).toMatch(
-      /max-width: 767\.98px\) \{\s*\.section-heading \{\s*font-size: 26px/
+      /\.section-heading \{[^}]*font-size: var\(--pf-font-section, 32px\)/
+    );
+    expect(shared).toMatch(
+      /max-width: 767\.98px\) \{\s*\.section-heading \{\s*font-size: var\(--pf-font-section-sm, 26px\)/
     );
     expect(shared).toContain(".section-heading:focus-visible");
     expect(shared).toMatch(/\.heading-row \{[^}]*display: flex/);
+  });
+
+  it("has a panel size, 20px at every width, for a heading inside a panel", () => {
+    const shared = css("sectionHeading");
+    const panel = shared.match(
+      /\.section-heading\.section-heading-panel \{([^}]*)\}/
+    )[1];
+    expect(panel).toMatch(/font-size: var\(--pf-font-panel, 20px\)/);
+    expect(panel).toMatch(/font-weight: var\(--pf-weight-panel, 700\)/);
+    // After the phone media query, so a later phone rule cannot win on order.
+    expect(shared.indexOf(".section-heading-panel {")).toBeGreaterThan(
+      shared.indexOf("max-width: 767.98px")
+    );
   });
 
   it.each(USERS)(

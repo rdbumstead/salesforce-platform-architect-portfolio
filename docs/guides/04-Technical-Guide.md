@@ -711,7 +711,42 @@ Salesforce's base form components draw at 32 px in a site whose own controls are
 - **One CSS only module.** A component adds `@import "c/nativeControls";` at the top of its CSS and uses `nc-control`, `nc-button` (`nc-button_secondary` for a secondary action), `nc-field`, `nc-label`, `nc-hint`, `nc-error` and `nc-required`. The module sets height, fill, edge and focus from the `--pf-` tokens, and a component's own CSS sets layout only.
 - **What a replaced control keeps.** A visible label tied by `for` and `id`, `required` with an `aria-hidden` asterisk, the email check announced to screen readers (`aria-invalid`, `aria-describedby`), keyboard use and a focus ring. A native `select` follows the theme through `color-scheme`, set from the `--pf-color-scheme` token (light or dark) in the theme layout and the site stylesheet.
 - **Moved.** 13 controls, counted from the base component tags in the four components before and after: the API Lab's endpoint combobox, Advanced query text, token Email and Purpose, the AI Lab's Company Name, Job Title and job description, the resume's "Tailor for" combobox with its Download PDF and Copy ATS text buttons, the code viewer's button, and since 2026-10-30 the resume's two include checkboxes ([ADR-037 amendment](../adr/037-native-form-controls-site-wide.md#amendment-2026-10-30-the-resumes-checkboxes-are-native)). The contact and testimonial forms were already native and are not moved.
-- **Known.** WebKit draws a native select at 48 px against Chromium's 44. `config/jest.config.js` maps `c/nativeControls` to its CSS file, and a second CSS only module needs its own line.
+- **Known.** WebKit draws a native select at 48 px against Chromium's 44. `config/jest.config.js` maps `c/nativeControls` to its CSS file by name. Every other `c/` module, `c/pill`, `c/panel` and `c/sectionHeading` among them, resolves through the catch all line under it, so a new CSS only module needs no line of its own (a probe component importing `c/panel` rendered under Jest, 2026-11-15).
+
+#### Shared styles
+
+The style audits of 2026-11-15 found the same role drawn several ways: five pressed looks for toggles, two tab looks, section headings at 32, 24, 22, 20, 18 and 16 px, panels at 4, 12 and 16 px with and without a shadow, and three pill shapes. The fix is one shared style per role. A component imports the module, uses its class and keeps only layout in its own CSS. Each module's own Jest test guards its values.
+
+**Tokens.** Set in the site stylesheet (`sfdc_cms__styles/styles_css/styles.css`, the `:root` block) and mirrored in the `:host` block of `portfolioThemeLayout.css`. `portfolioThemeLayout/__tests__/themeTokens.test.js` fails when the two differ. They do not change with the theme, so the dark blocks leave them out. A size ending in `-sm` is the same role under 768 px, which a component sets in its own media query.
+
+| Token                                                     | Value          | For                                                                                                                  |
+| --------------------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `--pf-font-page`, `--pf-font-page-sm`                     | 40px, 32px     | The page `h1` (`c/pageIntro`, the docs and message pages, the hero)                                                  |
+| `--pf-weight-page`, `--pf-line-page`                      | 600, 1.15      | The page `h1`                                                                                                        |
+| `--pf-font-section`, `--pf-font-section-sm`               | 32px, 26px     | A section `h2` (`c/sectionHeading`)                                                                                  |
+| `--pf-weight-section`, `--pf-line-section`                | 700, 1.2       | A section `h2`                                                                                                       |
+| `--pf-font-panel`, `--pf-weight-panel`, `--pf-line-panel` | 20px, 700, 1.3 | An `h2` or `h3` that heads a panel or a tool card, at every width                                                    |
+| `--pf-font-card`, `--pf-weight-card`, `--pf-line-card`    | 17px, 600, 1.3 | The title of one card in a grid of cards                                                                             |
+| `--pf-font-body`, `--pf-line-body`                        | 16px, 1.6      | Running text                                                                                                         |
+| `--pf-font-lead`, `--pf-line-lead`                        | 18px, 1.65     | The sentences under a page title                                                                                     |
+| `--pf-font-caption`                                       | 14px           | A caption, hint or note                                                                                              |
+| `--pf-font-meta`                                          | 12px           | Small print, such as a date, a count or the text in a pill                                                           |
+| `--pf-control-height`                                     | 44px           | The touch target every control meets both ways                                                                       |
+| `--pf-radius-pill`                                        | 999px          | The round ends of a pill. Buttons, toggles and fields stay at `--pf-radius-sm` (8px), panels at `--pf-radius` (12px) |
+
+**Controls** in `c/nativeControls`, beside the field and button classes above, which keep their look. Every one is at least 44 px both ways, shows a 2 px `--pf-focus` ring on keyboard focus only (`:focus-visible`) and has a disabled look (the chip fill and `not-allowed`).
+
+- `nc-button_ghost`, with `nc-button`. The quiet utility button, such as View source or Analytics events: no fill, a `--pf-border` edge, regular weight, and an accent edge on hover. A host that needs a smaller line sets `--nc-ghost-size` and `--nc-ghost-padding`.
+- `nc-toggle`. Any button that carries `aria-pressed`, such as a filter or a view switch. Unpressed it looks like `nc-button_secondary`. Pressed (`aria-pressed="true"`) it has the solid `--pf-btn` fill with `--pf-btn-text`. The look is keyed on the attribute, never on a class such as `is-on`, so what is seen and what a screen reader hears cannot drift apart.
+- `nc-toggle-group`. The row that holds related toggles, wrapping with an 8 px gap. Add `nc-toggle-group_tray` for the segmented switch the skills view uses, a tinted tray with borderless toggles where only the pressed one is filled.
+- `nc-tablist` and `nc-tab`. One tab style, for a container with `role="tablist"` holding buttons with `role="tab"` and `aria-selected`. The selected tab is tinted with an accent edge and an accent bar along its foot, so a tab never looks like a pressed toggle.
+- Hover, one rule per role: a primary button or a pressed toggle darkens to `--pf-btn-hover`, a secondary button, an unpressed toggle or a tab takes the `--pf-subtle` fill, a ghost button takes the accent edge, and a toggle on the tray lifts to the surface.
+
+**Panel.** `c/panel` (`@import "c/panel";`) gives the class `pf-panel`: the `--pf-surface` fill, a 1 px `--pf-border` edge, the 12 px `--pf-radius` corner, 16 px of padding and no shadow. The class carries the `pf-` prefix because several components already have a `panel` class of their own. `pf-panel_subtle` swaps the fill for `--pf-subtle` and is kept for the home page's "Get in touch" panel alone, the one deliberate exception. On the static site the `lightning-card` stand in (`web/src/modules/lightning/card/card.css`) has the same look, so the four tool pages (Skills, Resume, API Lab and AI Lab) lift off the page in dark mode instead of showing an unfilled box.
+
+**Panel heading.** `c/sectionHeading` adds `section-heading-panel` beside `section-heading-compact`, for a heading inside a panel: 20px, weight 700, at every width.
+
+**Pill.** `c/pill` is the one pill, the class `pill`, with round ends (`--pf-radius-pill`), the chip colours and 12 px bold text. The round ends keep a tag from sharing the 8 px corner of a button, toggle or field, so it does not read as something to press. A component sets its own colours for a state, such as Passed or Now, and keeps the shape.
 
 ### 2.22 The Cover Letter Page and PDF
 

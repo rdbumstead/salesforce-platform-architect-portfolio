@@ -1,0 +1,27 @@
+/*
+ * The site's one look for a panel, a bordered box that groups a tool, a form or a block of
+ * content. Shared through a CSS import (@import "c/panel" at the top of a component's CSS).
+ * Add the class "pf-panel" to the element. The class carries the pf- prefix because several
+ * components already have a class called panel of their own.
+ *
+ * A panel fills with --pf-surface, so in dark mode it lifts off the page background. It has a
+ * 1 px --pf-border edge, the 12 px --pf-radius corner, 16 px of padding and no shadow. A
+ * component sets its own layout inside and keeps the box as it is.
+ *
+ * The subtle modifier fills with --pf-subtle instead. It is kept for the home page's
+ * "Get in touch" panel, the one deliberate exception (owner, 2026-11-15). Do not use it to
+ * make another panel stand out.
+ */
+.pf-panel {
+  box-sizing: border-box;
+  padding: var(--pf-space-4);
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius);
+  box-shadow: none;
+}
+
+.pf-panel.pf-panel_subtle {
+  background-color: var(--pf-subtle);
+}

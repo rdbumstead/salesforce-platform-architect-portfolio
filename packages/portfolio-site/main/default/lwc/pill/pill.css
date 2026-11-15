@@ -5,17 +5,19 @@
  * is the same on every line height around it. Next to a line of text it is centred on that
  * line when that text is 16 px, because the 20 px box then matches the height of the text
  * box and sits on its bottom edge. A component sets its own colours for a state and keeps
- * the chip colours otherwise.
+ * the chip colours otherwise. The ends are fully round (--pf-radius-pill), so a tag never
+ * shares the 8 px corner of a button, toggle or field and does not read as something to press.
+ * This is the one pill on the site. A component that draws its own pill moves onto this class.
  */
 .pill {
   display: inline-flex;
   align-items: center;
   box-sizing: border-box;
   padding: var(--pf-space-1) var(--pf-space-2);
-  border-radius: var(--pf-radius-sm);
+  border-radius: var(--pf-radius-pill, 999px);
   background-color: var(--pf-chip);
   color: var(--pf-chip-text);
-  font-size: 0.75rem;
+  font-size: var(--pf-font-meta, 12px);
   font-weight: 700;
   line-height: 1;
   vertical-align: text-bottom;
