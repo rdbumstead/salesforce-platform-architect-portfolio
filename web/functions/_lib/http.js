@@ -10,7 +10,8 @@ export const MESSAGES = {
   RATE_LIMITED: "Too many requests. Try again in a minute.",
   CALL_FAILED: "The request could not be completed. Try again later.",
   UNAVAILABLE: "Salesforce could not be reached right now. Try again later.",
-  SWITCHED_OFF: "This feature is switched off right now."
+  SWITCHED_OFF: "This feature is switched off right now.",
+  BUSY: "This is resting for now because the site has used most of its Salesforce allowance for today. Try again later."
 };
 
 const STATUS = {

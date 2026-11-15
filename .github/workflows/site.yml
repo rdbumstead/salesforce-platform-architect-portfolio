@@ -71,6 +71,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Salesforce CLI as the site build user
         if: env.HAS_BUILD_USER == 'true'
@@ -103,8 +105,24 @@ jobs:
           npm test
           node build/check-export-coverage.mjs
 
+      # A pull request preview reads production only when it changes the export, the build or
+      # the snapshot. Every other preview builds from the fixtures, so drafts do not spend the
+      # daily API requests the public site needs.
+      - name: Does this preview need production data
+        id: needs
+        if: github.event_name == 'pull_request' && env.HAS_BUILD_USER == 'true'
+        run: node scripts/export-needs-production.js --base "origin/${{ github.base_ref }}"
+
+      # A preview that needs production still stops at the 40% reserve and builds from the
+      # fixtures instead. Main never checks, because main must not publish sample data.
+      - name: Check the API reserve for the preview
+        id: reserve
+        if: steps.needs.outputs.production == 'true'
+        continue-on-error: true
+        run: node scripts/api-reserve.js --target-org site-build --label "Site preview"
+
       - name: Build from Salesforce
-        if: env.HAS_BUILD_USER == 'true'
+        if: env.HAS_BUILD_USER == 'true' && (github.event_name != 'pull_request' || (steps.needs.outputs.production == 'true' && steps.reserve.outputs.reason != 'reserve'))
         working-directory: web
         env:
           SF_TARGET_ORG: site-build
@@ -113,13 +131,17 @@ jobs:
         run: node build/build.mjs --export
 
       - name: Build from fixtures
-        if: env.HAS_BUILD_USER != 'true'
+        if: env.HAS_BUILD_USER != 'true' || (github.event_name == 'pull_request' && (steps.needs.outputs.production != 'true' || steps.reserve.outputs.reason == 'reserve'))
         working-directory: web
         env:
           SITE_PREVIEW: ${{ github.event_name == 'pull_request' }}
           TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
         run: |
-          echo "::notice::No SFDX_SITE_BUILD_USERNAME secret, so this is a fixture build with sample data."
+          if [ "$HAS_BUILD_USER" != "true" ]; then
+            echo "::notice::No SFDX_SITE_BUILD_USERNAME secret, so this is a fixture build with sample data."
+          else
+            echo "::notice::This preview builds from the fixtures with sample data, so it spends none of production's daily API requests."
+          fi
           node build/build.mjs --fixtures
 
       # Saves the API Lab's responses for recorded mode, as the edge user. Never on a pull

@@ -41,4 +41,10 @@ export function build(fields) {
 }
 
 export const onRequest = (context) =>
-  handlePost(context, { feature: "apiLab", action: "lab-invoke", build });
+  handlePost(context, {
+    feature: "apiLab",
+    action: "lab-invoke",
+    build,
+    // Past the API budget the browser answers from the recorded lab calls.
+    fallback: true
+  });

@@ -48,6 +48,13 @@ jobs:
           node scripts/count-test-groups.js --check
           npm run docs:verify
 
+      # The API budget scripts keep a reserve of production's daily API requests for the
+      # public site. Their tests run here so a change to them cannot reach main untested.
+      - name: API Budget Scripts
+        run: |
+          node --test scripts/api-reserve.test.js
+          node --test scripts/export-needs-production.test.js
+
       # Fails the PR when a comment, description or help text under packages/, or a line of
       # the docs, README.md or STATUS.md, names an internal planning reference. The script
       # skips the generated API pages in docs/api/oas. The gate's own tests run first.
@@ -135,6 +142,12 @@ jobs:
 
       # The AI definition, because the Agentforce cover letter code and its prompt template do not
       # deploy to an org without the generative AI features.
+      # Production is the Dev Hub and serves the public site. Stop before creating a scratch org
+      # when less than 40% of its daily API requests are left or no scratch org is left today,
+      # so the public site keeps the rest. Rerun the check once requests free up.
+      - name: Check the API Reserve
+        run: node scripts/api-reserve.js --target-org portfolio --need-scratch-org --label "PR validation"
+
       - name: Create Scratch Org
         id: create_org
         run: |

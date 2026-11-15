@@ -1,6 +1,6 @@
 /**
- * The shared shape of a function: the switch, the body, optional Turnstile, the forward to
- * Salesforce, the answer.
+ * The shared shape of a function: the switch, the body, optional Turnstile, the visitor
+ * ceiling on the org's API budget, the forward to Salesforce, the answer.
  */
 import {
   failure,
@@ -12,6 +12,48 @@ import {
 import { isLive } from "./features.js";
 import { callAction, ipHash } from "./salesforce.js";
 import { verifyTurnstile } from "./turnstile.js";
+import { checkBudget, recordCall } from "./budget.js";
+
+/** How long the browser is told to wait after a soft stop for the API budget. */
+export const BUSY_RETRY_SECONDS = 900;
+
+/**
+ * The soft answer when the API budget stops a call. A feature with a recorded copy (the
+ * sample letter, the recorded API Lab calls, the saved footer readings) says fallback
+ * "recorded", and the browser then shows that copy. A form gets the message only.
+ */
+export function busy(fallback) {
+  return json(
+    {
+      error: "UNAVAILABLE",
+      message: MESSAGES.BUSY,
+      ...(fallback ? { fallback: "recorded" } : {})
+    },
+    503,
+    { "Retry-After": String(BUSY_RETRY_SECONDS) }
+  );
+}
+
+/**
+ * One org call under the visitor ceiling (budget.js). Returns { outcome }, or { stopped } with
+ * the reason (refused, ceiling or visitors) when the budget stopped the call or the org refused
+ * it for its daily cap.
+ */
+async function budgetedCall(context, call) {
+  const { env } = context;
+  const gate = await checkBudget(env);
+  if (!gate.allowed) return { stopped: gate.reason };
+  const outcome = await callAction(env, call);
+  // A call that never reached Salesforce (not set up, network down) spends nothing.
+  if (outcome.upstream !== 0)
+    recordCall(env, outcome, {
+      waitUntil:
+        typeof context.waitUntil === "function"
+          ? context.waitUntil.bind(context)
+          : undefined
+    });
+  return outcome.limited ? { stopped: "refused" } : { outcome };
+}
 
 export function sendResult(outcome) {
   if (outcome.ok)
@@ -28,7 +70,10 @@ export function sendResult(outcome) {
 /**
  * @param {object} context Pages Functions context
  * @param {object} options feature (switch name), action, turnstile (bool), build(fields) returning
- *   the body to forward or an error string, timeoutMs
+ *   the body to forward or an error string, timeoutMs, fallback (bool: the browser has a
+ *   recorded copy to show when the API budget stops the call), onStopped(context, forward,
+ *   reason) answering for the function itself when the budget stops the call, with a Response,
+ *   or null to fall back to the soft answer
  */
 export async function handlePost(context, options) {
   const { request, env } = context;
@@ -60,16 +105,22 @@ export async function handlePost(context, options) {
   }
   const forward = options.build ? options.build(fields) : fields;
   if (typeof forward === "string") return failure("BAD_REQUEST", forward);
-  return sendResult(
-    await callAction(env, {
-      action: options.action,
-      method: "POST",
-      body: forward,
-      requestId: request.headers.get("X-Request-Id") || undefined,
-      ipHash: await ipHash(request, env),
-      timeoutMs: options.timeoutMs
-    })
-  );
+  const { outcome, stopped } = await budgetedCall(context, {
+    action: options.action,
+    method: "POST",
+    body: forward,
+    requestId: request.headers.get("X-Request-Id") || undefined,
+    ipHash: await ipHash(request, env),
+    timeoutMs: options.timeoutMs
+  });
+  if (stopped) {
+    if (typeof options.onStopped === "function") {
+      const own = await options.onStopped(context, forward, stopped);
+      if (own) return own;
+    }
+    return busy(Boolean(options.fallback));
+  }
+  return sendResult(outcome);
 }
 
 /** A GET function cached at the edge for `seconds`. */
@@ -85,11 +136,13 @@ export async function handleCachedGet(context, { feature, action, seconds }) {
     const hit = await store.match(key).catch(() => undefined);
     if (hit) return hit;
   }
-  const outcome = await callAction(env, {
+  const { outcome, stopped } = await budgetedCall(context, {
     action,
     method: "GET",
     requestId: request.headers.get("X-Request-Id") || undefined
   });
+  // The live reads all have a recorded copy or a plain message in the browser.
+  if (stopped) return busy(true);
   const response = sendResult(outcome);
   if (!outcome.ok) return response;
   const cacheable = new Response(response.body, response);
