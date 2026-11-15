@@ -1,5 +1,5 @@
 <template>
-  <section class="changelog" aria-labelledby="changelog-heading">
+  <section class="changelog pf-panel" aria-labelledby="changelog-heading">
     <header class="changelog-header">
       <div class="changelog-title-group">
         <h2 id="changelog-heading" class="changelog-title section-heading">
@@ -76,7 +76,7 @@
     </template>
 
     <template lwc:if={showFailed}>
-      <p class="changelog-message" data-id="failed">
+      <p class="changelog-message changelog-error" data-id="failed">
         The latest updates could not be loaded right now.
       </p>
     </template>

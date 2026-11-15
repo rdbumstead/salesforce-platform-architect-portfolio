@@ -1,11 +1,13 @@
 @import "c/nativeControls";
+@import "c/pill";
 
 /*
  * Colours come only from the --pf- site tokens, which hold the light and dark values,
  * so this file carries no colour of its own. Every element that sets a background also sets
  * its text colour from the matching token pair. Buttons are at least 44 px high.
  * The fields are native controls from c/nativeControls. Company and title show a visible
- * label with its own marker, and a hidden label names each control for screen readers.
+ * label with its own marker, in the same look as the description's label, and a hidden label
+ * names each control for screen readers. The model's name is the shared pill (c/pill).
  */
 .generator {
   background-color: var(--pf-surface);
@@ -27,9 +29,15 @@
   color: var(--pf-body);
 }
 
+.intro {
+  font-size: var(--pf-font-body, 16px);
+  line-height: var(--pf-line-body, 1.6);
+}
+
+/* The same look as nc-label, which the description's visible label uses. */
 .field-label {
   color: var(--pf-text);
-  font-size: 0.75rem;
+  font-weight: 700;
   margin-bottom: var(--pf-space-1);
 }
 
@@ -40,7 +48,7 @@
 }
 
 .work-toggle:focus-visible {
-  outline: 2px solid var(--pf-accent);
+  outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
 }
 
@@ -70,7 +78,7 @@
 .description-cut {
   margin: var(--pf-space-1) 0 0;
   color: var(--pf-muted);
-  font-size: 0.875rem;
+  font-size: var(--pf-font-caption, 14px);
 }
 
 .field-limit_near {
@@ -124,12 +132,13 @@
   width: 70%;
 }
 
-.error-text {
+/* The site's one error look: a filled box in the error colours. */
+.error-text,
+.export-error {
   background-color: var(--pf-error);
   color: var(--pf-error-text);
   border-radius: var(--pf-radius-sm);
-  padding: var(--pf-space-2) var(--pf-space-3);
-  font-weight: 700;
+  padding: var(--pf-space-3);
 }
 
 .provider-line {
@@ -141,12 +150,7 @@
 }
 
 .provider-badge {
-  background-color: var(--pf-chip);
-  color: var(--pf-chip-text);
-  border-radius: 999px;
-  padding: var(--pf-space-1) var(--pf-space-3);
   font-family: var(--pf-font-mono);
-  font-weight: 700;
 }
 
 /* Download PDF and Copy text sit together above the sheet, both 44 px, lined up with its edge. */
@@ -165,10 +169,6 @@
 
 .export-message {
   color: var(--pf-ok);
-}
-
-.export-error {
-  color: var(--pf-error-text);
 }
 
 /*
@@ -304,11 +304,12 @@
   }
 }
 
+/* Its text is --pf-text, the same as the API Lab's disclosures. */
 .work-toggle {
-  min-height: 44px;
+  min-height: var(--pf-control-height, 44px);
   padding: 0 var(--pf-space-4);
   background-color: var(--pf-surface);
-  color: var(--pf-accent);
+  color: var(--pf-text);
   border: 1px solid var(--pf-border);
   border-radius: var(--pf-radius-sm);
   font-weight: 700;

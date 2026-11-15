@@ -1,46 +1,27 @@
+@import "c/nativeControls";
+
 /*
  * Colours come only from the --pf- site tokens, which hold the light and dark values.
  * Every element that sets a background also sets its text colour from the matching pair.
- * Buttons are at least 44 px high. The dialog fills a phone screen.
+ * The open button is the shared quiet button and Close the shared primary button
+ * (c/nativeControls), both 44 px. The dialog fills a phone screen.
+ *
+ * The same text button as View source: a host can set --view-source-size and
+ * --view-source-padding to fit a smaller line. They feed the quiet button's --nc-ghost-size and
+ * --nc-ghost-padding, and a host that sets those directly wins. The tap target stays 44 px.
  */
 :host {
+  --nc-ghost-size: var(--view-source-size, 1rem);
+  --nc-ghost-padding: var(--view-source-padding, var(--pf-space-4));
+
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
 }
 
-.open-button,
-.close-button {
-  min-height: 44px;
-  min-width: 44px;
-  padding: 0 var(--pf-space-3);
-  border-radius: var(--pf-radius-sm);
-  font: inherit;
-  cursor: pointer;
-}
-
-/* The same text button as View source: a host can set --view-source-size and
-   --view-source-padding to fit a smaller line, as the footer does. The tap target stays 44 px. */
-.open-button {
-  padding-inline: var(--view-source-padding, var(--pf-space-4));
-  font-size: var(--view-source-size, 1rem);
-  background-color: transparent;
-  color: var(--pf-text);
-  border: 1px solid var(--pf-border);
-  font-weight: 400;
-  line-height: 1.5;
-  white-space: nowrap;
-}
-
-.open-button:hover {
-  border-color: var(--pf-accent);
-}
-
-.open-button:focus-visible,
-.close-button:focus-visible,
 .dialog-heading:focus-visible,
 .event-list:focus-visible {
-  outline: 2px solid var(--pf-focus, var(--pf-accent));
+  outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
 }
 
@@ -80,24 +61,31 @@
 
 .dialog-heading {
   margin: 0;
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-size: var(--pf-font-panel, 20px);
+  font-weight: var(--pf-weight-panel, 700);
+  line-height: var(--pf-line-panel, 1.3);
   color: var(--pf-text);
 }
 
+/* Close keeps body size even where a host sets a smaller line, as the footer does. */
 .close-button {
-  background-color: var(--pf-btn);
-  color: var(--pf-btn-text);
-  border: 0;
   font-size: 1rem;
-  font-weight: 700;
 }
 
-.explanation,
-.empty {
+.explanation {
   margin: 0 0 var(--pf-space-3);
   color: var(--pf-body);
   background-color: var(--pf-surface);
+  font-size: var(--pf-font-body, 16px);
+  line-height: var(--pf-line-body, 1.6);
+}
+
+/* The empty note: 14 px in the muted colour. */
+.empty {
+  margin: 0 0 var(--pf-space-3);
+  color: var(--pf-muted);
+  background-color: var(--pf-surface);
+  font-size: var(--pf-font-caption, 14px);
 }
 
 .event-list {
@@ -132,7 +120,7 @@
 .event-outcome {
   margin: 0;
   color: var(--pf-body);
-  font-size: 0.875rem;
+  font-size: var(--pf-font-caption, 14px);
 }
 
 .params {
@@ -146,7 +134,7 @@
   display: flex;
   gap: var(--pf-space-2);
   font-family: var(--pf-font-mono);
-  font-size: 0.875rem;
+  font-size: var(--pf-font-caption, 14px);
 }
 
 .param dt {

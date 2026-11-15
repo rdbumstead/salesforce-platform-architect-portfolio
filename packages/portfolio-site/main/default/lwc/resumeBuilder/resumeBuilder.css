@@ -1,19 +1,17 @@
 @import "c/nativeControls";
+@import "c/panel";
 
 /*
  * The builder sits on the --pf- site tokens, so its panel follows the light and dark theme.
  * The preview is white paper in both themes. Its type, spacing and colours come from
  * resumeLayout.js as --resume- custom properties on .preview-paper, the same values the PDF
  * writer reads. Every element that sets a background also sets its text colour. The persona
- * picker and the two export buttons are native controls with the c/nativeControls look.
+ * picker and the two export buttons are native controls with the c/nativeControls look, and
+ * the settings box is the shared panel (c/panel). The body takes the card's own fill, so in
+ * dark mode the card does not show the page colour inside it.
  */
-.builder-body,
-.config-panel {
-  background-color: var(--pf-bg);
-  color: var(--pf-text);
-}
-
 .builder-body {
+  color: var(--pf-text);
   padding: var(--pf-space-4);
 }
 
@@ -23,16 +21,11 @@
   gap: var(--pf-space-4);
 }
 
-.config-panel {
-  padding: var(--pf-space-4);
-  border: 1px solid var(--pf-border);
-  border-radius: var(--pf-radius);
-}
-
 .config-title {
   margin: 0 0 var(--pf-space-4);
-  font-size: 16px;
-  font-weight: 700;
+  font-size: var(--pf-font-panel, 20px);
+  font-weight: var(--pf-weight-panel, 700);
+  line-height: var(--pf-line-panel, 1.3);
   color: var(--pf-text);
 }
 
@@ -45,12 +38,14 @@
 
 .text-success {
   color: var(--pf-ok);
-  background-color: var(--pf-bg);
 }
 
+/* The site's one error look: a filled box in the error colours. */
 .text-error {
+  padding: var(--pf-space-3);
+  background-color: var(--pf-error);
   color: var(--pf-error-text);
-  background-color: var(--pf-bg);
+  border-radius: var(--pf-radius-sm);
 }
 
 /* The paper: white in both themes, like the PDF. */
@@ -184,7 +179,7 @@
   display: flex;
   align-items: center;
   gap: var(--pf-space-2);
-  min-height: 44px;
+  min-height: var(--pf-control-height, 44px);
   color: var(--pf-text);
   cursor: pointer;
 }

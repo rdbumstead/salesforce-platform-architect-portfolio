@@ -58,8 +58,14 @@ export const COLUMNS = [
 ];
 
 const STATUS_BADGES = {
-  SIMULATED: { label: "Simulated", className: "status-badge badge-simulated" },
-  DEGRADED: { label: "Degraded", className: "status-badge badge-degraded" }
+  SIMULATED: {
+    label: "Simulated",
+    className: "pill status-badge badge-simulated"
+  },
+  DEGRADED: {
+    label: "Degraded",
+    className: "pill status-badge badge-degraded"
+  }
 };
 
 export const STATUS_NOTES = {
@@ -375,7 +381,7 @@ export default class RoadmapViewer extends LightningElement {
       tabIndex: column.tabIndex,
       panelId: column.panelId,
       tourAnchor: column.tourAnchor,
-      className: column.isActive ? "tab tab-active" : "tab"
+      className: "nc-tab tab"
     }));
   }
 

@@ -1,22 +1,19 @@
 @import "c/pill";
 @import "c/sectionHeading";
+@import "c/panel";
 
 /*
  * Colours, fonts, radii and spacing come only from the --pf- design
  * tokens, so the feed follows the light and dark themes. Every element that sets a
- * background also sets its text colour. The sha is a metric, so it uses the mono font.
+ * background also sets its text colour. The sha is a metric, so it uses the mono font. The box
+ * is the shared panel (c/panel) and the status badge the shared pill (c/pill).
  */
 :host {
   display: block;
 }
 
 .changelog {
-  background-color: var(--pf-surface);
-  color: var(--pf-text);
   font-family: var(--pf-font-sans);
-  padding: var(--pf-space-4);
-  border: 1px solid var(--pf-border);
-  border-radius: var(--pf-radius);
   overflow-wrap: anywhere;
 }
 
@@ -42,7 +39,7 @@
 
 .age-label {
   color: var(--pf-muted);
-  font-size: 0.875rem;
+  font-size: var(--pf-font-caption, 14px);
 }
 
 .age-stale {
@@ -51,15 +48,6 @@
   border-radius: var(--pf-radius-sm);
   padding: 0 var(--pf-space-1);
   font-weight: 700;
-}
-
-.status-badge {
-  display: inline-block;
-  padding: var(--pf-space-1) var(--pf-space-2);
-  border-radius: var(--pf-radius-sm);
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
 }
 
 .badge-simulated {
@@ -77,14 +65,24 @@
    takes no space. */
 .status-note {
   color: var(--pf-body);
-  font-size: 0.875rem;
+  font-size: var(--pf-font-caption, 14px);
   margin: 0;
 }
 
+/* Loading and empty notes: 14 px in the muted colour. */
 .changelog-message {
-  color: var(--pf-text);
+  color: var(--pf-muted);
+  font-size: var(--pf-font-caption, 14px);
   margin: 0;
   padding: var(--pf-space-2) 0;
+}
+
+/* The site's one error look: a filled box in the error colours. */
+.changelog-message.changelog-error {
+  padding: var(--pf-space-3);
+  background-color: var(--pf-error);
+  color: var(--pf-error-text);
+  border-radius: var(--pf-radius-sm);
 }
 
 .commit-list {
@@ -100,6 +98,8 @@
 
 .commit-message {
   color: var(--pf-text);
+  font-size: var(--pf-font-body, 16px);
+  line-height: var(--pf-line-body, 1.6);
   margin: 0 0 var(--pf-space-1);
 }
 
@@ -110,7 +110,7 @@
   gap: var(--pf-space-3);
   margin: 0;
   color: var(--pf-muted);
-  font-size: 0.875rem;
+  font-size: var(--pf-font-caption, 14px);
 }
 
 .commit-link {

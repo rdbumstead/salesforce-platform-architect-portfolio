@@ -1,5 +1,5 @@
 <template>
-  <section class="numbers" aria-labelledby="numbers-heading">
+  <section class="numbers pf-panel" aria-labelledby="numbers-heading">
     <div class="title-row">
       <h2 class="heading section-heading" id="numbers-heading">
         By the numbers
@@ -27,7 +27,9 @@
       </ul>
     </template>
     <template lwc:elseif={hasError}>
-      <p class="note" role="status">The counts could not be loaded.</p>
+      <p class="note note-error" role="status">
+        The counts could not be loaded.
+      </p>
     </template>
     <template lwc:elseif={hasStats}>
       <ul class="stats">

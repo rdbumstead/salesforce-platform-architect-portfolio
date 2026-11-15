@@ -1,5 +1,5 @@
 <template>
-  <section class="roadmap" aria-labelledby="roadmap-heading">
+  <section class="roadmap pf-panel" aria-labelledby="roadmap-heading">
     <div class="roadmap-title-row">
       <h2 id="roadmap-heading" class="roadmap-title section-heading">
         Product Roadmap
@@ -61,7 +61,7 @@
     <template lwc:if={showBoard}>
       <template lwc:if={isPhone}>
         <div
-          class="roadmap-tabs"
+          class="nc-tablist roadmap-tabs"
           role="tablist"
           aria-label="Roadmap status"
           data-id="tablist"
@@ -113,7 +113,9 @@
                   <div class="card-top">
                     <span class="card-key" data-id="key">{card.key}</span>
                     <template lwc:if={card.isEpic}>
-                      <span class="epic-label" data-id="epic-label">Epic</span>
+                      <span class="pill epic-label" data-id="epic-label"
+                        >Epic</span
+                      >
                     </template>
                     <template lwc:else>
                       <span class="card-type" data-id="type">{card.type}</span>
@@ -140,7 +142,7 @@
                     <div class="card-top">
                       <span class="card-key" data-id="key">{card.key}</span>
                       <template lwc:if={card.isEpic}>
-                        <span class="epic-label" data-id="epic-label"
+                        <span class="pill epic-label" data-id="epic-label"
                           >Epic</span
                         >
                       </template>
@@ -161,7 +163,7 @@
               </ul>
               <button
                 type="button"
-                class="show-all"
+                class="nc-button nc-button_ghost show-all"
                 data-id="show-all"
                 data-category={column.category}
                 aria-expanded={column.toggleExpanded}
@@ -184,7 +186,7 @@
     </template>
 
     <template lwc:if={showUnavailable}>
-      <p class="roadmap-message" data-id="unavailable">
+      <p class="roadmap-message roadmap-error" data-id="unavailable">
         Roadmap temporarily unavailable
       </p>
     </template>

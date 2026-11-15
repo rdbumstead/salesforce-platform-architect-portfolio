@@ -1,5 +1,5 @@
 <template>
-  <section class="matrix" aria-label="Decision matrix">
+  <section class="matrix pf-panel" aria-label="Decision matrix">
     <div class="card-header">
       <h3 class="card-title">Decision matrix</h3>
       <c-view-source source-key="decisionMatrix"></c-view-source>
@@ -126,7 +126,11 @@
           <span class="result-label">Sensitivity:</span> {sensitivityText}
         </p>
       </div>
-      <button type="button" class="reset-button" onclick={handleReset}>
+      <button
+        type="button"
+        class="nc-button reset-button"
+        onclick={handleReset}
+      >
         Reset to the starting weights
       </button>
     </template>

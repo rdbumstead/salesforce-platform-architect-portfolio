@@ -712,18 +712,22 @@ describe("c-roadmap-viewer", () => {
       expect(keysIn(element, "indeterminate")).toEqual(["SPAP-902"]);
     });
 
-    it("marks the active tab without changing its weight", async () => {
+    it("marks the active tab on aria-selected with the shared tab style, not a class of its own", async () => {
       mockPhone(true);
       const element = createComponent();
       getRoadmap.emit(feed("FRESH"));
       await flushPromises();
-      expect(q(element, ".tab-active")).not.toBeNull();
+      const selected = q(element, '.nc-tab[aria-selected="true"]');
+      expect(selected).not.toBeNull();
+      expect(selected.className).toBe("nc-tab tab");
+      expect(q(element, ".tab-active")).toBeNull();
       const css = fs.readFileSync(
         path.join(__dirname, "..", "roadmapViewer.css"),
         "utf8"
       );
-      const rule = /\.tab-active \{[^}]*\}/.exec(css)[0];
-      expect(rule).not.toMatch(/font-weight/);
+      expect(css).toMatch(/@import "c\/nativeControls";/);
+      expect(css).not.toMatch(/\.tab-active/);
+      expect(css).not.toMatch(/aria-selected/);
     });
 
     it("answers stop E by opening In Progress and focusing its tab", async () => {

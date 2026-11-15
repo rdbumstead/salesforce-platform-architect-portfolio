@@ -595,7 +595,7 @@ export default class ApiReference extends LightningElement {
         value: key,
         label: SPECS[key].label,
         pressed: selected ? "true" : "false",
-        cssClass: selected ? "spec-button spec-button_selected" : "spec-button"
+        cssClass: "nc-toggle spec-button"
       };
     });
   }
@@ -607,7 +607,7 @@ export default class ApiReference extends LightningElement {
         value: key,
         label: VERSIONS[key].label,
         pressed: selected ? "true" : "false",
-        cssClass: selected ? "spec-button spec-button_selected" : "spec-button"
+        cssClass: "nc-toggle spec-button"
       };
     });
   }
