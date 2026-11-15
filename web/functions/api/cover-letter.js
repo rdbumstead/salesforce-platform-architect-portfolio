@@ -21,5 +21,7 @@ export const onRequest = (context) =>
     feature: "coverLetter",
     action: "cover-letter",
     build,
-    timeoutMs: COVER_LETTER_TIMEOUT_MS
+    timeoutMs: COVER_LETTER_TIMEOUT_MS,
+    // Past the API budget the browser shows the recorded sample letter.
+    fallback: true
   });

@@ -8,8 +8,14 @@
  * refused token, a 5xx or a 403 (the edge user is missing its permission, which is ours
  * to fix, not the visitor's) become 503, and 400 and 500 keep Salesforce's message.
  * The secrets and tokens never appear in a message.
+ *
+ * A 403 that is the org's daily API cap refusing (REQUEST_LIMIT_EXCEEDED) is told apart from a
+ * missing permission. It comes back as 503 with the BUSY message and limited set, so the
+ * caller can pause and fail soft (see budget.js). Every outcome carries limitInfo, the org's
+ * Sforce-Limit-Info reading, when the response had that header.
  */
 import { MESSAGES } from "./http.js";
+import { isLimitRefusal, parseLimitInfo } from "./budget.js";
 
 export const TOKEN_TTL_MS = 10 * 60 * 1000;
 export const ACTION_PATH = "/services/apexrest/site/actions/";
@@ -161,21 +167,35 @@ export async function callAction(env, call) {
     if (response.status === 401)
       response = await send(await getToken(env, { force: true }));
     const body = await response.json().catch(() => null);
+    const info = parseLimitInfo(
+      response.headers && response.headers.get("Sforce-Limit-Info")
+    );
+    const extra = info ? { limitInfo: info } : {};
     if (
       response.ok &&
       body &&
       Object.prototype.hasOwnProperty.call(body, "result")
     ) {
-      return { ok: true, result: body.result, requestId };
+      return { ok: true, result: body.result, requestId, ...extra };
     }
     if (response.ok)
       return {
         ok: false,
         status: 500,
         error: "CALL_FAILED",
-        message: MESSAGES.CALL_FAILED
+        message: MESSAGES.CALL_FAILED,
+        ...extra
       };
-    return mapFailure(response.status, body);
+    if (isLimitRefusal(response.status, body))
+      return {
+        ok: false,
+        status: 503,
+        error: "UNAVAILABLE",
+        message: MESSAGES.BUSY,
+        limited: true,
+        ...extra
+      };
+    return { ...mapFailure(response.status, body), ...extra };
   } catch (error) {
     return unavailable(0);
   }

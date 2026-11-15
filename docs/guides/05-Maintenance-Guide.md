@@ -30,6 +30,7 @@
 - [5. Observability & Monitoring](#5-observability--monitoring)
   - [5.1 Quota Monitoring (Designed)](#51-quota-monitoring-designed)
   - [5.2 Logging](#52-logging)
+  - [5.3 The Production API Budget](#53-the-production-api-budget)
 
 ---
 
@@ -359,3 +360,31 @@ The design was a scheduled job that read a Gemini usage counter from a Platform 
 - **Retention.** Set Nebula's log retention to 2 days, to protect the Developer Edition's 5 MB of data storage.
 - **What is never logged:** a request or response body, a header value, a token or a query string ([Technical Guide §1.5](./04-Technical-Guide.md#15-logging-nebula-logger-optional)).
 - **Finding the detail behind a 500.** A caller who reports a 500 quotes the correlation id in its message. The detail is one line, `api error correlationId=<id> type=<exception type> message=<the first 200 characters>`, written by `ApiRequestContext.serverError`. The same id is the `correlationId` of the request's log line. A callout failure in the API Lab logs `api lab call failed` with the path and the exception type, and the visitor reads only that the Lab could not reach the API.
+
+### 5.3 The Production API Budget
+
+The production org is a Developer Edition org, and it has two daily caps that CI and the public site share.
+
+- **API requests:** 15,000 a day (`DailyApiRequests`). Salesforce describes the count as the requests of the previous 24 hours. On 2026-11-14 it came back in full by about 00:00 UTC. Past the cap the org answers HTTP 403 with the error code `REQUEST_LIMIT_EXCEEDED` and the message "TotalRequests Limit exceeded", and every call fails until the count drops.
+- **Scratch orgs:** 6 created a day (`DailyScratchOrgs`) and 3 active at once (`ActiveScratchOrgs`). The production org is the Dev Hub, so every scratch org a pull request makes counts here.
+
+On 2026-11-14 a day of pull request pushes spent the API cap. Every preview build exported from production, and while the cap was spent the contact form, the testimonial form, the cover letter, the API Lab and the live footer readings all failed.
+
+**The reserve.** 40 percent of the daily cap is kept for the public site. A CI job that calls production runs `node scripts/api-reserve.js` first. Below the reserve it prints "API reserve reached: ... The public site keeps the rest.", exits 2 and writes `ok=false` to the job outputs, and the job skips its production steps instead of failing. With `--need-scratch-org` it also stops when no scratch org is left. Exit 3 means the limits could not be read. A pull request preview builds from the fixtures unless it changes the export, the build or the snapshot, which `node scripts/export-needs-production.js` decides from the changed files.
+
+**What fails soft for visitors.** The Pages Functions keep a ceiling on what visitors spend (`web/functions/_lib/budget.js`):
+
+- When the org refuses a call for its cap, new calls pause for 15 minutes, then one call tries again.
+- When an org answer carries the `Sforce-Limit-Info` header and its used count is at 95 percent of the cap, new visitor calls stop for the rest of the UTC day. That keeps the last 5 percent for me to deploy and recover.
+- Visitor calls are counted, and past 35 percent of the cap in a UTC day new ones stop.
+
+A stopped call never shows an error page. The contact and testimonial forms show "This is resting for now because the site has used most of its Salesforce allowance for today. Try again later." The cover letter shows the saved sample letter and says why. The API Lab answers from its recorded calls, and the footer shows its last recorded readings.
+
+Without KV each Pages isolate keeps its own count. To share one count across isolates, create a KV namespace and bind it as `API_BUDGET` in `web/wrangler.toml`. The settings `API_VISITOR_STOP_SHARE`, `API_VISITOR_DAILY_SHARE`, `API_DAILY_MAX` and `API_BUDGET_PAUSE_MINUTES` change the figures above.
+
+**Reading the limits.**
+
+- `sf org list limits --target-org spap-portfolio` lists every limit with its maximum and what is left. It is one API request.
+- Every REST API response carries `Sforce-Limit-Info: api-usage=<used>/<max>`. A `/services/data` call shows it. An Apex REST error answer from the site actions did not carry it when I checked in November 2026.
+- Setup, System Overview shows the day's API usage without spending a request.
+- Before a session with several pushes, read the limits first, batch changes into fewer pushes, and merge one pull request at a time.
