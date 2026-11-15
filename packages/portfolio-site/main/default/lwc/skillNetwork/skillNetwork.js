@@ -31,7 +31,13 @@
  *                      tag is left out, and so is a category left with no skill. The chips that drop out
  *                      fade first, except under reduced motion. The graph keeps every role, project and
  *                      certification and its computed positions, so a node never moves when the persona
- *                      changes.
+ *                      changes. Skills also sit in three tiers, "Core", "Extended" and "Full
+ *                      toolkit" (skillTiers.js), from Skill__c.Selection_Priority__c read by a
+ *                      query of its own and the links behind each skill. The page opens on Core,
+ *                      and a native radio choice widens it to Core and Extended, then to every
+ *                      skill. The choice shows only once at least one skill has a priority, and
+ *                      the skills wait for that query so the page never narrows after it draws.
+ *                      Both filters apply together, and one polite line counts what shows.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -56,6 +62,14 @@ import {
 import { EVENTS, trackEvent } from "c/analyticsService";
 import { isReduced } from "c/motionPreference";
 import { watchMedia } from "c/mediaWatch";
+import {
+  DEFAULT_TIER_VIEW,
+  TIER_VIEWS,
+  isInView,
+  linkCountOf,
+  tierOf,
+  tierView
+} from "./skillTiers";
 
 // Reads only fields the guest can read: the skill fields Portfolio_Guest grants, the required
 // Category_Order__c, and the two Experience__c dates. GraphQL returns a field to the guest
@@ -147,6 +161,27 @@ const SKILL_PERSONAS_QUERY = gql`
             node {
               Id
               Persona_Tag__c {
+                value
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+// The selection priorities in a query of their own, for the tiers. If the guest cannot read the
+// field, only this query fails: the tier choice stays hidden and every skill shows.
+const SKILL_TIERS_QUERY = gql`
+  query SkillSelectionPriority {
+    uiapi {
+      query {
+        Skill__c(first: 200) {
+          edges {
+            node {
+              Id
+              Selection_Priority__c {
                 value
               }
             }
@@ -732,6 +767,11 @@ export default class SkillNetwork extends LightningElement {
   // Persona filter: tags by skill id, and the chosen persona ("" for All).
   personaTags = new Map();
   persona = PERSONA_ALL;
+  // Tiers: the priority by skill id (only skills with a value), whether the priority query has
+  // answered, and the chosen view. The page opens on Core.
+  priorities = new Map();
+  tiersSettled = false;
+  tierChoice = DEFAULT_TIER_VIEW;
   // Chips fading out or in after a persona change, by skill id.
   leavingIds = new Set();
   enteringIds = new Set();
@@ -830,8 +870,32 @@ export default class SkillNetwork extends LightningElement {
     }
     this.networkData = data;
     this.errorMessage = undefined;
-    this.isLoading = false;
+    // The skills wait for the tier query, so the page never shows every skill and then narrows.
+    this.isLoading = !this.tiersSettled;
     this.refreshModel();
+  }
+
+  // The priorities. A failed read leaves the tiers off, so every skill shows as before.
+  @wire(graphql, { query: SKILL_TIERS_QUERY })
+  wiredTiers({ data, errors }) {
+    const failed = Boolean(errors && errors.length);
+    if (!data && !failed) {
+      return;
+    }
+    const priorities = new Map();
+    if (data && !failed) {
+      rowsOf(data, "Skill__c").forEach((row) => {
+        const value = fieldValue(row, "Selection_Priority__c");
+        if (value !== null && value !== undefined && value !== "") {
+          priorities.set(row.Id, value);
+        }
+      });
+    }
+    this.priorities = priorities;
+    this.tiersSettled = true;
+    if (this.networkData && !this.errorMessage) {
+      this.isLoading = false;
+    }
   }
 
   // The certification evidence. A failed read leaves the graph with roles and projects only.
@@ -962,6 +1026,61 @@ export default class SkillNetwork extends LightningElement {
     );
   }
 
+  // ---------- tiers ----------
+
+  // The tiers apply once at least one skill carries a priority, like the persona filter.
+  get tiersActive() {
+    return this.hasSkills && this.priorities.size > 0;
+  }
+
+  get showTierFilter() {
+    return this.tiersActive;
+  }
+
+  tierOfSkill(skill) {
+    return tierOf(this.priorities.get(skill.id), linkCountOf(skill));
+  }
+
+  matchesTier(skill) {
+    return (
+      !this.tiersActive || isInView(this.tierOfSkill(skill), this.tierChoice)
+    );
+  }
+
+  // One native radio per view, narrowest first.
+  get tierOptions() {
+    return TIER_VIEWS.map((view) => {
+      const on = view.value === this.tierChoice;
+      return {
+        key: view.value,
+        id: `skill-tier-${view.value}`,
+        label: view.label,
+        value: view.value,
+        checked: on,
+        className: on ? "tier-option is-on" : "tier-option"
+      };
+    });
+  }
+
+  handleTierChange(event) {
+    const value = tierView(event.target.value).value;
+    if (value === this.tierChoice) {
+      return;
+    }
+    this.changeFilter(() => {
+      this.tierChoice = value;
+    });
+  }
+
+  // A skill shows when it passes the persona filter and the tier choice.
+  isSkillShown(skill) {
+    return this.matchesPersona(skill) && this.matchesTier(skill);
+  }
+
+  get filterActive() {
+    return this.personaFilterActive || this.tiersActive;
+  }
+
   matchesPersona(skill) {
     if (!this.personaFilterActive) {
       return true;
@@ -974,23 +1093,56 @@ export default class SkillNetwork extends LightningElement {
     return new Set(
       this.model
         ? [...this.model.skills.values()]
-            .filter((skill) => this.matchesPersona(skill))
+            .filter((skill) => this.isSkillShown(skill))
             .map((skill) => skill.id)
         : []
     );
   }
 
+  get showFilterSummary() {
+    return this.showPersonaFilter || this.showTierFilter;
+  }
+
+  // "Showing 8 of 30 skills in Core for Platform Architect." The tier is named until the view
+  // is Full toolkit, and the persona while one is chosen.
   get personaSummary() {
-    if (!this.personaFilterActive) {
+    if (!this.filterActive) {
       return "";
     }
     const total = this.model.skills.size;
     const shown = [...this.model.skills.values()].filter((skill) =>
-      this.matchesPersona(skill)
+      this.isSkillShown(skill)
     ).length;
-    const option = PERSONA_OPTIONS.find((item) => item.value === this.persona);
     const word = total === 1 ? "skill" : "skills";
-    return `Showing ${shown} of ${total} ${word} for ${option.label}.`;
+    return `Showing ${shown} of ${total} ${word}${this.tierPhrase}${this.personaPhrase}.`;
+  }
+
+  get tierPhrase() {
+    const view = tierView(this.tierChoice);
+    return this.tiersActive && view.value !== "full" ? ` in ${view.label}` : "";
+  }
+
+  get personaPhrase() {
+    if (!this.personaFilterActive) {
+      return "";
+    }
+    const option = PERSONA_OPTIONS.find((item) => item.value === this.persona);
+    return ` for ${option.label}`;
+  }
+
+  // The line when the filters leave no skill: the persona's own line when no skill has its
+  // tag, else the tier's line, which names the way to every skill.
+  get emptyText() {
+    if (!this.model) {
+      return "";
+    }
+    const tagged = [...this.model.skills.values()].some((skill) =>
+      this.matchesPersona(skill)
+    );
+    if (this.personaFilterActive && !tagged) {
+      return "No skill is tagged for this persona yet.";
+    }
+    return `No skill shows${this.tierPhrase}${this.personaPhrase} yet. Choose Full toolkit to see every skill.`;
   }
 
   handlePersonaClick(event) {
@@ -998,14 +1150,23 @@ export default class SkillNetwork extends LightningElement {
     if (value === this.persona) {
       return;
     }
+    this.changeFilter(() => {
+      this.persona = value;
+    });
+    trackEvent(EVENTS.SKILLS_PERSONA_FILTERED, { persona: value || "All" });
+  }
+
+  // Applies a persona or tier change. The chips fade, and a selection, hover or graph node the
+  // new filters hide is cleared.
+  changeFilter(apply) {
     const before = this.shownSkillIds();
-    this.persona = value;
+    apply();
     this.startChipFade(before, this.shownSkillIds());
     const selected =
       this.model && this.selectedSkillId
         ? this.model.skills.get(this.selectedSkillId)
         : undefined;
-    if (selected && !this.matchesPersona(selected)) {
+    if (selected && !this.isSkillShown(selected)) {
       this.selectedSkillId = undefined;
     }
     // A graph node the persona hides can be neither selected nor hovered.
@@ -1015,7 +1176,6 @@ export default class SkillNetwork extends LightningElement {
     if (this.hoverId && !this.isNodeShown(this.hoverId)) {
       this.hoverId = undefined;
     }
-    trackEvent(EVENTS.SKILLS_PERSONA_FILTERED, { persona: value || "All" });
   }
 
   // The chips that drop out stay a moment, fading, and the new ones fade in. Under reduced
@@ -1056,7 +1216,7 @@ export default class SkillNetwork extends LightningElement {
         const chips = row.chips
           .filter(
             (chip) =>
-              this.matchesPersona(this.model.skills.get(chip.id)) ||
+              this.isSkillShown(this.model.skills.get(chip.id)) ||
               this.leavingIds.has(chip.id)
           )
           .map((chip) => {
@@ -1089,10 +1249,10 @@ export default class SkillNetwork extends LightningElement {
 
   get matrixIsEmpty() {
     return (
-      this.personaFilterActive &&
+      this.filterActive &&
       !this.categoryRows.some((row) =>
         row.chips.some((chip) =>
-          this.matchesPersona(this.model.skills.get(chip.id))
+          this.isSkillShown(this.model.skills.get(chip.id))
         )
       )
     );
@@ -1101,18 +1261,16 @@ export default class SkillNetwork extends LightningElement {
   // The graph under the same rule: true when the persona leaves no skill to draw.
   get graphIsEmpty() {
     return (
-      this.personaFilterActive &&
+      this.filterActive &&
       Boolean(this.model) &&
-      ![...this.model.skills.values()].some((skill) =>
-        this.matchesPersona(skill)
-      )
+      ![...this.model.skills.values()].some((skill) => this.isSkillShown(skill))
     );
   }
 
-  // Roles, projects and certifications always show. A skill shows when it matches the persona.
+  // Roles, projects and certifications always show. A skill shows when it passes the filters.
   isNodeShown(id) {
     const skill = this.model && this.model.skills.get(id);
-    return skill ? this.matchesPersona(skill) : true;
+    return skill ? this.isSkillShown(skill) : true;
   }
 
   get categoryRows() {
@@ -1501,7 +1659,7 @@ export default class SkillNetwork extends LightningElement {
 
   // The category labels as boxes, for the persona's categories.
   shownCategories(nodes) {
-    if (!this.personaFilterActive) {
+    if (!this.filterActive) {
       return this.layout.categories;
     }
     const names = new Set(
@@ -1939,7 +2097,7 @@ export default class SkillNetwork extends LightningElement {
       lines = [...this.model.skills.values()]
         .filter(
           (candidate) =>
-            this.matchesPersona(candidate) &&
+            this.isSkillShown(candidate) &&
             (candidate.roleIds.includes(id) ||
               candidate.projectIds.includes(id) ||
               candidate.certificationIds.includes(id))

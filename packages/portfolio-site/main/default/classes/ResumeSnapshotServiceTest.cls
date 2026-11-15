@@ -3,7 +3,8 @@
  *                      invented names, reads the snapshot as a build user set up the way
  *                      production's is, and checks the contract, each failure path, the primary
  *                      role rules, a bulk read over 200 records and that the site guest can read
- *                      neither the new fields nor the snapshot.
+ *                      neither the snapshot nor the new fields, except the skill priority the
+ *                      Skills page tiers need.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -696,10 +697,12 @@ private class ResumeSnapshotServiceTest {
       variantReadable = Schema.sObjectType.Resume_Variant__c.isAccessible();
     }
     Test.stopTest();
+    // The skill tiers on the Skills page read the skill priority as the guest (ADR-009,
+    // amendment of 2026-11-14 on tiers). Every other new field stays hidden.
     Assert.areEqual(
-      new List<String>(),
+      new List<String>{ 'Skill__c.Selection_Priority__c' },
       readable,
-      'The guest reads none of the new fields'
+      'The guest reads only the skill priority among the new fields'
     );
     Assert.isFalse(variantReadable, 'The guest cannot read the variant object');
   }

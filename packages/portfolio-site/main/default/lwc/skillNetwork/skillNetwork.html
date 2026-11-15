@@ -61,6 +61,27 @@
           </div>
         </template>
 
+        <template lwc:if={showTierFilter}>
+          <fieldset class="tier-filter">
+            <legend class="tier-legend">Show skills</legend>
+            <div class="tier-options">
+              <template for:each={tierOptions} for:item="option">
+                <label key={option.key} class={option.className}>
+                  <input
+                    type="radio"
+                    class="tier-input"
+                    name="skill-tier"
+                    value={option.value}
+                    checked={option.checked}
+                    onchange={handleTierChange}
+                  />
+                  <span class="tier-label">{option.label}</span>
+                </label>
+              </template>
+            </div>
+          </fieldset>
+        </template>
+
         <template lwc:if={showPersonaFilter}>
           <div
             class="persona-filter"
@@ -80,14 +101,15 @@
               </button>
             </template>
           </div>
+        </template>
+
+        <template lwc:if={showFilterSummary}>
           <p class="persona-summary" aria-live="polite">{personaSummary}</p>
         </template>
 
         <template lwc:if={isMatrix}>
           <template lwc:if={matrixIsEmpty}>
-            <p class="persona-empty">
-              No skill is tagged for this persona yet.
-            </p>
+            <p class="persona-empty">{emptyText}</p>
           </template>
           <div class="matrix">
             <template for:each={matrixRows} for:item="row">
@@ -223,9 +245,7 @@
               <p class="graph-error" role="alert">{graphErrorMessage}</p>
             </template>
             <template lwc:if={graphIsEmpty}>
-              <p class="persona-empty">
-                No skill is tagged for this persona yet.
-              </p>
+              <p class="persona-empty">{emptyText}</p>
             </template>
             <template lwc:if={showGraphCanvas}>
               <p class="graph-hint">
