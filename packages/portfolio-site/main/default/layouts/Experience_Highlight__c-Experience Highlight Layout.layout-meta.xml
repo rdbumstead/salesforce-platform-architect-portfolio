@@ -39,6 +39,14 @@
                 <field>Developer_Sort_Order__c</field>
             </layoutItems>
             <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Engineer_Sort_Order__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Consultant_Sort_Order__c</field>
+            </layoutItems>
+            <layoutItems>
                 <behavior>Required</behavior>
                 <field>Sort_Order__c</field>
             </layoutItems>

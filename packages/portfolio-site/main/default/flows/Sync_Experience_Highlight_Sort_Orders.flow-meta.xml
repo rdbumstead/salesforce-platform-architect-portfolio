@@ -51,6 +51,42 @@
             </value>
         </assignmentItems>
         <connector>
+            <targetReference>Check_Engineer_Persona</targetReference>
+        </connector>
+    </assignments>
+
+    <assignments>
+        <name>Sync_Engineer_Sort</name>
+        <label>Sync Engineer Sort</label>
+        <locationX>264</locationX>
+        <locationY>1103</locationY>
+        <assignmentItems>
+            <assignToReference
+      >$Record.Engineer_Sort_Order__c</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>varUniversalSort</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Check_Consultant_Persona</targetReference>
+        </connector>
+    </assignments>
+
+    <assignments>
+        <name>Sync_Consultant_Sort</name>
+        <label>Sync Consultant Sort</label>
+        <locationX>264</locationX>
+        <locationY>1403</locationY>
+        <assignmentItems>
+            <assignToReference
+      >$Record.Consultant_Sort_Order__c</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>varUniversalSort</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
             <targetReference>Check_Admin_Persona</targetReference>
         </connector>
     </assignments>
@@ -59,7 +95,7 @@
         <name>Sync_Admin_Sort</name>
         <label>Sync Admin Sort</label>
         <locationX>264</locationX>
-        <locationY>1103</locationY>
+        <locationY>1703</locationY>
         <assignmentItems>
             <assignToReference>$Record.Admin_Sort_Order__c</assignToReference>
             <operator>Assign</operator>
@@ -76,7 +112,7 @@
         <name>Update_Universal_Sort</name>
         <label>Update Universal Sort Order</label>
         <locationX>176</locationX>
-        <locationY>1295</locationY>
+        <locationY>1895</locationY>
         <assignmentItems>
             <assignToReference>$Record.Sort_Order__c</assignToReference>
             <operator>Assign</operator>
@@ -118,7 +154,7 @@
         <locationX>176</locationX>
         <locationY>695</locationY>
         <defaultConnector>
-            <targetReference>Check_Admin_Persona</targetReference>
+            <targetReference>Check_Engineer_Persona</targetReference>
         </defaultConnector>
         <defaultConnectorLabel>Skip</defaultConnectorLabel>
         <rules>
@@ -139,10 +175,62 @@
     </decisions>
 
     <decisions>
+        <name>Check_Engineer_Persona</name>
+        <label>Check if Engineer persona selected</label>
+        <locationX>176</locationX>
+        <locationY>995</locationY>
+        <defaultConnector>
+            <targetReference>Check_Consultant_Persona</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Skip</defaultConnectorLabel>
+        <rules>
+            <name>Is_Engineer</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>$Record.Persona_Tag__c</leftValueReference>
+                <operator>Contains</operator>
+                <rightValue>
+                    <stringValue>Engineer</stringValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Sync_Engineer_Sort</targetReference>
+            </connector>
+            <label>Is Engineer</label>
+        </rules>
+    </decisions>
+
+    <decisions>
+        <name>Check_Consultant_Persona</name>
+        <label>Check if Consultant persona selected</label>
+        <locationX>176</locationX>
+        <locationY>1295</locationY>
+        <defaultConnector>
+            <targetReference>Check_Admin_Persona</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Skip</defaultConnectorLabel>
+        <rules>
+            <name>Is_Consultant</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>$Record.Persona_Tag__c</leftValueReference>
+                <operator>Contains</operator>
+                <rightValue>
+                    <stringValue>Consultant</stringValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Sync_Consultant_Sort</targetReference>
+            </connector>
+            <label>Is Consultant</label>
+        </rules>
+    </decisions>
+
+    <decisions>
         <name>Check_Admin_Persona</name>
         <label>Check if Admin persona selected</label>
         <locationX>176</locationX>
-        <locationY>995</locationY>
+        <locationY>1595</locationY>
         <defaultConnector>
             <targetReference>Update_Universal_Sort</targetReference>
         </defaultConnector>
@@ -170,8 +258,10 @@
         <scale>0</scale>
         <expression>BLANKVALUE({!$Record.Architect_Sort_Order__c}, 
             BLANKVALUE({!$Record.Developer_Sort_Order__c}, 
+            BLANKVALUE({!$Record.Engineer_Sort_Order__c}, 
+            BLANKVALUE({!$Record.Consultant_Sort_Order__c}, 
             BLANKVALUE({!$Record.Admin_Sort_Order__c}, 
-            {!$Record.Sort_Order__c})))</expression>
+            {!$Record.Sort_Order__c})))))</expression>
     </formulas>
 
     <interviewLabel
