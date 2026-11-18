@@ -112,7 +112,7 @@ Examples:
 {
   "httpStatus": 400,
   "errorCode": "BAD_REQUEST",
-  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
+  "message": "persona must be Engineer, Architect or Consultant. To ask for more than one, separate them with commas.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
   "retryable": false,
   "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
@@ -796,11 +796,11 @@ Fetches resume bullets. Supports Persona filtering for PAPI optimization. An unk
 #### Detailed descriptions
 
 **persona**: Filters records where the target field (Multi-Select Picklist) includes the specified persona(s).
-Takes a single value or a comma-separated list of Admin, Developer and Architect. An unknown value returns 400.
+Takes a single value or a comma-separated list of Engineer, Architect and Consultant. An unknown value returns 400.
 
 Examples:
-- Single: `?persona=Admin`
-- Multiple (comma): `?persona=Admin,Developer`
+- Single: `?persona=Engineer`
+- Multiple (comma): `?persona=Engineer,Consultant`
 
 #### Enumerated Values
 
@@ -822,7 +822,7 @@ Examples:
     "name": "DevOps Transformation",
     "description": "Implemented CI/CD pipelines reducing deployment time by 80%.",
     "sortOrder": 1,
-    "personaTag": "Developer;Architect"
+    "personaTag": "Engineer;Architect"
   }
 ]
 ```
@@ -868,7 +868,7 @@ Status Code **200**
 |» name|string|false|none|Highlight Title|
 |» description|string|false|none|Detailed Description|
 |» sortOrder|number|false|none|Sort Order|
-|» personaTag|string|false|none|Semicolon-separated Persona values from the Persona_Tag__c multi-select picklist (Admin, Developer, Architect).|
+|» personaTag|string|false|none|Semicolon-separated Persona values from the Persona_Tag__c multi-select picklist (Engineer, Architect, Consultant).|
 
 ### Response Headers
 
@@ -2561,9 +2561,9 @@ Target audience for content filtering.
 
 |Property|Value|
 |---|---|
-|*anonymous*|Admin|
-|*anonymous*|Developer|
+|*anonymous*|Engineer|
 |*anonymous*|Architect|
+|*anonymous*|Consultant|
 
 <h2 id="tocS_ProjectStatus">ProjectStatus</h2>
 <!-- backwards compatibility -->
@@ -2917,7 +2917,7 @@ Professional Experience Schema.
   "name": "DevOps Transformation",
   "description": "Implemented CI/CD pipelines reducing deployment time by 80%.",
   "sortOrder": 1,
-  "personaTag": "Developer;Architect"
+  "personaTag": "Engineer;Architect"
 }
 
 ```
@@ -2934,7 +2934,7 @@ Experience Bullet Point Schema.
 |name|string|false|none|Highlight Title|
 |description|string|false|none|Detailed Description|
 |sortOrder|number|false|none|Sort Order|
-|personaTag|string|false|none|Semicolon-separated Persona values from the Persona_Tag__c multi-select picklist (Admin, Developer, Architect).|
+|personaTag|string|false|none|Semicolon-separated Persona values from the Persona_Tag__c multi-select picklist (Engineer, Architect, Consultant).|
 
 <h2 id="tocS_ProjectAsset">ProjectAsset</h2>
 <!-- backwards compatibility -->

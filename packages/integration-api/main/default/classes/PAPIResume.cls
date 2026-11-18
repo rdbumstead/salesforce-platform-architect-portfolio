@@ -16,12 +16,15 @@ global with sharing class PAPIResume implements QueryDefinitions.Provider {
   private static final String SKILLS_QUERY = 'PAPIResume_Skills';
   private static final String CERTIFICATIONS_QUERY = 'PAPIResume_Certifications';
   private static final String EDUCATION_QUERY = 'PAPIResume_Education';
-  // The three personas by lower case, so persona matches in any letter case as it does
-  // on /sapi/experience-highlights.
+  // The personas by lower case, so persona matches in any letter case as it does
+  // on /sapi/experience-highlights. developer is an alias that reads as Engineer, and
+  // admin is an internal focus. Both API versions share this map.
   private static final Map<String, String> PERSONAS = new Map<String, String>{
     'admin' => 'Admin',
-    'developer' => 'Developer',
-    'architect' => 'Architect'
+    'developer' => 'Engineer',
+    'engineer' => 'Engineer',
+    'architect' => 'Architect',
+    'consultant' => 'Consultant'
   };
   private static final String HEADER_ACCEPT = 'Accept';
   private static final String MEDIA_TYPE_PLAIN_TEXT = 'text/plain';
@@ -30,7 +33,7 @@ global with sharing class PAPIResume implements QueryDefinitions.Provider {
 
   /**
    * @description GET method to generate resume.
-   *              /resume/generate?persona={Admin|Developer|Architect}
+   *              /resume/generate?persona={Engineer|Architect|Consultant}
    *              Each section is read independently: a section that fails is left out of
    *              the text, X-Data-Integrity becomes "partial" and integrityNote names it.
    *              With Accept: text/plain first in the Accept list, a 200 answer is the
@@ -232,7 +235,7 @@ global with sharing class PAPIResume implements QueryDefinitions.Provider {
         }
         if (
           String.isBlank(persona) ||
-          (h.Persona_Tag__c != null && h.Persona_Tag__c.contains(persona))
+          (h.Persona_Tag__c != null && tagMatches(h.Persona_Tag__c, persona))
         ) {
           text += '- ' + h.Description__c + '\n';
           highlightCount++;
@@ -341,6 +344,16 @@ global with sharing class PAPIResume implements QueryDefinitions.Provider {
     if (String.isBlank(persona) || String.isBlank(tags)) {
       return true;
     }
+    return tagMatches(tags, persona);
+  }
+
+  /**
+   * @description True when the persona is one of the values in a semicolon separated tag
+   *              list. It compares whole values, so a value that sits inside another one
+   *              does not match.
+   */
+  @TestVisible
+  private static Boolean tagMatches(String tags, String persona) {
     return new Set<String>(tags.split(';')).contains(persona);
   }
 

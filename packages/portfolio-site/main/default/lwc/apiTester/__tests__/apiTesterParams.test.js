@@ -154,9 +154,9 @@ describe("c-api-tester v2 controls", () => {
 
     const pills = $$(element, 'fieldset[data-param="persona"] button');
     expect(pills.map((button) => button.textContent.trim())).toEqual([
-      "Admin",
-      "Developer",
-      "Architect"
+      "Engineer",
+      "Architect",
+      "Consultant"
     ]);
     expect(
       pills.every((button) => button.getAttribute("aria-pressed") === "false")

@@ -1122,13 +1122,13 @@ paths:
         - Prints at most 5 highlights per role, in sort order, as stored
 
         **Persona Filtering**:
-        - `Admin`: System Admin highlights only
-        - `Developer`: Development highlights only
-        - `Architect`: Architecture/Design highlights only
+        - `Engineer`: Engineering and development highlights only
+        - `Architect`: Architecture and design highlights only
+        - `Consultant`: Consulting and client delivery highlights only
         - Skills follow the same persona: a skill prints when its persona tags include the persona, and a skill with no persona tag prints under every persona. With no persona, every linked skill prints. The site's resume page uses the same rule.
 
         **Persona values**:
-        - `Admin`, `Developer` or `Architect`. Any other value returns 400 BAD_REQUEST.
+        - `Engineer`, `Architect` or `Consultant`. Two older values still work as aliases. `Developer` means Engineer and answers as Engineer, and `Admin` is an internal focus. Any other value returns 400 BAD_REQUEST.
         - If persona is omitted, all highlights are returned (no filtering)
 
         **Response format**:
@@ -1154,7 +1154,7 @@ paths:
             **Note**: Highlights are filtered by their persona tag in process.
           schema:
             type: string
-            enum: [Admin, Developer, Architect]
+            enum: [Engineer, Architect, Consultant, Developer, Admin]
       responses:
         "200":
           description: The formatted resume text, as a JSON object by default, or as plain text when the first media type in `Accept` is `text/plain`

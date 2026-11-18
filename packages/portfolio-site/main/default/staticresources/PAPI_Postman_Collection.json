@@ -2808,7 +2808,7 @@
               },
               "request": {
                 "description": {
-                  "content": "Generates an ATS-optimized plain text resume. \n\n**Reads**, in process in one Apex transaction: the owner, roles, highlights (by persona),\nskills, certifications and education. The same records SAPI serves, without calling it.\n\n**Transformation Logic**:\n- Formats dates as \"MMM YYYY - MMM YYYY\" or \"MMM YYYY - Present\"\n- Lists the skills linked to the printed roles, each once, grouped by category in category order and strongest first within a category\n- Prints up to 10 roles, current first\n- Prints at most 5 highlights per role, in sort order, as stored\n\n**Persona Filtering**:\n- `Admin`: System Admin highlights only\n- `Developer`: Development highlights only\n- `Architect`: Architecture/Design highlights only\n- Skills follow the same persona: a skill prints when its persona tags include the persona, and a skill with no persona tag prints under every persona. With no persona, every linked skill prints. The site's resume page uses the same rule.\n\n**Persona values**:\n- `Admin`, `Developer` or `Architect`. Any other value returns 400 BAD_REQUEST.\n- If persona is omitted, all highlights are returned (no filtering)\n\n**Response format**:\n- When the first media type in the `Accept` header is `text/plain`, a 200 answer is the generated text alone, with `Content-Type: text/plain; charset=UTF-8`. Parameters after a semicolon are ignored and the header name matches in any case.\n- With no `Accept` header, `*/*`, `application/json` or any other first type, the answer is the JSON object below.\n- Every other response header, the rate count and the cache directive are the same in both forms. Errors are always JSON, whatever `Accept` says.\n\nFor example, with your token in TOKEN and the instance URL in INSTANCE_URL:\n\n```bash\ncurl -H \"Authorization: Bearer $TOKEN\" -H \"Accept: text/plain\" \"$INSTANCE_URL/services/apexrest/papi/resume/generate?persona=Architect\"\n```\n",
+                  "content": "Generates an ATS-optimized plain text resume. \n\n**Reads**, in process in one Apex transaction: the owner, roles, highlights (by persona),\nskills, certifications and education. The same records SAPI serves, without calling it.\n\n**Transformation Logic**:\n- Formats dates as \"MMM YYYY - MMM YYYY\" or \"MMM YYYY - Present\"\n- Lists the skills linked to the printed roles, each once, grouped by category in category order and strongest first within a category\n- Prints up to 10 roles, current first\n- Prints at most 5 highlights per role, in sort order, as stored\n\n**Persona Filtering**:\n- `Engineer`: Engineering and development highlights only\n- `Architect`: Architecture and design highlights only\n- `Consultant`: Consulting and client delivery highlights only\n- Skills follow the same persona: a skill prints when its persona tags include the persona, and a skill with no persona tag prints under every persona. With no persona, every linked skill prints. The site's resume page uses the same rule.\n\n**Persona values**:\n- `Engineer`, `Architect` or `Consultant`. Any other value returns 400 BAD_REQUEST.\n- If persona is omitted, all highlights are returned (no filtering)\n\n**Response format**:\n- When the first media type in the `Accept` header is `text/plain`, a 200 answer is the generated text alone, with `Content-Type: text/plain; charset=UTF-8`. Parameters after a semicolon are ignored and the header name matches in any case.\n- With no `Accept` header, `*/*`, `application/json` or any other first type, the answer is the JSON object below.\n- Every other response header, the rate count and the cache directive are the same in both forms. Errors are always JSON, whatever `Accept` says.\n\nFor example, with your token in TOKEN and the instance URL in INSTANCE_URL:\n\n```bash\ncurl -H \"Authorization: Bearer $TOKEN\" -H \"Accept: text/plain\" \"$INSTANCE_URL/services/apexrest/papi/resume/generate?persona=Architect\"\n```\n",
                   "type": "text/plain"
                 },
                 "header": [
@@ -7744,7 +7744,7 @@
                       "value": "<string>"
                     },
                     {
-                      "description": "Filters records where the target field (Multi-Select Picklist) includes the specified persona(s).\nTakes a single value or a comma-separated list of Admin, Developer and Architect. An unknown value returns 400.\n\nExamples:\n- Single: `?persona=Admin`\n- Multiple (comma): `?persona=Admin,Developer`\n",
+                      "description": "Filters records where the target field (Multi-Select Picklist) includes the specified persona(s).\nTakes a single value or a comma-separated list of Engineer, Architect and Consultant. An unknown value returns 400.\n\nExamples:\n- Single: `?persona=Engineer`\n- Multiple (comma): `?persona=Engineer,Consultant`\n",
                       "disabled": true,
                       "key": "persona",
                       "value": "<string>"
@@ -7768,7 +7768,7 @@
               "response": [
                 {
                   "_postman_previewlanguage": "json",
-                  "body": "[\n  {\n    \"key\": \"hlt_9d3p7k5vxn\",\n    \"experienceKey\": \"exp_4h7n2c8wpd\",\n    \"experienceName\": \"Technical Architect\",\n    \"name\": \"DevOps Transformation\",\n    \"description\": \"Implemented CI/CD pipelines reducing deployment time by 80%.\",\n    \"sortOrder\": 1,\n    \"personaTag\": \"Developer;Architect\"\n  },\n  {\n    \"key\": \"hlt_9d3p7k5vxn\",\n    \"experienceKey\": \"exp_4h7n2c8wpd\",\n    \"experienceName\": \"Technical Architect\",\n    \"name\": \"DevOps Transformation\",\n    \"description\": \"Implemented CI/CD pipelines reducing deployment time by 80%.\",\n    \"sortOrder\": 1,\n    \"personaTag\": \"Developer;Architect\"\n  }\n]",
+                  "body": "[\n  {\n    \"key\": \"hlt_9d3p7k5vxn\",\n    \"experienceKey\": \"exp_4h7n2c8wpd\",\n    \"experienceName\": \"Technical Architect\",\n    \"name\": \"DevOps Transformation\",\n    \"description\": \"Implemented CI/CD pipelines reducing deployment time by 80%.\",\n    \"sortOrder\": 1,\n    \"personaTag\": \"Engineer;Architect\"\n  },\n  {\n    \"key\": \"hlt_9d3p7k5vxn\",\n    \"experienceKey\": \"exp_4h7n2c8wpd\",\n    \"experienceName\": \"Technical Architect\",\n    \"name\": \"DevOps Transformation\",\n    \"description\": \"Implemented CI/CD pipelines reducing deployment time by 80%.\",\n    \"sortOrder\": 1,\n    \"personaTag\": \"Engineer;Architect\"\n  }\n]",
                   "code": 200,
                   "cookie": [],
                   "header": [
@@ -7845,7 +7845,7 @@
                         },
                         {
                           "key": "persona",
-                          "value": "Admin"
+                          "value": "Engineer"
                         },
                         {
                           "key": "limit",
@@ -7856,7 +7856,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-highlights?experienceKey=<string>&persona=Engineer&limit=50&offset=0"
                     }
                   },
                   "status": "OK"
@@ -7922,7 +7922,7 @@
                         },
                         {
                           "key": "persona",
-                          "value": "Admin"
+                          "value": "Engineer"
                         },
                         {
                           "key": "limit",
@@ -7933,7 +7933,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-highlights?experienceKey=<string>&persona=Engineer&limit=50&offset=0"
                     }
                   },
                   "status": "Bad Request"
@@ -8005,7 +8005,7 @@
                         },
                         {
                           "key": "persona",
-                          "value": "Admin"
+                          "value": "Engineer"
                         },
                         {
                           "key": "limit",
@@ -8016,7 +8016,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-highlights?experienceKey=<string>&persona=Engineer&limit=50&offset=0"
                     }
                   },
                   "status": "Unauthorized"
@@ -8082,7 +8082,7 @@
                         },
                         {
                           "key": "persona",
-                          "value": "Admin"
+                          "value": "Engineer"
                         },
                         {
                           "key": "limit",
@@ -8093,7 +8093,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-highlights?experienceKey=<string>&persona=Engineer&limit=50&offset=0"
                     }
                   },
                   "status": "Forbidden"
@@ -8159,7 +8159,7 @@
                         },
                         {
                           "key": "persona",
-                          "value": "Admin"
+                          "value": "Engineer"
                         },
                         {
                           "key": "limit",
@@ -8170,7 +8170,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-highlights?experienceKey=<string>&persona=Engineer&limit=50&offset=0"
                     }
                   },
                   "status": "Not Found"
@@ -8236,7 +8236,7 @@
                         },
                         {
                           "key": "persona",
-                          "value": "Admin"
+                          "value": "Engineer"
                         },
                         {
                           "key": "limit",
@@ -8247,7 +8247,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-highlights?experienceKey=<string>&persona=Engineer&limit=50&offset=0"
                     }
                   },
                   "status": "Method Not Allowed"
@@ -8313,7 +8313,7 @@
                         },
                         {
                           "key": "persona",
-                          "value": "Admin"
+                          "value": "Engineer"
                         },
                         {
                           "key": "limit",
@@ -8324,7 +8324,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-highlights?experienceKey=<string>&persona=Engineer&limit=50&offset=0"
                     }
                   },
                   "status": "Gone"
@@ -8396,7 +8396,7 @@
                         },
                         {
                           "key": "persona",
-                          "value": "Admin"
+                          "value": "Engineer"
                         },
                         {
                           "key": "limit",
@@ -8407,7 +8407,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-highlights?experienceKey=<string>&persona=Engineer&limit=50&offset=0"
                     }
                   },
                   "status": "Too Many Requests"
@@ -8473,7 +8473,7 @@
                         },
                         {
                           "key": "persona",
-                          "value": "Admin"
+                          "value": "Engineer"
                         },
                         {
                           "key": "limit",
@@ -8484,7 +8484,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-highlights?experienceKey=<string>&persona=Engineer&limit=50&offset=0"
                     }
                   },
                   "status": "Internal Server Error"

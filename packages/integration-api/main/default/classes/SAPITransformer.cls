@@ -159,7 +159,7 @@ public with sharing class SAPITransformer {
 
   /**
    * @description Maps Experience_Highlight__c records to the ExperienceHighlight schema.
-   *              personaTag carries the raw multi-select value (for example "Admin;Developer").
+   *              personaTag carries the raw multi-select value (for example "Engineer;Architect").
    * @param highlights Experience_Highlight__c records.
    * @return List<Map<String, Object>> ExperienceHighlight schema rows.
    */

@@ -106,7 +106,7 @@ Examples:
 {
   "httpStatus": 400,
   "errorCode": "BAD_REQUEST",
-  "message": "persona must be Admin, Developer or Architect.",
+  "message": "persona must be Engineer, Architect or Consultant.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
   "retryable": false,
   "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
@@ -1090,13 +1090,13 @@ skills, certifications and education. The same records SAPI serves, without call
 - Prints at most 5 highlights per role, in sort order, as stored
 
 **Persona Filtering**:
-- `Admin`: System Admin highlights only
-- `Developer`: Development highlights only
-- `Architect`: Architecture/Design highlights only
+- `Engineer`: Engineering and development highlights only
+- `Architect`: Architecture and design highlights only
+- `Consultant`: Consulting and client delivery highlights only
 - Skills follow the same persona: a skill prints when its persona tags include the persona, and a skill with no persona tag prints under every persona. With no persona, every linked skill prints. The site's resume page uses the same rule.
 
 **Persona values**:
-- `Admin`, `Developer` or `Architect`. Any other value returns 400 BAD_REQUEST.
+- `Engineer`, `Architect` or `Consultant`. Any other value returns 400 BAD_REQUEST.
 - If persona is omitted, all highlights are returned (no filtering)
 
 **Response format**:
@@ -1130,9 +1130,9 @@ curl -H "Authorization: Bearer $TOKEN" -H "Accept: text/plain" "$INSTANCE_URL/se
 |---|---|
 |X-API-Version|v1|
 |X-API-Version|v2|
-|persona|Admin|
-|persona|Developer|
+|persona|Engineer|
 |persona|Architect|
+|persona|Consultant|
 
 > Example responses
 

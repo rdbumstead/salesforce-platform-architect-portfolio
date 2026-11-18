@@ -149,7 +149,7 @@ public class SapiTestData {
   /**
    * @description Inserts the record graph. Counts the tests rely on:
    *              Accounts 2; Contacts 2 (1 owner); Experience 2; Highlights 3 (2 on
-   *              experience one; Architect tagged on 2, Admin or Developer on 2);
+   *              experience one; Architect tagged on 2, Admin or Engineer on 2, Consultant on 1);
    *              Projects 2; Assets 3 (2 on project one); Skills 2; Project skills 3
    *              (2 on project one); Experience skills 3 (2 on experience one);
    *              Certifications 2 (1 owner, 1 per issuer); Certification skills 3
@@ -216,7 +216,7 @@ public class SapiTestData {
         Name = 'API layer',
         Experience__c = expOne.Id,
         Description__c = 'Designed the system API.',
-        Persona_Tag__c = 'Developer;Architect',
+        Persona_Tag__c = 'Engineer;Architect',
         Sort_Order__c = 2
       ),
       new Experience_Highlight__c(
@@ -224,7 +224,7 @@ public class SapiTestData {
         Name = 'Data model',
         Experience__c = expTwo.Id,
         Description__c = 'Owned the data model.',
-        Persona_Tag__c = 'Architect',
+        Persona_Tag__c = 'Architect;Consultant',
         Sort_Order__c = 1
       )
     };

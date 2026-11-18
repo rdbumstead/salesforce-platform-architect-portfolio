@@ -904,7 +904,7 @@
               "query": [
                 {
                   "key": "persona",
-                  "value": "Admin",
+                  "value": "Engineer",
                   "description": "Target audience for the resume. Omit for all highlights and all skills. With a persona, skills tagged for it and every untagged skill are kept.",
                   "disabled": true
                 }

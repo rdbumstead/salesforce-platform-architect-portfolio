@@ -469,11 +469,11 @@ Fetches resume bullets. Supports Persona filtering for PAPI optimization. A malf
 #### Detailed descriptions
 
 **persona**: Filters records where the target field (Multi-Select Picklist) includes the specified persona(s).
-Takes a single value or a comma-separated list of Admin, Developer and Architect. An unknown value returns 400.
+Takes a single value or a comma-separated list of Engineer, Architect and Consultant. Two older values still work as aliases. `Developer` means Engineer, and `Admin` is an internal focus. An unknown value returns 400.
 
 Examples:
-- Single: `?persona=Admin`
-- Multiple (comma): `?persona=Admin,Developer`
+- Single: `?persona=Engineer`
+- Multiple (comma): `?persona=Engineer,Consultant`
 
 > Example responses
 
@@ -490,7 +490,7 @@ Examples:
     "name": "DevOps Transformation",
     "description": "Implemented CI/CD pipelines reducing deployment time by 80%.",
     "sortOrder": 1,
-    "personaTag": "Developer;Architect"
+    "personaTag": "Engineer;Architect"
   }
 ]
 ```
@@ -533,7 +533,7 @@ Status Code **200**
 |» name|string|false|none|Highlight Title|
 |» description|string|false|none|Detailed Description|
 |» sortOrder|number|false|none|Sort Order|
-|» personaTag|string|false|none|Semicolon-separated Persona values from the Persona_Tag__c multi-select picklist (Admin, Developer, Architect).|
+|» personaTag|string|false|none|Semicolon-separated Persona values from the Persona_Tag__c multi-select picklist (Engineer, Architect, Consultant, and the internal Admin).|
 
 ### Response Headers
 
@@ -2048,21 +2048,23 @@ Standard Error Response Schema.
 
 ```
 
-Target audience for content filtering.
+Target audience for content filtering. Developer is an alias that reads as Engineer. Admin is an internal focus.
 
 ### Properties
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|*anonymous*|string|false|none|Target audience for content filtering.|
+|*anonymous*|string|false|none|Target audience for content filtering. Developer is an alias that reads as Engineer. Admin is an internal focus.|
 
 #### Enumerated Values
 
 |Property|Value|
 |---|---|
-|*anonymous*|Admin|
-|*anonymous*|Developer|
+|*anonymous*|Engineer|
 |*anonymous*|Architect|
+|*anonymous*|Consultant|
+|*anonymous*|Developer|
+|*anonymous*|Admin|
 
 <h2 id="tocS_ProjectStatus">ProjectStatus</h2>
 <!-- backwards compatibility -->
@@ -2432,7 +2434,7 @@ Professional Experience Schema.
   "name": "DevOps Transformation",
   "description": "Implemented CI/CD pipelines reducing deployment time by 80%.",
   "sortOrder": 1,
-  "personaTag": "Developer;Architect"
+  "personaTag": "Engineer;Architect"
 }
 
 ```
@@ -2451,7 +2453,7 @@ Experience Bullet Point Schema.
 |name|string|false|none|Highlight Title|
 |description|string|false|none|Detailed Description|
 |sortOrder|number|false|none|Sort Order|
-|personaTag|string|false|none|Semicolon-separated Persona values from the Persona_Tag__c multi-select picklist (Admin, Developer, Architect).|
+|personaTag|string|false|none|Semicolon-separated Persona values from the Persona_Tag__c multi-select picklist (Engineer, Architect, Consultant, and the internal Admin).|
 
 <h2 id="tocS_ProjectAsset">ProjectAsset</h2>
 <!-- backwards compatibility -->

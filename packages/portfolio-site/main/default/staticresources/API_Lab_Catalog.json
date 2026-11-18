@@ -4779,9 +4779,9 @@
           "type": "string",
           "description": "Target audience for the resume. Omit for all highlights and all skills. With a persona, skills tagged for it and every untagged skill are kept.",
           "enum": [
-            "Admin",
-            "Developer",
-            "Architect"
+            "Engineer",
+            "Architect",
+            "Consultant"
           ]
         }
       ],
@@ -4925,9 +4925,11 @@
           "type": "string",
           "description": "Target audience for the resume. Omit for all highlights and all skills. With a persona, skills tagged for it and every untagged skill are kept.",
           "enum": [
-            "Admin",
+            "Engineer",
+            "Architect",
+            "Consultant",
             "Developer",
-            "Architect"
+            "Admin"
           ]
         }
       ],

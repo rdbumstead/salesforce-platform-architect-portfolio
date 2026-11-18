@@ -20,7 +20,7 @@ export const APEX_GROUPS = [
   },
   {
     name: "REST API endpoints",
-    tests: 336
+    tests: 344
   },
   {
     name: "API Lab and AI cover letters",
