@@ -344,7 +344,7 @@ private class ApiLabOptionsControllerTest {
       ApiLabOptionsController.ACCEPTED_PERSONAS
     );
     Assert.areEqual(
-      new List<String>{ 'Admin', 'Architect', 'Developer' },
+      new List<String>{ 'Architect', 'Consultant', 'Engineer' },
       labels(options.get(ApiLabOptionsController.PERSONA)),
       'The personas the highlight filter accepts, sorted by label'
     );
@@ -372,8 +372,8 @@ private class ApiLabOptionsControllerTest {
   }
 
   /**
-   * The picklist now holds Engineer and Consultant, which no code accepts yet. The persona list
-   * must keep to the values the API accepts today, so the Lab never offers one that answers 400.
+   * The picklist holds Developer and Admin as well as the three public focuses. The persona
+   * list must keep to the three focuses, so the Lab never offers the old name or the internal tag.
    */
   @isTest
   static void personaListKeepsToAcceptedValues() {
@@ -391,6 +391,8 @@ private class ApiLabOptionsControllerTest {
       active.contains('Consultant'),
       'Consultant is an active value'
     );
+    Assert.isTrue(active.contains('Developer'), 'Developer is still active');
+    Assert.isTrue(active.contains('Admin'), 'Admin is still active');
 
     Test.startTest();
     List<ApiLabOptionsController.Option> personas = ApiLabOptionsController.getOptions()
@@ -402,15 +404,12 @@ private class ApiLabOptionsControllerTest {
       offered.add(option.value);
     }
     Assert.areEqual(
-      new Set<String>{ 'Admin', 'Architect', 'Developer' },
+      new Set<String>{ 'Engineer', 'Architect', 'Consultant' },
       offered,
-      'Only the values the API accepts today'
+      'Only the three public focuses'
     );
-    Assert.isFalse(offered.contains('Engineer'), 'Engineer is not offered yet');
-    Assert.isFalse(
-      offered.contains('Consultant'),
-      'Consultant is not offered yet'
-    );
+    Assert.isFalse(offered.contains('Developer'), 'Developer is not offered');
+    Assert.isFalse(offered.contains('Admin'), 'Admin is not offered');
   }
 
   @isTest

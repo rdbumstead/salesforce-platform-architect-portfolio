@@ -66,9 +66,19 @@ private class PortfolioGroundingServicePersonaTest {
       'The title wins over the description'
     );
     Assert.areEqual(
-      'Developer',
+      'Engineer',
       PortfolioGroundingService.inferPersona('Software Engineer', null),
-      'Engineer reads as Developer'
+      'Engineer reads as Engineer'
+    );
+    Assert.areEqual(
+      'Engineer',
+      PortfolioGroundingService.inferPersona('Salesforce Developer', null),
+      'Developer reads as Engineer'
+    );
+    Assert.areEqual(
+      'Consultant',
+      PortfolioGroundingService.inferPersona('Solution Consultant', null),
+      'Consultant reads as Consultant'
     );
     Assert.areEqual(
       'Admin',
@@ -78,7 +88,7 @@ private class PortfolioGroundingServicePersonaTest {
   }
 
   @IsTest
-  static void architectOutranksDeveloperInTheSameTitle() {
+  static void architectOutranksEngineerInTheSameTitle() {
     Assert.areEqual(
       'Architect',
       PortfolioGroundingService.inferPersona('Developer Architect', null),
@@ -87,9 +97,63 @@ private class PortfolioGroundingServicePersonaTest {
   }
 
   @IsTest
+  static void engineerOutranksConsultantAndConsultantOutranksAdminInTheSameTitle() {
+    Assert.areEqual(
+      'Engineer',
+      PortfolioGroundingService.inferPersona('Engineer Consultant', null),
+      'Engineer is checked before Consultant'
+    );
+    Assert.areEqual(
+      'Consultant',
+      PortfolioGroundingService.inferPersona('Admin Consultant', null),
+      'Consultant is checked before Admin'
+    );
+  }
+
+  @IsTest
+  static void consultantWordsPointAtConsultant() {
+    for (
+      String title : new List<String>{
+        'Presales Lead',
+        'Pre-Sales Specialist',
+        'Customer Facing Lead',
+        'Client-Facing Specialist',
+        'Demo Lead',
+        'Consulting Manager'
+      }
+    ) {
+      Assert.areEqual(
+        'Consultant',
+        PortfolioGroundingService.inferPersona(title, null),
+        'A consultant word in ' + title
+      );
+    }
+    Assert.isNull(
+      PortfolioGroundingService.inferPersona('Facing Customer', null),
+      'The two words only count in order'
+    );
+    Assert.isNull(
+      PortfolioGroundingService.inferPersona('Pre Lead', null),
+      'Half a phrase is not a match'
+    );
+  }
+
+  @IsTest
+  static void consultantWordsInTheDescriptionDecideWhenTheTitleHasNone() {
+    Assert.areEqual(
+      'Consultant',
+      PortfolioGroundingService.inferPersona(
+        'Platform Lead',
+        'Run client-facing demos and pre-sales calls, review the architecture'
+      ),
+      'Three consultant words against one architect word'
+    );
+  }
+
+  @IsTest
   static void descriptionDecidesWhenTheTitleHasNoPersonaWord() {
     Assert.areEqual(
-      'Developer',
+      'Engineer',
       PortfolioGroundingService.inferPersona(
         'Platform Lead',
         'Write Apex and LWC, review the architecture'

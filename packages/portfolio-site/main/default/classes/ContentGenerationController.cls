@@ -410,7 +410,7 @@ public with sharing class ContentGenerationController {
    * @description The grounding block, with the highlights of the persona ranked first.
    * @param jobTitle Job title the letter is for.
    * @param jobDescription Job description, may be blank.
-   * @param persona Architect, Developer or Admin, or null.
+   * @param persona Architect, Engineer, Consultant or Admin, or null.
    * @return String Instruction line plus facts JSON, or null when there are no facts.
    */
   public static String groundingSection(

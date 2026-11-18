@@ -41,7 +41,7 @@ private class PortfolioAgentServiceTest {
       Experience__c = job.Id,
       Description__c = 'Reduced deploy time',
       Sort_Order__c = 1,
-      Persona_Tag__c = 'Developer'
+      Persona_Tag__c = 'Engineer'
     );
     insert highlight;
 
