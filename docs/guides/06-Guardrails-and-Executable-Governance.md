@@ -131,7 +131,7 @@ We enforce "Green Builds" through automated gatekeeping in our GitHub Actions pi
 
 ### Delta Deployment Strategy
 
-**What it does:** Instead of deploying every metadata file on every change, the production deploy sends only what changed since the previous push.  
+**What it does:** Instead of deploying every metadata file on every change, the production deploy sends only what changed since the last successful production deploy. GlassOps plans that change from the git tag `glassops/deployed/prod`, validates it check only, gates it with a signed PERMIT after my approval, deploys it and verifies production, and the tag moves only after a successful deploy.  
 **Strategic Value:** A small change deploys as a small package, so a release is quicker and touches less of the org. No timing has been measured, so none is claimed.  
 **Implementation:** For the technical configuration of `sfdx-git-delta` in the pipeline, see **[Maintenance Guide: Delta Deployment](./05-Maintenance-Guide.md#33-pipeline-strategy-delta-deployment)**.
 
