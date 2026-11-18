@@ -310,6 +310,35 @@ test('a broken KV never refuses a visitor', async () => {
   assert.equal((await checkBudget(env)).reason, 'refused', 'the isolate still keeps its own pause');
 });
 
+test('a broken KV read and write each write one failure line and nothing more', async () => {
+  fresh();
+  const broken = {
+    get: async () => {
+      throw new Error('kv down for a@example.org');
+    },
+    put: async () => {
+      throw new Error('kv down for a@example.org');
+    }
+  };
+  const env = { ...ENV, API_BUDGET: broken };
+  const lines = [];
+  const original = console.error;
+  console.error = (text) => lines.push(text);
+  try {
+    await checkBudget(env);
+    const pending = [];
+    recordCall(env, { limited: true }, { waitUntil: (promise) => pending.push(promise) });
+    await Promise.all(pending);
+  } finally {
+    console.error = original;
+  }
+  assert.deepEqual(lines.map((text) => JSON.parse(text)), [
+    { route: 'budget', error: 'KV_READ_FAILED', status: 0 },
+    { route: 'budget', error: 'KV_WRITE_FAILED', status: 0 }
+  ]);
+  assert.ok(lines.every((text) => !text.includes('example.org')), 'the error text never reaches the line');
+});
+
 /** The browser side: a function that says fallback recorded makes the client show the recorded copy. */
 function fakeSite(routes, files = {}) {
   const fetch = async (url) => {

@@ -31,6 +31,8 @@
  *   API_BUDGET_PAUSE_MINUTES check 1, default 15
  */
 
+import { logFailure } from "./log.js";
+
 export const KV_BINDING = "API_BUDGET";
 export const DEFAULTS = Object.freeze({
   stopShare: 0.95,
@@ -157,7 +159,8 @@ async function readShared(env, now) {
   try {
     merge(await store.get(`budget:${state.day}`, { type: "json" }));
   } catch (error) {
-    // KV down means per isolate state only, never a refused visitor.
+    // KV down means per isolate state only, never a refused visitor. The line says so.
+    logFailure({ route: "budget", error: "KV_READ_FAILED", status: 0 });
   }
 }
 
@@ -176,7 +179,9 @@ function writeShared(env, now, waitUntil, urgent) {
     .put(`budget:${state.day}`, JSON.stringify(record), {
       expirationTtl: 2 * 24 * 60 * 60
     })
-    .catch(() => undefined);
+    .catch(() => {
+      logFailure({ route: "budget", error: "KV_WRITE_FAILED", status: 0 });
+    });
   if (typeof waitUntil === "function") waitUntil(put);
 }
 
