@@ -164,6 +164,15 @@ const STEPS = [
       "config/code-analyzer.yml"
     ],
     commands: [{ ci: "npm run scan" }]
+  },
+  {
+    // Warns only and always exits 0, so a long file shows on the PR and never blocks it.
+    name: "Long file warning",
+    paths: ["**"],
+    commands: [
+      { ci: "node --test scripts/check-file-length.test.js" },
+      { ci: "node scripts/check-file-length.js" }
+    ]
   }
 ];
 
