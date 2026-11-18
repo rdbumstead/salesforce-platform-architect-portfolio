@@ -35,6 +35,9 @@ import { headerLinks } from "c/profileLinks";
 import { createPdfWriter, fileNamePart, wrapText } from "c/documentPdf";
 import { RESUME_LAYOUT } from "./resumeLayout";
 
+// The document language written to every PDF, the same as the site's html lang.
+const PDF_LANGUAGE = "en";
+
 const MONTHS = [
   "Jan",
   "Feb",
@@ -391,7 +394,8 @@ export function buildViewModel(resume, options) {
       ? {
           name: clean(resume.header.name),
           title: clean(resume.header.title),
-          careerObjective: clean(resume.header.careerObjective),
+          // The summary for the focus, chosen on the server. Null prints no summary line.
+          careerObjective: clean(resume.summary),
           links: headerLinks(resume.header).map((link) => ({
             ...link,
             key: link.label
@@ -586,8 +590,9 @@ export function toAtsText(lines) {
  * drawing order.
  * @param {object} doc a jsPDF document in points
  * @param {object} model the view model from buildViewModel
- * @param {object} options { family, trace }: the registered font family (the spec's fallback
- *                 when not given) and an optional trace array
+ * @param {object} options { family, trace, title }: the registered font family (the spec's
+ *                 fallback when not given), an optional trace array and the document title.
+ *                 The title and the language "en" are written to the document properties
  * @returns {object} the document
  */
 export function writePdf(doc, model, options = {}) {
@@ -598,6 +603,12 @@ export function writePdf(doc, model, options = {}) {
     layout
   });
   const { type, space, marks } = layout;
+  if (options.title && typeof doc.setProperties === "function") {
+    doc.setProperties({ title: options.title });
+  }
+  if (typeof doc.setLanguage === "function") {
+    doc.setLanguage(PDF_LANGUAGE);
+  }
   const { margin, width, textRow, block, paragraph, labelled, measure, shown } =
     writer;
 
@@ -646,34 +657,8 @@ export function writePdf(doc, model, options = {}) {
 
     if (entry.isExperience) {
       model.employers.forEach((group) => {
-        if (group.isStacked) {
-          const spanWidth = measure(group.spanText, type.roleDates);
-          writer.setType(type.roleHeading);
-          const employerRows = wrapText(
-            doc,
-            group.employer || "",
-            width - spanWidth - space.linkGap * 2,
-            width
-          ).map((part, index) =>
-            textRow(
-              index === 0
-                ? [
-                    { kind: "employer", text: part, x: margin },
-                    {
-                      kind: "dates",
-                      text: group.spanText,
-                      x: margin + width - spanWidth,
-                      style: type.roleDates
-                    }
-                  ]
-                : [{ kind: "employer", text: part, x: margin }],
-              type.roleHeading
-            )
-          );
-          block(employerRows, space.itemGap, true);
-        }
         group.roles.forEach((role) => {
-          const heading = group.isStacked ? role.title : role.heading;
+          const heading = role.title;
           const datesWidth = measure(role.datesText, type.roleDates);
           writer.setType(type.roleHeading);
           const rows = wrapText(
@@ -697,6 +682,17 @@ export function writePdf(doc, model, options = {}) {
               type.roleHeading
             )
           );
+          // The employer sits alone on the next line, so every role reads title with its
+          // dates, then employer, with no employer heading over several roles.
+          const employerText = employerLabel(role.employer, role.isPartTime);
+          if (employerText) {
+            rows.push(
+              textRow(
+                [{ kind: "employer", text: employerText, x: margin }],
+                type.roleHeading
+              )
+            );
+          }
           role.highlights.forEach((highlight) => {
             const bulletRows = paragraph(
               "bullet",
@@ -713,11 +709,8 @@ export function writePdf(doc, model, options = {}) {
             bulletRows[bulletRows.length - 1].height += space.itemGap;
             rows.push(...bulletRows);
           });
-          block(rows, group.isStacked ? space.itemGap : space.roleAfter);
+          block(rows, space.roleAfter);
         });
-        if (group.isStacked) {
-          writer.spacer(space.roleAfter - space.itemGap);
-        }
       });
       if (model.earlierRoles) {
         block(
@@ -824,6 +817,20 @@ export function writePdf(doc, model, options = {}) {
   });
 
   return writer.draw();
+}
+
+/**
+ * The PDF document title: the owner name, "resume," and the focus label, for example
+ * "Ryan Bumstead resume, Platform Architect". Falls back to "Resume" with no name and drops
+ * the focus when none is given.
+ * @param {object} model the view model from buildViewModel
+ * @param {string} focusLabel the visitor label of the chosen focus
+ * @returns {string} the title
+ */
+export function pdfTitle(model, focusLabel) {
+  const name = clean(model && model.header && model.header.name);
+  const base = name ? `${name} resume` : "Resume";
+  return focusLabel ? `${base}, ${focusLabel}` : base;
 }
 
 export function pdfFileName(model, persona) {

@@ -210,9 +210,9 @@ const KIND_LABELS = {
 // The resume's personas: the same labels, values and order as PERSONA_OPTIONS in resumeBuilder.js,
 // which a test checks. The value is the Persona_Tag__c value.
 const PERSONA_OPTIONS = [
+  { label: "Salesforce Engineer", value: "Engineer" },
   { label: "Platform Architect", value: "Architect" },
-  { label: "Salesforce Developer", value: "Developer" },
-  { label: "System Admin", value: "Admin" }
+  { label: "Solution Consultant", value: "Consultant" }
 ];
 const PERSONA_ALL = "";
 
