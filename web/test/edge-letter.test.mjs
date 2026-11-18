@@ -16,6 +16,7 @@ const ENV = {
   SF_CLIENT_ID: 'client-id-value',
   SF_CLIENT_SECRET: 'client-secret-value',
   IP_HASH_SALT: 'salt',
+  TURNSTILE_SECRET: 'turnstile-secret',
   SITE_DENYLIST: 'zzinventedclient'
 };
 const REFUSED = [{ message: 'TotalRequests Limit exceeded.', errorCode: 'REQUEST_LIMIT_EXCEEDED' }];
@@ -43,6 +44,7 @@ function fakeOrg(answer) {
   globalThis.fetch = async (url) => {
     const address = String(url);
     if (address.endsWith('/services/oauth2/token')) return Response.json({ access_token: 'tok', instance_url: ENV.SF_INSTANCE_URL });
+    if (address.includes('/turnstile/')) return Response.json({ success: true });
     seen.push(address);
     return answer(address);
   };
@@ -53,7 +55,7 @@ function post(body) {
   return new Request(`${PROD}/api/cover-letter`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': '203.0.113.9' },
-    body: JSON.stringify(body)
+    body: JSON.stringify({ ...body, turnstileToken: 'tok' })
   });
 }
 

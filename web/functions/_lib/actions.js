@@ -13,6 +13,7 @@ import { isLive } from "./features.js";
 import { callAction, ipHash } from "./salesforce.js";
 import { verifyTurnstile } from "./turnstile.js";
 import { checkBudget, recordCall } from "./budget.js";
+import { logFailure } from "./log.js";
 
 /** How long the browser is told to wait after a soft stop for the API budget. */
 export const BUSY_RETRY_SECONDS = 900;
@@ -80,8 +81,16 @@ export async function handlePost(context, options) {
   if (request.method !== "POST") return methodNotAllowed("POST");
   if (!isLive(request, env, options.feature))
     return failure("UNAVAILABLE", MESSAGES.SWITCHED_OFF);
-  if (!env.IP_HASH_SALT)
+  const requestId = request.headers.get("X-Request-Id") || undefined;
+  if (!env.IP_HASH_SALT) {
+    logFailure({
+      route: options.action,
+      error: "NOT_CONFIGURED",
+      status: 503,
+      requestId
+    });
     return failure("UNAVAILABLE", "This feature is not set up on this deploy.");
+  }
   const body = await readObject(request);
   if (!body)
     return failure("BAD_REQUEST", "The request body must be a JSON object.");
@@ -92,6 +101,13 @@ export async function handlePost(context, options) {
       turnstileToken,
       request.headers.get("CF-Connecting-IP")
     );
+    if (verdict !== "ok")
+      logFailure({
+        route: options.action,
+        error: `TURNSTILE_${verdict.toUpperCase()}`,
+        status: verdict === "failed" ? 400 : 503,
+        requestId
+      });
     if (verdict === "failed")
       return failure(
         "BAD_REQUEST",
@@ -109,11 +125,17 @@ export async function handlePost(context, options) {
     action: options.action,
     method: "POST",
     body: forward,
-    requestId: request.headers.get("X-Request-Id") || undefined,
+    requestId,
     ipHash: await ipHash(request, env),
     timeoutMs: options.timeoutMs
   });
   if (stopped) {
+    logFailure({
+      route: options.action,
+      error: `STOPPED_${stopped.toUpperCase()}`,
+      status: 503,
+      requestId
+    });
     if (typeof options.onStopped === "function") {
       const own = await options.onStopped(context, forward, stopped);
       if (own) return own;

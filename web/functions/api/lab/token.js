@@ -14,4 +14,9 @@ export function build(fields) {
 }
 
 export const onRequest = (context) =>
-  handlePost(context, { feature: "apiLab", action: "lab-token", build });
+  handlePost(context, {
+    feature: "apiLab",
+    action: "lab-token",
+    turnstile: true,
+    build
+  });
