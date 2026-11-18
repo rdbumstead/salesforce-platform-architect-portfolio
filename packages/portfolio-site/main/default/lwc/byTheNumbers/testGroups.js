@@ -11,7 +11,7 @@
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 10/26/2026
  **/
-export const COUNTED_ON = "2026-11-15";
+export const COUNTED_ON = "2026-11-18";
 
 export const APEX_GROUPS = [
   {
@@ -24,7 +24,7 @@ export const APEX_GROUPS = [
   },
   {
     name: "API Lab and AI cover letters",
-    tests: 266
+    tests: 268
   },
   {
     name: "Delivery data and the numbers panel",
