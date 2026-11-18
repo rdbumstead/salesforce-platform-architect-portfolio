@@ -1,0 +1,34 @@
+{
+  "records": [
+    {
+      "attributes": {
+        "type": "Resume_Variant__c",
+        "referenceId": "SeedVariantEngineerSummaryRef"
+      },
+      "Name": "Seed engineer focus summary",
+      "Public_Key__c": "seed-engineer-focus",
+      "Contact__c": "@SeedOwnerRef",
+      "Variant_Type__c": "Summary",
+      "Title_Family__c": "engineer",
+      "Text__c": "Seed summary for the engineer focus.",
+      "Selection_Priority__c": "1",
+      "Is_Verified__c": true,
+      "Visibility__c": "Public"
+    },
+    {
+      "attributes": {
+        "type": "Resume_Variant__c",
+        "referenceId": "SeedVariantArchitectSummaryRef"
+      },
+      "Name": "Seed architect focus summary",
+      "Public_Key__c": "seed-architect-focus",
+      "Contact__c": "@SeedOwnerRef",
+      "Variant_Type__c": "Summary",
+      "Title_Family__c": "architect",
+      "Text__c": "Seed summary for the architect focus.",
+      "Selection_Priority__c": "1",
+      "Is_Verified__c": true,
+      "Visibility__c": "Public"
+    }
+  ]
+}
