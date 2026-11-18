@@ -74,7 +74,7 @@ private class SiteQueryDefinitionsTest {
     Map<String, QueryDefinitions.QueryDefault> defaults = siteDefaults();
     Map<String, Query_Definition__mdt> records = Query_Definition__mdt.getAll();
 
-    Assert.areEqual(23, defaults.size(), 'Twenty three site content reads');
+    Assert.areEqual(24, defaults.size(), 'Twenty four site content reads');
     for (String name : defaults.keySet()) {
       Assert.isTrue(records.containsKey(name), 'Record ships for ' + name);
       Assert.isTrue(records.get(name).Active__c, name + ' ships active');
@@ -171,7 +171,9 @@ private class SiteQueryDefinitionsTest {
             Sort_Order__c,
             Admin_Sort_Order__c,
             Developer_Sort_Order__c,
+            Engineer_Sort_Order__c,
             Architect_Sort_Order__c,
+            Consultant_Sort_Order__c,
             Lock_Sort_Across_Personas__c
           FROM Experience_Highlights__r
         )
@@ -189,9 +191,9 @@ private class SiteQueryDefinitionsTest {
     for (
       String persona : new List<String>{
         null,
-        'Admin',
-        'Developer',
-        'Architect'
+        'Engineer',
+        'Architect',
+        'Consultant'
       }
     ) {
       String expected = JSON.serialize(
@@ -211,6 +213,8 @@ private class SiteQueryDefinitionsTest {
     Test.startTest();
     System.runAs(guest) {
       resume = ResumeController.getResume(null);
+      // A focus reads the summary variants too, so every resume read runs.
+      ResumeController.getResume('Architect');
       timeline = ResumeController.getTimeline();
     }
     Test.stopTest();
