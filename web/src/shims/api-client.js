@@ -62,7 +62,8 @@ export const ROUTES = {
   "ApiLabController.generateCoverLetter": {
     feature: "coverLetter",
     url: "/api/cover-letter",
-    method: "POST"
+    method: "POST",
+    turnstile: true
   },
   "ApiLabController.invokeVersioned": {
     feature: "apiLab",
@@ -72,7 +73,8 @@ export const ROUTES = {
   "ApiLabController.requestEvaluatorToken": {
     feature: "apiLab",
     url: "/api/lab/token",
-    method: "POST"
+    method: "POST",
+    turnstile: true
   },
   "FooterController.getSystemSnapshot": {
     feature: "liveReads",

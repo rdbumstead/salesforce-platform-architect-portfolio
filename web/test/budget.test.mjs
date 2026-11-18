@@ -172,12 +172,12 @@ test('the cover letter, lab invoke and live reads point the browser at the recor
   fresh();
   const org = fakeOrg(() => Response.json(REFUSED, { status: 403 }));
   try {
-    const letter = await coverLetter({ request: post('/api/cover-letter', LETTER), env: ENV });
+    const letter = await coverLetter({ request: post('/api/cover-letter', { ...LETTER, turnstileToken: 't' }), env: ENV });
     assert.equal(letter.status, 503);
     assert.deepEqual(await letter.json(), { error: 'UNAVAILABLE', message: MESSAGES.BUSY, fallback: 'recorded' });
     const lab = await labInvoke({ request: post('/api/lab/invoke', { path: LAB_PATHS[0] }), env: ENV });
     assert.equal((await lab.json()).fallback, 'recorded');
-    const token = await labToken({ request: post('/api/lab/token', { email: 'a@example.org' }), env: ENV });
+    const token = await labToken({ request: post('/api/lab/token', { email: 'a@example.org', turnstileToken: 't' }), env: ENV });
     assert.equal((await token.json()).fallback, undefined, 'an evaluator token has no recorded copy');
     const read = await glassBox({ request: new Request(`${PROD}/api/live/glass-box`), env: ENV });
     assert.equal(read.status, 503);
@@ -327,7 +327,8 @@ const busyAnswer = () => Response.json(BUSY_BODY, { status: 503 });
 test('the browser shows the sample letter, with the reason in its attempts, when the letter is stopped', async () => {
   const sample = { content: 'SAMPLE LETTER.', provider: 'Recorded sample', attempts: [{ provider: 'Recorded sample', outcome: 'Served', ms: 0, detail: 'A saved example.' }] };
   const handler = createRequestHandler({
-    fetch: fakeSite({ '/api/cover-letter': busyAnswer }, { '/recorded/cover-letter.json': sample })
+    fetch: fakeSite({ '/api/cover-letter': busyAnswer }, { '/recorded/cover-letter.json': sample }),
+    turnstileToken: async () => 't'
   });
   const result = await handler('ApiLabController.generateCoverLetter', LETTER);
   assert.equal(result.content, 'SAMPLE LETTER.');
@@ -342,7 +343,7 @@ test('the browser answers a stopped lab call from the recordings, and keeps the 
     fetch: fakeSite({ '/api/lab/invoke': busyAnswer }, { '/recorded/lab/index.json': { calls: { [key]: { status: 200 } } } })
   });
   assert.deepEqual(await handler('ApiLabController.invokeVersioned', params), { status: 200 });
-  const bare = createRequestHandler({ fetch: fakeSite({ '/api/cover-letter': busyAnswer }) });
+  const bare = createRequestHandler({ fetch: fakeSite({ '/api/cover-letter': busyAnswer }), turnstileToken: async () => 't' });
   await assert.rejects(bare('ApiLabController.generateCoverLetter', LETTER), (error) => error.status === 503 && error.body.message === MESSAGES.BUSY);
 });
 

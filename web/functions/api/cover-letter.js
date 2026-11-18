@@ -43,6 +43,7 @@ export function createHandler({ load = loadSnapshot } = {}) {
   return (context) =>
     handlePost(context, {
       feature: "coverLetter",
+      turnstile: true,
       action: "cover-letter",
       build,
       timeoutMs: COVER_LETTER_TIMEOUT_MS,
