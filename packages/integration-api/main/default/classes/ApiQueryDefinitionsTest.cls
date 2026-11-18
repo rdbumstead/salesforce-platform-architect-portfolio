@@ -82,7 +82,7 @@ private class ApiQueryDefinitionsTest {
           Description__c = 'Current highlight ' + order[i],
           Persona_Tag__c = Math.mod(order[i], 2) == 0
             ? 'Architect'
-            : 'Developer',
+            : 'Engineer',
           Sort_Order__c = order[i]
         )
       );
@@ -103,7 +103,7 @@ private class ApiQueryDefinitionsTest {
         Experience__c = past.Id,
         Name = 'Past 1',
         Description__c = 'Past highlight 1',
-        Persona_Tag__c = 'Developer',
+        Persona_Tag__c = 'Engineer',
         Sort_Order__c = 1
       )
     );

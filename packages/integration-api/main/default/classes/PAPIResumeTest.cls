@@ -388,7 +388,7 @@ private class PAPIResumeTest {
   private static void linkTaggedSkills() {
     Experience__c role = [SELECT Id FROM Experience__c LIMIT 1];
     Skill__c apex = [SELECT Id FROM Skill__c WHERE Name = 'Apex'];
-    apex.Persona_Tag__c = 'Developer;Architect';
+    apex.Persona_Tag__c = 'Engineer;Architect';
     update apex;
     Skill__c flows = new Skill__c(
       Is_Verified__c = true,
@@ -427,17 +427,17 @@ private class PAPIResumeTest {
     linkTaggedSkills();
 
     Test.startTest();
-    String developer = generatedTextFor('Developer');
+    String engineer = generatedTextFor('Engineer');
     String admin = generatedTextFor('Admin');
     Test.stopTest();
 
     Assert.isTrue(
-      developer.contains('Backend: Apex, Git\n'),
-      'Developer keeps Apex and the untagged Git: ' + developer
+      engineer.contains('Backend: Apex, Git\n'),
+      'Engineer keeps Apex and the untagged Git: ' + engineer
     );
     Assert.isFalse(
-      developer.contains('Flow'),
-      'A skill tagged only Admin is left out for Developer'
+      engineer.contains('Flow'),
+      'A skill tagged only Admin is left out for Engineer'
     );
     Assert.isTrue(
       admin.contains('Process Automation: Flow\n'),
@@ -447,6 +447,108 @@ private class PAPIResumeTest {
       admin.contains('Backend: Git\n'),
       'Admin keeps the untagged Git and drops Apex: ' + admin
     );
+  }
+
+  @IsTest
+  static void tagMatchesWholeValuesOnly() {
+    Assert.isTrue(
+      PAPIResume.tagMatches('Engineer;Architect', 'Architect'),
+      'One of several values'
+    );
+    Assert.isFalse(
+      PAPIResume.tagMatches('Administrator', 'Admin'),
+      'A value inside another value is not a match'
+    );
+    Assert.isFalse(
+      PAPIResume.tagMatches('Engineering;Architect', 'Engineer'),
+      'A value that only starts with the persona is not a match'
+    );
+  }
+
+  private static void initGenerate(String version, String persona) {
+    RestTestUtil.initGetRaw(
+      GENERATE_URI,
+      new Map<String, String>{
+        'X-Request-Id' => UUID.randomUUID().toString(),
+        'X-API-Version' => version
+      },
+      new Map<String, String>{ 'persona' => persona }
+    );
+    PAPIResume.getResume();
+  }
+
+  // One test for each version, because a test that sends sixteen requests meets the
+  // per minute limit.
+  @IsTest
+  static void everyAcceptedPersonaAnswersOnV1() {
+    assertEveryAcceptedPersona('v1');
+  }
+
+  @IsTest
+  static void everyAcceptedPersonaAnswersOnV2() {
+    assertEveryAcceptedPersona('v2');
+  }
+
+  private static void assertEveryAcceptedPersona(String version) {
+    linkTaggedSkills();
+    Map<String, String> expected = new Map<String, String>{
+      'engineer' => 'Engineer',
+      'Engineer' => 'Engineer',
+      'ARCHITECT' => 'Architect',
+      'Consultant' => 'Consultant',
+      'developer' => 'Engineer',
+      'Developer' => 'Engineer',
+      'admin' => 'Admin',
+      'Admin' => 'Admin'
+    };
+
+    Test.startTest();
+    for (String sent : expected.keySet()) {
+      initGenerate(version, sent);
+      Assert.areEqual(
+        200,
+        RestContext.response.statusCode,
+        version + ' ' + sent + ' status'
+      );
+      Assert.areEqual(
+        expected.get(sent),
+        RestTestUtil.getBodyAsMap().get('persona'),
+        version + ' ' + sent + ' persona'
+      );
+    }
+    Test.stopTest();
+  }
+
+  @IsTest
+  static void developerAliasReturnsTheEngineerSkills() {
+    linkTaggedSkills();
+
+    Test.startTest();
+    String alias = generatedTextFor('Developer');
+    String engineer = generatedTextFor('Engineer');
+    Test.stopTest();
+
+    Assert.areEqual(engineer, alias, 'The alias gives the Engineer text');
+    Assert.isTrue(alias.contains('Backend: Apex, Git\n'), 'Alias: ' + alias);
+  }
+
+  @IsTest
+  static void unknownPersonaIsRefusedOnBothVersions() {
+    Test.startTest();
+    for (String version : new List<String>{ 'v1', 'v2' }) {
+      initGenerate(version, 'Bogus');
+      Assert.areEqual(
+        400,
+        RestContext.response.statusCode,
+        version + ' status'
+      );
+      Assert.isTrue(
+        RestContext.response.responseBody.toString()
+          .contains(ApiMessages.PERSONA_INVALID),
+        version + ' message names the accepted values'
+      );
+    }
+    Test.stopTest();
   }
 
   @IsTest
@@ -471,7 +573,7 @@ private class PAPIResumeTest {
       'One of several tags'
     );
     Assert.isFalse(
-      PAPIResume.showsSkillFor('Developer', 'Admin'),
+      PAPIResume.showsSkillFor('Engineer', 'Admin'),
       'Another persona'
     );
     Assert.isFalse(
