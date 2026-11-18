@@ -265,7 +265,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: glassops-platform/glassops
-          ref: 20459158b4f16da4cddc816ac7c1d695177af196
+          # v1.0.0-rc.2
+          ref: 66a7c6295fd7efbafea648215bd607ffc5131009
           path: glassops-src
           persist-credentials: false
 
@@ -299,8 +300,9 @@ jobs:
               id: $SF_PORTFOLIO_ORG_ID
               tier: prod
               auth: { method: jwt, username: $SFDX_USERNAME, client_id: $SFDX_CLIENT_ID, key: $SFDX_JWT_KEY }
+          # The same test level as the check above, so the two compare like with like.
           salesforce:
-            test_level: { prod: RunLocalTests }
+            test_level: { prod: RunRelevantTests }
           EOF
 
           # Bounds the window the blocking check below searches for a real deploy.
