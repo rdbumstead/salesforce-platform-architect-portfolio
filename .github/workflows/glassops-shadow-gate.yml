@@ -1,0 +1,220 @@
+name: GlassOps Shadow Gate
+
+# Shadow mode for GlassOps on merges to main, the first step of moving the production deploy
+# onto it. After each successful Deploy to Production that a push to main started, GlassOps
+# plans the merged change, validates it against production check only, and writes a signed
+# PERMIT that says whether it would have allowed the deploy. It never deploys, and it never
+# blocks anything. Deploy to Production is still the deploy.
+#
+# The PERMIT key lives only in the glassops-deploy environment, so the gate job waits for an
+# approval there. That approval is also the separation of duties evidence the gate reads. The
+# plan job runs first without the environment, so a push with no metadata change asks for
+# nothing.
+
+on:
+  workflow_run:
+    workflows: ["Deploy to Production"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+# One shadow gate at a time, in a group of its own. A run waiting for its approval in
+# deploy-production would hold up the real deploys queued behind it.
+concurrency:
+  group: glassops-shadow-gate
+  queue: max
+
+env:
+  # v1.0.0-rc.2, pinned by digest and never by tag.
+  GLASSOPS_IMAGE: ghcr.io/glassops-platform/glassops@sha256:2495721ece028686517726f1857b9557753cc0d28c3dc9dfb727c241ebd706af
+  GLASSOPS_CONFIG: .github/glassops/prod.yaml
+  # A workflow_run checks out the default branch head by default. The deployed commit is the one
+  # to gate, so a later push cannot slip in between.
+  HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+
+jobs:
+  plan:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      changes: ${{ steps.plan.outputs.changes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.HEAD_SHA }}
+          fetch-depth: 0
+
+      - name: Setup Salesforce & Tools
+        uses: rdbumstead/setup-salesforce-action@v2
+        with:
+          node_version: "26"
+          jwt_key: ${{ secrets.SFDX_JWT_KEY }}
+          client_id: ${{ secrets.SFDX_CLIENT_ID }}
+          username: ${{ secrets.SFDX_USERNAME }}
+          alias: "portfolio"
+
+      # The gate's validate runs every local test in production, so keep the public site's
+      # share of the daily API requests, as the PR check does.
+      - name: Check the API Reserve
+        id: reserve
+        run: node scripts/api-reserve.js --target-org portfolio --label "GlassOps shadow gate"
+
+      # Merges reach main as merge commits, so the first parent is where main stood before this
+      # push. That is the same range Deploy to Production deployed. The plan needs no login.
+      - name: GlassOps Plan
+        id: plan
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work "$GLASSOPS_IMAGE" \
+            plan --config "$GLASSOPS_CONFIG" --from "$HEAD_SHA^1" --to "$HEAD_SHA" --ci local
+          STATUS=$(jq -r '.status' .glassops/results/plan.json)
+          echo "Plan status: $STATUS"
+          if [ "$STATUS" = "pass" ]; then
+             echo "changes=true" >> "$GITHUB_OUTPUT"
+          else
+             echo "changes=false" >> "$GITHUB_OUTPUT"
+             echo "**GlassOps shadow gate**: no metadata changes, nothing to gate" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  gate:
+    needs: [plan]
+    if: needs.plan.outputs.changes == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: glassops-deploy
+    # actions read the environment approval of this run, pull-requests and issues find the pull
+    # request the commit was merged from and its labels.
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+      issues: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.HEAD_SHA }}
+          fetch-depth: 0
+
+      - name: Setup Salesforce & Tools
+        uses: rdbumstead/setup-salesforce-action@v2
+        with:
+          node_version: "26"
+          jwt_key: ${{ secrets.SFDX_JWT_KEY }}
+          client_id: ${{ secrets.SFDX_CLIENT_ID }}
+          username: ${{ secrets.SFDX_USERNAME }}
+          alias: "portfolio"
+
+      # The container runs as root, so .glassops/ is root owned. Later steps read it and never
+      # write into it. GITHUB_SHA is the default branch head on a workflow_run, so the container
+      # gets the deployed commit in its place. The PERMIT binds that commit.
+      - name: GlassOps Validate, Gate and Verify the PERMIT
+        id: glassops
+        env:
+          SFDX_JWT_KEY: ${{ secrets.SFDX_JWT_KEY }}
+          SFDX_CLIENT_ID: ${{ secrets.SFDX_CLIENT_ID }}
+          SFDX_USERNAME: ${{ secrets.SFDX_USERNAME }}
+          SF_PORTFOLIO_ORG_ID: ${{ secrets.SF_PORTFOLIO_ORG_ID }}
+          GLASSOPS_PERMIT_KEY: ${{ secrets.GLASSOPS_PERMIT_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          # The guard's expected org Id comes from a secret, never from a login result, or the
+          # guard would compare the org with itself.
+          if [ -z "$SF_PORTFOLIO_ORG_ID" ] || [ -z "$GLASSOPS_PERMIT_KEY" ]; then
+             echo "::error::SF_PORTFOLIO_ORG_ID or GLASSOPS_PERMIT_KEY is not set, so there is nothing to gate with."
+             exit 1
+          fi
+
+          # Bounds the window the check below searches for a real deploy.
+          echo "GLASSOPS_START=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+          G=(docker run --rm
+             -e SFDX_JWT_KEY -e SFDX_CLIENT_ID -e SFDX_USERNAME -e SF_PORTFOLIO_ORG_ID -e GLASSOPS_PERMIT_KEY
+             -e GITHUB_ACTIONS -e GITHUB_REPOSITORY -e GITHUB_RUN_ID -e GITHUB_ACTOR -e GITHUB_TRIGGERING_ACTOR
+             -e GITHUB_REF -e GITHUB_EVENT_NAME -e GITHUB_API_URL -e GITHUB_TOKEN -e "GITHUB_SHA=$HEAD_SHA"
+             -v "$GITHUB_WORKSPACE:/work" -w /work "$GLASSOPS_IMAGE")
+          set +e
+          "${G[@]}" plan --config "$GLASSOPS_CONFIG" --from "$HEAD_SHA^1" --to "$HEAD_SHA"
+          PLAN_EXIT=$?
+          VALIDATE_EXIT=none
+          GATE_EXIT=none
+          VERIFY_EXIT=none
+          if [ $PLAN_EXIT -eq 0 ]; then
+             "${G[@]}" validate --target prod --config "$GLASSOPS_CONFIG"
+             VALIDATE_EXIT=$?
+          fi
+          # Exit 1 is a validate that ran and failed, which the gate still records. Exit 2 is a
+          # tool, login, guard or check only error, and leaves nothing to gate.
+          if [ "$VALIDATE_EXIT" = "0" ] || [ "$VALIDATE_EXIT" = "1" ]; then
+             "${G[@]}" gate --target prod --config "$GLASSOPS_CONFIG"
+             GATE_EXIT=$?
+          fi
+          if [ "$GATE_EXIT" = "0" ]; then
+             "${G[@]}" permit verify --target prod --config "$GLASSOPS_CONFIG"
+             VERIFY_EXIT=$?
+          fi
+          "${G[@]}" report --config "$GLASSOPS_CONFIG" --summary .glassops/summary.md > /dev/null
+          set -e
+          echo "GLASSOPS_END=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+
+          [ -f .glassops/summary.md ] && cat .glassops/summary.md >> $GITHUB_STEP_SUMMARY
+          echo "Plan exit $PLAN_EXIT, validate exit $VALIDATE_EXIT, gate exit $GATE_EXIT, permit verify exit $VERIFY_EXIT."
+          if [ -f .glassops/permit.json ]; then
+             jq -r '"PERMIT \(.id // "none"): allow \(.allow), expires \(.expires_at // "unknown")",
+               "separation of duties: \(.separation_of_duties.mode // "none"), approver \(.separation_of_duties.approver // "none")",
+               "validation bound: \(.validation.passed // false), test level \(.validation.test_level // "none")",
+               (.checks[]? | "check \(.rule): \(.outcome)")' .glassops/permit.json
+          fi
+
+          # Done when the PERMIT allows, every rule passed and permit verify agrees. Anything
+          # else fails this run so it gets read, and blocks nothing.
+          if [ "$VALIDATE_EXIT" = "0" ] && [ "$GATE_EXIT" = "0" ] && [ "$VERIFY_EXIT" = "0" ]; then
+             echo "**GlassOps shadow gate**: allow, and permit verify agrees" >> $GITHUB_STEP_SUMMARY
+          else
+             echo "::warning::The GlassOps shadow gate did not end in a verified allow. See this step's log."
+             echo "**GlassOps shadow gate**: no verified allow (validate $VALIDATE_EXIT, gate $GATE_EXIT, permit verify $VERIFY_EXIT)" >> $GITHUB_STEP_SUMMARY
+             exit 1
+          fi
+
+      # Fails the run if any deploy to production that is not check only started while GlassOps
+      # ran, under any Id, including one GlassOps never reported. Deploy to Production signs in as
+      # the same user, so a later merge that deploys inside the window trips this too. Read the
+      # listed Id in that run's Execute Deployment step before you rerun.
+      - name: Check GlassOps Deployed Nothing
+        if: ${{ always() && env.GLASSOPS_START != '' }}
+        run: |
+          END=${GLASSOPS_END:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}
+          # A busy org can time the query out, so try it three times before giving up.
+          for ATTEMPT in 1 2 3; do
+            sf data query --use-tooling-api --target-org portfolio --json \
+              --query "SELECT Id, Status, CreatedDate FROM DeployRequest WHERE CheckOnly = false AND CreatedDate >= $GLASSOPS_START AND CreatedDate <= $END" > shadow-deploys.json || true
+            COUNT=$(jq -r '.result.totalSize // empty' shadow-deploys.json)
+            [ -n "$COUNT" ] && break
+            echo "DeployRequest could not be read, attempt $ATTEMPT of 3."
+            sleep 30
+          done
+          COUNT=$(jq -r '.result.totalSize // empty' shadow-deploys.json)
+          if [ -z "$COUNT" ]; then
+             jq -r '.message // empty' shadow-deploys.json
+             echo "::error::Could not read DeployRequest, so a real deploy by GlassOps cannot be ruled out."
+             exit 1
+          fi
+          if [ "$COUNT" != "0" ]; then
+             jq -r '.result.records[] | "real deploy: \(.Id) \(.Status) \(.CreatedDate)"' shadow-deploys.json
+             echo "::error::A deploy that was not check only reached production while GlassOps ran."
+             exit 1
+          fi
+
+          GID=$(jq -r '.facts["salesforce.deploy_id"] // empty' .glassops/results/validate.json 2>/dev/null || true)
+          if [ -n "$GID" ]; then
+             if ! [[ "$GID" =~ ^0Af[A-Za-z0-9]{12,15}$ ]]; then
+                echo "::error::GlassOps reported a deploy Id that is not a DeployRequest Id: $GID"
+                exit 1
+             fi
+             CHECK_ONLY=$(sf data query --use-tooling-api --target-org portfolio --json --query "SELECT CheckOnly FROM DeployRequest WHERE Id = '$GID'" | jq -r '.result.records[0].CheckOnly // empty')
+             if [ "$CHECK_ONLY" != "true" ]; then
+                echo "::error::GlassOps deploy $GID is not check only in production (CheckOnly '$CHECK_ONLY')."
+                exit 1
+             fi
+          fi
+          echo "Production shows no real deploy from $GLASSOPS_START to $END. GlassOps deploy ${GID:-none} is check only."
