@@ -22,6 +22,12 @@ policy:
     separation_of_duties:
       tiers: [prod]
       approval: { environment: glassops-deploy }
+# After the deploy, verify checks production holds what the plan says. Production deploys are
+# serialised by the deploy-production queue, so any other real deploy inside the window is
+# something to stop and read. The Mermaid drawings deploy runs in a later job, after verify.
+verify:
+  foreign_deploys: fail
+  flows: fail
 salesforce:
   # The level production gets today. A validation that ran tests can be quick deployed later.
   test_level: { prod: RunLocalTests }

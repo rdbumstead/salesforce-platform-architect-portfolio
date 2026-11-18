@@ -79,6 +79,9 @@ jobs:
         env:
           BEFORE: ${{ github.event.before }}
         run: |
+          # Reads the deployed tag from the remote by name, rather than trusting the checkout to
+          # bring tags. GlassOps reads only the local ref.
+          git fetch --force --no-tags origin "refs/tags/glassops/deployed/*:refs/tags/glassops/deployed/*"
           if git rev-parse -q --verify "refs/tags/$GLASSOPS_TAG^{commit}" > /dev/null; then
              FROM=tag
              echo "Planning from $GLASSOPS_TAG at $(git rev-parse --short "refs/tags/$GLASSOPS_TAG^{commit}")"
@@ -111,8 +114,9 @@ jobs:
     needs: [plan]
     if: needs.plan.outputs.changes == 'true'
     runs-on: ubuntu-latest
-    # The validate runs every local test, and a deploy that cannot quick deploy runs them again.
-    timeout-minutes: 90
+    # The validate waits up to 60 minutes, and a deploy that cannot quick deploy falls back to a
+    # full deploy that runs every local test again and also waits up to 60.
+    timeout-minutes: 140
     environment: glassops-deploy
     # contents pushes the deployed tag. actions reads this run's environment approval.
     # pull-requests and issues find the pull request the commit was merged from and its labels.
@@ -165,6 +169,8 @@ jobs:
              exit 1
           fi
 
+          # The same tag the plan job read, so this plan covers the same range.
+          git fetch --force --no-tags origin "refs/tags/glassops/deployed/*:refs/tags/glassops/deployed/*"
           G=(docker run --rm
              -e SFDX_JWT_KEY -e SFDX_CLIENT_ID -e SFDX_USERNAME -e SF_PORTFOLIO_ORG_ID -e GLASSOPS_PERMIT_KEY
              -e GITHUB_ACTIONS -e GITHUB_REPOSITORY -e GITHUB_RUN_ID -e GITHUB_ACTOR -e GITHUB_TRIGGERING_ACTOR
