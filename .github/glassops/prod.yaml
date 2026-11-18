@@ -1,0 +1,28 @@
+# GlassOps config for the shadow gate on merges to main (glassops-shadow-gate.yml). The PERMIT
+# binds this file by hash, so plan, validate, gate and permit verify all read this one copy.
+# Values are $VAR names only. GlassOps reads them from the environment of each step.
+version: 1
+provider: salesforce
+targets:
+  prod:
+    id: $SF_PORTFOLIO_ORG_ID
+    tier: prod
+    branch: main
+    auth:
+      method: jwt
+      username: $SFDX_USERNAME
+      client_id: $SFDX_CLIENT_ID
+      key: $SFDX_JWT_KEY
+policy:
+  permit_ttl: 2h
+  rules:
+    coverage_min: 75
+    # A solo repo: the author and the person merging are the same, so the approval on the
+    # glassops-deploy environment is what satisfies the rule.
+    separation_of_duties:
+      tiers: [prod]
+      approval: { environment: glassops-deploy }
+salesforce:
+  # The level production gets today. A validation that ran tests can be quick deployed later.
+  test_level: { prod: RunLocalTests }
+  deploy: { quick: prefer }
