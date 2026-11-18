@@ -17,6 +17,7 @@ import { onRequest as features } from '../functions/api/features.js';
 import { onRequest as cacheReset } from '../functions/api/cache-reset.js';
 import { labPathsText, PATHS_FILE } from '../build/lab-paths.mjs';
 import { captureLab, captureSnapshot, copyRecorded, hasSecrets } from '../build/recorded.mjs';
+import { logFailure } from '../functions/_lib/log.js';
 import { labKey } from '../src/shims/api-client.js';
 
 const PROD = 'https://ryanbumstead.pages.dev';
@@ -255,9 +256,9 @@ test('the cover letter function returns the result with provider and attempts', 
   const letter = { content: 'Dear', provider: 'Agentforce', attempts: [{ provider: 'Agentforce', outcome: 'Served', ms: 5 }] };
   const net = fakeNetwork({ actions: { 'cover-letter': () => Response.json({ result: letter }) } });
   try {
-    const response = await coverLetter({ request: post(`${PROD}/api/cover-letter`, { companyName: 'C', jobTitle: 'T', jobDescription: 'D' }), env: ENV });
+    const response = await coverLetter({ request: post(`${PROD}/api/cover-letter`, { companyName: 'C', jobTitle: 'T', jobDescription: 'D', turnstileToken: 'tok' }), env: ENV });
     assert.deepEqual(await response.json(), { result: letter });
-    const bad = await coverLetter({ request: post(`${PROD}/api/cover-letter`, { companyName: 5 }), env: ENV });
+    const bad = await coverLetter({ request: post(`${PROD}/api/cover-letter`, { companyName: 5, turnstileToken: 'tok' }), env: ENV });
     assert.equal(bad.status, 400);
   } finally {
     net.restore();
@@ -302,7 +303,7 @@ test('lab token forwards email and purpose', async () => {
   resetTokenCache();
   const net = fakeNetwork({ actions: { 'lab-token': (init) => Response.json({ result: JSON.parse(init.body) }) } });
   try {
-    const response = await labToken({ request: post(`${PROD}/api/lab/token`, { email: 'e@example.org', purpose: 'p', extra: 1 }), env: ENV });
+    const response = await labToken({ request: post(`${PROD}/api/lab/token`, { email: 'e@example.org', purpose: 'p', extra: 1, turnstileToken: 'tok' }), env: ENV });
     assert.deepEqual((await response.json()).result, { email: 'e@example.org', purpose: 'p' });
   } finally {
     net.restore();
@@ -441,4 +442,107 @@ test('cache reset clears the site cache on POST only and is never cached', async
   assert.equal(read.status, 405);
   assert.equal(read.headers.get('Allow'), 'POST');
   assert.equal(read.headers.get('Clear-Site-Data'), null, 'a GET from a link or a crawler clears nothing');
+});
+
+const LETTER_BODY = { companyName: 'C', jobTitle: 'T', jobDescription: 'D' };
+const TOKEN_BODY = { email: 'e@example.org', purpose: 'p' };
+
+test('a missing or bad token stops the cover letter and the lab token before Salesforce and before the edge letter', async () => {
+  const cases = [
+    ['cover letter', coverLetter, `${PROD}/api/cover-letter`, LETTER_BODY],
+    ['lab token', labToken, `${PROD}/api/lab/token`, TOKEN_BODY]
+  ];
+  for (const [name, handler, url, body] of cases) {
+    resetTokenCache();
+    const net = fakeNetwork({ turnstile: false, actions: { 'cover-letter': () => Response.json({ result: 'x' }), 'lab-token': () => Response.json({ result: 'x' }) } });
+    try {
+      const wrong = await handler({ request: post(url, { ...body, turnstileToken: 'bad' }), env: ENV });
+      assert.equal(wrong.status, 400, `${name}: a token that fails is refused`);
+      const missing = await handler({ request: post(url, body), env: ENV });
+      assert.equal(missing.status, 400, `${name}: no token is refused`);
+      assert.equal((await missing.json()).error, 'BAD_REQUEST');
+      const unset = await handler({ request: post(url, { ...body, turnstileToken: 'tok' }), env: { ...ENV, TURNSTILE_SECRET: undefined } });
+      assert.equal(unset.status, 503, `${name}: with no secret it is refused, never let through`);
+      const reached = net.seen.filter((entry) => entry.url.includes('/site/actions/') || entry.url.endsWith('/oauth2/token'));
+      assert.equal(reached.length, 0, `${name}: nothing reached Salesforce`);
+    } finally {
+      net.restore();
+    }
+  }
+});
+
+test('a request with no token never reaches onStopped, so the edge letter is not written for it', async () => {
+  const { createHandler } = await import('../functions/api/cover-letter.js');
+  let asked = 0;
+  const handler = createHandler({
+    load: async () => {
+      asked += 1;
+      return null;
+    }
+  });
+  const net = fakeNetwork({ actions: { 'cover-letter': () => Response.json({ error: 'x' }, { status: 403 }) } });
+  try {
+    const response = await handler({ request: post(`${PROD}/api/cover-letter`, LETTER_BODY), env: ENV });
+    assert.equal(response.status, 400);
+    assert.equal(asked, 0, 'the snapshot was never loaded');
+  } finally {
+    net.restore();
+  }
+});
+
+/** Collects what the log helper writes through console.error. */
+async function captureLog(run) {
+  const original = console.error;
+  const lines = [];
+  console.error = (...args) => lines.push(args.join(' '));
+  try {
+    await run(lines);
+  } finally {
+    console.error = original;
+  }
+}
+
+test('the failure log writes one JSON line with exactly route, error, status and request id', async () => {
+  await captureLog(async (lines) => {
+    const line = logFailure({ route: 'cover-letter', error: 'UPSTREAM_503', status: 503, requestId: '123e4567-e89b-12d3-a456-426614174000', email: 'a@example.org', ip: '203.0.113.9', token: 'tok' });
+    assert.equal(lines.length, 1);
+    assert.deepEqual(Object.keys(JSON.parse(lines[0])), ['route', 'error', 'status', 'requestId']);
+    assert.deepEqual(JSON.parse(lines[0]), line);
+    logFailure({ route: 'lab-token', error: 'TURNSTILE_FAILED', status: 400 });
+    assert.deepEqual(Object.keys(JSON.parse(lines[1])), ['route', 'error', 'status']);
+    logFailure({ route: 'contact', error: 'UPSTREAM_503', status: 503, requestId: 'a@example.org' });
+    assert.ok(!('requestId' in JSON.parse(lines[2])), 'a request id that is not an id is dropped');
+    assert.equal(logFailure({ route: 'x y', error: 'bad code' }), null, 'a free text route or code writes nothing');
+    assert.equal(lines.length, 3);
+  });
+});
+
+test('failures at the edge are logged and a body with an email and a token never appears in the log', async () => {
+  const body = { ...LETTER_BODY, jobDescription: 'mail me at private.person@example.org', turnstileToken: 'secret-token-value' };
+  const cases = [
+    ['a refused token', { turnstile: false, actions: {} }, 'TURNSTILE_FAILED'],
+    ['a 403 from the org', { actions: { 'cover-letter': () => Response.json({ message: 'private.person@example.org' }, { status: 403 }) } }, 'UPSTREAM_403'],
+    ['an answer with no result', { actions: { 'cover-letter': () => Response.json({}) } }, 'UPSTREAM_NO_RESULT'],
+    ['a network error', { networkError: true }, 'TURNSTILE_UNAVAILABLE']
+  ];
+  for (const [name, options, expected] of cases) {
+    resetTokenCache();
+    const net = fakeNetwork(options);
+    try {
+      await captureLog(async (lines) => {
+        await coverLetter({ request: post(`${PROD}/api/cover-letter`, body, { 'X-Request-Id': '123e4567-e89b-12d3-a456-426614174000' }), env: ENV });
+        assert.ok(lines.length >= 1, `${name} is logged`);
+        const parsed = lines.map((line) => JSON.parse(line));
+        assert.ok(parsed.some((line) => line.error === expected), `${name} logs ${expected}, got ${lines.join(' | ')}`);
+        parsed.forEach((line) => {
+          assert.ok(Object.keys(line).every((key) => ['route', 'error', 'status', 'requestId'].includes(key)), `${name}: only the four keys`);
+          assert.equal(line.route, 'cover-letter');
+        });
+        const text = lines.join('\n');
+        for (const secret of ['private.person', 'secret-token-value', '203.0.113.9', 'client-secret-value']) assert.ok(!text.includes(secret), `${name}: ${secret} is not in the log`);
+      });
+    } finally {
+      net.restore();
+    }
+  }
 });
