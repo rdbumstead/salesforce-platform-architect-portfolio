@@ -22,6 +22,7 @@
   - [3.11 Retiring the Old /v1/ URLs](#311-retiring-the-old-v1-urls)
   - [3.12 The Static Site: Workflow, Secrets and Kill Switches](#312-the-static-site-workflow-secrets-and-kill-switches)
   - [3.13 Operating the GlassOps Production Deploy](#313-operating-the-glassops-production-deploy)
+  - [3.14 Moving From Developer to Engineer and Retiring the Developer Value](#314-moving-from-developer-to-engineer-and-retiring-the-developer-value)
 - [4. Disaster Recovery](#4-disaster-recovery)
   - [4.1 Scenario: Deployment Failure](#41-scenario-deployment-failure)
   - [4.2 Scenario: Security Misconfiguration (Guest User)](#42-scenario-security-misconfiguration-guest-user)
@@ -312,6 +313,29 @@ GlassOps makes the production deploy in delta mode. These are the notes for runn
 - **The API reserve.** Before the validate, the `glassops` job stops the run when the daily API reserve for the public site is reached, and nothing is sent to production. Run Deploy to Production by hand in delta mode later, once the reserve has room. Every GlassOps deploy runs every local test, so it uses API calls.
 - **The tag.** `git ls-remote --tags origin glassops/deployed/prod` shows the commit of the last deploy GlassOps made. The runner pushes it after a deploy, including one that verify fails. I never move it by hand.
 - **Break glass.** The hand run `full` mode deploys every package, and the hand run `destructive` mode deletes the components named under `manifest/destructive/` (§3.2). Both use raw `sf` commands and skip the plan, gate and PERMIT. Use `full` when production has drifted from source or a delta cannot carry the change, and `destructive` for a component deleted in source whose deploy has already run. Use delta for every normal change. Neither mode moves the tag.
+
+### 3.14 Moving From Developer to Engineer and Retiring the Developer Value
+
+The public focuses are Engineer, Architect and Consultant ([ADR-009 amendment](../adr/009-granular-resume-data-model.md#amendment-2026-11-18-the-public-focuses-are-engineer-architect-and-consultant)). `Persona_Tag__c` on `Experience_Highlight__c` and on `Skill__c` is a restricted multi select picklist, so a record can only be saved with a value that is active, and it keeps working only while it carries values the code still asks for. This runbook is the order of the steps after the focus change merges. Do not reorder them.
+
+**Why the order matters.** After the change, the resume and the API no longer ask for Developer. A record tagged only Developer then belongs to no focus. A restricted picklist refuses an inactive value when a record is saved with it, so Developer cannot be deactivated while any record or test still writes it. The code moved the seed data and the tests that wrote Developer to Engineer first, so the data is the last thing that holds it.
+
+1. **Replace Developer with Engineer on every highlight and skill, right before the code merges.**
+   - Before it runs, save a before file of record Ids, public keys and tag values, with no item text, kept outside the repository. Confirm the org Id of the target first.
+   - Write each record once. The token Developer becomes Engineer, and every other tag stays. A record that already carries Engineer ends with one Engineer. Run it in a scratch org first and compare the tags before and after.
+   - Do not run it earlier than the merge. Until the code ships, the live site still asks for Developer, so the Developer resume would come back empty. The retag of Admin only records and the Consultant tags add values and are safe at any time.
+   - Read back: a count of highlights and of skills whose `Persona_Tag__c` includes Developer is 0, and a count of those whose tags include Engineer equals the before file's Developer count, plus any that already carried Engineer. Spot check three records against the before file.
+   - In the same write, copy `Developer_Sort_Order__c` into `Engineer_Sort_Order__c` on every highlight that carries Developer, so each one keeps its place under the Engineer focus even if its lock is ever unticked. Read back: for every highlight in the before file, `Engineer_Sort_Order__c` equals the before file's `Developer_Sort_Order__c`, and a count of highlights where the two differ is 0.
+2. **Check the live site.** After the deploy and the site build finish, open `/resume` and `/skills` for all three focuses and confirm each shows content, Engineer included. Call a v1 route with `persona=Developer` and confirm it still answers, now with the Engineer highlights.
+3. **Deactivate Developer on both fields.** Only when step 1's read back is clean and step 2 has passed.
+   - Deactivate the value on `Experience_Highlight__c.Persona_Tag__c` and on `Skill__c.Persona_Tag__c`. Either use Setup, or set the Developer value to inactive in both field files and deploy them. A deactivated value stays on any record that holds it and is no longer offered or accepted on a save.
+   - Read back with a describe of each field: Developer is listed as inactive and Engineer, Architect, Consultant and Admin are active. Then run `ApiLabOptionsControllerTest`, `ResumeControllerTest` and `SAPIExperienceHighlightTest` in a scratch org with the same change. `ApiLabOptionsControllerTest` asserts that Developer is still active, so that assertion changes in the same pull request as the deactivation, and any test that writes Developer fails at that point.
+4. **Remove the Developer leftovers in code, in a small follow up change.** They do no harm until then.
+   - In `Sync_Experience_Highlight_Sort_Orders`, remove the Developer branch (`Check_Developer_Persona` and `Sync_Developer_Sort`, with the connectors that point at them) and the `Developer_Sort_Order__c` term in the first filled sort formula.
+   - In `ResumeController` and in the query definition `ResumeController_Highlights`, remove `Developer_Sort_Order__c` from the field list. Change both together, because the record may only ask for fields the class allows.
+   - The API keeps reading `developer` as Engineer, so a caller of v1 keeps working. Remove that alias only as a deliberate change to the API contract.
+   - `Developer_Sort_Order__c` itself stays until I decide to delete the field. Deleting it also means removing it from the layout and from the two permission sets that grant it.
+   - Read back: a deployed flow has no Developer branch (a Tooling query on the flow's metadata), the resume and the Apex tests above still pass, and the live resume shows the three focuses.
 
 ## 4. Disaster Recovery
 

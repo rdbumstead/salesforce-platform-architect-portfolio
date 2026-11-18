@@ -307,7 +307,7 @@ erDiagram
 - **`Project__c`:** The central hub. Stores Challenge, Solution, and Business Value narratives.
 - **`Skill__c`:** The competency library. Supports polymorphic rendering (SLDS standard icons vs. Custom Brand SVGs).
 - **`Experience__c`:** Employment history records (Header Info Only).
-- **`Experience_Highlight__c`:** Child object of `Experience__c`. Contains granular bullet points tagged by persona (Admin, Dev, Architect) to enable dynamic resume generation.
+- **`Experience_Highlight__c`:** Child object of `Experience__c`. Contains granular bullet points tagged by persona (the public focuses Engineer, Architect and Consultant, and the internal Admin, plus the old Developer value until it is deactivated) to enable dynamic resume generation. A visitor picks one of three focuses, labelled "Salesforce Engineer", "Platform Architect" and "Solution Consultant", and each focus has its own summary read from `Resume_Variant__c`, falling back to the career objective on the contact ([ADR-009 amendment](../adr/009-granular-resume-data-model.md#amendment-2026-11-18-the-public-focuses-are-engineer-architect-and-consultant)).
 
 ### 4.3 Junction Objects (The Glue)
 
@@ -555,7 +555,7 @@ The public front end is a static build on Cloudflare Pages since 2026-11-09, des
 - **`c-view-source`:** The View source button and dialog on the showcase components. It reads cached GitHub source through `SourceController.getSourceFiles` and never calls GitHub ([Technical Guide §2.14](./04-Technical-Guide.md#214-view-source-c-view-source)). Each tab shows the file's type and a line above the code names the component, and a "How it's built" link opens the matching Technical Guide section.
 - **`c-analytics-events`:** The "Analytics events (N)" button in the footer's caption row and its dialog. It lists the last 100 events this visit has sent, live, with how each one left the page, from `c/analyticsService` ([Technical Guide §2.8](./04-Technical-Guide.md#28-analytics-instrumentation-ga4)).
 - **`c-outage-compare`:** The before and after that the roadmap and Latest Updates show above their content while the "Simulate an outage" switch is on and the feed is `SIMULATED`. A labelled illustration of a panel with no saved copy and no circuit breaker sits beside a three step trace of what the panel really does ([ADR-022 amendment of 2026-10-29](../adr/022-resilience-engineering-resilience-simulation-toggle.md#amendment-2026-10-29-the-before-and-after-for-the-outage-switch)). The failure threshold and the open minutes in that trace come from the `Circuit_Failure_Threshold` and `Circuit_Open_Minutes` settings through the feed, so a change to either setting changes the text. When one is missing the step reads without that number ([ADR-022 amendment of 2026-10-30](../adr/022-resilience-engineering-resilience-simulation-toggle.md#amendment-2026-10-30-the-outage-text-reads-the-settings)).
-- **`c-resume-builder`:** The resume preview and its one click PDF through jsPDF, both read from one layout spec so the download looks like the preview ([ADR-023](../adr/023-client-side-pdf-generation-jspdf-for-mvp.md)). The PDF code is a shared module, `c/documentPdf`, that the cover letter page also uses for its own Download PDF ([Technical Guide §2.22](./04-Technical-Guide.md#222-the-cover-letter-page-and-pdf)).
+- **`c-resume-builder`:** The resume preview and its one click PDF through jsPDF, both read from one layout spec so the download looks like the preview ([ADR-023](../adr/023-client-side-pdf-generation-jspdf-for-mvp.md)). The page offers three focuses (Salesforce Engineer, Platform Architect and Solution Consultant) and shows each focus's own summary. The PDF carries a document title and the language `en`, and writes every role as the title with its dates on one line and the employer on the next ([Technical Guide §2.2](./04-Technical-Guide.md#22-c-resume-builder-resume-generation)). The PDF code is a shared module, `c/documentPdf`, that the cover letter page also uses for its own Download PDF ([Technical Guide §2.22](./04-Technical-Guide.md#222-the-cover-letter-page-and-pdf)).
 - **`c-roadmap-viewer`:** Displays the roadmap from the Jira cache (`DeliveryController.getRoadmap`), in To Do, In Progress and Done columns by Jira status category, each capped at 8 cards with its own "Show all N" button. It makes no callout.
 - **`c-footer`:** Contains the Glass Box readings under one caption with View source beside it, in labelled groups: CI (the GitHub Actions badges for the production deploy, the static site build, the Live Smoke Test and the Postman Sync), Platform, Integrations, Daily quotas, Storage with a row that opens a panel by area (section 9), and Request limits, then a Docs link to `/docs` and a Contact link to the `/contact` page.
 - **`c-smart-checklist`:** Executable governance on the Delivery page (section 5.5).
@@ -906,12 +906,12 @@ The role title is the record's `Name`, and `Employer__c` is a lookup to Account,
 The `/resume/generate?persona=architect` endpoint applies server-side filtering logic:
 
 1. Reads up to 10 roles, current first, each with its highlights in `Sort_Order__c` order (`PAPIResume`)
-2. Keeps a highlight when its multi-select `Persona_Tag__c` contains the persona. The values are Admin, Developer and Architect. There is no General value, and a blank persona keeps every highlight
+2. Keeps a highlight when its multi-select `Persona_Tag__c` contains the persona. The values are Engineer, Architect and Consultant, plus Admin, and `developer` is read as Engineer, on v1 and v2. There is no General value, and a blank persona keeps every highlight
 3. Prints at most 5 highlights per role
 4. Prints the skills linked to the printed roles, each once, by category. With a persona, a skill prints when its `Persona_Tag__c` includes the persona or it has no tag, so an untagged skill prints under every persona. The site's resume uses the same rule ([ADR-009 amendment](../adr/009-granular-resume-data-model.md#amendment-2026-10-23))
 5. Formats as ATS-compliant plain text with proper spacing and bullet points
 
-The per-persona sort fields (`Admin_Sort_Order__c`, `Developer_Sort_Order__c`, `Architect_Sort_Order__c`) exist on `Experience_Highlight__c` and are read by the site's resume (`ResumeController`), not by this endpoint.
+The per-persona sort fields (`Admin_Sort_Order__c`, `Developer_Sort_Order__c`, `Engineer_Sort_Order__c`, `Architect_Sort_Order__c` and `Consultant_Sort_Order__c`) exist on `Experience_Highlight__c` and are read by the site's resume (`ResumeController`), not by this endpoint.
 
 **Vibe Mode Social Proof:**
 
@@ -1075,11 +1075,13 @@ Granular bullet points for resume generation.
 | **Experience**       | `Experience__c`                | Master-Detail         | -      | Yes      | Parent record.                                                                                |
 | **Description**      | `Description__c`               | Long Text             | 5000   | No       | The bullet point text.                                                                        |
 | **Timeline Text**    | `Timeline_Text__c`             | Text                  | 70     | No       | Short version of the bullet for the home timeline. Blank means the timeline uses Description. |
-| **Persona Tag**      | `Persona_Tag__c`               | Multi-select Picklist | -      | Yes      | Target audience filter (Admin, Developer, Architect).                                         |
+| **Persona Tag**      | `Persona_Tag__c`               | Multi-select Picklist | -      | Yes      | Target audience filter (Engineer, Architect, Consultant, and Admin).                          |
 | **Sort (Universal)** | `Sort_Order__c`                | Number                | 3,0    | Yes      | Default order within a role.                                                                  |
 | **Admin Sort**       | `Admin_Sort_Order__c`          | Number                | 3,0    | No       | Sort order for Admin resume.                                                                  |
-| **Dev Sort**         | `Developer_Sort_Order__c`      | Number                | 3,0    | No       | Sort order for Dev resume.                                                                    |
+| **Dev Sort**         | `Developer_Sort_Order__c`      | Number                | 3,0    | No       | Sort order for the old Developer value, kept until it is deactivated.                         |
+| **Engineer Sort**    | `Engineer_Sort_Order__c`       | Number                | 3,0    | No       | Sort order for Engineer resume.                                                               |
 | **Architect Sort**   | `Architect_Sort_Order__c`      | Number                | 3,0    | No       | Sort order for Architect resume.                                                              |
+| **Consultant Sort**  | `Consultant_Sort_Order__c`     | Number                | 3,0    | No       | Sort order for Consultant resume.                                                             |
 | **Lock Sort**        | `Lock_Sort_Across_Personas__c` | Checkbox              | -      | No       | Field description: changing one persona sort syncs the others.                                |
 
 #### D.3 Object: `Project__c`
@@ -1185,7 +1187,7 @@ Media gallery assets, read by `c-project-asset-gallery`.
 
 | Field                   | Object                    | Values                                                                               |
 | :---------------------- | :------------------------ | :----------------------------------------------------------------------------------- |
-| `Persona_Tag__c`        | `Experience_Highlight__c` | Admin, Developer, Architect (multi-select, no General value)                         |
+| `Persona_Tag__c`        | `Experience_Highlight__c` | Engineer, Architect, Consultant and Admin (multi-select, no General value)           |
 | `Relationship_Type__c`  | `Testimonial__c`          | Manager, Peer, Client, Recruiter, Fan                                                |
 | `Vibe_Mode__c`          | `Testimonial__c`          | Professional (Clean/Corporate), Casual (Fun/Raw)                                     |
 | `Status__c`             | `Project__c`              | Live - In Production, Live - Demo / Reference, Active Development, On Hold, Archived |
