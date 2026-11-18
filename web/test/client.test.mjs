@@ -197,3 +197,35 @@ test('a preview build sends noindex on every path and a production build does no
   assert.equal(isPreviewBuild(new Set(), {}), false);
   assert.equal(isPreviewBuild(new Set(), { SITE_PREVIEW: 'false' }), false);
 });
+
+test('the cover letter and the evaluator token both send a fresh Turnstile token', async () => {
+  const site = fakeSite({
+    routes: {
+      '/api/cover-letter': () => Response.json({ result: { content: 'x' } }),
+      '/api/lab/token': () => Response.json({ result: { token: 'y' } })
+    }
+  });
+  let issued = 0;
+  const handler = createRequestHandler({ fetch: site.fetch, turnstileToken: async () => `tok-${(issued += 1)}` });
+  await handler('ApiLabController.generateCoverLetter', { companyName: 'C' });
+  await handler('ApiLabController.requestEvaluatorToken', { email: 'a@example.org' });
+  const letter = JSON.parse(site.seen.find((entry) => entry.url === '/api/cover-letter').init.body);
+  const lab = JSON.parse(site.seen.find((entry) => entry.url === '/api/lab/token').init.body);
+  assert.equal(letter.turnstileToken, 'tok-1');
+  assert.equal(lab.turnstileToken, 'tok-2');
+});
+
+test('with no Turnstile token neither the cover letter nor the token request is sent', async () => {
+  const site = fakeSite();
+  const handler = createRequestHandler({ fetch: site.fetch, turnstileToken: async () => null });
+  for (const call of ['ApiLabController.generateCoverLetter', 'ApiLabController.requestEvaluatorToken'])
+    await assert.rejects(handler(call, {}), (error) => /could not be run/.test(error.body.message));
+  assert.ok(!site.seen.some((entry) => entry.url === '/api/cover-letter' || entry.url === '/api/lab/token'));
+});
+
+test('a failed check on the cover letter reads as the function message, with no recorded letter shown', async () => {
+  const refused = () => Response.json({ error: 'BAD_REQUEST', message: 'The check that you are a person did not pass. Try again.' }, { status: 400 });
+  const site = fakeSite({ routes: { '/api/cover-letter': refused }, files: { '/recorded/cover-letter.json': { content: 'SAMPLE' } } });
+  const handler = createRequestHandler({ fetch: site.fetch, turnstileToken: async () => 'bad' });
+  await assert.rejects(handler('ApiLabController.generateCoverLetter', {}), (error) => error.status === 400 && /did not pass/.test(error.body.message));
+});
