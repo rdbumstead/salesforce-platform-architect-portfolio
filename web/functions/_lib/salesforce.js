@@ -16,6 +16,7 @@
  */
 import { MESSAGES } from "./http.js";
 import { isLimitRefusal, parseLimitInfo } from "./budget.js";
+import { logFailure } from "./log.js";
 
 export const TOKEN_TTL_MS = 10 * 60 * 1000;
 export const ACTION_PATH = "/services/apexrest/site/actions/";
@@ -131,13 +132,22 @@ function mapFailure(status, body) {
  * @returns {Promise<{ok: true, result: any, requestId: string} | {ok: false, status: number, error: string, message: string}>}
  */
 export async function callAction(env, call) {
-  if (!configured(env))
+  if (!configured(env)) {
+    logFailure({
+      route: call.action,
+      error: "NOT_CONFIGURED",
+      status: 503,
+      requestId: call.requestId
+    });
     return {
       ...unavailable(0),
       message: "This feature is not set up on this deploy."
     };
+  }
   const method = call.method || "GET";
   const requestId = call.requestId || crypto.randomUUID();
+  const note = (code, status) =>
+    logFailure({ route: call.action, error: code, status, requestId });
   const send = async (session) => {
     const headers = {
       Authorization: `Bearer ${session.token}`,
@@ -178,7 +188,8 @@ export async function callAction(env, call) {
     ) {
       return { ok: true, result: body.result, requestId, ...extra };
     }
-    if (response.ok)
+    if (response.ok) {
+      note("UPSTREAM_NO_RESULT", 500);
       return {
         ok: false,
         status: 500,
@@ -186,7 +197,9 @@ export async function callAction(env, call) {
         message: MESSAGES.CALL_FAILED,
         ...extra
       };
-    if (isLimitRefusal(response.status, body))
+    }
+    if (isLimitRefusal(response.status, body)) {
+      note("UPSTREAM_LIMIT", 503);
       return {
         ok: false,
         status: 503,
@@ -195,8 +208,12 @@ export async function callAction(env, call) {
         limited: true,
         ...extra
       };
-    return { ...mapFailure(response.status, body), ...extra };
+    }
+    const mapped = mapFailure(response.status, body);
+    note(`UPSTREAM_${response.status}`, mapped.status);
+    return { ...mapped, ...extra };
   } catch (error) {
+    note("UPSTREAM_UNREACHABLE", 503);
     return unavailable(0);
   }
 }
