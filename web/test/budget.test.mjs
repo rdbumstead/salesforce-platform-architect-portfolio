@@ -336,7 +336,7 @@ test('a broken KV read and write each write one failure line and nothing more', 
     { route: 'budget', error: 'KV_READ_FAILED', status: 0 },
     { route: 'budget', error: 'KV_WRITE_FAILED', status: 0 }
   ]);
-  assert.ok(lines.every((text) => !text.includes('example.org')), 'the error text never reaches the line');
+  assert.ok(lines.every((text) => !text.includes('kv down')), 'the error text never reaches the line');
 });
 
 /** The browser side: a function that says fallback recorded makes the client show the recorded copy. */
