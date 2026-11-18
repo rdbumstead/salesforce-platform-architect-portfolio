@@ -148,3 +148,14 @@ test("checks run without the variables a git hook sets", () => {
   assert.strictEqual(env.GIT_INDEX_FILE, undefined);
   assert.strictEqual(env.GIT_WORK_TREE, undefined);
 });
+
+test("the long file warning step runs its test and then the check", () => {
+  const step = STEPS.find((s) => s.name === "Long file warning");
+  assert.ok(step, "ci-local.js has no Long file warning step");
+  const commands = step.commands.map((c) => c.ci || c.local);
+  assert.deepStrictEqual(commands, [
+    "node --test scripts/check-file-length.test.js",
+    "node scripts/check-file-length.js"
+  ]);
+  assert.ok(selectSteps(["web/src/shims/api-client.js"]).includes(step));
+});
