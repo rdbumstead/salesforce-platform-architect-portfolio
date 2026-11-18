@@ -247,14 +247,14 @@ components:
       in: query
       description: |
         Filters records where the target field (Multi-Select Picklist) includes the specified persona(s).
-        Takes a single value or a comma-separated list of Admin, Developer and Architect. An unknown value returns 400.
+        Takes a single value or a comma-separated list of Engineer, Architect and Consultant. An unknown value returns 400.
 
         Examples:
-        - Single: `?persona=Admin`
-        - Multiple (comma): `?persona=Admin,Developer`
+        - Single: `?persona=Engineer`
+        - Multiple (comma): `?persona=Engineer,Consultant`
       schema:
         type: string
-      example: "Admin"
+      example: "Engineer"
 
     statusParam:
       name: status
@@ -382,7 +382,7 @@ components:
               value:
                 httpStatus: 400
                 errorCode: "BAD_REQUEST"
-                message: "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas."
+                message: "persona must be Engineer, Architect or Consultant. To ask for more than one, separate them with commas."
                 correlationId: "123e4567-e89b-12d3-a456-426614174000"
                 retryable: false
                 help: "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
@@ -646,7 +646,7 @@ components:
     Persona:
       type: string
       description: "Target audience for content filtering."
-      enum: [Admin, Developer, Architect]
+      enum: [Engineer, Architect, Consultant]
       example: "Architect"
 
     ProjectStatus:
@@ -953,8 +953,8 @@ components:
           description: "Sort Order"
         personaTag:
           type: string
-          example: "Developer;Architect"
-          description: "Semicolon-separated Persona values from the Persona_Tag__c multi-select picklist (Admin, Developer, Architect)."
+          example: "Engineer;Architect"
+          description: "Semicolon-separated Persona values from the Persona_Tag__c multi-select picklist (Engineer, Architect, Consultant)."
       additionalProperties: true
 
     ProjectAsset:
