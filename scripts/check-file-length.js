@@ -70,7 +70,7 @@ function globToRegExp(glob) {
         out += "[^/]*";
       }
     } else {
-      out += c.replace(/[.+^${}()|[\]\?]/g, "\$&");
+      out += c.replace(/[.+^${}()|[\]\\?]/g, "\\$&");
     }
   }
   return new RegExp("^" + out + "$");

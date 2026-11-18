@@ -67,6 +67,13 @@ test("data and doc file types are skipped, source types are not", () => {
   assert.strictEqual(skipReason("classes/Foo.cls"), null);
 });
 
+test("a dot in an exclusion glob matches only a dot", () => {
+  const exclusions = [{ glob: "**/*.min.js", reason: "minified" }];
+  assert.ok(skipReason("web/lib/app.min.js", exclusions));
+  assert.strictEqual(skipReason("web/lib/appxminxjs.js", exclusions), null);
+  assert.strictEqual(skipReason("web/lib/app-min.js", exclusions), null);
+});
+
 test("every exclusion gives a reason", () => {
   EXCLUSIONS.forEach((e) => {
     assert.ok(e.glob && e.reason.length > 10);
