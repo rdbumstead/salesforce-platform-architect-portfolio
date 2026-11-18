@@ -13,7 +13,7 @@ import { LWC_DIR } from './site-plugin.mjs';
 const APEX_PREFIX = '\0site:apex:';
 const RESOURCE_PREFIX = '\0site:resource:';
 
-export const PERSONAS = ['Architect', 'Developer', 'Admin'];
+export const PERSONAS = ['Engineer', 'Architect', 'Consultant'];
 export const SCHEMA_SCOPES = ['portfolio', 'employerHub'];
 
 /**

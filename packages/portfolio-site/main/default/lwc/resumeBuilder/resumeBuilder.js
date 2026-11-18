@@ -23,7 +23,8 @@ import {
   buildLines,
   toAtsText,
   writePdf,
-  pdfFileName
+  pdfFileName,
+  pdfTitle
 } from "./resumeFormat";
 import { RESUME_LAYOUT, previewStyle } from "./resumeLayout";
 import { watchMedia } from "c/mediaWatch";
@@ -33,9 +34,9 @@ const ACTIONS_IN_BODY_QUERY = "(max-width: 1023px)";
 const DEFAULT_PERSONA = "Architect";
 
 const PERSONA_OPTIONS = [
+  { label: "Salesforce Engineer", value: "Engineer" },
   { label: "Platform Architect", value: "Architect" },
-  { label: "Salesforce Developer", value: "Developer" },
-  { label: "System Admin", value: "Admin" }
+  { label: "Solution Consultant", value: "Consultant" }
 ];
 
 const PAPER_STYLE = previewStyle(RESUME_LAYOUT);
@@ -188,6 +189,14 @@ export default class ResumeBuilder extends LightningElement {
     }));
   }
 
+  /** The visitor label of the chosen focus, for the PDF title. */
+  get selectedPersonaLabel() {
+    const option = this.personaOptions.find(
+      (item) => item.value === this.selectedPersona
+    );
+    return option ? option.label : "";
+  }
+
   handlePersonaChange(event) {
     const value = event.target.value;
     if (!value || value === this.selectedPersona) {
@@ -216,7 +225,10 @@ export default class ResumeBuilder extends LightningElement {
     this.exportError = "";
     try {
       const { doc, family } = await this.pdfLoader.createDocument();
-      writePdf(doc, this.model, { family });
+      writePdf(doc, this.model, {
+        family,
+        title: pdfTitle(this.model, this.selectedPersonaLabel)
+      });
       doc.save(pdfFileName(this.model, this.selectedPersona));
       this.exportMessage = "PDF downloaded.";
       trackEvent(EVENTS.RESUME_DOWNLOADED, {

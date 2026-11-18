@@ -91,9 +91,9 @@ const OPTIONS = {
     { label: "State College", value: "State College" }
   ],
   persona: [
-    { label: "Admin", value: "Admin" },
     { label: "Architect", value: "Architect" },
-    { label: "Developer", value: "Developer" }
+    { label: "Consultant", value: "Consultant" },
+    { label: "Engineer", value: "Engineer" }
   ],
   contactName: []
 };
@@ -365,7 +365,7 @@ describe("c-api-tester filter options", () => {
     expect(controlKind({ name: "projectId", type: "string" })).toBe(KIND_ID);
     expect(
       controlKind(
-        { name: "persona", type: "string", enum: ["Admin", "Developer"] },
+        { name: "persona", type: "string", enum: ["Consultant", "Engineer"] },
         OPTIONS
       )
     ).toBe(KIND_PILLS);

@@ -113,7 +113,7 @@ test('fixture items start verified and every other item starts unverified', () =
   const header = reads['ResumeController.getHeader'];
   fixtureText.add(header.title);
   fixtureText.add(header.careerObjective);
-  for (const persona of ['Architect', 'Developer', 'Admin']) {
+  for (const persona of ['Engineer', 'Architect', 'Consultant']) {
     const resume = reads[`ResumeController.getResume|{"persona":"${persona}"}`];
     for (const role of resume.roles) for (const highlight of role.highlights) fixtureText.add(highlight);
     for (const group of resume.skillGroups) for (const skill of group.skills) fixtureText.add(skill);
@@ -250,7 +250,7 @@ test('the committed snapshot is exactly the builder output from the fixture read
 
 test('the builder matches roles by employer and title, not by position', () => {
   const reads = clone(FIXTURE_READS_DATA);
-  for (const persona of ['Architect', 'Developer', 'Admin']) reads[`ResumeController.getResume|{"persona":"${persona}"}`].roles.reverse();
+  for (const persona of ['Engineer', 'Architect', 'Consultant']) reads[`ResumeController.getResume|{"persona":"${persona}"}`].roles.reverse();
   const built = buildSnapshot(reads, FIXTURE_OVERLAY_DATA, { generatedAt: 'x', categories: [...CATEGORY_IDS] });
   const committed = JSON.parse(fs.readFileSync(COMMITTED_SNAPSHOT, 'utf8'));
   for (const role of committed.roles) assert.deepEqual(built.roles.find((entry) => entry.id === role.id), role);
@@ -303,7 +303,7 @@ test('the current role rule is the one the builder enforces', () => {
   assert.equal(currentRole(twoAtOneEmployer), null);
   assert.ok(snapshotProblems(twoAtOneEmployer).some((problem) => /Exactly one current role/.test(problem)));
   const reads = clone(FIXTURE_READS_DATA);
-  for (const persona of ['Architect', 'Developer', 'Admin']) for (const role of reads[`ResumeController.getResume|{"persona":"${persona}"}`].roles) if (role.isCurrent && role.employer !== 'Northwind Digital') role.isCurrent = false;
+  for (const persona of ['Engineer', 'Architect', 'Consultant']) for (const role of reads[`ResumeController.getResume|{"persona":"${persona}"}`].roles) if (role.isCurrent && role.employer !== 'Northwind Digital') role.isCurrent = false;
   const overlay = clone(FIXTURE_OVERLAY_DATA);
   delete overlay.currentRoleId;
   assert.deepEqual(problemsOf(reads, overlay), [], 'one current role needs no currentRoleId');
