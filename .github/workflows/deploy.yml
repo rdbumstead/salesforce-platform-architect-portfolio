@@ -23,12 +23,8 @@ on:
         required: false
         default: ""
         type: string
-      destructive_timing:
-        description: "Destructive Changes Timing"
-        required: true
-        default: "post"
-        type: choice
-        options: [pre, post]
+      # There is no timing choice. A delta run deploys through GlassOps, which deletes after it
+      # deploys, and destructive mode always deletes after its empty deploy.
 
 # The GitHub token only reads the repository. Deploys use the Salesforce and smoke secrets.
 # The glassops job alone may write, to push the deployed tag.
@@ -264,6 +260,8 @@ jobs:
             .glassops/results/
             .glassops/plan.json
             .glassops/permit.json
+          # The folder name starts with a dot, which upload-artifact can treat as hidden.
+          include-hidden-files: true
           if-no-files-found: warn
 
   deploy:
