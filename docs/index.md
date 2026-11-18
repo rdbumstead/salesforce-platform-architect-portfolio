@@ -45,6 +45,7 @@ _Target Audience: Architects, Developers_
 
 - [ADR-003: Apex REST vs. External Service](adr/003-apex-rest-vs-external-service.md)
 - [ADR-006: JWT Bearer Flow for CI/CD](adr/006-jwt-bearer-flow-for-ci-cd.md)
+- [ADR-044: GlassOps Makes the Production Deploy](adr/044-glassops-makes-the-production-deploy.md)
 - [ADR-007: GitHub API Server-Side Caching](adr/007-github-api-server-side-caching.md)
 - [ADR-008: Jira Integration vs. Agile Accelerator](adr/008-jira-integration-vs-agile-accelerator.md)
 - [ADR-012: Guest User Security (Restriction Rules)](adr/012-guest-user-security-restriction-rules.md)
