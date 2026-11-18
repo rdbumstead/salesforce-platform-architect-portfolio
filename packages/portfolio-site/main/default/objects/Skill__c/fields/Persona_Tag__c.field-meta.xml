@@ -29,6 +29,16 @@
                 <default>false</default>
                 <label>Architect</label>
             </value>
+            <value>
+                <fullName>Engineer</fullName>
+                <default>false</default>
+                <label>Engineer</label>
+            </value>
+            <value>
+                <fullName>Consultant</fullName>
+                <default>false</default>
+                <label>Consultant</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
     <visibleLines>3</visibleLines>

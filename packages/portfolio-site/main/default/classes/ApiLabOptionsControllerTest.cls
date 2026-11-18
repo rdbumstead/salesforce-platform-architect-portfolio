@@ -335,11 +335,13 @@ private class ApiLabOptionsControllerTest {
 
     assertPicklist(
       Skill__c.Category__c.getDescribe(),
-      options.get(ApiLabOptionsController.CATEGORY)
+      options.get(ApiLabOptionsController.CATEGORY),
+      null
     );
     assertPicklist(
       Experience_Highlight__c.Persona_Tag__c.getDescribe(),
-      options.get(ApiLabOptionsController.PERSONA)
+      options.get(ApiLabOptionsController.PERSONA),
+      ApiLabOptionsController.ACCEPTED_PERSONAS
     );
     Assert.areEqual(
       new List<String>{ 'Admin', 'Architect', 'Developer' },
@@ -350,11 +352,15 @@ private class ApiLabOptionsControllerTest {
 
   private static void assertPicklist(
     Schema.DescribeFieldResult field,
-    List<ApiLabOptionsController.Option> options
+    List<ApiLabOptionsController.Option> options,
+    Set<String> accepted
   ) {
     Map<String, String> expected = new Map<String, String>();
     for (Schema.PicklistEntry entry : field.getPicklistValues()) {
-      if (entry.isActive()) {
+      if (
+        entry.isActive() &&
+        (accepted == null || accepted.contains(entry.getValue()))
+      ) {
         expected.put(entry.getLabel(), entry.getValue());
       }
     }
@@ -362,6 +368,70 @@ private class ApiLabOptionsControllerTest {
       expected,
       valueByLabel(options),
       'Every active value of ' + field.getName() + ' and nothing else'
+    );
+  }
+
+  /**
+   * The picklist now holds Engineer and Consultant, which no code accepts yet. The persona list
+   * must keep to the values the API accepts today, so the Lab never offers one that answers 400.
+   */
+  @isTest
+  static void personaListKeepsToAcceptedValues() {
+    Set<String> active = new Set<String>();
+    for (
+      Schema.PicklistEntry entry : Experience_Highlight__c.Persona_Tag__c.getDescribe()
+        .getPicklistValues()
+    ) {
+      if (entry.isActive()) {
+        active.add(entry.getValue());
+      }
+    }
+    Assert.isTrue(active.contains('Engineer'), 'Engineer is an active value');
+    Assert.isTrue(
+      active.contains('Consultant'),
+      'Consultant is an active value'
+    );
+
+    Test.startTest();
+    List<ApiLabOptionsController.Option> personas = ApiLabOptionsController.getOptions()
+      .get(ApiLabOptionsController.PERSONA);
+    Test.stopTest();
+
+    Set<String> offered = new Set<String>();
+    for (ApiLabOptionsController.Option option : personas) {
+      offered.add(option.value);
+    }
+    Assert.areEqual(
+      new Set<String>{ 'Admin', 'Architect', 'Developer' },
+      offered,
+      'Only the values the API accepts today'
+    );
+    Assert.isFalse(offered.contains('Engineer'), 'Engineer is not offered yet');
+    Assert.isFalse(
+      offered.contains('Consultant'),
+      'Consultant is not offered yet'
+    );
+  }
+
+  @isTest
+  static void picklistOptionsFiltersByAcceptedSet() {
+    Schema.DescribeFieldResult field = Experience_Highlight__c.Persona_Tag__c.getDescribe();
+
+    Test.startTest();
+    List<ApiLabOptionsController.Option> narrowed = ApiLabOptionsController.picklistOptions(
+      field,
+      new Set<String>{ 'Engineer' }
+    );
+    List<ApiLabOptionsController.Option> everything = ApiLabOptionsController.picklistOptions(
+      field
+    );
+    Test.stopTest();
+
+    Assert.areEqual(1, narrowed.size(), 'One accepted value gives one option');
+    Assert.areEqual('Engineer', narrowed[0].value, 'The accepted value');
+    Assert.isTrue(
+      everything.size() >= 5,
+      'No accepted set keeps every active value'
     );
   }
 

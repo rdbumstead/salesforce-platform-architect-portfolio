@@ -21,6 +21,18 @@ public with sharing class ApiLabOptionsController implements QueryDefinitions.Pr
   /** Each read's Query_Definition record is this prefix and the read's name. */
   private static final String QUERY_PREFIX = 'ApiLabOptionsController_';
 
+  /**
+   * The persona values the API accepts today. The Persona_Tag__c picklist also holds values the
+   * API does not accept yet, so the persona list offers only these. The resume focus change
+   * replaces this list when the code that accepts the new values ships.
+   */
+  @TestVisible
+  private static final Set<String> ACCEPTED_PERSONAS = new Set<String>{
+    'Admin',
+    'Architect',
+    'Developer'
+  };
+
   /** The most options any one parameter gets. */
   public static final Integer MAX_OPTIONS = 200;
 
@@ -242,7 +254,10 @@ public with sharing class ApiLabOptionsController implements QueryDefinitions.Pr
     options.put(EXPERIENCE_ID, recordOptions(experiences));
     options.put(
       PERSONA,
-      picklistOptions(Experience_Highlight__c.Persona_Tag__c.getDescribe())
+      picklistOptions(
+        Experience_Highlight__c.Persona_Tag__c.getDescribe(),
+        ACCEPTED_PERSONAS
+      )
     );
     options.put(PROJECT_NAME, projectNames.toOptions());
     options.put(PROJECT_ID, recordOptions(projects));
@@ -277,9 +292,24 @@ public with sharing class ApiLabOptionsController implements QueryDefinitions.Pr
   private static List<Option> picklistOptions(
     Schema.DescribeFieldResult field
   ) {
+    return picklistOptions(field, null);
+  }
+
+  /**
+   * The field's active picklist values, each label with its API value. A value that is not
+   * in accepted is left out. A null accepted keeps every active value.
+   */
+  @TestVisible
+  private static List<Option> picklistOptions(
+    Schema.DescribeFieldResult field,
+    Set<String> accepted
+  ) {
     List<Option> options = new List<Option>();
     for (Schema.PicklistEntry entry : field.getPicklistValues()) {
-      if (entry.isActive()) {
+      if (
+        entry.isActive() &&
+        (accepted == null || accepted.contains(entry.getValue()))
+      ) {
         options.add(new Option(entry.getLabel(), entry.getValue()));
       }
     }
