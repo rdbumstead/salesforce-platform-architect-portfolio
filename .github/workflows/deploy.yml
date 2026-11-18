@@ -7,8 +7,8 @@ on:
       - "packages/**"
       - "sfdx-project.json"
       - "package.json"
-      # A docs only push runs the workflow for the docs-cache job. The deploy job finds no
-      # metadata in its delta and skips the deploy.
+      # A docs only push runs the workflow for the docs-cache job. The GlassOps plan finds no
+      # metadata, so nothing asks for an approval and nothing is deployed.
       - "docs/**"
   workflow_dispatch:
     inputs:
@@ -31,22 +31,241 @@ on:
         options: [pre, post]
 
 # The GitHub token only reads the repository. Deploys use the Salesforce and smoke secrets.
+# The glassops job alone may write, to push the deployed tag.
 permissions:
   contents: read
 
 # One production deploy at a time. A second push to main waits for the first run to finish
 # and is never cancelled, because cancelling a job does not stop a Salesforce deploy it has
-# already submitted. Each push deploys its own delta from github.event.before, so every
-# pending run has to survive. The default queue keeps only one pending run and cancels the
-# older one, which would drop that push's changes, so queue: max keeps them all in order.
-# GitHub refuses queue together with cancel-in-progress, and leaving cancel-in-progress out
-# means false. The group name differs from site.yml's, which this workflow calls.
+# already submitted. The default queue keeps only one pending run and cancels the older one,
+# so queue: max keeps them all in order. That order matters, because each GlassOps plan
+# starts where the last successful deploy left the deployed tag. A run waiting for its
+# approval holds up the runs behind it until it is approved or rejected. GitHub refuses queue
+# together with cancel-in-progress, and leaving cancel-in-progress out means false. The group
+# name differs from site.yml's, which this workflow calls.
 concurrency:
   group: deploy-production
   queue: max
 
+env:
+  # v1.0.0-rc.2, pinned by digest and never by tag.
+  GLASSOPS_IMAGE: ghcr.io/glassops-platform/glassops@sha256:2495721ece028686517726f1857b9557753cc0d28c3dc9dfb727c241ebd706af
+  GLASSOPS_CONFIG: .github/glassops/prod.yaml
+  # GlassOps moves this tag to the commit it deployed, only after a deploy succeeds. A failed
+  # deploy leaves it where it was, so the next run deploys those changes again.
+  GLASSOPS_TAG: glassops/deployed/prod
+
 jobs:
+  # Pushes and manual delta runs go through GlassOps. The plan needs no login and no
+  # environment, so a push with no metadata change asks for no approval. The full and
+  # destructive modes skip GlassOps and run raw sf in the deploy job.
+  plan:
+    if: github.event_name == 'push' || inputs.deployment_mode == 'delta'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      changes: ${{ steps.plan.outputs.changes }}
+      from: ${{ steps.plan.outputs.from }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # The plan starts at the deployed tag. When the tag is missing, as before the first
+      # GlassOps deploy, it starts where main stood before this push, as the raw delta did.
+      # The glassops job plans the same range from this job's output.
+      - name: GlassOps Plan
+        id: plan
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if git rev-parse -q --verify "refs/tags/$GLASSOPS_TAG^{commit}" > /dev/null; then
+             FROM=tag
+             echo "Planning from $GLASSOPS_TAG at $(git rev-parse --short "refs/tags/$GLASSOPS_TAG^{commit}")"
+             PLAN=(plan --config "$GLASSOPS_CONFIG" --target prod --ci local)
+          else
+             FROM="$BEFORE"
+             if [ -z "$FROM" ] || [ "$FROM" = "0000000000000000000000000000000000000000" ]; then
+                FROM=$(git rev-parse HEAD^1)
+             fi
+             echo "No $GLASSOPS_TAG tag yet. Planning from $FROM"
+             PLAN=(plan --config "$GLASSOPS_CONFIG" --from "$FROM" --to HEAD --ci local)
+          fi
+          echo "from=$FROM" >> "$GITHUB_OUTPUT"
+
+          docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work "$GLASSOPS_IMAGE" "${PLAN[@]}"
+          STATUS=$(jq -r '.status' .glassops/results/plan.json)
+          echo "Plan status: $STATUS"
+          if [ "$STATUS" = "pass" ]; then
+             echo "changes=true" >> "$GITHUB_OUTPUT"
+          else
+             echo "changes=false" >> "$GITHUB_OUTPUT"
+             echo "**GlassOps**: no metadata changes, nothing to deploy" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Validates, gates and deploys the plan. The PERMIT key lives only in the glassops-deploy
+  # environment, so this job waits for an approval there, and that approval is the separation
+  # of duties evidence the gate reads. The gate signs a PERMIT, and deploy refuses to run
+  # without one that matches this commit, this plan and this config.
+  glassops:
+    needs: [plan]
+    if: needs.plan.outputs.changes == 'true'
+    runs-on: ubuntu-latest
+    # The validate runs every local test, and a deploy that cannot quick deploy runs them again.
+    timeout-minutes: 90
+    environment: glassops-deploy
+    # contents pushes the deployed tag. actions reads this run's environment approval.
+    # pull-requests and issues find the pull request the commit was merged from and its labels.
+    permissions:
+      contents: write
+      actions: read
+      pull-requests: read
+      issues: read
+    outputs:
+      deployed: ${{ steps.glassops.outputs.deployed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Salesforce & Tools
+        uses: rdbumstead/setup-salesforce-action@v2
+        with:
+          node_version: "26"
+          jwt_key: ${{ secrets.SFDX_JWT_KEY }}
+          client_id: ${{ secrets.SFDX_CLIENT_ID }}
+          username: ${{ secrets.SFDX_USERNAME }}
+          alias: "portfolio"
+
+      # The validate runs every local test in production, so keep the public site's share of
+      # the daily API requests, as the PR check does. A reached reserve stops the deploy here,
+      # before anything is sent. Run the workflow again by hand in delta mode later.
+      - name: Check the API Reserve
+        run: node scripts/api-reserve.js --target-org portfolio --label "GlassOps deploy"
+
+      # The container runs as root, so .glassops/ is root owned. Later steps read it and never
+      # write into it.
+      - name: GlassOps Plan, Validate, Gate, Deploy and Verify
+        id: glassops
+        env:
+          FROM: ${{ needs.plan.outputs.from }}
+          SFDX_JWT_KEY: ${{ secrets.SFDX_JWT_KEY }}
+          SFDX_CLIENT_ID: ${{ secrets.SFDX_CLIENT_ID }}
+          SFDX_USERNAME: ${{ secrets.SFDX_USERNAME }}
+          SF_PORTFOLIO_ORG_ID: ${{ secrets.SF_PORTFOLIO_ORG_ID }}
+          GLASSOPS_PERMIT_KEY: ${{ secrets.GLASSOPS_PERMIT_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          echo "deployed=false" >> "$GITHUB_OUTPUT"
+
+          # The guard's expected org Id comes from a secret, never from a login result, or the
+          # guard would compare the org with itself.
+          if [ -z "$SF_PORTFOLIO_ORG_ID" ] || [ -z "$GLASSOPS_PERMIT_KEY" ]; then
+             echo "::error::SF_PORTFOLIO_ORG_ID or GLASSOPS_PERMIT_KEY is not set, so nothing can be gated or deployed."
+             exit 1
+          fi
+
+          G=(docker run --rm
+             -e SFDX_JWT_KEY -e SFDX_CLIENT_ID -e SFDX_USERNAME -e SF_PORTFOLIO_ORG_ID -e GLASSOPS_PERMIT_KEY
+             -e GITHUB_ACTIONS -e GITHUB_REPOSITORY -e GITHUB_RUN_ID -e GITHUB_ACTOR -e GITHUB_TRIGGERING_ACTOR
+             -e GITHUB_REF -e GITHUB_EVENT_NAME -e GITHUB_API_URL -e GITHUB_SERVER_URL -e GITHUB_TOKEN -e GITHUB_SHA
+             -v "$GITHUB_WORKSPACE:/work" -w /work "$GLASSOPS_IMAGE")
+          if [ "$FROM" = "tag" ]; then
+             PLAN=(plan --config "$GLASSOPS_CONFIG" --target prod)
+          else
+             PLAN=(plan --config "$GLASSOPS_CONFIG" --from "$FROM" --to HEAD)
+          fi
+
+          set +e
+          "${G[@]}" "${PLAN[@]}"
+          PLAN_EXIT=$?
+          PLAN_STATUS=$(jq -r '.status // empty' .glassops/results/plan.json 2>/dev/null)
+          VALIDATE_EXIT=none
+          GATE_EXIT=none
+          DEPLOY_EXIT=none
+          VERIFY_EXIT=none
+          if [ $PLAN_EXIT -eq 0 ] && [ "$PLAN_STATUS" = "pass" ]; then
+             "${G[@]}" validate --target prod --config "$GLASSOPS_CONFIG"
+             VALIDATE_EXIT=$?
+          fi
+          # Exit 1 is a validate that ran and failed, which the gate still records as a deny.
+          # Exit 2 is a tool, login, guard or check only error, and leaves nothing to gate.
+          if [ "$VALIDATE_EXIT" = "0" ] || [ "$VALIDATE_EXIT" = "1" ]; then
+             "${G[@]}" gate --target prod --config "$GLASSOPS_CONFIG"
+             GATE_EXIT=$?
+          fi
+          # deploy verifies the PERMIT itself before it logs in, and quick deploys the bound
+          # validation when Salesforce accepts it.
+          if [ "$GATE_EXIT" = "0" ]; then
+             "${G[@]}" deploy --target prod --config "$GLASSOPS_CONFIG"
+             DEPLOY_EXIT=$?
+          fi
+          DEPLOY_STATUS=$(jq -r '.status // empty' .glassops/results/deploy.json 2>/dev/null)
+          if [ "$DEPLOY_EXIT" = "0" ] && [ "$DEPLOY_STATUS" = "pass" ]; then
+             echo "deployed=true" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$DEPLOY_EXIT" = "0" ]; then
+             "${G[@]}" verify --target prod --config "$GLASSOPS_CONFIG"
+             VERIFY_EXIT=$?
+          fi
+          "${G[@]}" report --config "$GLASSOPS_CONFIG" --summary .glassops/summary.md > /dev/null
+          set -e
+
+          [ -f .glassops/summary.md ] && cat .glassops/summary.md >> $GITHUB_STEP_SUMMARY
+          echo "Plan exit $PLAN_EXIT ($PLAN_STATUS), validate exit $VALIDATE_EXIT, gate exit $GATE_EXIT, deploy exit $DEPLOY_EXIT ($DEPLOY_STATUS), verify exit $VERIFY_EXIT."
+          if [ -f .glassops/permit.json ]; then
+             jq -r '"PERMIT \(.id // "none"): allow \(.allow), expires \(.expires_at // "unknown")",
+               "separation of duties: \(.separation_of_duties.mode // "none"), approver \(.separation_of_duties.approver // "none")",
+               "validation bound: \(.validation.passed // false), test level \(.validation.test_level // "none")",
+               (.checks[]? | "check \(.rule): \(.outcome)")' .glassops/permit.json
+          fi
+          if [ -f .glassops/results/deploy.json ]; then
+             jq -r '"deploy \(.facts["deploy.id"] // "none"): quick \(.facts["deploy.quick"] // "unknown"), tag \(.facts["deploy.tag"] // "none")"' .glassops/results/deploy.json
+          fi
+          if [ -f .glassops/results/verify.json ]; then
+             jq -r '(.checks[]? | "verify \(.name // .rule // "check"): \(.outcome // .status)")' .glassops/results/verify.json
+          fi
+
+          if [ "$PLAN_EXIT" = "0" ] && [ "$PLAN_STATUS" != "pass" ]; then
+             echo "**GlassOps**: the plan here found no changes, so nothing was deployed" >> $GITHUB_STEP_SUMMARY
+             exit 0
+          fi
+          if [ "$VALIDATE_EXIT" = "0" ] && [ "$GATE_EXIT" = "0" ] && [ "$DEPLOY_EXIT" = "0" ] && [ "$VERIFY_EXIT" = "0" ]; then
+             echo "**GlassOps**: deployed under PERMIT, and verify passed" >> $GITHUB_STEP_SUMMARY
+          else
+             echo "::error::GlassOps did not end in a verified deploy. See this step's log."
+             echo "**GlassOps**: no verified deploy (validate $VALIDATE_EXIT, gate $GATE_EXIT, deploy $DEPLOY_EXIT, verify $VERIFY_EXIT)" >> $GITHUB_STEP_SUMMARY
+             exit 1
+          fi
+
+      # deploy moves the tag in the checkout, but the container has no git credentials, so its
+      # own push only warns. This step pushes it with the checkout's credentials. It runs after a
+      # deploy that verify failed too, because production changed either way.
+      - name: Push the Deployed Tag
+        if: always() && steps.glassops.outputs.deployed == 'true'
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git rev-parse -q --verify "refs/tags/$GLASSOPS_TAG^{commit}" > /dev/null || { echo "::error::GlassOps deployed but $GLASSOPS_TAG is not in the checkout."; exit 1; }
+          echo "Pushing $GLASSOPS_TAG at $(git rev-parse --short "refs/tags/$GLASSOPS_TAG^{commit}")"
+          git push --force origin "refs/tags/$GLASSOPS_TAG"
+
+      - name: Keep the Evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: glassops-deploy-evidence
+          path: |
+            .glassops/results/
+            .glassops/plan.json
+            .glassops/permit.json
+          if-no-files-found: warn
+
   deploy:
+    needs: [plan, glassops]
+    # Runs after GlassOps whatever it did, so a docs only push still deploys the drawings and a
+    # GlassOps failure still publishes a Failure event. It runs raw sf only in full and
+    # destructive mode.
+    if: always() && !cancelled()
     runs-on: ubuntu-latest
     # A full mode deploy waits up to 60 minutes inside sf, so the cap sits above that.
     timeout-minutes: 90
@@ -64,26 +283,7 @@ jobs:
           jwt_key: ${{ secrets.SFDX_JWT_KEY }}
           client_id: ${{ secrets.SFDX_CLIENT_ID }}
           username: ${{ secrets.SFDX_USERNAME }}
-          install_delta: "true"
           alias: "portfolio"
-
-      - name: Generate Delta
-        if: github.event_name == 'push' || inputs.deployment_mode == 'delta'
-        run: |
-          mkdir -p changed
-
-          FROM_SHA="${{ github.event.before }}"
-          [ -z "$FROM_SHA" ] || [ "$FROM_SHA" = "0000000000000000000000000000000000000000" ] && FROM_SHA="HEAD~1"
-
-          echo "Generating delta from $FROM_SHA to HEAD..."
-
-          sf sgd source delta \
-            --to "HEAD" \
-            --from "$FROM_SHA" \
-            --output-dir changed \
-            --source-dir packages \
-            --generate-delta \
-            --ignore .forceignore
 
       # Draws the Mermaid blocks into the Mermaid_Diagrams static resource folder, which is never
       # committed. A failed render leaves only the committed placeholder, so the site shows each
@@ -96,13 +296,39 @@ jobs:
           MERMAID_CLI_DIR="$RUNNER_TEMP/mmd" PUPPETEER_EXECUTABLE_PATH="$(command -v google-chrome)" node scripts/render-mermaid.js
 
       # Writes deployed=true only when metadata was actually deployed, so a skipped deploy
-      # publishes no Success event and runs no tests.
+      # publishes no Success event and runs no tests. On a push or a delta run GlassOps has
+      # already deployed in the glassops job, and this step reads what it did. A failed plan or
+      # glassops job fails this step, so the Failure event below is published.
       - name: Execute Deployment
         id: execute
         env:
           DESTRUCTIVE_DIR: ${{ inputs.destructive_manifest_dir }}
+          PLAN_RESULT: ${{ needs.plan.result }}
+          GLASSOPS_RESULT: ${{ needs.glassops.result }}
+          GLASSOPS_DEPLOYED: ${{ needs.glassops.outputs.deployed }}
         run: |
           echo "deployed=false" >> "$GITHUB_OUTPUT"
+
+          if [ "${{ inputs.deployment_mode }}" != "full" ] && [ "${{ inputs.deployment_mode }}" != "destructive" ]; then
+            [ "$GLASSOPS_DEPLOYED" = "true" ] && echo "deployed=true" >> "$GITHUB_OUTPUT"
+            if [ "$PLAN_RESULT" != "success" ]; then
+              echo "::error::The GlassOps plan job ended $PLAN_RESULT."
+              exit 1
+            fi
+            case "$GLASSOPS_RESULT" in
+              success)
+                if [ "$GLASSOPS_DEPLOYED" = "true" ]; then
+                  echo "GlassOps deployed and verified the change."
+                else
+                  echo "GlassOps found nothing to deploy."
+                fi ;;
+              skipped) echo "No metadata changes detected. Skipping deployment." ;;
+              *)
+                echo "::error::The glassops job ended $GLASSOPS_RESULT. Deployed: ${GLASSOPS_DEPLOYED:-false}. See its log."
+                exit 1 ;;
+            esac
+            exit 0
+          fi
 
           # 0. Destructive mode, by hand only: removes from production the components a
           # committed manifest names, for a component deleted in source that no delta will
@@ -126,50 +352,12 @@ jobs:
             exit 0
           fi
 
-          # 1. Handle Full Deployment
-          if [ "${{ inputs.deployment_mode }}" == "full" ]; then
-            echo "Starting FULL deployment..."
-            sf project deploy start --source-dir packages --target-org portfolio --wait 60
-            echo "deployed=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # 2. Analyze Delta Artifacts
-          HAS_CHANGES="false"
-          DEPLOY_CMD="sf project deploy start --target-org portfolio --wait 30"
-
-          if [ -s changed/package/package.xml ] && grep -q "<types>" changed/package/package.xml; then
-             echo "Detected Metadata Changes"
-             DEPLOY_CMD="$DEPLOY_CMD --manifest changed/package/package.xml"
-             HAS_CHANGES="true"
-          fi
-
-          if [ -s changed/destructiveChanges/destructiveChanges.xml ] && grep -q "<types>" changed/destructiveChanges/destructiveChanges.xml; then
-             echo "Detected Destructive Changes"
-
-             # The destructive flags need a manifest. A delta that only deletes has an empty
-             # package.xml, which still has to be passed.
-             [[ "$DEPLOY_CMD" == *"--manifest"* ]] || DEPLOY_CMD="$DEPLOY_CMD --manifest changed/package/package.xml"
-
-             TIMING="${{ inputs.destructive_timing }}"
-             [ -z "$TIMING" ] && TIMING="post"
-
-             if [ "$TIMING" == "pre" ]; then
-                DEPLOY_CMD="$DEPLOY_CMD --pre-destructive-changes changed/destructiveChanges/destructiveChanges.xml"
-             else
-                DEPLOY_CMD="$DEPLOY_CMD --post-destructive-changes changed/destructiveChanges/destructiveChanges.xml"
-             fi
-             HAS_CHANGES="true"
-          fi
-
-          # 3. Execute or Skip
-          if [ "$HAS_CHANGES" == "true" ]; then
-             echo "Executing: $DEPLOY_CMD"
-             $DEPLOY_CMD
-             echo "deployed=true" >> "$GITHUB_OUTPUT"
-          else
-             echo "No metadata changes detected. Skipping deployment."
-          fi
+          # 1. Full mode, by hand only: deploys the whole source with raw sf, outside GlassOps.
+          # It does not move the deployed tag, so the next GlassOps plan still starts at the last
+          # GlassOps deploy and may carry changes this run already shipped. That is safe.
+          echo "Starting FULL deployment..."
+          sf project deploy start --source-dir packages --target-org portfolio --wait 60
+          echo "deployed=true" >> "$GITHUB_OUTPUT"
 
       # A delta carries only files git changed, and the drawings are never committed, so the drawn
       # resource is deployed on its own after every run, a docs only push included. It runs only

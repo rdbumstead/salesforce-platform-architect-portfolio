@@ -1,5 +1,5 @@
-# GlassOps config for the shadow gate on merges to main (glassops-shadow-gate.yml). The PERMIT
-# binds this file by hash, so plan, validate, gate and permit verify all read this one copy.
+# GlassOps config for the production deploy on merges to main (deploy.yml). The PERMIT binds
+# this file by hash, so plan, validate, gate, deploy and verify all read this one copy.
 # Values are $VAR names only. GlassOps reads them from the environment of each step.
 version: 1
 provider: salesforce
