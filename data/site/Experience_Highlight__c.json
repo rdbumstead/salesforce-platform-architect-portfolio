@@ -18,16 +18,16 @@
     {
       "attributes": {
         "type": "Experience_Highlight__c",
-        "referenceId": "SeedCurrentDeveloperHighlightRef"
+        "referenceId": "SeedCurrentEngineerHighlightRef"
       },
-      "Name": "Seed Current Developer highlight",
+      "Name": "Seed Current Engineer highlight",
       "Experience__c": "@SeedRoleCurrentRef",
-      "Description__c": "Seed developer highlight for the current role.",
-      "Timeline_Text__c": "Seed developer highlight",
-      "Persona_Tag__c": "Developer",
+      "Description__c": "Seed engineer highlight for the current role.",
+      "Timeline_Text__c": "Seed engineer highlight",
+      "Persona_Tag__c": "Engineer",
       "Sort_Order__c": 2,
       "Lock_Sort_Across_Personas__c": false,
-      "Developer_Sort_Order__c": 1,
+      "Engineer_Sort_Order__c": 1,
       "Is_Verified__c": true
     },
     {
@@ -52,12 +52,13 @@
       "Name": "Seed Current shared highlight",
       "Experience__c": "@SeedRoleCurrentRef",
       "Description__c": "Seed highlight shared by every persona for the current role.",
-      "Persona_Tag__c": "Admin;Developer;Architect",
+      "Persona_Tag__c": "Admin;Engineer;Architect;Consultant",
       "Sort_Order__c": 4,
       "Lock_Sort_Across_Personas__c": false,
       "Admin_Sort_Order__c": 2,
-      "Developer_Sort_Order__c": 2,
+      "Engineer_Sort_Order__c": 2,
       "Architect_Sort_Order__c": 2,
+      "Consultant_Sort_Order__c": 2,
       "Is_Verified__c": true
     },
     {
@@ -77,15 +78,15 @@
     {
       "attributes": {
         "type": "Experience_Highlight__c",
-        "referenceId": "SeedPastDeveloperHighlightRef"
+        "referenceId": "SeedPastEngineerHighlightRef"
       },
-      "Name": "Seed Past Developer highlight",
+      "Name": "Seed Past Engineer highlight",
       "Experience__c": "@SeedRolePastRef",
-      "Description__c": "Seed developer highlight for the past role.",
-      "Persona_Tag__c": "Developer",
+      "Description__c": "Seed engineer highlight for the past role.",
+      "Persona_Tag__c": "Engineer",
       "Sort_Order__c": 2,
       "Lock_Sort_Across_Personas__c": false,
-      "Developer_Sort_Order__c": 1,
+      "Engineer_Sort_Order__c": 1,
       "Is_Verified__c": true
     },
     {
@@ -110,12 +111,13 @@
       "Name": "Seed Past shared highlight",
       "Experience__c": "@SeedRolePastRef",
       "Description__c": "Seed highlight shared by every persona for the past role.",
-      "Persona_Tag__c": "Admin;Developer;Architect",
+      "Persona_Tag__c": "Admin;Engineer;Architect;Consultant",
       "Sort_Order__c": 4,
       "Lock_Sort_Across_Personas__c": false,
       "Admin_Sort_Order__c": 2,
-      "Developer_Sort_Order__c": 2,
+      "Engineer_Sort_Order__c": 2,
       "Architect_Sort_Order__c": 2,
+      "Consultant_Sort_Order__c": 2,
       "Is_Verified__c": true
     },
     {
@@ -127,10 +129,11 @@
       "Experience__c": "@SeedRoleConsultRef",
       "Description__c": "Seed highlight for the consulting role.",
       "Timeline_Text__c": "Seed consulting highlight",
-      "Persona_Tag__c": "Architect",
+      "Persona_Tag__c": "Architect;Consultant",
       "Sort_Order__c": 1,
       "Lock_Sort_Across_Personas__c": false,
       "Architect_Sort_Order__c": 1,
+      "Consultant_Sort_Order__c": 1,
       "Is_Verified__c": true
     },
     {

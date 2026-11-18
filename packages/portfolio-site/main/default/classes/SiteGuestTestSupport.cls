@@ -105,22 +105,22 @@ public with sharing class SiteGuestTestSupport {
     older.End_Date__c = Date.newInstance(2020, 1, 1);
     insert new List<Experience__c>{ older, past, current };
 
-    // Developer puts "Dev first" before "Dev second", Architect sorts "Dev second" first,
-    // and "Dev unsorted" has no Developer order so it sorts last. Lock_Sort_Across_Personas__c
+    // Engineer puts "Dev first" before "Dev second", Architect sorts "Dev second" first,
+    // and "Dev unsorted" has no Engineer order so it sorts last. Lock_Sort_Across_Personas__c
     // defaults to true, and the Sync_Experience_Highlight_Sort_Orders flow copies one sort
     // value into every order of a locked row, so only "Locked" is locked.
     List<Experience_Highlight__c> highlights = new List<Experience_Highlight__c>{
       highlight(current, 'Admin only', 'Admin', 1),
-      highlight(current, 'Dev second', 'Developer;Architect', 2),
-      highlight(current, 'Dev first', 'Developer', 3),
-      highlight(current, 'Locked', 'Admin;Developer;Architect', 0),
-      highlight(current, 'Dev unsorted', 'Developer', 4),
+      highlight(current, 'Dev second', 'Engineer;Architect', 2),
+      highlight(current, 'Dev first', 'Engineer', 3),
+      highlight(current, 'Locked', 'Admin;Engineer;Architect;Consultant', 0),
+      highlight(current, 'Dev unsorted', 'Engineer', 4),
       highlight(past, 'Past work', 'Admin', 1)
     };
     highlights[0].Admin_Sort_Order__c = 1;
-    highlights[1].Developer_Sort_Order__c = 2;
+    highlights[1].Engineer_Sort_Order__c = 2;
     highlights[1].Architect_Sort_Order__c = 1;
-    highlights[2].Developer_Sort_Order__c = 1;
+    highlights[2].Engineer_Sort_Order__c = 1;
     highlights[3].Lock_Sort_Across_Personas__c = true;
     insert highlights;
 

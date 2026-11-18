@@ -8,7 +8,8 @@
  *                      phone number from the free text, because the prompt is sent to the model
  *                      and shown to the visitor. The output stays under MAX_CHARS (about 2,000
  *                      tokens), so Gemma's 16,000 tokens per minute still fit several letters.
- *                      inferPersona() reads Architect, Developer or Admin from the job, and
+ *                      inferPersona() reads Architect, Engineer, Consultant or Admin from the
+ *                      job (Admin stays an internal persona, not a public focus), and
  *                      build() then gives the highlights tagged with that persona a small
  *                      boost. removeContactDetails() clears email and phone shapes from the
  *                      visitor's own job text before it goes into a prompt.
@@ -38,7 +39,8 @@ public with sharing class PortfolioGroundingService implements QueryDefinitions.
 
   /** The persona values, the same as Persona_Tag__c and the resume's persona filter. */
   public static final String PERSONA_ARCHITECT = 'Architect';
-  public static final String PERSONA_DEVELOPER = 'Developer';
+  public static final String PERSONA_ENGINEER = 'Engineer';
+  public static final String PERSONA_CONSULTANT = 'Consultant';
   public static final String PERSONA_ADMIN = 'Admin';
 
   /** Score added to a highlight tagged with the job's persona. */
@@ -50,18 +52,22 @@ public with sharing class PortfolioGroundingService implements QueryDefinitions.
   /** The order the title is checked in. */
   private static final List<String> PERSONA_ORDER = new List<String>{
     PERSONA_ARCHITECT,
-    PERSONA_DEVELOPER,
+    PERSONA_ENGINEER,
+    PERSONA_CONSULTANT,
     PERSONA_ADMIN
   };
 
-  /** Words in a job that point at each persona. */
+  /**
+   * Words in a job that point at each persona. A word with a space is two words that sit
+   * next to each other in the job, so "pre sales" matches "pre-sales" and "pre sales".
+   */
   private static final Map<String, Set<String>> PERSONA_WORDS = new Map<String, Set<String>>{
     PERSONA_ARCHITECT => new Set<String>{
       'architect',
       'architects',
       'architecture'
     },
-    PERSONA_DEVELOPER => new Set<String>{
+    PERSONA_ENGINEER => new Set<String>{
       'developer',
       'developers',
       'engineer',
@@ -71,6 +77,17 @@ public with sharing class PortfolioGroundingService implements QueryDefinitions.
       'lwc',
       'javascript',
       'programming'
+    },
+    PERSONA_CONSULTANT => new Set<String>{
+      'consultant',
+      'consultants',
+      'consulting',
+      'presales',
+      'pre sales',
+      'customer facing',
+      'client facing',
+      'demo',
+      'demos'
     },
     PERSONA_ADMIN => new Set<String>{
       'admin',
@@ -178,7 +195,7 @@ public with sharing class PortfolioGroundingService implements QueryDefinitions.
    *              gets PERSONA_BOOST added to its keyword score.
    * @param jobTitle Job title the letter is for.
    * @param jobDescription Job description, may be blank.
-   * @param persona Architect, Developer or Admin, or null for no preference.
+   * @param persona Architect, Engineer, Consultant or Admin, or null for no preference.
    * @return String JSON no longer than MAX_CHARS, or null when there is nothing to ground on.
    * @example
    * String facts = PortfolioGroundingService.build('Architect', null, 'Architect');
@@ -274,17 +291,17 @@ public with sharing class PortfolioGroundingService implements QueryDefinitions.
 
   /**
    * @description The persona a job points at. The title decides first, checked for
-   *              Architect, then Developer, then Admin. With no persona word in the title,
-   *              the description decides when one persona has more matching words than
-   *              each of the others. A tie or no match gives null.
+   *              Architect, then Engineer, then Consultant, then Admin. With no persona word
+   *              in the title, the description decides when one persona has more matching
+   *              words than each of the others. A tie or no match gives null.
    * @param jobTitle Job title, may be blank.
    * @param jobDescription Job description, may be blank.
-   * @return String Architect, Developer, Admin or null.
+   * @return String Architect, Engineer, Consultant, Admin or null.
    * @example
    * String persona = PortfolioGroundingService.inferPersona('Solution Architect', null);
    */
   public static String inferPersona(String jobTitle, String jobDescription) {
-    Set<String> titleTokens = new Set<String>(tokens(jobTitle));
+    Set<String> titleTokens = new Set<String>(matchUnits(jobTitle));
     for (String persona : PERSONA_ORDER) {
       for (String word : PERSONA_WORDS.get(persona)) {
         if (titleTokens.contains(word)) {
@@ -293,7 +310,7 @@ public with sharing class PortfolioGroundingService implements QueryDefinitions.
       }
     }
     Map<String, Integer> hits = new Map<String, Integer>();
-    for (String token : tokens(jobDescription)) {
+    for (String token : matchUnits(jobDescription)) {
       for (String persona : PERSONA_ORDER) {
         if (PERSONA_WORDS.get(persona).contains(token)) {
           hits.put(persona, (hits.get(persona) ?? 0) + 1);
@@ -429,6 +446,19 @@ public with sharing class PortfolioGroundingService implements QueryDefinitions.
       }
     }
     return hits;
+  }
+
+  /**
+   * The words of a text for persona matching: every word, then every two words that sit next to
+   * each other, joined with a space, so a persona word such as "client facing" can match.
+   */
+  private static List<String> matchUnits(String text) {
+    List<String> words = tokens(text);
+    List<String> units = new List<String>(words);
+    for (Integer i = 0; i < words.size() - 1; i++) {
+      units.add(words[i] + ' ' + words[i + 1]);
+    }
+    return units;
   }
 
   private static List<String> tokens(String text) {

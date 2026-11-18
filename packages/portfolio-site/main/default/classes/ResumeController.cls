@@ -10,6 +10,9 @@
  *                      highlights, and each certification its badge file name.
  *                      Skills follow the persona: a chosen persona gets the skills tagged for
  *                      it plus every untagged skill, and no persona gets them all.
+ *                      The public focuses are Engineer, Architect and Consultant. Each has its
+ *                      own summary, read from the public verified Summary variant for that focus
+ *                      and falling back to the owner's career objective.
  *                      getHeader also returns heroLine (the hero's title line) and valueSentence
  *                      (the hero's one sentence on what the owner does), for the home hero.
  *                      Never returns an email, a phone number, an address or
@@ -29,12 +32,15 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
   private static final String CERTIFICATIONS_QUERY = 'ResumeController_Certifications';
   private static final String TIMELINE_ROLES_QUERY = 'ResumeController_TimelineRoles';
   private static final String EDUCATION_QUERY = 'ResumeController_Education';
+  private static final String VARIANTS_QUERY = 'ResumeController_Variants';
   @TestVisible
-  private static final String INVALID_PERSONA_MESSAGE = 'Invalid persona. Valid values: Admin, Developer, Architect';
+  private static final String INVALID_PERSONA_MESSAGE = 'Invalid persona. Valid values: Engineer, Architect, Consultant';
+  // The public focuses. Admin stays a tag for private tailoring and the agent, and Developer
+  // is the old name of Engineer, so neither is a focus a visitor can ask for.
   private static final List<String> PERSONAS = new List<String>{
-    'Admin',
-    'Developer',
-    'Architect'
+    'Engineer',
+    'Architect',
+    'Consultant'
   };
 
   @TestVisible
@@ -58,7 +64,10 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
    * @description Builds the resume for a persona. Highlights and skills both follow it: a
    *              chosen persona keeps the highlights tagged for it, and the skills tagged for it
    *              plus every untagged skill, so a new skill nobody has tagged yet never disappears.
-   * @param persona Blank for every highlight and skill, or one of Admin, Developer, Architect.
+   *              summary is the focus's own summary: the public verified Summary variant whose
+   *              Title_Family__c is the focus in lower case, lowest Selection_Priority__c first.
+   *              With no such variant, or no focus, it is the owner's career objective.
+   * @param persona Blank for every highlight and skill, or one of Engineer, Architect, Consultant.
    * @return ResumeData The resume in its fixed shape.
    * @throws AuraHandledException When the persona is not blank and not a valid value.
    * @example
@@ -75,6 +84,12 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
     ResumeData resume = new ResumeData();
     resume.persona = normalizedPersona;
     resume.header = toHeader(selector.selectOwner());
+    resume.summary = summaryFor(
+      normalizedPersona == null
+        ? new List<Resume_Variant__c>()
+        : selector.selectVariants(normalizedPersona.toLowerCase()),
+      resume.header?.careerObjective
+    );
     List<Experience__c> experiences = selector.selectRoles();
     resume.roles = toRoles(
       experiences,
@@ -126,6 +141,36 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
     timeline.tabLimit = timelineTabLimit();
     timeline.salesforceStartYear = salesforceStartYear();
     return timeline;
+  }
+
+  /**
+   * The summary text for a focus. Among the variants read for it, a row with no text is
+   * skipped and the lowest Selection_Priority__c wins, a blank priority last, the first row
+   * read winning a tie. With no usable variant it is the fallback, trimmed, or null when blank.
+   */
+  @TestVisible
+  private static String summaryFor(
+    List<Resume_Variant__c> variants,
+    String fallback
+  ) {
+    String best;
+    Integer bestPriority;
+    for (Resume_Variant__c variant : variants) {
+      if (String.isBlank(variant.Text__c)) {
+        continue;
+      }
+      Integer priority = String.isBlank(variant.Selection_Priority__c)
+        ? 1000
+        : Integer.valueOf(variant.Selection_Priority__c);
+      if (bestPriority == null || priority < bestPriority) {
+        best = variant.Text__c.trim();
+        bestPriority = priority;
+      }
+    }
+    if (best != null) {
+      return best;
+    }
+    return String.isBlank(fallback) ? null : fallback.trim();
   }
 
   private static Integer salesforceStartYear() {
@@ -488,6 +533,14 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
       );
     }
 
+    private List<Resume_Variant__c> selectVariants(String titleFamily) {
+      return (List<Resume_Variant__c>) QueryDefinitions.run(
+        VARIANTS_QUERY,
+        variantBinds(titleFamily),
+        variantsDefault()
+      );
+    }
+
     private List<Skill__c> selectSkills() {
       return (List<Skill__c>) QueryDefinitions.run(
         SKILLS_QUERY,
@@ -568,7 +621,7 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
   private static QueryDefinitions.QueryDefault highlightsDefault() {
     return new QueryDefinitions.QueryDefault(
         'Experience_Highlight__c',
-        'Experience__c, Description__c, Timeline_Text__c, Persona_Tag__c, Sort_Order__c, Admin_Sort_Order__c, Developer_Sort_Order__c, Architect_Sort_Order__c, Lock_Sort_Across_Personas__c'
+        'Experience__c, Description__c, Timeline_Text__c, Persona_Tag__c, Sort_Order__c, Admin_Sort_Order__c, Developer_Sort_Order__c, Engineer_Sort_Order__c, Architect_Sort_Order__c, Consultant_Sort_Order__c, Lock_Sort_Across_Personas__c'
       )
       .filter('Is_Verified__c = TRUE AND Experience__c IN :experienceIds')
       .orderBy('Sort_Order__c ASC')
@@ -578,6 +631,30 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
 
   private static Map<String, Object> highlightBinds(Set<Id> experienceIds) {
     return new Map<String, Object>{ 'experienceIds' => experienceIds };
+  }
+
+  /**
+   * @description The summary read as code: the public verified Summary variants of one title
+   *              family, in system mode. Query_Definition.ResumeController_Variants ships
+   *              equal to it. A Headline or any other variant type is never read.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault variantsDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Resume_Variant__c',
+        'Text__c, Title_Family__c, Selection_Priority__c'
+      )
+      .filter(
+        'Variant_Type__c = \'Summary\' AND Visibility__c = \'Public\' AND Is_Verified__c = TRUE AND Title_Family__c = :titleFamily'
+      )
+      .orderBy('Name ASC')
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(variantBinds('engineer'));
+  }
+
+  private static Map<String, Object> variantBinds(String titleFamily) {
+    return new Map<String, Object>{ 'titleFamily' => titleFamily };
   }
 
   /**
@@ -658,7 +735,8 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
       SKILLS_QUERY => skillsDefault(),
       CERTIFICATIONS_QUERY => certificationsDefault(),
       TIMELINE_ROLES_QUERY => timelineRolesDefault(),
-      EDUCATION_QUERY => educationDefault()
+      EDUCATION_QUERY => educationDefault(),
+      VARIANTS_QUERY => variantsDefault()
     };
   }
 
@@ -712,6 +790,8 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
   public class ResumeData {
     @AuraEnabled
     public String persona;
+    @AuraEnabled
+    public String summary;
     @AuraEnabled
     public Header header;
     @AuraEnabled

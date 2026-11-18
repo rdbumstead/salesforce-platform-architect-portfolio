@@ -77,11 +77,11 @@ private class SiteExportResourceTest {
       'ResumeController.getResume',
       one('persona', 'Architect')
     );
+    assertSameAsGuest('ResumeController.getResume', one('persona', 'Engineer'));
     assertSameAsGuest(
       'ResumeController.getResume',
-      one('persona', 'Developer')
+      one('persona', 'Consultant')
     );
-    assertSameAsGuest('ResumeController.getResume', one('persona', 'Admin'));
     Test.stopTest();
   }
 
@@ -314,6 +314,22 @@ private class SiteExportResourceTest {
     Integer status = statusAsBuildUser('ResumeController.getResume', '{}');
     Test.stopTest();
     Assert.areEqual(400, status, 'A call that takes a parameter needs it');
+  }
+
+  @isTest
+  static void shouldRefuseAdminAndDeveloperAsAFocus() {
+    Test.startTest();
+    Integer admin = statusAsBuildUser(
+      'ResumeController.getResume',
+      '{"persona":"Admin"}'
+    );
+    Integer developer = statusAsBuildUser(
+      'ResumeController.getResume',
+      '{"persona":"Developer"}'
+    );
+    Test.stopTest();
+    Assert.areEqual(400, admin, 'Admin is not a public focus');
+    Assert.areEqual(400, developer, 'Developer is now called Engineer');
   }
 
   @isTest

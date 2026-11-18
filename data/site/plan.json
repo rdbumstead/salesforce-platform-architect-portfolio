@@ -66,6 +66,12 @@
     "files": ["Education__c.json"]
   },
   {
+    "sobject": "Resume_Variant__c",
+    "saveRefs": true,
+    "resolveRefs": true,
+    "files": ["Resume_Variant__c.json"]
+  },
+  {
     "sobject": "Testimonial__c",
     "saveRefs": false,
     "resolveRefs": false,

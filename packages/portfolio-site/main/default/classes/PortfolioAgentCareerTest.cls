@@ -37,11 +37,11 @@ private class PortfolioAgentCareerTest {
       highlight(
         current.Id,
         3,
-        'Developer',
+        'Engineer',
         'Built components, mail ' + SENTINEL_EMAIL + ' or 555-014-2424.'
       ),
       highlight(current.Id, 4, 'Admin', 'A fourth highlight.'),
-      highlight(past.Id, 1, 'Developer', 'Shipped Lightning components.')
+      highlight(past.Id, 1, 'Engineer', 'Shipped Lightning components.')
     };
   }
 
@@ -126,7 +126,7 @@ private class PortfolioAgentCareerTest {
   static void noContactDetailReachesTheAgent() {
     insertCareer();
 
-    String output = JSON.serialize(roles('Developer'));
+    String output = JSON.serialize(roles('Engineer'));
 
     Assert.isFalse(output.contains('@'), 'No email: ' + output);
     Assert.isFalse(output.contains('555'), 'No phone: ' + output);

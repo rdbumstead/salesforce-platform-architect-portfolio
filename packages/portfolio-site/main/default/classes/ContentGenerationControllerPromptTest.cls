@@ -223,7 +223,16 @@ private class ContentGenerationControllerPromptTest {
 
     String prompt = promptFor('Acme', 'Senior Salesforce Developer', null);
 
-    Assert.isTrue(prompt.contains('\npersona: Developer'), prompt);
+    Assert.isTrue(prompt.contains('\npersona: Engineer'), prompt);
+  }
+
+  @IsTest
+  static void consultantPersonaFromTheTitleIsPassed() {
+    useFallbackInstruction();
+
+    String prompt = promptFor('Acme', 'Solution Consultant', null);
+
+    Assert.isTrue(prompt.contains('\npersona: Consultant'), prompt);
   }
 
   @IsTest

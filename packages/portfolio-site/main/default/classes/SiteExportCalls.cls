@@ -23,9 +23,9 @@ public with sharing class SiteExportCalls {
 
   @TestVisible
   private static final Set<String> PERSONAS = new Set<String>{
-    'Admin',
-    'Developer',
-    'Architect'
+    'Engineer',
+    'Architect',
+    'Consultant'
   };
 
   @TestVisible
