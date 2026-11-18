@@ -103,6 +103,14 @@ jobs:
         run: |
           npm run scan
 
+      # Warns, and never fails, on a tracked source file over 1,000 lines. Each one shows as a
+      # warning on the PR. Generated, vendored and data files are skipped. The script's own test
+      # runs first.
+      - name: Long File Warning
+        run: |
+          node --test scripts/check-file-length.test.js
+          node scripts/check-file-length.js
+
   scratch-org-test:
     runs-on: ubuntu-latest
     # The longest recent run took 39 minutes, and the sf waits inside add up to more than an
