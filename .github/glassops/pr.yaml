@@ -1,0 +1,20 @@
+# GlassOps config for the pull request check (pr.yml). It validates the PR's delta against
+# production, check only, and never deploys. There is no gate here, so no PERMIT and no
+# policy. The PERMIT key stays in the glassops-deploy environment, which pull requests never use.
+# Values are $VAR names only. GlassOps reads them from the environment of each step.
+version: 1
+provider: salesforce
+targets:
+  prod:
+    id: $SF_PORTFOLIO_ORG_ID
+    tier: prod
+    auth:
+      method: jwt
+      username: $SFDX_USERNAME
+      client_id: $SFDX_CLIENT_ID
+      key: $SFDX_JWT_KEY
+salesforce:
+  # The relevant tests, a beta test level: the ones Salesforce picks from the delta and what
+  # depends on it. The scratch job runs every local test, and the deploy runs them all again
+  # after the merge (prod.yaml), so a test outside the relevant set is still caught.
+  test_level: { prod: RunRelevantTests }
