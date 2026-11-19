@@ -12,7 +12,7 @@
     </values>
     <values>
         <field>Fields__c</field>
-        <value xsi:type="xsd:string">Path__c</value>
+        <value xsi:type="xsd:string">Path__c, Content__c</value>
     </values>
     <values>
         <field>Filter__c</field>
@@ -38,6 +38,8 @@
     </values>
     <values>
         <field>Description__c</field>
-        <value xsi:type="xsd:string">Docs list: paths with a good fetch.</value>
+        <value
+      xsi:type="xsd:string"
+    >Docs list: paths with a good fetch, with the first part text for each ADR status and date.</value>
     </values>
 </CustomMetadata>
