@@ -23,6 +23,7 @@ import { showMe } from "c/tourShowMe";
 import {
   letterParagraphs,
   letterFileName,
+  letterTitle,
   writeLetterPdf
 } from "../letterFormat";
 
@@ -255,6 +256,44 @@ describe("c-cover-letter-generator", () => {
     setInput(element, "input.title-input", "Architect");
     await flushPromises();
     expect(button.disabled).toBe(false);
+  });
+
+  it("says why Generate is off, in text tied to the button, and clears it once it is on", async () => {
+    const element = createComponent();
+    await flushPromises();
+    const button = query(element, "button.generate-button");
+    const hint = query(element, '[data-id="generate-hint"]');
+    expect(button.getAttribute("aria-describedby")).toBe(hint.id);
+    expect(hint.textContent.trim()).toBe(
+      "Enter a company name and a job title to turn on Generate."
+    );
+
+    setInput(element, "input.company-input", "Acme");
+    await flushPromises();
+    expect(hint.textContent.trim()).toBe(
+      "Enter a job title to turn on Generate."
+    );
+
+    setInput(element, "input.company-input", "");
+    setInput(element, "input.title-input", "Architect");
+    await flushPromises();
+    expect(hint.textContent.trim()).toBe(
+      "Enter a company name to turn on Generate."
+    );
+
+    setInput(element, "input.company-input", "Acme");
+    await flushPromises();
+    expect(button.disabled).toBe(false);
+    expect(hint.textContent.trim()).toBe("");
+  });
+
+  it("gives the card its inner padding at every width", () => {
+    const css = readFileSync(
+      join(__dirname, "..", "coverLetterGenerator.css"),
+      "utf8"
+    );
+    expect(css).not.toMatch(/\.generator \{[^}]*padding-inline: 0/);
+    expect(css).not.toContain("padding-inline: 0");
   });
 
   it("names no provider before a result arrives", async () => {
@@ -938,8 +977,36 @@ describe("c-cover-letter-generator", () => {
 
     function fakeDoc() {
       const state = { size: 10 };
+      const handlers = {};
+      const annots = [];
       const doc = {
-        internal: { pageSize: { getWidth: () => 612, getHeight: () => 792 } },
+        // Enough of jsPDF's internal API for the PDF tagger, which the download turns on.
+        internal: {
+          pageSize: { getWidth: () => 612, getHeight: () => 792 },
+          events: {
+            subscribe: (name, handler) => {
+              handlers[name] = handler;
+            }
+          },
+          write: jest.fn(),
+          getCurrentPageInfo: () => ({ pageNumber: 1 }),
+          newAdditionalObject: () => {
+            const added = { objId: 100 + annots.length, content: "" };
+            annots.push(added);
+            return added;
+          }
+        },
+        getNumberOfPages: () => 1,
+        setProperties: jest.fn(),
+        setLanguage: jest.fn(),
+        // The link annotations the tagger writes, as [text, url].
+        linkAnnotations: () => {
+          handlers.putPage({ objId: 1, pageNumber: 1 });
+          return annots.map((added) => [
+            /\/Contents \(([^)]*)\)/.exec(added.content)[1],
+            /\/URI \(([^)]*)\)/.exec(added.content)[1]
+          ]);
+        },
         drawn: [],
         setFont: jest.fn(),
         setFontSize: jest.fn((size) => {
@@ -1062,9 +1129,19 @@ describe("c-cover-letter-generator", () => {
         "Salesforce Platform Architect"
       ]);
       expect(texts).toContain("Dear Hiring Manager,");
-      expect(
-        jsPdf.drawn.filter((piece) => piece.url).map((piece) => piece.text)
-      ).toEqual(["LinkedIn", "GitHub", "Portfolio", "Contact"]);
+      expect(jsPdf.linkAnnotations().map(([text]) => text)).toEqual([
+        "LinkedIn",
+        "GitHub",
+        "Portfolio",
+        "Contact"
+      ]);
+      // The PDF is tagged and carries the owner's name, "cover letter" and the company.
+      expect(jsPdf.setProperties).toHaveBeenCalledWith({
+        title: "Ryan Bumstead cover letter, Acme"
+      });
+      expect(jsPdf.internal.write).toHaveBeenCalledWith(
+        expect.stringContaining("BDC")
+      );
       expect(query(element, ".export-message").textContent).toContain(
         "PDF downloaded"
       );
@@ -1130,6 +1207,16 @@ describe("c-cover-letter-generator", () => {
       ]);
       expect(letterParagraphs("a\r\n\r\n \n\nb")).toEqual([["a"], ["b"]]);
       expect(letterParagraphs(null)).toEqual([]);
+    });
+
+    it("titles the PDF with the owner, cover letter and the company when they are known", () => {
+      expect(letterTitle("Ryan Bumstead", "Acme Financial")).toBe(
+        "Ryan Bumstead cover letter, Acme Financial"
+      );
+      expect(letterTitle("Ryan Bumstead", "")).toBe(
+        "Ryan Bumstead cover letter"
+      );
+      expect(letterTitle("", "")).toBe("Cover letter");
     });
 
     it("names the file from the owner and the company, leaving out what is unknown", () => {

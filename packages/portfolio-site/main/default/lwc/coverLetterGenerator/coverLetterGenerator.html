@@ -121,9 +121,13 @@
           class="generate-button nc-button"
           onclick={handleGenerate}
           disabled={isGenerateDisabled}
+          aria-describedby="generate-hint"
         >
           Generate
         </button>
+        <p id="generate-hint" class="generate-hint" data-id="generate-hint">
+          {generateHint}
+        </p>
       </div>
       <p class="wait-note" data-id="wait-note">
         A letter can take about a minute. If the models are busy, you get a
