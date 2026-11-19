@@ -318,8 +318,19 @@ export function createPdfWriter(doc, options = {}) {
     height: lineOf(style) + extra,
     pieces: pieces.map((piece) => ({ ...piece, style: piece.style || style }))
   });
-  const block = (rows, after, keepWithNext = false) => {
-    blocks.push({ rows, after, keepWithNext, section });
+  // keep is how many leading rows must stay together on one page. The rows after them flow onto
+  // the next page when they do not fit, by group: rows that share a group id stay together too.
+  // With no keep the whole block stays together, as before. A section title block is flagged, so
+  // a page break inside its section can repeat the heading with "(continued)".
+  const block = (rows, after, keepWithNext = false, flags = {}) => {
+    blocks.push({
+      rows,
+      after,
+      keepWithNext,
+      section,
+      keep: flags.keep === undefined ? rows.length : flags.keep,
+      isSectionTitle: flags.isSectionTitle === true
+    });
   };
   const spacer = (amount) => {
     blocks.push({ spacer: amount });
@@ -410,17 +421,12 @@ export function createPdfWriter(doc, options = {}) {
 
   // Pagination and drawing, one block at a time.
   const draw = () => {
-    const heightOf = (item) =>
-      item.rows.reduce((sum, row) => sum + row.height, 0);
+    const headOf = (item) =>
+      item.rows.slice(0, item.keep).reduce((sum, row) => sum + row.height, 0);
     let y = margin;
+    let titleRow = null;
     let page = 1;
     let onPage = false;
-    const newPage = () => {
-      doc.addPage();
-      page += 1;
-      y = margin;
-      onPage = false;
-    };
     const drawRow = (row, label) => {
       const top = y + (row.offset || 0);
       row.pieces.forEach((piece) => {
@@ -454,6 +460,29 @@ export function createPdfWriter(doc, options = {}) {
       onPage = true;
     };
 
+    // A new page inside a section opens with the section title again, "(continued)" after it.
+    const newPage = (item) => {
+      doc.addPage();
+      page += 1;
+      y = margin;
+      onPage = false;
+      if (titleRow && item && !item.isSectionTitle) {
+        const [piece] = titleRow.pieces;
+        const again = {
+          height: titleRow.height,
+          rule: true,
+          pieces: [
+            {
+              ...piece,
+              kind: "section-continued",
+              text: `${piece.text} (continued)`
+            }
+          ]
+        };
+        drawRow(again, item.section);
+        y += space.sectionTitleAfter;
+      }
+    };
     blocks.forEach((item, index) => {
       if (item.spacer) {
         if (onPage) {
@@ -461,21 +490,35 @@ export function createPdfWriter(doc, options = {}) {
         }
         return;
       }
-      let needed = heightOf(item);
+      let needed = headOf(item);
       if (item.keepWithNext) {
         const next = blocks
           .slice(index + 1)
           .find((candidate) => candidate.rows);
         if (next) {
-          needed += item.after + heightOf(next);
+          needed += item.after + headOf(next);
         }
       }
       if (onPage && y + needed > bottom) {
-        newPage();
+        newPage(item);
       }
-      item.rows.forEach((row) => {
-        if (onPage && y + row.height > bottom) {
-          newPage();
+      if (item.isSectionTitle) {
+        titleRow = item.rows[0];
+      }
+      item.rows.forEach((row, rowIndex) => {
+        let need = row.height;
+        if (rowIndex >= item.keep && row.group !== undefined) {
+          const first = item.rows.findIndex(
+            (candidate) => candidate.group === row.group
+          );
+          if (first === rowIndex) {
+            need = item.rows
+              .filter((candidate) => candidate.group === row.group)
+              .reduce((sum, candidate) => sum + candidate.height, 0);
+          }
+        }
+        if (onPage && y + need > bottom) {
+          newPage(item);
         }
         drawRow(row, item.section);
       });

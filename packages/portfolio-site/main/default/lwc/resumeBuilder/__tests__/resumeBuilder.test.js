@@ -343,9 +343,11 @@ describe("c-resume-builder", () => {
     ]);
 
     expect(query(element, ".skill-group").textContent).toContain("Apex, LWC");
-    expect(query(element, ".certification").textContent.trim()).toBe(
-      "Application Architect (2024)"
-    );
+    expect(
+      query(element, ".certification-line")
+        .textContent.replace(/\s+/g, " ")
+        .trim()
+    ).toBe("Salesforce: Application Architect (2024)");
     expect(query(element, ".education").textContent).toBe(
       "BSc, Computer Science, State University, May 2015"
     );
@@ -525,7 +527,7 @@ describe("c-resume-builder", () => {
 
     const labels = queryAll(element, "label.toggle");
     expect(labels.map((label) => label.textContent.trim())).toEqual([
-      "Include header",
+      "Include header and summary",
       "Include skills"
     ]);
     labels.forEach((label) =>
@@ -737,6 +739,9 @@ describe("c-resume-builder", () => {
         "SUMMARY",
         "Design platforms that last.",
         "",
+        "CERTIFICATIONS",
+        "Application Architect, Salesforce, Jun 2024",
+        "",
         "EXPERIENCE",
         "Technical Architect | Apr 2023 - Present | Remote",
         "Acme",
@@ -749,9 +754,6 @@ describe("c-resume-builder", () => {
         "",
         "SKILLS",
         "Platform: Apex, LWC",
-        "",
-        "CERTIFICATIONS",
-        "Application Architect, Salesforce, Jun 2024",
         "",
         "EDUCATION",
         "BSc, Computer Science, State University, May 2015"
@@ -792,7 +794,7 @@ describe("c-resume-builder", () => {
       ).toBeTruthy();
     });
 
-    it("keeps a current role with no highlights as a role", () => {
+    it("keeps a current role with no highlights as a role and names it for the owner to tag", () => {
       const model = buildViewModel(
         {
           ...RESUME,
@@ -804,6 +806,7 @@ describe("c-resume-builder", () => {
         "Technical Architect"
       ]);
       expect(model.earlierRoles.count).toBe(2);
+      expect(model.bareCurrentRoles).toEqual(["Technical Architect, Acme"]);
     });
 
     it("puts the same line in the ATS text and the PDF", async () => {
@@ -843,7 +846,7 @@ describe("c-resume-builder", () => {
     it("shows no verification link when the URL is not set", async () => {
       const element = await render({ ...RESUME, certifications: CERTS });
       expect(query(element, ".verify-link")).toBeNull();
-      expect(queryAll(element, ".certification")).toHaveLength(2);
+      expect(queryAll(element, ".certification-line")).toHaveLength(1);
     });
 
     it("shows no verification link when the URL is not http or https", async () => {
@@ -871,48 +874,89 @@ describe("c-resume-builder", () => {
       expect(link.textContent).toContain("Verify on Trailhead");
     });
 
-    it("lists current certifications newest first as short name and year", async () => {
+    it("sets one line per issuer, newest first, as short names with their years", async () => {
       const element = await render({ ...RESUME, certifications: CERTS });
       expect(
-        queryAll(element, ".certification").map((li) => li.textContent.trim())
+        queryAll(element, ".certification-line").map((line) =>
+          line.textContent.replace(/\s+/g, " ").trim()
+        )
       ).toEqual([
-        "Data 360 Consultant (2025)",
-        "Platform Administrator (2024)"
+        "Salesforce: Data 360 Consultant (2025), Platform Administrator (2024)"
       ]);
       expect(
         queryAll(element, ".issuer-label").map((node) =>
           node.textContent.trim()
         )
-      ).toEqual(["Salesforce"]);
+      ).toEqual(["Salesforce:"]);
     });
 
-    it("puts the retired list after the link, outside the current list", async () => {
+    it("puts the certifications under the summary and before the experience", async () => {
+      const element = await render({ ...RESUME, certifications: CERTS });
+      expect(
+        queryAll(element, ".preview-paper section .section-title").map((node) =>
+          node.textContent.trim()
+        )
+      ).toEqual([
+        "Summary",
+        "Certifications",
+        "Experience",
+        "Skills",
+        "Education"
+      ]);
+    });
+
+    it("leads with the focus's headline and falls back to the contact title", async () => {
+      const element = await render({
+        ...RESUME,
+        headline: "Salesforce Engineer"
+      });
+      expect(query(element, ".resume-title").textContent).toBe(
+        "Salesforce Engineer"
+      );
+      const plain = buildViewModel(RESUME, {
+        includeHeader: true,
+        includeSkills: true
+      });
+      expect(plain.header.title).toBe("Salesforce Technical Architect");
+      const blank = buildViewModel(
+        { ...RESUME, headline: "  " },
+        { includeHeader: true, includeSkills: true }
+      );
+      expect(blank.header.title).toBe("Salesforce Technical Architect");
+    });
+
+    it("says what the chosen focus prints under the settings", async () => {
+      const element = await render({
+        ...RESUME,
+        roles: [...RESUME.roles, ...EARLIER],
+        certifications: CERTS
+      });
+      expect(query(element, ".print-summary").textContent).toBe(
+        "This focus prints 2 roles, 2 earlier roles, 2 skills, 3 certifications."
+      );
+    });
+
+    it("puts the retired line after the link, outside the current lines", async () => {
       const element = await render({
         ...RESUME,
         certifications: CERTS,
         credentialVerificationUrl: VERIFY_URL
       });
       const link = query(element, ".verify-link");
-      const retiredTitle = query(element, ".retired-title");
-      const retiredList = query(element, ".retired-certifications");
-      expect(retiredTitle.textContent).toBe("Retired");
+      const retired = query(element, ".retired-line");
+      expect(retired.querySelector(".retired-label").textContent.trim()).toBe(
+        "Retired:"
+      );
+      expect(retired.textContent.replace(/\s+/g, " ").trim()).toBe(
+        "Retired: Salesforce Certified AI Associate (2024)"
+      );
+      // DOCUMENT_POSITION_FOLLOWING: the retired line comes after the link.
       expect(
-        queryAll(element, ".retired-certification").map((li) =>
-          li.textContent.trim()
-        )
-      ).toEqual(["Salesforce Certified AI Associate, Jul 2024"]);
-      // DOCUMENT_POSITION_FOLLOWING: the retired block comes after the link.
-      expect(
-        link.compareDocumentPosition(retiredTitle) &
-          Node.DOCUMENT_POSITION_FOLLOWING
+        link.compareDocumentPosition(retired) & Node.DOCUMENT_POSITION_FOLLOWING
       ).toBeTruthy();
-      expect(
-        link.compareDocumentPosition(retiredList) &
-          Node.DOCUMENT_POSITION_FOLLOWING
-      ).toBeTruthy();
-      expect(
-        query(element, ".current-certifications").textContent
-      ).not.toContain("AI Associate");
+      expect(query(element, ".certification-line").textContent).not.toContain(
+        "AI Associate"
+      );
     });
 
     it("shows no Retired heading when nothing is retired", async () => {
@@ -921,8 +965,7 @@ describe("c-resume-builder", () => {
         certifications: CERTS.filter((cert) => !cert.isRetired),
         credentialVerificationUrl: VERIFY_URL
       });
-      expect(query(element, ".retired-title")).toBeNull();
-      expect(query(element, ".retired-certifications")).toBeNull();
+      expect(query(element, ".retired-line")).toBeNull();
     });
 
     it("shows no link and no current list when every certification is retired", async () => {
@@ -932,8 +975,8 @@ describe("c-resume-builder", () => {
         credentialVerificationUrl: VERIFY_URL
       });
       expect(query(element, ".verify-link")).toBeNull();
-      expect(query(element, ".current-certifications")).toBeNull();
-      expect(queryAll(element, ".retired-certification")).toHaveLength(1);
+      expect(query(element, ".certification-line")).toBeNull();
+      expect(queryAll(element, ".retired-line")).toHaveLength(1);
     });
 
     it("groups the certifications in the ATS text as the preview does", async () => {
@@ -959,7 +1002,7 @@ describe("c-resume-builder", () => {
           "Retired",
           "Salesforce Certified AI Associate, Jul 2024",
           "",
-          "EDUCATION"
+          "EXPERIENCE"
         ].join("\n")
       );
       delete navigator.clipboard;
@@ -999,6 +1042,13 @@ describe("c-resume-builder", () => {
       credentialVerificationUrl: VERIFY_URL
     };
 
+    // The text of a line without its bold label, as the PDF draws the two as separate pieces.
+    function withoutLabel(node, labelSelector) {
+      const label = node.querySelector(labelSelector);
+      const all = node.textContent;
+      return (label ? all.replace(label.textContent, "") : all).trim();
+    }
+
     function previewOutline(element) {
       return queryAll(element, ".preview-paper section").map((section) => ({
         title: section.querySelector(".section-title").textContent.trim(),
@@ -1011,14 +1061,14 @@ describe("c-resume-builder", () => {
         bullets: Array.from(section.querySelectorAll(".role-highlight")).map(
           (node) => node.textContent.trim()
         ),
-        current: Array.from(section.querySelectorAll(".certification")).map(
-          (node) => node.textContent.trim()
+        current: Array.from(
+          section.querySelectorAll(".certification-line")
+        ).map((node) => withoutLabel(node, ".issuer-label")),
+        retired: Array.from(section.querySelectorAll(".retired-line")).map(
+          (node) => withoutLabel(node, ".retired-label")
         ),
-        retired: Array.from(
-          section.querySelectorAll(".retired-certification")
-        ).map((node) => node.textContent.trim()),
         hasVerify: section.querySelector(".verify-link") !== null,
-        hasRetiredTitle: section.querySelector(".retired-title") !== null
+        hasRetiredTitle: section.querySelector(".retired-label") !== null
       }));
     }
 
@@ -1050,7 +1100,7 @@ describe("c-resume-builder", () => {
         if (piece.kind === "cert") last.current.push(piece.text);
         if (piece.kind === "retired") last.retired.push(piece.text);
         if (piece.kind === "verify") last.hasVerify = true;
-        if (piece.kind === "retired-title") last.hasRetiredTitle = true;
+        if (piece.kind === "retired-label") last.hasRetiredTitle = true;
       });
       return sections;
     }
@@ -1069,14 +1119,13 @@ describe("c-resume-builder", () => {
       writePdf(doc, model, { family: "Inter", trace });
 
       const preview = previewOutline(element);
-      // The PDF opens with a Summary section, as the ATS text does. The preview shows the
-      // objective under the header with no heading, so the rest is compared section by section.
-      const [summary, ...pdf] = pdfOutline(trace);
-      expect(summary.title).toBe("SUMMARY");
+      // The preview, the PDF and the ATS text open with Summary, then Certifications.
+      const pdf = pdfOutline(trace);
       expect(preview.map((section) => section.title)).toEqual([
+        "Summary",
+        "Certifications",
         "Experience",
         "Skills",
-        "Certifications",
         "Education"
       ]);
       expect(pdf.map((section) => section.title)).toEqual(
@@ -1109,9 +1158,9 @@ describe("c-resume-builder", () => {
       // The trace is what was drawn: every traced piece is in the document's text calls.
       const drawn = doc.drawn.map((piece) => piece.text);
       trace.forEach((piece) => expect(drawn).toContain(piece.text));
-      // The PDF has a Summary heading and the preview does not.
+      // Both carry a Summary heading.
       expect(drawn).toContain("SUMMARY");
-      expect(element.shadowRoot.textContent).not.toContain("Summary");
+      expect(element.shadowRoot.textContent).toContain("Summary");
     });
 
     it("sets certifications, the verify link, retired certifications and education on one left edge", () => {
@@ -1124,6 +1173,7 @@ describe("c-resume-builder", () => {
           key: "group",
           issuer: "Salesforce",
           hasIssuer: true,
+          lineText: "Alpha One (2025), Beta Two Longer (2024), Gamma (2023)",
           certifications: [
             { key: "a", text: "Alpha One (2025)" },
             { key: "b", text: "Beta Two Longer (2024)" },
@@ -1137,6 +1187,7 @@ describe("c-resume-builder", () => {
       model.hasRetiredCertifications = true;
       model.retiredLabel = "Retired";
       model.retiredCertifications = [{ key: "r", text: "Old Cert (2019)" }];
+      model.retiredLine = "Old Cert (2019)";
       model.education = [
         { key: "e", text: "Bachelor of Science, Example University, May 2015" }
       ];
@@ -1146,24 +1197,21 @@ describe("c-resume-builder", () => {
       // Letter is 612 pt with 54 pt margins, so every left edge is 54.
       const leftOf = (text) => doc.drawn.find((entry) => entry.text === text).x;
       [
-        "Alpha One (2025)",
-        "Beta Two Longer (2024)",
-        "Gamma (2023)",
-        "Old Cert (2019)",
         "Bachelor of Science, Example University, May 2015",
-        "Verify"
+        "Verify",
+        "Salesforce:",
+        "Retired:"
       ].forEach((text) => expect(leftOf(text)).toBeCloseTo(54));
-      expect(leftOf("Salesforce")).toBeCloseTo(54);
-      expect(leftOf("RETIRED")).toBeCloseTo(54);
 
-      // One item per row, in order.
-      const yOf = (text) => doc.drawn.find((entry) => entry.text === text).y;
-      expect(yOf("Beta Two Longer (2024)")).toBeGreaterThan(
-        yOf("Alpha One (2025)")
+      // One line per issuer, the label first and the names after it on the same row.
+      const row = (text) => doc.drawn.find((entry) => entry.text === text);
+      const names = row(
+        "Alpha One (2025), Beta Two Longer (2024), Gamma (2023)"
       );
-      expect(yOf("Gamma (2023)")).toBeGreaterThan(
-        yOf("Beta Two Longer (2024)")
-      );
+      expect(names.y).toBe(row("Salesforce:").y);
+      expect(names.x).toBeGreaterThan(54);
+      expect(row("Old Cert (2019)").y).toBe(row("Retired:").y);
+      expect(row("Retired:").y).toBeGreaterThan(names.y);
     });
 
     it("draws the header centred, the title and dates of a role on one row", () => {
@@ -1245,7 +1293,7 @@ describe("c-resume-builder", () => {
       expect(doc.line).toHaveBeenCalledTimes(4);
     });
 
-    it("never splits a role across pages", () => {
+    it("keeps a role's title, dates, employer and first bullet together, lets the rest flow and repeats the section title", () => {
       const longRoles = Array.from({ length: 14 }, (unused, index) => ({
         id: `a0100000000010${index}AAA`,
         title: `Role ${index + 1}`,
@@ -1281,7 +1329,23 @@ describe("c-resume-builder", () => {
           pagesByRole[currentRole].add(piece.page);
         }
       });
-      Object.values(pagesByRole).forEach((pages) => expect(pages.size).toBe(1));
+      // The title row, dates, employer and first bullet always share a page.
+      const roleStarts = trace.filter((piece) => piece.kind === "role");
+      roleStarts.forEach((start) => {
+        const at = trace.indexOf(start);
+        const head = trace.slice(at, at + 5);
+        expect(new Set(head.map((piece) => piece.page)).size).toBe(1);
+      });
+      // A section that carries over opens the next page with its title and "(continued)".
+      const continued = trace.filter(
+        (piece) => piece.kind === "section-continued"
+      );
+      expect(continued.length).toBeGreaterThan(0);
+      continued.forEach((piece) => {
+        expect(piece.text).toBe("EXPERIENCE (continued)");
+        expect(piece.y).toBeLessThan(80);
+      });
+      expect(Object.keys(pagesByRole).length).toBeGreaterThan(0);
       // A section title is never the last thing on a page.
       trace
         .filter((piece) => piece.kind === "section")
@@ -1692,7 +1756,7 @@ describe("grouping by employer and issuer", () => {
     expect(model.employers).toHaveLength(1);
   });
 
-  it("keeps a past role with no highlights under an employer that has another role", () => {
+  it("folds a past role with no highlights into Earlier roles even when its employer has another role", () => {
     const model = build([
       role("k1", "Instructor", "MCC", "2017-12-01", "2021-06-01"),
       role("k2", "CAET Specialist", "MCC", "2017-07-01", "2021-06-01", {
@@ -1704,15 +1768,12 @@ describe("grouping by employer and issuer", () => {
     ]);
     const [group] = model.employers;
     expect(model.employers).toHaveLength(1);
-    expect(group.isStacked).toBe(true);
-    expect(group.roles.map((entry) => entry.title)).toEqual([
-      "Instructor",
-      "CAET Specialist",
-      "Project Assistant"
-    ]);
-    expect(group.roles[1].highlights).toHaveLength(0);
-    expect(group.spanText).toBe("Jan 2016 - Jun 2021");
-    expect(model.earlierRoles).toBeNull();
+    expect(group.isSingle).toBe(true);
+    expect(group.roles.map((entry) => entry.title)).toEqual(["Instructor"]);
+    expect(model.earlierRoles.count).toBe(2);
+    expect(model.earlierRoles.text).toBe(
+      "CAET Specialist, MCC (2017 to 2021) · Project Assistant, MCC (2016 to 2017)"
+    );
   });
 
   it("still folds a no highlight role whose employer has no other role", () => {
@@ -1726,7 +1787,7 @@ describe("grouping by employer and issuer", () => {
     expect(model.employers).toHaveLength(1);
   });
 
-  it("writes an ATS line with no bullets for a kept role and leaves it out of Earlier roles", () => {
+  it("writes a folded role into the Earlier roles line of the ATS text and never as a role", () => {
     const model = build([
       role("n1", "Instructor", "MCC", "2017-12-01", "2021-06-01"),
       role("n2", "CAET Specialist", "MCC", "2017-07-01", "2021-06-01", {
@@ -1738,9 +1799,9 @@ describe("grouping by employer and issuer", () => {
     ]);
     const text = toAtsText(buildLines(model));
     expect(text).toContain(
-      "Instructor | Dec 2017 - Jun 2021\nMCC\n- Instructor highlight.\n\nCAET Specialist | Jul 2017 - Jun 2021\nMCC\n\nEarlier roles: Technician, Fiserv (2016)"
+      "Instructor | Dec 2017 - Jun 2021\nMCC\n- Instructor highlight.\n\nEarlier roles: CAET Specialist, MCC (2017 to 2021) · Technician, Fiserv (2016)"
     );
-    expect(text).not.toContain("Earlier roles: CAET");
+    expect(text).not.toContain("CAET Specialist | ");
   });
 
   it("renders every role as a title with dates and the employer under it, with no employer heading", async () => {

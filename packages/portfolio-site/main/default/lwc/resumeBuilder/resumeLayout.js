@@ -19,15 +19,16 @@ import {
 export { PREVIEW_PX_PER_PT };
 
 /**
- * The shared document spec plus the resume's own section order and labels.
+ * The shared document spec plus the resume's own section order and labels. The summary sits
+ * under the header, then Certifications, so the credentials are on page one.
  */
 export const RESUME_LAYOUT = Object.freeze({
   ...DOCUMENT_LAYOUT,
   space: DOCUMENT_LAYOUT.space,
   sections: Object.freeze([
+    "certifications",
     "experience",
     "skills",
-    "certifications",
     "education"
   ]),
   labels: Object.freeze({
@@ -38,6 +39,7 @@ export const RESUME_LAYOUT = Object.freeze({
     education: "Education",
     earlierRoles: "Earlier roles",
     retired: "Retired",
+    continued: "continued",
     verify: "Verify on Trailhead",
     remote: "Remote",
     partTime: "part time"

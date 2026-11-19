@@ -192,6 +192,24 @@ export default class ResumeBuilder extends LightningElement {
     }));
   }
 
+  /** What the chosen focus prints, in words, under the settings. Empty while there is nothing. */
+  get printSummary() {
+    const model = this.hasContent ? this.model : null;
+    if (!model) {
+      return "";
+    }
+    const plural = (count, word) => `${count} ${word}${count === 1 ? "" : "s"}`;
+    const parts = [plural(model.roleCount, "role")];
+    if (model.earlierRoleCount > 0) {
+      parts.push(`${plural(model.earlierRoleCount, "earlier role")}`);
+    }
+    if (model.skillCount > 0) {
+      parts.push(plural(model.skillCount, "skill"));
+    }
+    parts.push(plural(model.certificationCount, "certification"));
+    return `This focus prints ${parts.join(", ")}.`;
+  }
+
   /** The prerendered text page for the chosen focus, the accessible copy of the resume. */
   get textVersionUrl() {
     return `${TEXT_VERSION_PATH}${String(this.selectedPersona).toLowerCase()}`;

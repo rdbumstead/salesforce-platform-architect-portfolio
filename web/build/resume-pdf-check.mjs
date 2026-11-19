@@ -17,6 +17,10 @@
  *                   field, by position and text alone (no resume parser is installed)
  *   reproducible    two builds of the same data give the same text layer
  *   pages           the page count is within the variant's budget
+ *   gaps            no page but the last ends more than MAX_GAP points above the bottom margin
+ *                   (R27-D10)
+ *   pageTops        every page after the first opens on a role heading, a section heading or a
+ *                   continued section heading (R26-D32, so no repeated employer heading)
  *
  * Usage: node build/resume-pdf-check.mjs <resume data file> [--budget <file>] [--expected <file>]
  * The data file is a fixture reads file (every ResumeController.getResume read in it is used)
@@ -37,6 +41,9 @@ const VIRTUAL = 'resume-pdf-check:';
 
 /** Coordinates in the PDF are written to two decimals, so anything under this is rounding. */
 export const TOLERANCE = 0.01;
+
+/** The most space, in points, a page but the last may leave between its text and the bottom margin. */
+export const MAX_GAP = 100;
 
 /**
  * Fixed for the check, so two builds can be compared on any machine. The shipped code never sets
@@ -432,6 +439,10 @@ export function monthRange(text) {
   return { start: month(match[1], match[2]), end: match[3] ? month(match[3], match[4]) : Infinity };
 }
 
+/** A section title with its "(continued)" suffix, as a page that carries the section over draws it. */
+const CONTINUED = / \(continued\)$/;
+const stripContinued = (text) => String(text).replace(CONTINUED, '');
+
 /**
  * Reads the summary, experience and certifications back from the text layer by position alone.
  * A section starts at an all capitals row at the left margin in the section title size. A
@@ -451,7 +462,7 @@ export function parseFields(items, layout, pageWidth = 612) {
     row.items.length === 1 &&
     Math.abs(row.items[0].x - margin) < 0.5 &&
     /[A-Z]/.test(row.text) &&
-    row.text === row.text.toUpperCase();
+    stripContinued(row.text) === stripContinued(row.text).toUpperCase();
   const isSection = (row) => isCapitals(row) && Math.abs(row.size - sectionSize) < 0.1;
   const isRoleRow = (row) =>
     row.items.length >= 2 && Math.abs(row.items[row.items.length - 1].box.right - right) < 1;
@@ -465,7 +476,7 @@ export function parseFields(items, layout, pageWidth = 612) {
   let carry = null;
   rows.forEach((row, index) => {
     if (isSection(row)) {
-      section = row.text;
+      section = stripContinued(row.text);
       carry = null;
       return;
     }
@@ -524,18 +535,62 @@ export function checkFields(model, items, layout, employerLabel, pageWidth) {
     expectField(`role ${index + 1} employer`, label, label ? found.employer : '');
     expectField(`role ${index + 1} dates`, role.datesText, found.dates);
   });
-  const certificationLines = parsed.certifications.map(normal);
+  // A certification line may wrap, so the section's rows are read as one run of text.
+  const certificationText = normal(parsed.certifications.join(' '));
   const expectCertification = (what, text) => {
     total += 1;
-    if (!certificationLines.includes(normal(text))) {
+    if (!certificationText.includes(normal(text))) {
       misses.push({ field: what, expected: text, got: null });
     }
   };
   model.certificationGroups.forEach((group) =>
     group.certifications.forEach((cert) => expectCertification('certification', cert.text))
   );
-  model.retiredCertifications.forEach((cert) => expectCertification('retired certification', cert.text));
+  model.retiredCertifications.forEach((cert) => expectCertification('retired certification', cert.line));
   return { recovered: total - misses.length, total, misses, parsedRoles: parsed.experience.length };
+}
+
+/**
+ * The space each page leaves at its foot: the lowest text box on the page against the bottom
+ * margin line, in points. The last page may end anywhere, so it is listed and never fails.
+ * @returns {{page: number, gap: number, last: boolean, over: boolean}[]}
+ */
+export function pageGaps(items, pages, margin, maxGap = MAX_GAP) {
+  return pages.map((page) => {
+    const onPage = items.filter((item) => item.page === page.number);
+    const lowest = onPage.length ? Math.min(...onPage.map((item) => item.box.bottom)) : page.height;
+    const gap = round2(Math.max(0, lowest - margin));
+    const last = page.number === pages.length;
+    return { page: page.number, gap, last, over: !last && gap > maxGap };
+  });
+}
+
+/**
+ * What each page after the first opens on. A page top is fine when its first row is a section
+ * title (with or without "(continued)") or a role heading row, which has its dates flush with the
+ * right margin. Anything else, a bare bullet or a repeated employer heading, is listed as a miss.
+ */
+export function checkPageTops(items, layout, pageWidth = 612) {
+  const rows = readingRows(items);
+  const margin = layout.page.margin;
+  const right = pageWidth - margin;
+  const sectionSize = layout.type.sectionTitle.size;
+  const first = new Map();
+  rows.forEach((row) => {
+    if (row.page > 1 && !first.has(row.page)) first.set(row.page, row);
+  });
+  const tops = [...first.values()].map((row) => {
+    const plain = stripContinued(row.text);
+    const isSection =
+      Math.abs(row.items[0].x - margin) < 0.5 &&
+      row.items[row.items.length - 1].box.right < right - 1 &&
+      Math.abs(row.size - sectionSize) < 0.1 &&
+      plain === plain.toUpperCase();
+    const isRole = row.items.length >= 2 && Math.abs(row.items[row.items.length - 1].box.right - right) < 1;
+    const kind = isSection ? (CONTINUED.test(row.text) ? 'continued section' : 'section') : isRole ? 'role' : 'other';
+    return { page: row.page, text: row.text, kind };
+  });
+  return { tops, misses: tops.filter((top) => top.kind === 'other') };
 }
 
 const layerKey = (layer) =>
@@ -555,6 +610,8 @@ export async function checkModel(model, { budget } = {}) {
   const order = checkOrder(lines, layer.items, format.shortCertName);
   const roundTrip = checkRoundTrip(first.trace, layer.items, layer.pages[0].height);
   const fields = checkFields(model, layer.items, layout, format.employerLabel, layer.pages[0].width);
+  const gaps = pageGaps(layer.items, layer.pages, layout.page.margin);
+  const pageTops = checkPageTops(layer.items, layout, layer.pages[0].width);
   const reproducible = layerKey(layer) === layerKey(again);
   const sameBytes = Buffer.compare(Buffer.from(first.bytes), Buffer.from(second.bytes)) === 0;
   const pages = first.pages;
@@ -566,6 +623,9 @@ export async function checkModel(model, { budget } = {}) {
     order,
     roundTrip,
     fields,
+    gaps,
+    pageTops,
+    bareCurrentRoles: model.bareCurrentRoles || [],
     reproducible,
     sameBytes
   };
@@ -581,6 +641,8 @@ export function failuresOf(result) {
   if (result.roundTrip.percent < 100 || result.roundTrip.misses.length > 0) failures.push('roundTrip');
   if (result.fields.misses.length > 0) failures.push('fields');
   if (!result.reproducible) failures.push('reproducible');
+  if ((result.gaps || []).some((gap) => gap.over)) failures.push('gaps');
+  if (((result.pageTops || {}).misses || []).length > 0) failures.push('pageTops');
   if (result.budget !== null && result.pages > result.budget) failures.push('pages');
   return failures;
 }
@@ -643,6 +705,10 @@ export function problemsOf(result, check) {
       return result.fields.misses.map((miss) => `${miss.field}: ${miss.expected}`);
     case 'reproducible':
       return ['the text layer differs between two builds'];
+    case 'gaps':
+      return result.gaps.filter((gap) => gap.over).map((gap) => `page ${gap.page} ends ${gap.gap} pt above the bottom margin`);
+    case 'pageTops':
+      return result.pageTops.misses.map((top) => `page ${top.page} opens on "${top.text}"`);
     case 'pages':
       return [`${result.pages} pages over a budget of ${result.budget}`];
     default:
@@ -703,7 +769,10 @@ export function summaryRows(report) {
     orderEqual: variant.order.equal,
     fields: `${variant.fields.recovered}/${variant.fields.total}`,
     reproducible: variant.reproducible,
-    pages: variant.budget === null ? `${variant.pages}` : `${variant.pages}/${variant.budget}`
+    pages: variant.budget === null ? `${variant.pages}` : `${variant.pages}/${variant.budget}`,
+    gaps: variant.gaps.map((gap) => (gap.last ? `${gap.gap} (last)` : `${gap.gap}`)).join(', '),
+    pageTops: variant.pageTops.tops.map((top) => top.kind).join(', '),
+    bareCurrentRoles: variant.bareCurrentRoles.join('; ')
   }));
 }
 

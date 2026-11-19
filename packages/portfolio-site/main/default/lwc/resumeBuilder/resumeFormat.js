@@ -5,18 +5,21 @@
  *                      draws it through c/documentPdf's block writer with the sizes, spacing,
  *                      colours and section order in resumeLayout.js, which the preview reads too.
  *                      So the preview and the PDF carry the same sections, employers and
- *                      certification groups. Experience groups roles by employer name (the read
+ *                      certification groups. After the header and Summary come Certifications, so
+ *                      the credentials sit on page one, then Experience, Skills and Education.
+ *                      The line under the name is the focus's Headline variant, or the contact
+ *                      title when there is none. Experience groups roles by employer name (the read
  *                      carries no employer Id). An employer with several roles is a heading with
  *                      its overall span and each title under it, newest first, with its own dates
  *                      and highlights. An employer with one role reads as one "Title, Employer"
  *                      block. Certifications on the page and the PDF are one flat list per
- *                      issuer, newest first, as the short name and the year under the issuer
- *                      label. The ATS text does not stack: one line per role with the employer
- *                      repeated ("Title | Employer | dates") and certifications by their full
- *                      names. A past role with no highlights for the persona stays under its
- *                      employer, as a title with dates and no bullets, when that employer has
- *                      another role in Experience. Otherwise it folds into one "Earlier roles"
- *                      line at the end of Experience.
+ *                      issuer, newest first, as one line per issuer: the issuer label, then the
+ *                      short names with their years, comma separated. The ATS text does not stack:
+ *                      one line per role with the employer repeated ("Title | Employer | dates")
+ *                      and certifications by their full names. A past role with no highlights for
+ *                      the persona folds into one "Earlier roles" line at the end of Experience,
+ *                      whatever its employer. A current role with no highlights prints as it is,
+ *                      and the model names it in bareCurrentRoles.
  *                      Roles are ordered newest first the way the home timeline orders them:
  *                      latest end year (a current role last in time, so first on the page),
  *                      then latest start year, then full time before part time, then the exact
@@ -156,9 +159,14 @@ function certificationBlock(list) {
       key: `retired-cert-${index}`,
       text: [clean(credential.name), formatMonthYear(credential.dateValue)]
         .filter((part) => part)
-        .join(", ")
+        .join(", "),
+      line: yearOf(credential.dateValue)
+        ? `${clean(credential.name)} (${yearOf(credential.dateValue)})`
+        : clean(credential.name)
     }));
-  return { current, retired };
+  // One line for the retired ones, "Name (Year)" comma separated, newest first.
+  const retiredLine = retired.map((cert) => cert.line).join(", ");
+  return { current, retired, retiredLine };
 }
 
 /**
@@ -198,6 +206,7 @@ function certificationGroupsByIssuer(list) {
           key: `cert-group-${groups.length}`,
           issuer,
           hasIssuer: issuer !== "",
+          labelText: issuer ? `${issuer}: ` : "",
           certifications: []
         };
         byKey.set(groupKey, group);
@@ -210,6 +219,9 @@ function certificationGroupsByIssuer(list) {
         text: year ? `${short} (${year})` : short
       });
     });
+  groups.forEach((group) => {
+    group.lineText = group.certifications.map((cert) => cert.text).join(", ");
+  });
   return groups;
 }
 
@@ -393,7 +405,8 @@ export function buildViewModel(resume, options) {
     options.includeHeader && resume.header
       ? {
           name: clean(resume.header.name),
-          title: clean(resume.header.title),
+          // The focus's headline when it has one, otherwise the contact title.
+          title: clean(resume.headline) || clean(resume.header.title),
           // The summary for the focus, chosen on the server. Null prints no summary line.
           careerObjective: clean(resume.summary),
           links: headerLinks(resume.header).map((link) => ({
@@ -405,32 +418,25 @@ export function buildViewModel(resume, options) {
 
   // Sorted once here, so the page, the PDF and the ATS text all read the same order.
   const allRoles = (resume.roles || []).map(toRole).sort(byNewestRole);
-  const anchored = allRoles.filter(
+  // A role that is not current and has no highlight for the focus folds into Earlier roles.
+  const roles = allRoles.filter(
     (role) => role.isCurrent || role.highlights.length > 0
   );
-  const anchoredEmployers = new Set(
-    anchored
-      .filter((role) => role.employer)
-      .map((role) => role.employer.toLowerCase())
-  );
-  const isKept = (role) =>
-    !role.isCurrent &&
-    role.highlights.length === 0 &&
-    role.employer !== "" &&
-    anchoredEmployers.has(role.employer.toLowerCase());
-  const roles = allRoles.filter(
-    (role) => role.isCurrent || role.highlights.length > 0 || isKept(role)
-  );
   const earlier = allRoles.filter(
-    (role) => !role.isCurrent && role.highlights.length === 0 && !isKept(role)
+    (role) => !role.isCurrent && role.highlights.length === 0
   );
+  // A current role with no highlight still prints, so the owner can tag it.
+  const bareCurrentRoles = roles
+    .filter((role) => role.isCurrent && role.highlights.length === 0)
+    .map((role) => role.heading);
 
   const skillGroups = options.includeSkills
     ? (resume.skillGroups || []).map((group, index) => ({
         key: `skills-${index}`,
         category: clean(group.category),
         labelText: clean(group.category) ? `${clean(group.category)}: ` : "",
-        skillsText: (group.skills || []).map(clean).join(", ")
+        skillsText: (group.skills || []).map(clean).join(", "),
+        count: (group.skills || []).length
       }))
     : [];
 
@@ -447,6 +453,7 @@ export function buildViewModel(resume, options) {
     header,
     roles,
     employers: groupByEmployer(roles),
+    bareCurrentRoles,
     earlierRoles: earlier.length
       ? {
           label: RESUME_LAYOUT.labels.earlierRoles,
@@ -459,11 +466,21 @@ export function buildViewModel(resume, options) {
     currentCertifications: certificationGroups.current,
     certificationGroups: certificationGroupsByIssuer(resume.certifications),
     retiredCertifications: certificationGroups.retired,
+    retiredLine: certificationGroups.retiredLine,
     verificationUrl: verifyUrl,
     verifyLabel: RESUME_LAYOUT.labels.verify,
     retiredLabel: RESUME_LAYOUT.labels.retired,
     education,
     hasHeader: header !== null,
+    // The summary has its own section in the preview, the PDF and the ATS text.
+    hasSummary: header !== null && header.careerObjective !== "",
+    summaryLabel: RESUME_LAYOUT.labels.summary,
+    retiredLabelText: `${RESUME_LAYOUT.labels.retired}: `,
+    // What this focus prints, for the counts under the settings.
+    roleCount: roles.length,
+    earlierRoleCount: earlier.length,
+    skillCount: skillGroups.reduce((sum, group) => sum + group.count, 0),
+    certificationCount,
     hasRoles: allRoles.length > 0,
     hasEarlierRoles: earlier.length > 0,
     hasSkills: skillGroups.length > 0,
@@ -587,8 +604,10 @@ export function toAtsText(lines) {
 /**
  * Draws the model into a jsPDF document as real text (selectable, in reading order), with the
  * sizes, spacing, colours and section order from resumeLayout.js, through the shared block
- * writer in c/documentPdf. A role, a skill group and the header never split across pages, and
- * a section or Retired title always has its first entry under it. Links are clickable. When
+ * writer in c/documentPdf. A role keeps its title, dates, employer and first bullet together and
+ * lets the later bullets flow onto the next page, each bullet whole. A skill group and the header
+ * never split, and a section title always has its first entry under it. A page that opens inside
+ * a section repeats the section title with "(continued)". Links are clickable. When
  * trace is an array, every drawn piece is pushed onto it as { section, kind, text, page, y } in
  * drawing order.
  * @param {object} doc a jsPDF document in points
@@ -640,7 +659,7 @@ export function writePdf(doc, model, options = {}) {
       space.ruleGap + space.ruleWidth
     );
     titleRow.rule = true;
-    block([titleRow], space.sectionTitleAfter, true);
+    block([titleRow], space.sectionTitleAfter, true, { isSectionTitle: true });
   };
 
   // Header: centred name, title and links side by side. The summary follows under its own
@@ -696,7 +715,10 @@ export function writePdf(doc, model, options = {}) {
               )
             );
           }
-          role.highlights.forEach((highlight) => {
+          // The title, dates, employer and the first bullet stay together. Later bullets flow
+          // onto the next page, each bullet whole.
+          let keep = rows.length;
+          role.highlights.forEach((highlight, bulletIndex) => {
             const bulletRows = paragraph(
               "bullet",
               highlight.text,
@@ -710,9 +732,15 @@ export function writePdf(doc, model, options = {}) {
               style: type.bullet
             });
             bulletRows[bulletRows.length - 1].height += space.itemGap;
+            bulletRows.forEach((row) => {
+              row.group = bulletIndex;
+            });
             rows.push(...bulletRows);
+            if (bulletIndex === 0) {
+              keep = rows.length;
+            }
           });
-          block(rows, space.roleAfter);
+          block(rows, space.roleAfter, false, { keep });
         });
       });
       if (model.earlierRoles) {
@@ -743,29 +771,19 @@ export function writePdf(doc, model, options = {}) {
         );
       });
     } else if (entry.isCertifications) {
+      // One line per issuer: the issuer label, then the names with their years.
       model.certificationGroups.forEach((group) => {
-        if (group.hasIssuer) {
-          block(
-            [
-              textRow(
-                [
-                  {
-                    kind: "cert-issuer",
-                    text: shown(group.issuer, type.label),
-                    x: margin
-                  }
-                ],
+        block(
+          group.hasIssuer
+            ? labelled(
+                "cert",
+                group.issuer,
+                group.lineText,
+                type.text,
                 type.label
               )
-            ],
-            space.itemGap,
-            true
-          );
-        }
-        leftItems(
-          "cert",
-          group.certifications.map((cert) => cert.text),
-          type.text
+            : paragraph("cert", group.lineText, type.text),
+          space.itemGap
         );
       });
       if (model.hasVerificationLink) {
@@ -787,27 +805,15 @@ export function writePdf(doc, model, options = {}) {
         );
       }
       if (model.hasRetiredCertifications) {
-        writer.spacer(space.subheadingBefore);
         block(
-          [
-            textRow(
-              [
-                {
-                  kind: "retired-title",
-                  text: shown(model.retiredLabel, type.subheading),
-                  x: margin
-                }
-              ],
-              type.subheading
-            )
-          ],
-          space.itemGap,
-          true
-        );
-        leftItems(
-          "retired",
-          model.retiredCertifications.map((cert) => cert.text),
-          type.text
+          labelled(
+            "retired",
+            model.retiredLabel,
+            model.retiredLine,
+            type.text,
+            type.label
+          ),
+          space.itemGap
         );
       }
     } else if (entry.isEducation) {
