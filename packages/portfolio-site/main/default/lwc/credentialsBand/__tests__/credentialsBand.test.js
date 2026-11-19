@@ -269,12 +269,6 @@ describe("c-credentials-band", () => {
   });
 
   describe("rendering", () => {
-    it("puts the source badge at the end of the certifications row", async () => {
-      const element = await renderWith();
-      const badge = element.shadowRoot.querySelector(".card-source");
-      expect(badge.classList.contains("heading-badge-end")).toBe(true);
-    });
-
     it("keeps both headings in the band", async () => {
       const element = await renderWith();
       expect(text(one(element, "education-heading"))).toBe("Education");
@@ -311,17 +305,15 @@ describe("c-credentials-band", () => {
   });
 });
 
-describe("c-credentials-band source badge", () => {
+describe("c-credentials-band source chip", () => {
   afterEach(() => {
     while (document.body.firstChild) {
       document.body.removeChild(document.body.firstChild);
     }
   });
 
-  it("hides row counts, because the certification count includes retired certs", async () => {
+  it("draws no From Salesforce chip, because the home page shows it once, with the case studies", async () => {
     const element = await renderWith();
-    const source = element.shadowRoot.querySelector("c-data-source");
-    expect(source).not.toBeNull();
-    expect(source.hideCounts).toBe(true);
+    expect(element.shadowRoot.querySelector("c-data-source")).toBeNull();
   });
 });
