@@ -26,6 +26,26 @@
       "visibility": "public"
     },
     {
+      "id": "seed-architect-focus",
+      "type": "summary",
+      "text": "Seed summary for the architect focus.",
+      "titleFamily": "architect",
+      "tags": [],
+      "priority": 1,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-engineer-focus",
+      "type": "summary",
+      "text": "Seed summary for the engineer focus.",
+      "titleFamily": "engineer",
+      "tags": [],
+      "priority": 1,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
       "id": "seed-engineer-summary",
       "type": "summary",
       "text": "Seed engineer summary text that no page shows, kept unverified for the leak test.",
@@ -36,9 +56,49 @@
       "visibility": "public"
     },
     {
-      "id": "hlt_59jmz942hj",
+      "id": "seed-northwind-1",
       "type": "bullet",
-      "roleId": "exp_2ypfke9vni",
+      "roleId": "seed-role-northwind",
+      "text": "Led a long running piece of work for Senior Solution Consultant that took many months and touched several teams across the organisation",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-northwind-2",
+      "type": "bullet",
+      "roleId": "seed-role-northwind",
+      "text": "A second highlight with no short text, so the timeline falls back to this long description and trims it to one line",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-northwind-3",
+      "type": "bullet",
+      "roleId": "seed-role-northwind",
+      "text": "Third highlight",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-northwind-4",
+      "type": "bullet",
+      "roleId": "seed-role-northwind",
+      "text": "Fourth highlight, beyond the cap of three",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-cur-admin",
+      "type": "bullet",
+      "roleId": "seed-role-current",
       "text": "Seed admin highlight for the current role.",
       "tags": [
         "integration"
@@ -48,19 +108,19 @@
       "visibility": "public"
     },
     {
-      "id": "hlt_99it7mdmjf",
+      "id": "seed-cur-engineer",
       "type": "bullet",
-      "roleId": "exp_2ypfke9vni",
-      "text": "Seed developer highlight for the current role.",
+      "roleId": "seed-role-current",
+      "text": "Seed engineer highlight for the current role.",
       "tags": [],
       "priority": 2,
       "verified": true,
       "visibility": "public"
     },
     {
-      "id": "hlt_zxvwijyybk",
+      "id": "seed-cur-architect",
       "type": "bullet",
-      "roleId": "exp_2ypfke9vni",
+      "roleId": "seed-role-current",
       "text": "Seed architect highlight for the current role.",
       "tags": [
         "frontend"
@@ -70,9 +130,9 @@
       "visibility": "public"
     },
     {
-      "id": "hlt_yenq3c5a5p",
+      "id": "seed-cur-shared",
       "type": "bullet",
-      "roleId": "exp_2ypfke9vni",
+      "roleId": "seed-role-current",
       "text": "Seed highlight shared by every persona for the current role.",
       "tags": [],
       "priority": 2,
@@ -80,9 +140,142 @@
       "visibility": "public"
     },
     {
-      "id": "hlt_j9edrif3mr",
+      "id": "seed-cur-consultant",
       "type": "bullet",
-      "roleId": "exp_7y99mhppnf",
+      "roleId": "seed-role-current",
+      "text": "Seed consultant highlight for the current role.",
+      "tags": [
+        "ci-cd",
+        "governance"
+      ],
+      "priority": 1,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-independent-1",
+      "type": "bullet",
+      "roleId": "seed-role-independent",
+      "text": "Led a long running piece of work for Salesforce Application Architect that took many months and touched several teams across the organisation",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-independent-2",
+      "type": "bullet",
+      "roleId": "seed-role-independent",
+      "text": "A second highlight with no short text, so the timeline falls back to this long description and trims it to one line",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-independent-3",
+      "type": "bullet",
+      "roleId": "seed-role-independent",
+      "text": "Third highlight",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-independent-4",
+      "type": "bullet",
+      "roleId": "seed-role-independent",
+      "text": "Fourth highlight, beyond the cap of three",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-crm-dev-1",
+      "type": "bullet",
+      "roleId": "seed-role-crm-dev",
+      "text": "Led a long running piece of work for CRM Developer that took many months and touched several teams across the organisation",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-crm-dev-2",
+      "type": "bullet",
+      "roleId": "seed-role-crm-dev",
+      "text": "A second highlight with no short text, so the timeline falls back to this long description and trims it to one line",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-crm-dev-3",
+      "type": "bullet",
+      "roleId": "seed-role-crm-dev",
+      "text": "Third highlight",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-crm-dev-4",
+      "type": "bullet",
+      "roleId": "seed-role-crm-dev",
+      "text": "Fourth highlight, beyond the cap of three",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-app-admin-1",
+      "type": "bullet",
+      "roleId": "seed-role-app-admin",
+      "text": "Led a long running piece of work for Application Administrator that took many months and touched several teams across the organisation",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-app-admin-2",
+      "type": "bullet",
+      "roleId": "seed-role-app-admin",
+      "text": "A second highlight with no short text, so the timeline falls back to this long description and trims it to one line",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-app-admin-3",
+      "type": "bullet",
+      "roleId": "seed-role-app-admin",
+      "text": "Third highlight",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-app-admin-4",
+      "type": "bullet",
+      "roleId": "seed-role-app-admin",
+      "text": "Fourth highlight, beyond the cap of three",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-past-admin",
+      "type": "bullet",
+      "roleId": "seed-role-past",
       "text": "Seed admin highlight for the past role.",
       "tags": [],
       "priority": 2,
@@ -90,19 +283,19 @@
       "visibility": "public"
     },
     {
-      "id": "hlt_43mre6qfig",
+      "id": "seed-past-engineer",
       "type": "bullet",
-      "roleId": "exp_7y99mhppnf",
-      "text": "Seed developer highlight for the past role.",
+      "roleId": "seed-role-past",
+      "text": "Seed engineer highlight for the past role.",
       "tags": [],
       "priority": 2,
       "verified": true,
       "visibility": "public"
     },
     {
-      "id": "hlt_m6syq3wpg8",
+      "id": "seed-past-architect",
       "type": "bullet",
-      "roleId": "exp_7y99mhppnf",
+      "roleId": "seed-role-past",
       "text": "Seed architect highlight for the past role.",
       "tags": [],
       "priority": 2,
@@ -110,9 +303,9 @@
       "visibility": "public"
     },
     {
-      "id": "hlt_m55wrm452n",
+      "id": "seed-past-shared",
       "type": "bullet",
-      "roleId": "exp_7y99mhppnf",
+      "roleId": "seed-role-past",
       "text": "Seed highlight shared by every persona for the past role.",
       "tags": [],
       "priority": 2,
@@ -120,30 +313,140 @@
       "visibility": "public"
     },
     {
-      "id": "hlt_qd8de6yjw3",
+      "id": "seed-past-consultant",
       "type": "bullet",
-      "roleId": "exp_v798id96xr",
-      "text": "Seed highlight for the consulting role.",
+      "roleId": "seed-role-past",
+      "text": "Seed consultant highlight for the past role.",
       "tags": [
         "ci-cd",
         "governance"
       ],
-      "priority": 2,
+      "priority": 1,
       "verified": true,
       "visibility": "public"
     },
     {
-      "id": "hlt_93xnd9bcex",
+      "id": "seed-instructor-1",
       "type": "bullet",
-      "roleId": "exp_x3tjtrari4",
-      "text": "Seed highlight for the part time role.",
+      "roleId": "seed-role-instructor",
+      "text": "Led a long running piece of work for Non-Credit Instructor that took many months and touched several teams across the organisation",
       "tags": [],
       "priority": 2,
       "verified": true,
       "visibility": "public"
     },
     {
-      "id": "skl_wct54n6ipz",
+      "id": "seed-instructor-2",
+      "type": "bullet",
+      "roleId": "seed-role-instructor",
+      "text": "A second highlight with no short text, so the timeline falls back to this long description and trims it to one line",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-instructor-3",
+      "type": "bullet",
+      "roleId": "seed-role-instructor",
+      "text": "Third highlight",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-instructor-4",
+      "type": "bullet",
+      "roleId": "seed-role-instructor",
+      "text": "Fourth highlight, beyond the cap of three",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-specialist-1",
+      "type": "bullet",
+      "roleId": "seed-role-specialist",
+      "text": "Led a long running piece of work for Services Specialist II that took many months and touched several teams across the organisation",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-specialist-2",
+      "type": "bullet",
+      "roleId": "seed-role-specialist",
+      "text": "A second highlight with no short text, so the timeline falls back to this long description and trims it to one line",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-specialist-3",
+      "type": "bullet",
+      "roleId": "seed-role-specialist",
+      "text": "Third highlight",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-specialist-4",
+      "type": "bullet",
+      "roleId": "seed-role-specialist",
+      "text": "Fourth highlight, beyond the cap of three",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-assistant-1",
+      "type": "bullet",
+      "roleId": "seed-role-assistant",
+      "text": "Led a long running piece of work for IT Project Assistant that took many months and touched several teams across the organisation",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-assistant-2",
+      "type": "bullet",
+      "roleId": "seed-role-assistant",
+      "text": "A second highlight with no short text, so the timeline falls back to this long description and trims it to one line",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-assistant-3",
+      "type": "bullet",
+      "roleId": "seed-role-assistant",
+      "text": "Third highlight",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-assistant-4",
+      "type": "bullet",
+      "roleId": "seed-role-assistant",
+      "text": "Fourth highlight, beyond the cap of three",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-skill-apex",
       "type": "skill",
       "text": "Seed Apex",
       "tags": [
@@ -154,18 +457,18 @@
       "visibility": "public"
     },
     {
-      "id": "skl_r62m8k42ht",
+      "id": "seed-skill-integration",
       "type": "skill",
       "text": "Seed Integration",
       "tags": [
-        "frontend"
+        "integration"
       ],
       "priority": 3,
       "verified": true,
       "visibility": "public"
     },
     {
-      "id": "skl_xre7f5we4k",
+      "id": "seed-skill-js",
       "type": "skill",
       "text": "Seed JavaScript",
       "tags": [],
@@ -174,7 +477,7 @@
       "visibility": "public"
     },
     {
-      "id": "skl_3iri8tpkgb",
+      "id": "seed-skill-lwc",
       "type": "skill",
       "text": "Seed Lightning Web Components",
       "tags": [],
@@ -183,7 +486,7 @@
       "visibility": "public"
     },
     {
-      "id": "skl_gb3y66su2s",
+      "id": "seed-skill-slds",
       "type": "skill",
       "text": "Seed SLDS",
       "tags": [],
@@ -192,7 +495,7 @@
       "visibility": "public"
     },
     {
-      "id": "skl_uztzjpjxvk",
+      "id": "seed-skill-soql",
       "type": "skill",
       "text": "Seed SOQL",
       "tags": [],
@@ -201,7 +504,7 @@
       "visibility": "public"
     },
     {
-      "id": "prj_a2dgepkhkp",
+      "id": "pillar-a-project",
       "type": "project",
       "text": "Employer Hub for an education provider",
       "value": "Designed so that employer partners get one front door and a faster answer, departments stop duplicating outreach and see each other's work with a partner, and leadership can report on the employer relationship as a whole.",
@@ -212,7 +515,7 @@
       "visibility": "public"
     },
     {
-      "id": "prj_zxbeisn26m",
+      "id": "home-case-a",
       "type": "project",
       "text": "Home case study A",
       "value": "Designed so that employer partners get one front door and a faster answer, departments stop duplicating outreach and see each other's work with a partner, and leadership can report on the employer relationship as a whole.",
@@ -223,7 +526,7 @@
       "visibility": "public"
     },
     {
-      "id": "prj_awn4hyxs2k",
+      "id": "home-case-b",
       "type": "project",
       "text": "Home case study B",
       "value": "Ten staff users on donated licences, with staff testing the build in user acceptance before production.",
@@ -234,7 +537,7 @@
       "visibility": "public"
     },
     {
-      "id": "prj_i53u93muhq",
+      "id": "home-case-e",
       "type": "project",
       "text": "Home case study E",
       "value": "The test count on this card and the checklist on the Delivery page come from those stored runs, so they change when the pipeline does. A reviewer sees the roadmap, the commits and the latest pipeline results on one page.",
@@ -245,7 +548,70 @@
       "visibility": "public"
     },
     {
-      "id": "crt_pyhxpfttzq",
+      "id": "seed-cert-agentforce",
+      "type": "certification",
+      "text": "Salesforce Certified Agentforce Specialist",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-cert-data-360",
+      "type": "certification",
+      "text": "Salesforce Certified Data 360 Consultant",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-cert-edu-cloud",
+      "type": "certification",
+      "text": "Salesforce Certified Education Cloud Consultant",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-cert-marketing",
+      "type": "certification",
+      "text": "Salesforce Certified Marketing Cloud Engagement Foundations",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-cert-admin",
+      "type": "certification",
+      "text": "Salesforce Certified Platform Administrator",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-cert-admin-2",
+      "type": "certification",
+      "text": "Salesforce Certified Platform Administrator II",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-cert-app-builder",
+      "type": "certification",
+      "text": "Salesforce Certified Platform App Builder",
+      "tags": [],
+      "priority": 2,
+      "verified": true,
+      "visibility": "public"
+    },
+    {
+      "id": "seed-cert-architect",
       "type": "certification",
       "text": "Seed Application Architect",
       "tags": [],
@@ -254,7 +620,7 @@
       "visibility": "public"
     },
     {
-      "id": "crt_cj9sfiah3n",
+      "id": "seed-cert-consultant",
       "type": "certification",
       "text": "Seed Data Consultant",
       "tags": [],
@@ -263,7 +629,7 @@
       "visibility": "public"
     },
     {
-      "id": "crt_8r46vdsnv5",
+      "id": "seed-cert-developer",
       "type": "certification",
       "text": "Seed Platform Developer I",
       "tags": [],
@@ -274,7 +640,15 @@
   ],
   "roles": [
     {
-      "id": "exp_2ypfke9vni",
+      "id": "seed-role-northwind",
+      "employer": "Northwind Digital",
+      "title": "Senior Solution Consultant",
+      "start": "2026-04-14",
+      "end": null,
+      "current": true
+    },
+    {
+      "id": "seed-role-current",
       "employer": "Seed Employer",
       "title": "Seed Platform Architect",
       "start": "2023-01-01",
@@ -282,7 +656,31 @@
       "current": true
     },
     {
-      "id": "exp_7y99mhppnf",
+      "id": "seed-role-independent",
+      "employer": "Independent",
+      "title": "Salesforce Application Architect",
+      "start": "2021-10-01",
+      "end": null,
+      "current": true
+    },
+    {
+      "id": "seed-role-crm-dev",
+      "employer": "Lakeview University",
+      "title": "CRM Developer",
+      "start": "2025-08-01",
+      "end": "2026-04-10",
+      "current": false
+    },
+    {
+      "id": "seed-role-app-admin",
+      "employer": "Lakeview University",
+      "title": "Application Administrator",
+      "start": "2021-06-14",
+      "end": "2025-08-01",
+      "current": false
+    },
+    {
+      "id": "seed-role-past",
       "employer": "Seed Employer",
       "title": "Seed Salesforce Developer",
       "start": "2019-01-01",
@@ -290,19 +688,43 @@
       "current": false
     },
     {
-      "id": "exp_v798id96xr",
-      "employer": "Seed Consulting Group",
-      "title": "Seed Integration Consultant",
-      "start": "2015-03-01",
-      "end": "2018-12-31",
+      "id": "seed-role-instructor",
+      "employer": "Harbor Community College",
+      "title": "Non-Credit Instructor",
+      "start": "2017-12-01",
+      "end": "2021-06-18",
       "current": false
     },
     {
-      "id": "exp_x3tjtrari4",
-      "employer": "Seed Retail Systems",
-      "title": "Seed Support Analyst",
-      "start": "2012-06-01",
-      "end": "2015-02-28",
+      "id": "seed-role-specialist",
+      "employer": "Harbor Community College",
+      "title": "Services Specialist II",
+      "start": "2017-07-03",
+      "end": "2021-06-18",
+      "current": false
+    },
+    {
+      "id": "seed-role-assistant",
+      "employer": "Harbor Community College",
+      "title": "IT Project Assistant",
+      "start": "2017-01-02",
+      "end": "2017-07-02",
+      "current": false
+    },
+    {
+      "id": "seed-role-gis",
+      "employer": "Mapworks",
+      "title": "GIS Analyst",
+      "start": "2015-03-02",
+      "end": "2015-08-31",
+      "current": false
+    },
+    {
+      "id": "seed-role-retail",
+      "employer": "Old Town Retail",
+      "title": "Customer Service Manager",
+      "start": "2012-03-01",
+      "end": "2014-06-30",
       "current": false
     }
   ],
