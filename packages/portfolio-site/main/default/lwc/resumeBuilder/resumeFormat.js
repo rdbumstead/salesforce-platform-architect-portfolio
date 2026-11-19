@@ -251,9 +251,9 @@ function toRole(role, roleIndex) {
     isCurrent: role.isCurrent === true,
     startDate: role.startDate ? String(role.startDate) : "",
     endDate: role.endDate ? String(role.endDate) : "",
-    atsLine: [clean(role.title), employerText, datesText]
-      .filter((part) => part)
-      .join(" | "),
+    employerText,
+    // Two lines, as in the PDF: the title with its dates, then the employer alone.
+    atsLine: [clean(role.title), datesText].filter((part) => part).join(" | "),
     yearRange: formatYearRange(role),
     highlights: (role.highlights || [])
       .map((text, index) => ({
@@ -527,6 +527,9 @@ export function buildLines(model) {
             push("spacer", "");
           }
           push("entry", role.atsLine);
+          if (role.employerText) {
+            push("detail", role.employerText);
+          }
           role.highlights.forEach((highlight) =>
             push("bullet", highlight.text)
           );

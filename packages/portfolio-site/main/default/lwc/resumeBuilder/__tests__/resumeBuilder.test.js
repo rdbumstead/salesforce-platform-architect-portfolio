@@ -319,7 +319,10 @@ describe("c-resume-builder", () => {
     const roles = queryAll(element, ".resume-role");
     expect(roles).toHaveLength(2);
     expect(roles[0].querySelector(".role-heading").textContent).toBe(
-      "Technical Architect, Acme"
+      "Technical Architect"
+    );
+    expect(roles[0].querySelector(".role-employer").textContent.trim()).toBe(
+      "Acme"
     );
     expect(roles[0].querySelector(".role-dates").textContent).toBe(
       "Apr 2023 - Present | Remote"
@@ -735,11 +738,13 @@ describe("c-resume-builder", () => {
         "Design platforms that last.",
         "",
         "EXPERIENCE",
-        "Technical Architect | Acme | Apr 2023 - Present | Remote",
+        "Technical Architect | Apr 2023 - Present | Remote",
+        "Acme",
         "- Led the integration layer.",
         "- Built the CI pipeline.",
         "",
-        "Developer | Globex | Jan 2020 - Mar 2023",
+        "Developer | Jan 2020 - Mar 2023",
+        "Globex",
         "- Shipped Lightning components.",
         "",
         "SKILLS",
@@ -1308,6 +1313,32 @@ describe("c-resume-builder", () => {
     });
   });
 
+  it("links the text version for the chosen focus next to the PDF button", async () => {
+    const element = createComponent();
+    getResume.emit(RESUME);
+    await flushPromises();
+    const link = query(element, "a.text-version");
+    expect(link).not.toBeNull();
+    expect(link.textContent.trim()).toBe("Text version");
+    expect(link.getAttribute("href")).toBe("/resume/text/architect");
+    expect(link.getAttribute("aria-label")).toBe(
+      "Text version of the resume for Platform Architect"
+    );
+    expect(link.getAttribute("tabindex")).toBeNull();
+    expect(link.parentElement.querySelector(".download-pdf")).not.toBeNull();
+
+    const picker = query(element, "select.persona-picker");
+    picker.value = "Consultant";
+    picker.dispatchEvent(new CustomEvent("change"));
+    await flushPromises();
+    expect(query(element, "a.text-version").getAttribute("href")).toBe(
+      "/resume/text/consultant"
+    );
+    expect(query(element, "a.text-version").getAttribute("aria-label")).toBe(
+      "Text version of the resume for Solution Consultant"
+    );
+  });
+
   it("places View source with the resumeBuilder key in the card's title row", () => {
     // The test card mock has no actions slot, so the slotted control is read from the template.
     const template = require("fs").readFileSync(
@@ -1623,8 +1654,10 @@ describe("grouping by employer and issuer", () => {
     expect(drawn).not.toContain("(Part Time) (part time)");
 
     const text = toAtsText(buildLines(model));
-    expect(text).toContain("Application Architect | Freelance (part time) |");
-    expect(text).toContain("Coach | Delta Club (Part Time) |");
+    expect(text).toMatch(
+      /Application Architect \| [^\n]+\nFreelance \(part time\)\n/
+    );
+    expect(text).toMatch(/Coach \| [^\n]+\nDelta Club \(Part Time\)\n/);
     expect(text).not.toMatch(/part time\) \(part time/i);
   });
 
@@ -1705,12 +1738,12 @@ describe("grouping by employer and issuer", () => {
     ]);
     const text = toAtsText(buildLines(model));
     expect(text).toContain(
-      "Instructor | MCC | Dec 2017 - Jun 2021\n- Instructor highlight.\n\nCAET Specialist | MCC | Jul 2017 - Jun 2021\n\nEarlier roles: Technician, Fiserv (2016)"
+      "Instructor | Dec 2017 - Jun 2021\nMCC\n- Instructor highlight.\n\nCAET Specialist | Jul 2017 - Jun 2021\nMCC\n\nEarlier roles: Technician, Fiserv (2016)"
     );
     expect(text).not.toContain("Earlier roles: CAET");
   });
 
-  it("renders the employer heading and titles on the page, one block for a single role", async () => {
+  it("renders every role as a title with dates and the employer under it, with no employer heading", async () => {
     const element = createElement("c-resume-builder", { is: ResumeBuilder });
     document.body.appendChild(element);
     getResume.emit({
@@ -1726,17 +1759,22 @@ describe("grouping by employer and issuer", () => {
       element.shadowRoot.querySelectorAll(".resume-employer")
     );
     expect(groups).toHaveLength(2);
-    expect(
-      groups[0].querySelector(".employer-heading").textContent.trim()
-    ).toBe("Acme");
+    expect(element.shadowRoot.querySelector(".employer-heading")).toBeNull();
     expect(
       Array.from(groups[0].querySelectorAll(".role-title")).map((node) =>
         node.textContent.trim()
       )
     ).toEqual(["Developer", "Admin"]);
-    expect(groups[1].querySelector(".employer-heading")).toBeNull();
+    expect(
+      Array.from(groups[0].querySelectorAll(".role-employer")).map((node) =>
+        node.textContent.trim()
+      )
+    ).toEqual(["Acme", "Acme"]);
     expect(groups[1].querySelector(".role-heading").textContent.trim()).toBe(
-      "Solo Role, Alone"
+      "Solo Role"
+    );
+    expect(groups[1].querySelector(".role-employer").textContent.trim()).toBe(
+      "Alone"
     );
   });
 
@@ -1790,7 +1828,7 @@ describe("grouping by employer and issuer", () => {
     expect(shortCertName("Other Name", "Salesforce")).toBe("Other Name");
   });
 
-  it("writes one ATS line per role with the employer repeated and full certification names", () => {
+  it("writes two ATS lines per role, the employer repeated and full certification names", () => {
     const model = build(
       [
         role(
@@ -1818,10 +1856,10 @@ describe("grouping by employer and issuer", () => {
     );
     const text = toAtsText(buildLines(model));
     expect(text).toContain(
-      "CRM Developer | Creighton University | Aug 2025 - Apr 2026\n- CRM Developer highlight."
+      "CRM Developer | Aug 2025 - Apr 2026\nCreighton University\n- CRM Developer highlight."
     );
     expect(text).toContain(
-      "Application Administrator | Creighton University | Jun 2021 - Aug 2025\n- Application Administrator highlight."
+      "Application Administrator | Jun 2021 - Aug 2025\nCreighton University\n- Application Administrator highlight."
     );
     expect(text).toContain(
       "Salesforce Certified Platform App Builder, Salesforce, Mar 2024"

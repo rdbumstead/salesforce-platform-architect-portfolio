@@ -33,6 +33,9 @@ const ACTIONS_IN_BODY_QUERY = "(max-width: 1023px)";
 
 const DEFAULT_PERSONA = "Architect";
 
+// The static site serves one plain HTML page per focus under this path.
+export const TEXT_VERSION_PATH = "/resume/text/";
+
 const PERSONA_OPTIONS = [
   { label: "Salesforce Engineer", value: "Engineer" },
   { label: "Platform Architect", value: "Architect" },
@@ -187,6 +190,15 @@ export default class ResumeBuilder extends LightningElement {
       ...option,
       selected: option.value === this.selectedPersona
     }));
+  }
+
+  /** The prerendered text page for the chosen focus, the accessible copy of the resume. */
+  get textVersionUrl() {
+    return `${TEXT_VERSION_PATH}${String(this.selectedPersona).toLowerCase()}`;
+  }
+
+  get textVersionLabel() {
+    return `Text version of the resume for ${this.selectedPersonaLabel}`;
   }
 
   /** The visitor label of the chosen focus, for the PDF title. */
