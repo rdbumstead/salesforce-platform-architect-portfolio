@@ -22,7 +22,7 @@ It supplements [ADR-006](006-jwt-bearer-flow-for-ci-cd.md). The JWT sign in stay
 3. **The gate.** Coverage must be 75% or more, and separation of duties is satisfied by the environment approval. The PERMIT is tied to the config file by its hash and is valid for two hours.
 4. **Deploy and verify.** Deploy is a quick deploy of the validation when Salesforce allows it. Verify checks that production holds what the plan says. It also fails on any other real deploy to production inside the deploy window, because the `deploy-production` queue serialises production deploys.
 5. **The deployed tag.** GlassOps moves the git tag `glassops/deployed/prod` to the deployed commit after a deploy, and the workflow pushes it, including after a deploy that verify then fails, because production changed. The next plan starts at the tag. When the tag is missing, it starts where `main` stood before the push.
-6. **The image is pinned by digest** at `v1.0.0-rc.3`. A new release is a deliberate change to the workflow.
+6. **The image is pinned by digest.** The first GlassOps deploy ran on `v1.0.0-rc.3`, and the pin is now `v1.0.1`. A new release is a deliberate change to the workflow. The pull request's check only validation against production runs on the same image (`pr.yml`).
 7. **What stays outside GlassOps.** The Mermaid drawings deploy, the Apex and Jest runs, the site publish, the Governance events, the smoke test, the docs cache and the static site stay plain workflow steps after the GlassOps job. The hand run `full` and `destructive` modes stay on raw `sf` as a break glass path and do not move the tag.
 8. **The shadow gate workflow is deleted.**
 
@@ -37,6 +37,7 @@ It supplements [ADR-006](006-jwt-bearer-flow-for-ci-cd.md). The JWT sign in stay
 - **One Approve click per metadata merge.** An unapproved run holds the `deploy-production` queue. Later pushes wait behind it, in order, until it is approved or rejected.
 - **Every GlassOps deploy runs every local test.** Validate uses `RunLocalTests` even when the change has no Apex, where Salesforce's default for such a change ran none before. A metadata only merge now takes the time of a full test run, and the run counts against the org's API use.
 - **The API reserve can stop a deploy before anything is sent.** The job checks the daily API reserve for the public site first. When the reserve is reached, the run stops, and I run Deploy to Production by hand in delta mode later.
+- **The pull request check runs through GlassOps too.** `pr.yml` plans the pull request's delta and validates it check only against production with its own config, `.github/glassops/pr.yaml`, at `RunRelevantTests`. It has no gate and no PERMIT key, so nothing in a pull request can deploy.
 - **A failed validate, gate or deploy leaves the tag where it was.** The next run plans the same change again. A deploy that verify fails has moved the tag, so the next run does not redeploy those components. I fix forward with a new commit or use full mode.
 - **GlassOps is a dependency.** A GlassOps fault stops delta deploys. The break glass modes are the way round it, and the release stays pinned until I move it.
 
