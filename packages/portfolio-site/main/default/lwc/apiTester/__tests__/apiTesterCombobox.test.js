@@ -262,6 +262,9 @@ describe("c-api-tester endpoint combobox", () => {
     input.select = jest.fn();
     input.dispatchEvent(new CustomEvent("focus"));
     expect(input.select).toHaveBeenCalledTimes(1);
+    // Opening the list with a click selects it too, for a box that already has focus.
+    input.dispatchEvent(new CustomEvent("click"));
+    expect(input.select).toHaveBeenCalledTimes(2);
   });
 
   it("closes when the box loses focus", async () => {

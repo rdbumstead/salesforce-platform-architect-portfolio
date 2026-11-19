@@ -73,6 +73,7 @@
   }
 
   .control-row .row-control,
+  .control-row .combo,
   .control-row .row-action {
     grid-row: 2;
     margin-top: 0;

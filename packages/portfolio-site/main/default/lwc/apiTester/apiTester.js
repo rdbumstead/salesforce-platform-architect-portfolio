@@ -984,11 +984,15 @@ export default class ApiTester extends LightningElement {
     }
   }
 
-  handleComboClick() {
+  handleComboClick(event) {
     if (this.comboOpen) {
       this.closeCombo();
     } else {
       this.openCombo();
+      // The chosen route is selected, so the first key typed replaces it as the filter.
+      if (event && event.target && typeof event.target.select === "function") {
+        event.target.select();
+      }
     }
   }
 
