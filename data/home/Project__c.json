@@ -6,6 +6,7 @@
         "referenceId": "HomeCaseB"
       },
       "Name": "Home case study B",
+      "Public_Key__c": "home-case-b",
       "Status__c": "Live – Demo / Reference",
       "Sort_Order__c": 90,
       "Is_Featured__c": false,
@@ -27,6 +28,7 @@
         "referenceId": "HomeCaseA"
       },
       "Name": "Home case study A",
+      "Public_Key__c": "home-case-a",
       "Status__c": "Live – Demo / Reference",
       "Sort_Order__c": 90,
       "Is_Featured__c": false,
@@ -49,6 +51,7 @@
         "referenceId": "HomeCaseE"
       },
       "Name": "Home case study E",
+      "Public_Key__c": "home-case-e",
       "Status__c": "Live – Demo / Reference",
       "Sort_Order__c": 90,
       "Is_Featured__c": false,

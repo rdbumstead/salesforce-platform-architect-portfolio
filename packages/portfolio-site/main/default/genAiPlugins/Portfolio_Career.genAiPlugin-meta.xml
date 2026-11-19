@@ -16,7 +16,7 @@
     </genAiPluginInstructions>
     <genAiPluginInstructions>
         <description
-    >When the question is about one kind of work, pass Architect, Developer or Admin as the persona.</description>
+    >When the question is about one kind of work, pass Architect, Engineer, Consultant or Admin as the persona.</description>
         <developerName>instruction_1</developerName>
         <masterLabel>instruction_1</masterLabel>
         <sortOrder>1</sortOrder>

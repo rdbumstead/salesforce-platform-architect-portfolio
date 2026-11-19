@@ -199,14 +199,14 @@ components:
       in: query
       description: |
         Filters records where the target field (Multi-Select Picklist) includes the specified persona(s).
-        Takes a single value or a comma-separated list of Admin, Developer and Architect. An unknown value returns 400.
+        Takes a single value or a comma-separated list of Engineer, Architect and Consultant. Two older values still work as aliases. `Developer` means Engineer, and `Admin` is an internal focus. An unknown value returns 400.
 
         Examples:
-        - Single: `?persona=Admin`
-        - Multiple (comma): `?persona=Admin,Developer`
+        - Single: `?persona=Engineer`
+        - Multiple (comma): `?persona=Engineer,Consultant`
       schema:
         type: string
-      example: "Admin"
+      example: "Engineer"
 
     statusParam:
       name: status
@@ -376,8 +376,8 @@ components:
 
     Persona:
       type: string
-      description: "Target audience for content filtering."
-      enum: [Admin, Developer, Architect]
+      description: "Target audience for content filtering. Developer is an alias that reads as Engineer. Admin is an internal focus."
+      enum: [Engineer, Architect, Consultant, Developer, Admin]
       example: "Architect"
 
     ProjectStatus:
@@ -726,8 +726,8 @@ components:
           description: "Sort Order"
         personaTag:
           type: string
-          example: "Developer;Architect"
-          description: "Semicolon-separated Persona values from the Persona_Tag__c multi-select picklist (Admin, Developer, Architect)."
+          example: "Engineer;Architect"
+          description: "Semicolon-separated Persona values from the Persona_Tag__c multi-select picklist (Engineer, Architect, Consultant, and the internal Admin)."
       additionalProperties: true
 
     ProjectAsset:

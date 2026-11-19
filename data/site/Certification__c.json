@@ -6,6 +6,7 @@
         "referenceId": "SeedCertRef"
       },
       "Name": "Seed Platform Developer I",
+      "Public_Key__c": "seed-cert-developer",
       "Contact__c": "@SeedOwnerRef",
       "Issuer__c": "@SeedInstituteRef",
       "Earned_Date__c": "2021-06-01",
@@ -19,6 +20,7 @@
         "referenceId": "SeedCertRetiredRef"
       },
       "Name": "Seed Certified AI Associate",
+      "Public_Key__c": "seed-cert-retired",
       "Contact__c": "@SeedOwnerRef",
       "Issuer__c": "@SeedInstituteRef",
       "Earned_Date__c": "2020-07-22",
@@ -31,6 +33,7 @@
         "referenceId": "SeedCertArchitectRef"
       },
       "Name": "Seed Application Architect",
+      "Public_Key__c": "seed-cert-architect",
       "Contact__c": "@SeedOwnerRef",
       "Issuer__c": "@SeedInstituteRef",
       "Earned_Date__c": "2022-09-15",
@@ -43,9 +46,108 @@
         "referenceId": "SeedCertDataRef"
       },
       "Name": "Seed Data Consultant",
+      "Public_Key__c": "seed-cert-consultant",
       "Contact__c": "@SeedOwnerRef",
       "Issuer__c": "@SeedInstituteRef",
       "Earned_Date__c": "2024-03-10",
+      "Is_Retired__c": false,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Certification__c",
+        "referenceId": "SeedCertData360Ref"
+      },
+      "Name": "Salesforce Certified Data 360 Consultant",
+      "Public_Key__c": "seed-cert-data-360",
+      "Contact__c": "@SeedOwnerRef",
+      "Issuer__c": "@CertIssuerRef",
+      "Earned_Date__c": "2025-03-17",
+      "Badge_File__c": "data-360-consultant.webp",
+      "Is_Retired__c": false,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Certification__c",
+        "referenceId": "SeedCertEduCloudRef"
+      },
+      "Name": "Salesforce Certified Education Cloud Consultant",
+      "Public_Key__c": "seed-cert-edu-cloud",
+      "Contact__c": "@SeedOwnerRef",
+      "Issuer__c": "@CertIssuerRef",
+      "Earned_Date__c": "2025-03-12",
+      "Badge_File__c": "education-cloud-consultant.webp",
+      "Is_Retired__c": false,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Certification__c",
+        "referenceId": "SeedCertAgentforceRef"
+      },
+      "Name": "Salesforce Certified Agentforce Specialist",
+      "Public_Key__c": "seed-cert-agentforce",
+      "Contact__c": "@SeedOwnerRef",
+      "Issuer__c": "@CertIssuerRef",
+      "Earned_Date__c": "2025-01-03",
+      "Badge_File__c": "agentforce-specialist.webp",
+      "Is_Retired__c": false,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Certification__c",
+        "referenceId": "SeedCertMarketingCloudRef"
+      },
+      "Name": "Salesforce Certified Marketing Cloud Engagement Foundations",
+      "Public_Key__c": "seed-cert-marketing",
+      "Contact__c": "@SeedOwnerRef",
+      "Issuer__c": "@CertIssuerRef",
+      "Earned_Date__c": "2025-01-03",
+      "Badge_File__c": "marketing-cloud-engagement-foundations.webp",
+      "Is_Retired__c": false,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Certification__c",
+        "referenceId": "SeedCertAppBuilderRef"
+      },
+      "Name": "Salesforce Certified Platform App Builder",
+      "Public_Key__c": "seed-cert-app-builder",
+      "Contact__c": "@SeedOwnerRef",
+      "Issuer__c": "@CertIssuerRef",
+      "Earned_Date__c": "2024-09-30",
+      "Badge_File__c": "platform-app-builder.webp",
+      "Is_Retired__c": false,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Certification__c",
+        "referenceId": "SeedCertAdminIIRef"
+      },
+      "Name": "Salesforce Certified Platform Administrator II",
+      "Public_Key__c": "seed-cert-admin-2",
+      "Contact__c": "@SeedOwnerRef",
+      "Issuer__c": "@CertIssuerRef",
+      "Earned_Date__c": "2024-07-22",
+      "Badge_File__c": "platform-administrator-ii.webp",
+      "Is_Retired__c": false,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Certification__c",
+        "referenceId": "SeedCertAdminRef"
+      },
+      "Name": "Salesforce Certified Platform Administrator",
+      "Public_Key__c": "seed-cert-admin",
+      "Contact__c": "@SeedOwnerRef",
+      "Issuer__c": "@CertIssuerRef",
+      "Earned_Date__c": "2024-06-19",
+      "Badge_File__c": "platform-administrator.webp",
       "Is_Retired__c": false,
       "Is_Verified__c": true
     }

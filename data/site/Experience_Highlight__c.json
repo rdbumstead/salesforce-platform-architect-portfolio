@@ -6,6 +6,7 @@
         "referenceId": "SeedCurrentAdminHighlightRef"
       },
       "Name": "Seed Current Admin highlight",
+      "Public_Key__c": "seed-cur-admin",
       "Experience__c": "@SeedRoleCurrentRef",
       "Description__c": "Seed admin highlight for the current role.",
       "Timeline_Text__c": "Seed admin highlight",
@@ -13,21 +14,24 @@
       "Sort_Order__c": 1,
       "Lock_Sort_Across_Personas__c": false,
       "Admin_Sort_Order__c": 1,
-      "Is_Verified__c": true
+      "Is_Verified__c": true,
+      "Requirement_Tags__c": "integration",
+      "Selection_Priority__c": "1"
     },
     {
       "attributes": {
         "type": "Experience_Highlight__c",
-        "referenceId": "SeedCurrentDeveloperHighlightRef"
+        "referenceId": "SeedCurrentEngineerHighlightRef"
       },
-      "Name": "Seed Current Developer highlight",
+      "Name": "Seed Current Engineer highlight",
+      "Public_Key__c": "seed-cur-engineer",
       "Experience__c": "@SeedRoleCurrentRef",
-      "Description__c": "Seed developer highlight for the current role.",
-      "Timeline_Text__c": "Seed developer highlight",
-      "Persona_Tag__c": "Developer",
+      "Description__c": "Seed engineer highlight for the current role.",
+      "Timeline_Text__c": "Seed engineer highlight",
+      "Persona_Tag__c": "Engineer",
       "Sort_Order__c": 2,
       "Lock_Sort_Across_Personas__c": false,
-      "Developer_Sort_Order__c": 1,
+      "Engineer_Sort_Order__c": 1,
       "Is_Verified__c": true
     },
     {
@@ -36,13 +40,15 @@
         "referenceId": "SeedCurrentArchitectHighlightRef"
       },
       "Name": "Seed Current Architect highlight",
+      "Public_Key__c": "seed-cur-architect",
       "Experience__c": "@SeedRoleCurrentRef",
       "Description__c": "Seed architect highlight for the current role.",
       "Persona_Tag__c": "Architect",
       "Sort_Order__c": 3,
       "Lock_Sort_Across_Personas__c": false,
       "Architect_Sort_Order__c": 1,
-      "Is_Verified__c": true
+      "Is_Verified__c": true,
+      "Requirement_Tags__c": "frontend"
     },
     {
       "attributes": {
@@ -50,14 +56,16 @@
         "referenceId": "SeedCurrentSharedHighlightRef"
       },
       "Name": "Seed Current shared highlight",
+      "Public_Key__c": "seed-cur-shared",
       "Experience__c": "@SeedRoleCurrentRef",
       "Description__c": "Seed highlight shared by every persona for the current role.",
-      "Persona_Tag__c": "Admin;Developer;Architect",
+      "Persona_Tag__c": "Admin;Engineer;Architect;Consultant",
       "Sort_Order__c": 4,
       "Lock_Sort_Across_Personas__c": false,
       "Admin_Sort_Order__c": 2,
-      "Developer_Sort_Order__c": 2,
+      "Engineer_Sort_Order__c": 2,
       "Architect_Sort_Order__c": 2,
+      "Consultant_Sort_Order__c": 2,
       "Is_Verified__c": true
     },
     {
@@ -66,6 +74,7 @@
         "referenceId": "SeedPastAdminHighlightRef"
       },
       "Name": "Seed Past Admin highlight",
+      "Public_Key__c": "seed-past-admin",
       "Experience__c": "@SeedRolePastRef",
       "Description__c": "Seed admin highlight for the past role.",
       "Persona_Tag__c": "Admin",
@@ -77,15 +86,16 @@
     {
       "attributes": {
         "type": "Experience_Highlight__c",
-        "referenceId": "SeedPastDeveloperHighlightRef"
+        "referenceId": "SeedPastEngineerHighlightRef"
       },
-      "Name": "Seed Past Developer highlight",
+      "Name": "Seed Past Engineer highlight",
+      "Public_Key__c": "seed-past-engineer",
       "Experience__c": "@SeedRolePastRef",
-      "Description__c": "Seed developer highlight for the past role.",
-      "Persona_Tag__c": "Developer",
+      "Description__c": "Seed engineer highlight for the past role.",
+      "Persona_Tag__c": "Engineer",
       "Sort_Order__c": 2,
       "Lock_Sort_Across_Personas__c": false,
-      "Developer_Sort_Order__c": 1,
+      "Engineer_Sort_Order__c": 1,
       "Is_Verified__c": true
     },
     {
@@ -94,6 +104,7 @@
         "referenceId": "SeedPastArchitectHighlightRef"
       },
       "Name": "Seed Past Architect highlight",
+      "Public_Key__c": "seed-past-architect",
       "Experience__c": "@SeedRolePastRef",
       "Description__c": "Seed architect highlight for the past role.",
       "Persona_Tag__c": "Architect",
@@ -108,25 +119,64 @@
         "referenceId": "SeedPastSharedHighlightRef"
       },
       "Name": "Seed Past shared highlight",
+      "Public_Key__c": "seed-past-shared",
       "Experience__c": "@SeedRolePastRef",
       "Description__c": "Seed highlight shared by every persona for the past role.",
-      "Persona_Tag__c": "Admin;Developer;Architect",
+      "Persona_Tag__c": "Admin;Engineer;Architect;Consultant",
       "Sort_Order__c": 4,
       "Lock_Sort_Across_Personas__c": false,
       "Admin_Sort_Order__c": 2,
-      "Developer_Sort_Order__c": 2,
+      "Engineer_Sort_Order__c": 2,
       "Architect_Sort_Order__c": 2,
+      "Consultant_Sort_Order__c": 2,
       "Is_Verified__c": true
     },
     {
       "attributes": {
         "type": "Experience_Highlight__c",
-        "referenceId": "SeedConsultSharedHighlightRef"
+        "referenceId": "SeedCurrentConsultantHighlightRef"
       },
-      "Name": "Seed Consulting shared highlight",
-      "Experience__c": "@SeedRoleConsultRef",
-      "Description__c": "Seed highlight for the consulting role.",
-      "Timeline_Text__c": "Seed consulting highlight",
+      "Name": "Seed Current Consultant highlight",
+      "Public_Key__c": "seed-cur-consultant",
+      "Experience__c": "@SeedRoleCurrentRef",
+      "Description__c": "Seed consultant highlight for the current role.",
+      "Timeline_Text__c": "Seed consultant highlight",
+      "Persona_Tag__c": "Consultant",
+      "Sort_Order__c": 5,
+      "Lock_Sort_Across_Personas__c": false,
+      "Consultant_Sort_Order__c": 1,
+      "Requirement_Tags__c": "ci-cd;governance",
+      "Selection_Priority__c": "1",
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedPastConsultantHighlightRef"
+      },
+      "Name": "Seed Past Consultant highlight",
+      "Public_Key__c": "seed-past-consultant",
+      "Experience__c": "@SeedRolePastRef",
+      "Description__c": "Seed consultant highlight for the past role.",
+      "Timeline_Text__c": "Seed consultant highlight",
+      "Persona_Tag__c": "Consultant",
+      "Sort_Order__c": 5,
+      "Lock_Sort_Across_Personas__c": false,
+      "Consultant_Sort_Order__c": 1,
+      "Requirement_Tags__c": "ci-cd;governance",
+      "Selection_Priority__c": "1",
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedNorthwindHighlight1Ref"
+      },
+      "Name": "Seed Senior Solution Consultant highlight 1",
+      "Public_Key__c": "seed-northwind-1",
+      "Experience__c": "@SeedRoleNorthwindRef",
+      "Description__c": "Led a long running piece of work for Senior Solution Consultant that took many months and touched several teams across the organisation",
+      "Timeline_Text__c": "Led a cross team build as Senior Solution Consultant",
       "Persona_Tag__c": "Architect",
       "Sort_Order__c": 1,
       "Lock_Sort_Across_Personas__c": false,
@@ -136,16 +186,419 @@
     {
       "attributes": {
         "type": "Experience_Highlight__c",
-        "referenceId": "SeedRetailSharedHighlightRef"
+        "referenceId": "SeedNorthwindHighlight2Ref"
       },
-      "Name": "Seed Retail shared highlight",
-      "Experience__c": "@SeedRoleRetailRef",
-      "Description__c": "Seed highlight for the part time role.",
-      "Timeline_Text__c": "Seed part time highlight",
-      "Persona_Tag__c": "Admin",
+      "Name": "Seed Senior Solution Consultant highlight 2",
+      "Public_Key__c": "seed-northwind-2",
+      "Experience__c": "@SeedRoleNorthwindRef",
+      "Description__c": "A second highlight with no short text, so the timeline falls back to this long description and trims it to one line",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 2,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 2,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedNorthwindHighlight3Ref"
+      },
+      "Name": "Seed Senior Solution Consultant highlight 3",
+      "Public_Key__c": "seed-northwind-3",
+      "Experience__c": "@SeedRoleNorthwindRef",
+      "Description__c": "Third highlight",
+      "Timeline_Text__c": "Cut manual work in half",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 3,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 3,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedNorthwindHighlight4Ref"
+      },
+      "Name": "Seed Senior Solution Consultant highlight 4",
+      "Public_Key__c": "seed-northwind-4",
+      "Experience__c": "@SeedRoleNorthwindRef",
+      "Description__c": "Fourth highlight, beyond the cap of three",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 4,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 4,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedIndependentHighlight1Ref"
+      },
+      "Name": "Seed Salesforce Application Architect highlight 1",
+      "Public_Key__c": "seed-independent-1",
+      "Experience__c": "@SeedRoleIndependentRef",
+      "Description__c": "Led a long running piece of work for Salesforce Application Architect that took many months and touched several teams across the organisation",
+      "Timeline_Text__c": "Led a cross team build as Salesforce Application Architect",
+      "Persona_Tag__c": "Architect",
       "Sort_Order__c": 1,
       "Lock_Sort_Across_Personas__c": false,
-      "Admin_Sort_Order__c": 1,
+      "Architect_Sort_Order__c": 1,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedIndependentHighlight2Ref"
+      },
+      "Name": "Seed Salesforce Application Architect highlight 2",
+      "Public_Key__c": "seed-independent-2",
+      "Experience__c": "@SeedRoleIndependentRef",
+      "Description__c": "A second highlight with no short text, so the timeline falls back to this long description and trims it to one line",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 2,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 2,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedIndependentHighlight3Ref"
+      },
+      "Name": "Seed Salesforce Application Architect highlight 3",
+      "Public_Key__c": "seed-independent-3",
+      "Experience__c": "@SeedRoleIndependentRef",
+      "Description__c": "Third highlight",
+      "Timeline_Text__c": "Cut manual work in half",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 3,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 3,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedIndependentHighlight4Ref"
+      },
+      "Name": "Seed Salesforce Application Architect highlight 4",
+      "Public_Key__c": "seed-independent-4",
+      "Experience__c": "@SeedRoleIndependentRef",
+      "Description__c": "Fourth highlight, beyond the cap of three",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 4,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 4,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedCrmDevHighlight1Ref"
+      },
+      "Name": "Seed CRM Developer highlight 1",
+      "Public_Key__c": "seed-crm-dev-1",
+      "Experience__c": "@SeedRoleCrmDevRef",
+      "Description__c": "Led a long running piece of work for CRM Developer that took many months and touched several teams across the organisation",
+      "Timeline_Text__c": "Led a cross team build as CRM Developer",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 1,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 1,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedCrmDevHighlight2Ref"
+      },
+      "Name": "Seed CRM Developer highlight 2",
+      "Public_Key__c": "seed-crm-dev-2",
+      "Experience__c": "@SeedRoleCrmDevRef",
+      "Description__c": "A second highlight with no short text, so the timeline falls back to this long description and trims it to one line",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 2,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 2,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedCrmDevHighlight3Ref"
+      },
+      "Name": "Seed CRM Developer highlight 3",
+      "Public_Key__c": "seed-crm-dev-3",
+      "Experience__c": "@SeedRoleCrmDevRef",
+      "Description__c": "Third highlight",
+      "Timeline_Text__c": "Cut manual work in half",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 3,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 3,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedCrmDevHighlight4Ref"
+      },
+      "Name": "Seed CRM Developer highlight 4",
+      "Public_Key__c": "seed-crm-dev-4",
+      "Experience__c": "@SeedRoleCrmDevRef",
+      "Description__c": "Fourth highlight, beyond the cap of three",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 4,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 4,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedAppAdminHighlight1Ref"
+      },
+      "Name": "Seed Application Administrator highlight 1",
+      "Public_Key__c": "seed-app-admin-1",
+      "Experience__c": "@SeedRoleAppAdminRef",
+      "Description__c": "Led a long running piece of work for Application Administrator that took many months and touched several teams across the organisation",
+      "Timeline_Text__c": "Led a cross team build as Application Administrator",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 1,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 1,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedAppAdminHighlight2Ref"
+      },
+      "Name": "Seed Application Administrator highlight 2",
+      "Public_Key__c": "seed-app-admin-2",
+      "Experience__c": "@SeedRoleAppAdminRef",
+      "Description__c": "A second highlight with no short text, so the timeline falls back to this long description and trims it to one line",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 2,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 2,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedAppAdminHighlight3Ref"
+      },
+      "Name": "Seed Application Administrator highlight 3",
+      "Public_Key__c": "seed-app-admin-3",
+      "Experience__c": "@SeedRoleAppAdminRef",
+      "Description__c": "Third highlight",
+      "Timeline_Text__c": "Cut manual work in half",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 3,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 3,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedAppAdminHighlight4Ref"
+      },
+      "Name": "Seed Application Administrator highlight 4",
+      "Public_Key__c": "seed-app-admin-4",
+      "Experience__c": "@SeedRoleAppAdminRef",
+      "Description__c": "Fourth highlight, beyond the cap of three",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 4,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 4,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedInstructorHighlight1Ref"
+      },
+      "Name": "Seed Non-Credit Instructor highlight 1",
+      "Public_Key__c": "seed-instructor-1",
+      "Experience__c": "@SeedRoleInstructorRef",
+      "Description__c": "Led a long running piece of work for Non-Credit Instructor that took many months and touched several teams across the organisation",
+      "Timeline_Text__c": "Led a cross team build as Non-Credit Instructor",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 1,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 1,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedInstructorHighlight2Ref"
+      },
+      "Name": "Seed Non-Credit Instructor highlight 2",
+      "Public_Key__c": "seed-instructor-2",
+      "Experience__c": "@SeedRoleInstructorRef",
+      "Description__c": "A second highlight with no short text, so the timeline falls back to this long description and trims it to one line",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 2,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 2,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedInstructorHighlight3Ref"
+      },
+      "Name": "Seed Non-Credit Instructor highlight 3",
+      "Public_Key__c": "seed-instructor-3",
+      "Experience__c": "@SeedRoleInstructorRef",
+      "Description__c": "Third highlight",
+      "Timeline_Text__c": "Cut manual work in half",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 3,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 3,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedInstructorHighlight4Ref"
+      },
+      "Name": "Seed Non-Credit Instructor highlight 4",
+      "Public_Key__c": "seed-instructor-4",
+      "Experience__c": "@SeedRoleInstructorRef",
+      "Description__c": "Fourth highlight, beyond the cap of three",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 4,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 4,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedSpecialistHighlight1Ref"
+      },
+      "Name": "Seed Services Specialist II highlight 1",
+      "Public_Key__c": "seed-specialist-1",
+      "Experience__c": "@SeedRoleSpecialistRef",
+      "Description__c": "Led a long running piece of work for Services Specialist II that took many months and touched several teams across the organisation",
+      "Timeline_Text__c": "Led a cross team build as Services Specialist II",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 1,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 1,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedSpecialistHighlight2Ref"
+      },
+      "Name": "Seed Services Specialist II highlight 2",
+      "Public_Key__c": "seed-specialist-2",
+      "Experience__c": "@SeedRoleSpecialistRef",
+      "Description__c": "A second highlight with no short text, so the timeline falls back to this long description and trims it to one line",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 2,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 2,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedSpecialistHighlight3Ref"
+      },
+      "Name": "Seed Services Specialist II highlight 3",
+      "Public_Key__c": "seed-specialist-3",
+      "Experience__c": "@SeedRoleSpecialistRef",
+      "Description__c": "Third highlight",
+      "Timeline_Text__c": "Cut manual work in half",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 3,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 3,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedSpecialistHighlight4Ref"
+      },
+      "Name": "Seed Services Specialist II highlight 4",
+      "Public_Key__c": "seed-specialist-4",
+      "Experience__c": "@SeedRoleSpecialistRef",
+      "Description__c": "Fourth highlight, beyond the cap of three",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 4,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 4,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedAssistantHighlight1Ref"
+      },
+      "Name": "Seed IT Project Assistant highlight 1",
+      "Public_Key__c": "seed-assistant-1",
+      "Experience__c": "@SeedRoleAssistantRef",
+      "Description__c": "Led a long running piece of work for IT Project Assistant that took many months and touched several teams across the organisation",
+      "Timeline_Text__c": "Led a cross team build as IT Project Assistant",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 1,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 1,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedAssistantHighlight2Ref"
+      },
+      "Name": "Seed IT Project Assistant highlight 2",
+      "Public_Key__c": "seed-assistant-2",
+      "Experience__c": "@SeedRoleAssistantRef",
+      "Description__c": "A second highlight with no short text, so the timeline falls back to this long description and trims it to one line",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 2,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 2,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedAssistantHighlight3Ref"
+      },
+      "Name": "Seed IT Project Assistant highlight 3",
+      "Public_Key__c": "seed-assistant-3",
+      "Experience__c": "@SeedRoleAssistantRef",
+      "Description__c": "Third highlight",
+      "Timeline_Text__c": "Cut manual work in half",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 3,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 3,
+      "Is_Verified__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedAssistantHighlight4Ref"
+      },
+      "Name": "Seed IT Project Assistant highlight 4",
+      "Public_Key__c": "seed-assistant-4",
+      "Experience__c": "@SeedRoleAssistantRef",
+      "Description__c": "Fourth highlight, beyond the cap of three",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 4,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 4,
       "Is_Verified__c": true
     }
   ]

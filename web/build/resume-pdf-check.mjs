@@ -126,14 +126,14 @@ export const PAGE_OPTIONS = Object.freeze({ includeHeader: true, includeSkills: 
  * createPdfLoader's registerFonts and writePdf, with the creation date and file id fixed.
  * @returns {Promise<{bytes: Uint8Array, trace: object[], pages: number, family: string}>}
  */
-export async function renderModel(model) {
+export async function renderModel(model, { title } = {}) {
   const { format, layout, documentPdf, jsPDF, fonts } = await loadShipped();
   const doc = new jsPDF({ unit: layout.page.unit, format: layout.page.format, compress: true });
   const family = documentPdf.createPdfLoader(null, layout).registerFonts(doc, fonts);
   doc.setCreationDate(FIXED_CREATION_DATE);
   doc.setFileId(FIXED_FILE_ID);
   const trace = [];
-  format.writePdf(doc, model, { family, trace });
+  format.writePdf(doc, model, { family, trace, title });
   const bytes = new Uint8Array(doc.output('arraybuffer'));
   return { bytes, trace, pages: doc.getNumberOfPages(), family };
 }
@@ -435,24 +435,17 @@ export function monthRange(text) {
 /**
  * Reads the summary, experience and certifications back from the text layer by position alone.
  * A section starts at an all capitals row at the left margin in the section title size. A
- * smaller all capitals row (Retired) stays inside its section. A role row has a last piece set flush to the
- * right margin (its dates). An employer heading over several roles is a role row with a wide
- * gap above it, or at the top of a page, and another role row close under it. A row at the
- * left margin straight under a role row, with no gap, carries on its heading. A page break
- * does not end an employer's group.
- *
- * At the top of a page there is no gap above to go by, and an employer heading with a role
- * under it looks the same as a role with no highlights and the next role of the same employer:
- * same size, weight, left edge and gap between them. So when a group is still open from the
- * page before, the row opens a new group only when its dates span the dates of every role row
- * close under it, as an employer's overall span does. Otherwise it is the open group's next role.
+ * smaller all capitals row (Retired) stays inside its section. Every role is two lines: a role
+ * row, whose last piece is set flush to the right margin (its dates), and under it the employer
+ * alone at the left margin. A row at the left margin straight under a role row, with no gap,
+ * belongs to that role: the last of them is the employer and any before it carries on a title
+ * that wrapped. A page break never splits a role, so a role row always has its rows under it.
  */
 export function parseFields(items, layout, pageWidth = 612) {
   const rows = readingRows(items);
   const margin = layout.page.margin;
   const right = pageWidth - margin;
   const leading = layout.lineHeight;
-  const closeGap = layout.space.roleAfter / 2;
   const sectionSize = layout.type.sectionTitle.size;
   const isCapitals = (row) =>
     row.items.length === 1 &&
@@ -469,59 +462,22 @@ export function parseFields(items, layout, pageWidth = 612) {
   const summary = [];
   const experience = [];
   const certifications = [];
-  // True when the dates span those of every role row in the close run under the row at index.
-  const spansRolesBelow = (index, dates) => {
-    const span = monthRange(dates);
-    if (!span) {
-      return true;
-    }
-    for (let below = index + 1; below < rows.length && gapBefore(below) < closeGap; below += 1) {
-      if (isRoleRow(rows[below])) {
-        const range = monthRange(rows[below].items[rows[below].items.length - 1].str);
-        if (range && (range.start < span.start || range.end > span.end)) {
-          return false;
-        }
-      }
-    }
-    return true;
-  };
-  let employer = null;
   let carry = null;
   rows.forEach((row, index) => {
     if (isSection(row)) {
       section = row.text;
-      employer = null;
       carry = null;
       return;
     }
     if (section === 'EXPERIENCE' && isRoleRow(row)) {
       const left = row.items.slice(0, -1).map((item) => item.str).join(' ');
       const dates = row.items[row.items.length - 1].str;
-      const next = rows[index + 1];
-      const wide = gapBefore(index) >= closeGap;
-      let opensGroup = wide && next && isRoleRow(next) && gapBefore(index + 1) < closeGap;
-      if (opensGroup && pageStart(index) && employer) {
-        opensGroup = spansRolesBelow(index, dates);
-      }
-      if (opensGroup) {
-        employer = { employer: left, span: dates };
-        carry = employer;
-        return;
-      }
-      if (wide && !pageStart(index)) {
-        employer = null;
-      }
-      const entry = { heading: left, dates, employer: employer ? employer.employer : null };
-      experience.push(entry);
-      carry = entry;
+      carry = { heading: left, dates, rows: [] };
+      experience.push(carry);
       return;
     }
     if (section === 'EXPERIENCE' && carry && Math.abs(row.items[0].x - margin) < 0.5 && gapBefore(index) < 0.5) {
-      if (carry === employer) {
-        employer.employer = `${employer.employer} ${row.text}`;
-      } else {
-        carry.heading = `${carry.heading} ${row.text}`;
-      }
+      carry.rows.push(row.text);
       return;
     }
     carry = null;
@@ -531,6 +487,10 @@ export function parseFields(items, layout, pageWidth = 612) {
     if (section === 'CERTIFICATIONS') {
       certifications.push(row.text);
     }
+  });
+  experience.forEach((entry) => {
+    entry.employer = entry.rows.length > 0 ? entry.rows[entry.rows.length - 1] : null;
+    entry.titleRows = [entry.heading, ...entry.rows.slice(0, -1)];
   });
   return { summary: summary.join(' '), experience, certifications };
 }
@@ -554,23 +514,14 @@ export function checkFields(model, items, layout, employerLabel, pageWidth) {
   if (objective) {
     expectField('summary', flat(objective), flat(parsed.summary));
   }
-  const roles = model.employers.flatMap((group) =>
-    group.roles.map((role) => ({ role, group }))
-  );
-  roles.forEach(({ role, group }, index) => {
+  const roles = model.employers.flatMap((group) => group.roles);
+  roles.forEach((role, index) => {
     const found = parsed.experience[index] || {};
     const label = employerLabel(role.employer, role.isPartTime);
-    if (group.isStacked) {
-      expectField(`role ${index + 1} title`, role.title, found.heading);
-      expectField(`role ${index + 1} employer`, group.employer, found.employer);
-    } else {
-      const heading = found.heading || '';
-      const split = heading.lastIndexOf(', ');
-      const gotTitle = label && split >= 0 ? heading.slice(0, split) : heading;
-      const gotEmployer = label && split >= 0 ? heading.slice(split + 2) : '';
-      expectField(`role ${index + 1} title`, role.title, gotTitle);
-      expectField(`role ${index + 1} employer`, label, gotEmployer);
-    }
+    // A role with no employer has no second line, so every row under it is its title.
+    const titleRows = label ? found.titleRows || [] : [found.heading || '', ...(found.rows || [])];
+    expectField(`role ${index + 1} title`, role.title, titleRows.join(' '));
+    expectField(`role ${index + 1} employer`, label, label ? found.employer : '');
     expectField(`role ${index + 1} dates`, role.datesText, found.dates);
   });
   const certificationLines = parsed.certifications.map(normal);
@@ -636,7 +587,13 @@ export function failuresOf(result) {
 
 const GET_RESUME = /^ResumeController\.getResume\|(\{.*\})$/;
 
-/** The resumes in a data file: every getResume read in a fixture reads file, or one payload. */
+/**
+ * The public focuses, the same as the export plan. A fixture file may still hold older getResume
+ * reads for the tailoring snapshot builder, and the check leaves those out.
+ */
+export const PUBLIC_FOCUSES = Object.freeze(['Engineer', 'Architect', 'Consultant']);
+
+/** The resumes in a data file: every public focus's getResume read in a fixture reads file, or one payload. */
 export function resumesFrom(data) {
   if (data && Array.isArray(data.roles)) {
     return [{ persona: data.persona || 'Resume', resume: data }];
@@ -646,7 +603,7 @@ export function resumesFrom(data) {
       const match = GET_RESUME.exec(key);
       return match ? { persona: JSON.parse(match[1]).persona, resume: data[key] } : null;
     })
-    .filter(Boolean)
+    .filter((entry) => entry && PUBLIC_FOCUSES.includes(entry.persona))
     .sort((a, b) => a.persona.localeCompare(b.persona));
 }
 

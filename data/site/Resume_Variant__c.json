@@ -1,0 +1,81 @@
+{
+  "records": [
+    {
+      "attributes": {
+        "type": "Resume_Variant__c",
+        "referenceId": "SeedVariantEngineerSummaryRef"
+      },
+      "Name": "Seed engineer focus summary",
+      "Public_Key__c": "seed-engineer-focus",
+      "Contact__c": "@SeedOwnerRef",
+      "Variant_Type__c": "Summary",
+      "Title_Family__c": "engineer",
+      "Text__c": "Seed summary for the engineer focus.",
+      "Selection_Priority__c": "1",
+      "Is_Verified__c": true,
+      "Visibility__c": "Public"
+    },
+    {
+      "attributes": {
+        "type": "Resume_Variant__c",
+        "referenceId": "SeedVariantArchitectSummaryRef"
+      },
+      "Name": "Seed architect focus summary",
+      "Public_Key__c": "seed-architect-focus",
+      "Contact__c": "@SeedOwnerRef",
+      "Variant_Type__c": "Summary",
+      "Title_Family__c": "architect",
+      "Text__c": "Seed summary for the architect focus.",
+      "Selection_Priority__c": "1",
+      "Is_Verified__c": true,
+      "Visibility__c": "Public"
+    },
+    {
+      "attributes": {
+        "type": "Resume_Variant__c",
+        "referenceId": "SeedVariantArchitectHeadlineRef"
+      },
+      "Name": "Seed architect headline",
+      "Public_Key__c": "seed-architect-headline",
+      "Contact__c": "@SeedOwnerRef",
+      "Variant_Type__c": "Headline",
+      "Title_Family__c": "architect",
+      "Text__c": "Seed Architect Headline Unverified Variant",
+      "Requirement_Tags__c": "architecture",
+      "Selection_Priority__c": "2",
+      "Is_Verified__c": false,
+      "Visibility__c": "Public"
+    },
+    {
+      "attributes": {
+        "type": "Resume_Variant__c",
+        "referenceId": "SeedVariantEngineerHeadlineRef"
+      },
+      "Name": "Seed engineer headline",
+      "Public_Key__c": "seed-engineer-headline",
+      "Contact__c": "@SeedOwnerRef",
+      "Variant_Type__c": "Headline",
+      "Title_Family__c": "engineer",
+      "Text__c": "Seed Engineer Headline Unverified Variant",
+      "Requirement_Tags__c": "ai-assisted-dev;ci-cd",
+      "Selection_Priority__c": "2",
+      "Is_Verified__c": false,
+      "Visibility__c": "Public"
+    },
+    {
+      "attributes": {
+        "type": "Resume_Variant__c",
+        "referenceId": "SeedVariantEngineerUnverifiedSummaryRef"
+      },
+      "Name": "Seed engineer unverified summary",
+      "Public_Key__c": "seed-engineer-summary",
+      "Contact__c": "@SeedOwnerRef",
+      "Variant_Type__c": "Summary",
+      "Title_Family__c": "engineer",
+      "Text__c": "Seed engineer summary text that no page shows, kept unverified for the leak test.",
+      "Selection_Priority__c": "2",
+      "Is_Verified__c": false,
+      "Visibility__c": "Public"
+    }
+  ]
+}

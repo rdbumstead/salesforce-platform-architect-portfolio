@@ -6,6 +6,7 @@
         "referenceId": "PillarAProjectRef"
       },
       "Name": "Employer Hub for an education provider",
+      "Public_Key__c": "pillar-a-project",
       "Pillar__c": "A",
       "Status__c": "Live – Demo / Reference",
       "Sort_Order__c": 1,

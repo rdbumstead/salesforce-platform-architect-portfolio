@@ -153,7 +153,7 @@ private class ResumeSnapshotServiceTest {
         Name = text,
         Experience__c = role.Id,
         Description__c = text,
-        Persona_Tag__c = 'Developer',
+        Persona_Tag__c = 'Engineer',
         Sort_Order__c = sortOrder
       );
     }

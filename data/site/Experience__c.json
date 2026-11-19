@@ -3,16 +3,80 @@
     {
       "attributes": {
         "type": "Experience__c",
+        "referenceId": "SeedRoleNorthwindRef"
+      },
+      "Name": "Senior Solution Consultant",
+      "Public_Key__c": "seed-role-northwind",
+      "Employer__c": "@NorthwindRef",
+      "Contact__c": "@SeedOwnerRef",
+      "Start_Date__c": "2026-04-14",
+      "Is_Current_Role__c": true,
+      "Is_Remote__c": false,
+      "Is_Part_Time__c": false,
+      "Sort_Order__c": 1
+    },
+    {
+      "attributes": {
+        "type": "Experience__c",
         "referenceId": "SeedRoleCurrentRef"
       },
       "Name": "Seed Platform Architect",
+      "Public_Key__c": "seed-role-current",
       "Employer__c": "@SeedEmployerRef",
       "Contact__c": "@SeedOwnerRef",
       "Start_Date__c": "2023-01-01",
       "Is_Current_Role__c": true,
       "Is_Remote__c": true,
       "Is_Part_Time__c": false,
-      "Sort_Order__c": 1
+      "Sort_Order__c": 2,
+      "Is_Primary_Role__c": true
+    },
+    {
+      "attributes": {
+        "type": "Experience__c",
+        "referenceId": "SeedRoleIndependentRef"
+      },
+      "Name": "Salesforce Application Architect",
+      "Public_Key__c": "seed-role-independent",
+      "Employer__c": "@IndependentRef",
+      "Contact__c": "@SeedOwnerRef",
+      "Start_Date__c": "2021-10-01",
+      "Is_Current_Role__c": true,
+      "Is_Remote__c": false,
+      "Is_Part_Time__c": true,
+      "Sort_Order__c": 3
+    },
+    {
+      "attributes": {
+        "type": "Experience__c",
+        "referenceId": "SeedRoleCrmDevRef"
+      },
+      "Name": "CRM Developer",
+      "Public_Key__c": "seed-role-crm-dev",
+      "Employer__c": "@LakeviewRef",
+      "Contact__c": "@SeedOwnerRef",
+      "Start_Date__c": "2025-08-01",
+      "End_Date__c": "2026-04-10",
+      "Is_Current_Role__c": false,
+      "Is_Remote__c": false,
+      "Is_Part_Time__c": false,
+      "Sort_Order__c": 4
+    },
+    {
+      "attributes": {
+        "type": "Experience__c",
+        "referenceId": "SeedRoleAppAdminRef"
+      },
+      "Name": "Application Administrator",
+      "Public_Key__c": "seed-role-app-admin",
+      "Employer__c": "@LakeviewRef",
+      "Contact__c": "@SeedOwnerRef",
+      "Start_Date__c": "2021-06-14",
+      "End_Date__c": "2025-08-01",
+      "Is_Current_Role__c": false,
+      "Is_Remote__c": false,
+      "Is_Part_Time__c": false,
+      "Sort_Order__c": 5
     },
     {
       "attributes": {
@@ -20,6 +84,7 @@
         "referenceId": "SeedRolePastRef"
       },
       "Name": "Seed Salesforce Developer",
+      "Public_Key__c": "seed-role-past",
       "Employer__c": "@SeedEmployerRef",
       "Contact__c": "@SeedOwnerRef",
       "Start_Date__c": "2019-01-01",
@@ -27,37 +92,87 @@
       "Is_Current_Role__c": false,
       "Is_Remote__c": false,
       "Is_Part_Time__c": true,
-      "Sort_Order__c": 2
+      "Sort_Order__c": 6
     },
     {
       "attributes": {
         "type": "Experience__c",
-        "referenceId": "SeedRoleConsultRef"
+        "referenceId": "SeedRoleInstructorRef"
       },
-      "Name": "Seed Integration Consultant",
-      "Employer__c": "@SeedConsultingRef",
+      "Name": "Non-Credit Instructor",
+      "Public_Key__c": "seed-role-instructor",
+      "Employer__c": "@HarborRef",
       "Contact__c": "@SeedOwnerRef",
-      "Start_Date__c": "2015-03-01",
-      "End_Date__c": "2018-12-31",
+      "Start_Date__c": "2017-12-01",
+      "End_Date__c": "2021-06-18",
+      "Is_Current_Role__c": false,
+      "Is_Remote__c": false,
+      "Is_Part_Time__c": true,
+      "Sort_Order__c": 7
+    },
+    {
+      "attributes": {
+        "type": "Experience__c",
+        "referenceId": "SeedRoleSpecialistRef"
+      },
+      "Name": "Services Specialist II",
+      "Public_Key__c": "seed-role-specialist",
+      "Employer__c": "@HarborRef",
+      "Contact__c": "@SeedOwnerRef",
+      "Start_Date__c": "2017-07-03",
+      "End_Date__c": "2021-06-18",
       "Is_Current_Role__c": false,
       "Is_Remote__c": false,
       "Is_Part_Time__c": false,
-      "Sort_Order__c": 3
+      "Sort_Order__c": 8
+    },
+    {
+      "attributes": {
+        "type": "Experience__c",
+        "referenceId": "SeedRoleAssistantRef"
+      },
+      "Name": "IT Project Assistant",
+      "Public_Key__c": "seed-role-assistant",
+      "Employer__c": "@HarborRef",
+      "Contact__c": "@SeedOwnerRef",
+      "Start_Date__c": "2017-01-02",
+      "End_Date__c": "2017-07-02",
+      "Is_Current_Role__c": false,
+      "Is_Remote__c": false,
+      "Is_Part_Time__c": false,
+      "Sort_Order__c": 9
+    },
+    {
+      "attributes": {
+        "type": "Experience__c",
+        "referenceId": "SeedRoleGisRef"
+      },
+      "Name": "GIS Analyst",
+      "Public_Key__c": "seed-role-gis",
+      "Employer__c": "@MapworksRef",
+      "Contact__c": "@SeedOwnerRef",
+      "Start_Date__c": "2015-03-02",
+      "End_Date__c": "2015-08-31",
+      "Is_Current_Role__c": false,
+      "Is_Remote__c": false,
+      "Is_Part_Time__c": false,
+      "Sort_Order__c": 10
     },
     {
       "attributes": {
         "type": "Experience__c",
         "referenceId": "SeedRoleRetailRef"
       },
-      "Name": "Seed Support Analyst",
-      "Employer__c": "@SeedRetailRef",
+      "Name": "Customer Service Manager",
+      "Public_Key__c": "seed-role-retail",
+      "Employer__c": "@OldTownRef",
       "Contact__c": "@SeedOwnerRef",
-      "Start_Date__c": "2012-06-01",
-      "End_Date__c": "2015-02-28",
+      "Start_Date__c": "2012-03-01",
+      "End_Date__c": "2014-06-30",
       "Is_Current_Role__c": false,
       "Is_Remote__c": false,
-      "Is_Part_Time__c": true,
-      "Sort_Order__c": 4
+      "Is_Part_Time__c": false,
+      "Sort_Order__c": 11
     }
   ]
 }

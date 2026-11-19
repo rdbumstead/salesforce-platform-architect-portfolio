@@ -29,8 +29,8 @@ function wire(method, config) {
 }
 
 test('a build time wire sends the build data', async () => {
-  setSiteData({ reads: { 'R.get|{"persona":"Admin"}': { ok: true } }, lazy: {}, build: {} });
-  const emitted = await wire(apexMethod('R.get', 'build'), { persona: 'Admin' });
+  setSiteData({ reads: { 'R.get|{"persona":"Consultant"}': { ok: true } }, lazy: {}, build: {} });
+  const emitted = await wire(apexMethod('R.get', 'build'), { persona: 'Consultant' });
   assert.deepEqual(emitted, [{ data: { ok: true }, error: undefined }]);
 });
 

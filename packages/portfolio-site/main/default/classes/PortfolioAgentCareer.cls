@@ -2,7 +2,7 @@
  * @description       : Agent action "Get Career History" for the Portfolio Guide Agent. Returns
  *                      the owner's roles, newest first, each with its title, employer, years and
  *                      up to MAX_HIGHLIGHTS highlights, as JSON the agent reads. A persona
- *                      (Architect, Developer or Admin) puts the highlights tagged with it first.
+ *                      (Architect, Engineer, Consultant or Admin) puts the highlights tagged with it first.
  *                      Reads only through QueryDefinitions (records PortfolioAgentCareer_Roles and
  *                      PortfolioAgentCareer_Highlights, shipped equal to the code defaults).
  *                      Read only. No Contact is read, and email and phone shapes are removed
@@ -28,7 +28,7 @@ public with sharing class PortfolioAgentCareer implements QueryDefinitions.Provi
   public class Request {
     @InvocableVariable(
       label='Persona'
-      description='Optional. Architect, Developer or Admin, to put the highlights of that kind of work first.'
+      description='Optional. Architect, Engineer, Consultant or Admin, to put the highlights of that kind of work first.'
       required=false
     )
     public String persona;
@@ -146,7 +146,7 @@ public with sharing class PortfolioAgentCareer implements QueryDefinitions.Provi
    * @description Up to MAX_HIGHLIGHTS highlight texts: those tagged with the persona first,
    *              then the rest, each group in sort order.
    * @param highlights The role's highlights in sort order, or null.
-   * @param persona Architect, Developer or Admin, or blank.
+   * @param persona Architect, Engineer, Consultant or Admin, or blank.
    * @return List<String> The texts.
    */
   @TestVisible

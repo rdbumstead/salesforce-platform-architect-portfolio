@@ -4,7 +4,7 @@
   "properties": {
     "persona": {
       "title": "Persona",
-      "description": "Optional. Architect, Developer or Admin, to put the highlights of that kind of work first.",
+      "description": "Optional. Architect, Engineer, Consultant or Admin, to put the highlights of that kind of work first.",
       "lightning:type": "lightning__textType",
       "lightning:isPII": false,
       "copilotAction:isUserInput": false

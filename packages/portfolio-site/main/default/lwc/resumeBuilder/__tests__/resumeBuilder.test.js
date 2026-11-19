@@ -22,7 +22,10 @@ import {
   buildLines,
   toAtsText,
   writePdf,
-  shortCertName
+  shortCertName,
+  employerLabel,
+  pdfFileName,
+  pdfTitle
 } from "../resumeFormat";
 import {
   RESUME_LAYOUT,
@@ -65,10 +68,10 @@ jest.mock("lightning/platformResourceLoader", () => {
 
 const RESUME = {
   persona: "Architect",
+  summary: "Design platforms that last.",
   header: {
     name: "Ryan Bumstead",
     title: "Salesforce Technical Architect",
-    careerObjective: "Design platforms that last.",
     linkedInUrl: "https://www.linkedin.com/in/example",
     gitHubUrl: "https://github.com/rdbumstead",
     trailheadUrl: null,
@@ -230,6 +233,8 @@ function fakeDoc() {
     }),
     addFileToVFS: jest.fn(),
     addFont: jest.fn(),
+    setProperties: jest.fn(),
+    setLanguage: jest.fn(),
     save: jest.fn()
   };
   return doc;
@@ -314,7 +319,10 @@ describe("c-resume-builder", () => {
     const roles = queryAll(element, ".resume-role");
     expect(roles).toHaveLength(2);
     expect(roles[0].querySelector(".role-heading").textContent).toBe(
-      "Technical Architect, Acme"
+      "Technical Architect"
+    );
+    expect(roles[0].querySelector(".role-employer").textContent.trim()).toBe(
+      "Acme"
     );
     expect(roles[0].querySelector(".role-dates").textContent).toBe(
       "Apr 2023 - Present | Remote"
@@ -354,7 +362,11 @@ describe("c-resume-builder", () => {
     expect(label.textContent.trim()).toBe("Tailor for");
     expect(
       Array.from(picker.options).map((option) => option.textContent.trim())
-    ).toEqual(["Platform Architect", "Salesforce Developer", "System Admin"]);
+    ).toEqual([
+      "Salesforce Engineer",
+      "Platform Architect",
+      "Solution Consultant"
+    ]);
     expect(picker.value).toBe("Architect");
     expect(picker.classList.contains("nc-control")).toBe(true);
   });
@@ -365,14 +377,14 @@ describe("c-resume-builder", () => {
     await flushPromises();
 
     const picker = query(element, "select.persona-picker");
-    picker.value = "Developer";
+    picker.value = "Engineer";
     picker.dispatchEvent(new CustomEvent("change"));
     await flushPromises();
 
-    expect(getResume.getLastConfig()).toEqual({ persona: "Developer" });
+    expect(getResume.getLastConfig()).toEqual({ persona: "Engineer" });
     expect(query(element, ".loading-state")).not.toBeNull();
 
-    getResume.emit({ ...RESUME, persona: "Developer", roles: [] });
+    getResume.emit({ ...RESUME, persona: "Engineer", roles: [] });
     await flushPromises();
     expect(queryAll(element, ".resume-role")).toHaveLength(0);
     expect(query(element, ".resume-name")).not.toBeNull();
@@ -419,14 +431,14 @@ describe("c-resume-builder", () => {
   it("shows the controller message in the error state", async () => {
     const element = createComponent();
     getResume.error({
-      message: "Invalid persona. Valid values: Admin, Developer, Architect"
+      message: "Invalid persona. Valid values: Engineer, Architect, Consultant"
     });
     await flushPromises();
 
     const errorState = query(element, ".error-state");
     expect(errorState).not.toBeNull();
     expect(errorState.textContent).toContain(
-      "Invalid persona. Valid values: Admin, Developer, Architect"
+      "Invalid persona. Valid values: Engineer, Architect, Consultant"
     );
     expect(button(element, "download-pdf").disabled).toBe(true);
   });
@@ -474,7 +486,7 @@ describe("c-resume-builder", () => {
   it("shows the empty state when the resume has no content", async () => {
     const element = createComponent();
     getResume.emit({
-      persona: "Admin",
+      persona: "Consultant",
       header: null,
       roles: [],
       skillGroups: [],
@@ -600,6 +612,35 @@ describe("c-resume-builder", () => {
     expect(jsPdfInstance.save).toHaveBeenCalledTimes(2);
   });
 
+  it("sets the PDF title and language, and names the file for the chosen focus", async () => {
+    const element = createComponent();
+    getResume.emit(RESUME);
+    await flushPromises();
+    button(element, "download-pdf").click();
+    await flushPromises();
+    await flushPromises();
+    expect(jsPdfInstance.setProperties).toHaveBeenCalledWith({
+      title: "Ryan Bumstead resume, Platform Architect"
+    });
+    expect(jsPdfInstance.setLanguage).toHaveBeenCalledWith("en");
+
+    const picker = query(element, "select.persona-picker");
+    picker.value = "Consultant";
+    picker.dispatchEvent(new CustomEvent("change"));
+    await flushPromises();
+    getResume.emit({ ...RESUME, persona: "Consultant" });
+    await flushPromises();
+    button(element, "download-pdf").click();
+    await flushPromises();
+    await flushPromises();
+    expect(jsPdfInstance.setProperties).toHaveBeenLastCalledWith({
+      title: "Ryan Bumstead resume, Solution Consultant"
+    });
+    expect(jsPdfInstance.save).toHaveBeenLastCalledWith(
+      "Ryan_Bumstead_Resume_Consultant.pdf"
+    );
+  });
+
   it("still writes the PDF in the fallback font when the fonts cannot be fetched", async () => {
     global.fetch = jest.fn(() => fontResponse(false));
     const element = createComponent();
@@ -697,11 +738,13 @@ describe("c-resume-builder", () => {
         "Design platforms that last.",
         "",
         "EXPERIENCE",
-        "Technical Architect | Acme | Apr 2023 - Present | Remote",
+        "Technical Architect | Apr 2023 - Present | Remote",
+        "Acme",
         "- Led the integration layer.",
         "- Built the CI pipeline.",
         "",
-        "Developer | Globex | Jan 2020 - Mar 2023",
+        "Developer | Jan 2020 - Mar 2023",
+        "Globex",
         "- Shipped Lightning components.",
         "",
         "SKILLS",
@@ -986,6 +1029,7 @@ describe("c-resume-builder", () => {
           sections.push({
             title: piece.text,
             roles: [],
+            employers: [],
             dates: [],
             bullets: [],
             current: [],
@@ -1000,6 +1044,7 @@ describe("c-resume-builder", () => {
           return;
         }
         if (piece.kind === "role") last.roles.push(piece.text);
+        if (piece.kind === "employer") last.employers.push(piece.text);
         if (piece.kind === "dates") last.dates.push(piece.text);
         if (piece.kind === "bullet") last.bullets.push(piece.text);
         if (piece.kind === "cert") last.current.push(piece.text);
@@ -1037,12 +1082,29 @@ describe("c-resume-builder", () => {
       expect(pdf.map((section) => section.title)).toEqual(
         preview.map((section) => section.title.toUpperCase())
       );
+      // The PDF draws every role as its title with the dates, then the employer on its own
+      // line, so the roles and employers are compared with the model and the rest with the
+      // preview.
       pdf.forEach((section, index) => {
-        expect({ ...section, title: "" }).toEqual({
-          ...preview[index],
+        const strip = (outline) => ({
+          ...outline,
+          roles: [],
+          employers: [],
           title: ""
         });
+        expect(strip(section)).toEqual(strip({ ...preview[index] }));
       });
+      const modelRoles = model.employers.flatMap((group) => group.roles);
+      const experience = pdf.find((section) => section.title === "EXPERIENCE");
+      expect(experience.roles).toEqual(modelRoles.map((role) => role.title));
+      expect(experience.employers).toEqual(
+        modelRoles.map((role) => employerLabel(role.employer, role.isPartTime))
+      );
+      pdf
+        .filter((section) => section.title !== "EXPERIENCE")
+        .forEach((section) => {
+          expect([section.roles, section.employers]).toEqual([[], []]);
+        });
 
       // The trace is what was drawn: every traced piece is in the document's text calls.
       const drawn = doc.drawn.map((piece) => piece.text);
@@ -1115,13 +1177,17 @@ describe("c-resume-builder", () => {
       const nameWidth = "Ryan Bumstead".length * name.size * 0.5;
       expect(name.x + nameWidth / 2).toBeCloseTo(306, 5);
       const heading = doc.drawn.find(
-        (piece) => piece.text === "Technical Architect, Acme"
+        (piece) => piece.text === "Technical Architect"
       );
+      const employer = doc.drawn.find((piece) => piece.text === "Acme");
       const dates = doc.drawn.find(
         (piece) => piece.text === "Apr 2023 - Present | Remote"
       );
       expect(dates.y).toBe(heading.y);
       expect(dates.x).toBeGreaterThan(heading.x);
+      // The employer sits alone on the next line, at the left margin.
+      expect(employer.y).toBeGreaterThan(heading.y);
+      expect(employer.x).toBe(heading.x);
       expect(heading.style).toBe("bold");
       expect(dates.style).toBe("normal");
       // One rule under each section title, Summary included.
@@ -1140,9 +1206,7 @@ describe("c-resume-builder", () => {
       const experienceTitle = doc.drawn.find(
         (piece) => piece.text === "EXPERIENCE"
       );
-      const objective = doc.drawn.find(
-        (piece) => piece.text === FULL.header.careerObjective
-      );
+      const objective = doc.drawn.find((piece) => piece.text === FULL.summary);
       expect(summaryTitle.size).toBe(experienceTitle.size);
       expect(summaryTitle.style).toBe(experienceTitle.style);
       expect(summaryTitle.x).toBe(experienceTitle.x);
@@ -1153,8 +1217,8 @@ describe("c-resume-builder", () => {
       const order = trace.map((piece) => piece.text);
       const at = (text) => order.indexOf(text);
       expect(at("Ryan Bumstead")).toBeLessThan(at("SUMMARY"));
-      expect(at("SUMMARY")).toBe(at(FULL.header.careerObjective) - 1);
-      expect(at(FULL.header.careerObjective)).toBeLessThan(at("EXPERIENCE"));
+      expect(at("SUMMARY")).toBe(at(FULL.summary) - 1);
+      expect(at(FULL.summary)).toBeLessThan(at("EXPERIENCE"));
       expect(objective.y).toBeGreaterThan(summaryTitle.y);
       expect(experienceTitle.y).toBeGreaterThan(objective.y);
       // The PDF reads in the same order as the ATS text.
@@ -1170,7 +1234,7 @@ describe("c-resume-builder", () => {
 
     it("draws no Summary title when there is no career objective", () => {
       const model = buildViewModel(
-        { ...FULL, header: { ...FULL.header, careerObjective: "" } },
+        { ...FULL, summary: null },
         { includeHeader: true, includeSkills: true }
       );
       const doc = fakeDoc();
@@ -1249,6 +1313,32 @@ describe("c-resume-builder", () => {
     });
   });
 
+  it("links the text version for the chosen focus next to the PDF button", async () => {
+    const element = createComponent();
+    getResume.emit(RESUME);
+    await flushPromises();
+    const link = query(element, "a.text-version");
+    expect(link).not.toBeNull();
+    expect(link.textContent.trim()).toBe("Text version");
+    expect(link.getAttribute("href")).toBe("/resume/text/architect");
+    expect(link.getAttribute("aria-label")).toBe(
+      "Text version of the resume for Platform Architect"
+    );
+    expect(link.getAttribute("tabindex")).toBeNull();
+    expect(link.parentElement.querySelector(".download-pdf")).not.toBeNull();
+
+    const picker = query(element, "select.persona-picker");
+    picker.value = "Consultant";
+    picker.dispatchEvent(new CustomEvent("change"));
+    await flushPromises();
+    expect(query(element, "a.text-version").getAttribute("href")).toBe(
+      "/resume/text/consultant"
+    );
+    expect(query(element, "a.text-version").getAttribute("aria-label")).toBe(
+      "Text version of the resume for Solution Consultant"
+    );
+  });
+
   it("places View source with the resumeBuilder key in the card's title row", () => {
     // The test card mock has no actions slot, so the slotted control is read from the template.
     const template = require("fs").readFileSync(
@@ -1296,6 +1386,123 @@ describe("c-resume-builder", () => {
   it("keeps the card body free of the pair on a wide screen", () => {
     const element = createComponent();
     expect(query(element, ".card-actions_body")).toBeNull();
+  });
+});
+
+describe("PDF title, file name and summary source", () => {
+  const MODEL = buildViewModel(
+    {
+      summary: "The consultant summary.",
+      header: {
+        name: "Ryan Bumstead",
+        title: "Architect",
+        careerObjective: "Old."
+      },
+      roles: []
+    },
+    { includeHeader: true, includeSkills: false }
+  );
+
+  it("reads the summary from the response and ignores the header objective", () => {
+    expect(MODEL.header.careerObjective).toBe("The consultant summary.");
+    const none = buildViewModel(
+      {
+        summary: null,
+        header: { name: "R", careerObjective: "Old." },
+        roles: []
+      },
+      { includeHeader: true, includeSkills: false }
+    );
+    expect(none.header.careerObjective).toBe("");
+    expect(buildLines(none).map((line) => line.text)).not.toContain("SUMMARY");
+  });
+
+  it("builds the title from the name and the focus label", () => {
+    expect(pdfTitle(MODEL, "Salesforce Engineer")).toBe(
+      "Ryan Bumstead resume, Salesforce Engineer"
+    );
+    expect(pdfTitle(MODEL, "")).toBe("Ryan Bumstead resume");
+    expect(pdfTitle(null, "Platform Architect")).toBe(
+      "Resume, Platform Architect"
+    );
+  });
+
+  it("suffixes the file name with the persona value", () => {
+    expect(pdfFileName(MODEL, "Engineer")).toBe(
+      "Ryan_Bumstead_Resume_Engineer.pdf"
+    );
+    expect(pdfFileName(MODEL, "Consultant")).toBe(
+      "Ryan_Bumstead_Resume_Consultant.pdf"
+    );
+  });
+
+  it("writes the title and the language to the document", () => {
+    const doc = fakeDoc();
+    writePdf(doc, MODEL, { family: "Inter", title: "T" });
+    expect(doc.setProperties).toHaveBeenCalledWith({ title: "T" });
+    expect(doc.setLanguage).toHaveBeenCalledWith("en");
+  });
+
+  it("draws every role as title with dates, then the employer alone, with no employer heading", () => {
+    const model = buildViewModel(
+      {
+        roles: [
+          {
+            id: "a",
+            title: "CRM Developer",
+            employer: "Creighton",
+            startDate: "2025-08-01",
+            endDate: "2026-04-01",
+            highlights: ["One."]
+          },
+          {
+            id: "b",
+            title: "Application Administrator",
+            employer: "Creighton",
+            startDate: "2021-06-01",
+            endDate: "2025-08-01",
+            highlights: ["Two."]
+          }
+        ]
+      },
+      { includeHeader: false, includeSkills: false }
+    );
+    expect(model.employers[0].isStacked).toBe(true);
+    const doc = fakeDoc();
+    const trace = [];
+    writePdf(doc, model, { family: "Inter", trace });
+    const experience = trace
+      .filter((piece) => ["role", "dates", "employer"].includes(piece.kind))
+      .map((piece) => `${piece.kind}:${piece.text}`);
+    expect(experience).toEqual([
+      "role:CRM Developer",
+      "dates:Aug 2025 - Apr 2026",
+      "employer:Creighton",
+      "role:Application Administrator",
+      "dates:Jun 2021 - Aug 2025",
+      "employer:Creighton"
+    ]);
+  });
+
+  it("leaves the employer line out for a role with no employer", () => {
+    const model = buildViewModel(
+      {
+        roles: [
+          {
+            id: "c",
+            title: "Freelancer",
+            employer: "",
+            startDate: "2020-01-01",
+            endDate: "2021-01-01",
+            highlights: ["One."]
+          }
+        ]
+      },
+      { includeHeader: false, includeSkills: false }
+    );
+    const trace = [];
+    writePdf(fakeDoc(), model, { family: "Inter", trace });
+    expect(trace.some((piece) => piece.kind === "employer")).toBe(false);
   });
 });
 
@@ -1442,12 +1649,15 @@ describe("grouping by employer and issuer", () => {
     const doc = fakeDoc();
     writePdf(doc, model, { family: "Inter" });
     const drawn = doc.drawn.map((piece) => piece.text).join(" ");
-    expect(drawn).toContain("Application Architect, Freelance (part time)");
+    expect(drawn).toContain("Application Architect");
+    expect(drawn).toContain("Freelance (part time)");
     expect(drawn).not.toContain("(Part Time) (part time)");
 
     const text = toAtsText(buildLines(model));
-    expect(text).toContain("Application Architect | Freelance (part time) |");
-    expect(text).toContain("Coach | Delta Club (Part Time) |");
+    expect(text).toMatch(
+      /Application Architect \| [^\n]+\nFreelance \(part time\)\n/
+    );
+    expect(text).toMatch(/Coach \| [^\n]+\nDelta Club \(Part Time\)\n/);
     expect(text).not.toMatch(/part time\) \(part time/i);
   });
 
@@ -1528,12 +1738,12 @@ describe("grouping by employer and issuer", () => {
     ]);
     const text = toAtsText(buildLines(model));
     expect(text).toContain(
-      "Instructor | MCC | Dec 2017 - Jun 2021\n- Instructor highlight.\n\nCAET Specialist | MCC | Jul 2017 - Jun 2021\n\nEarlier roles: Technician, Fiserv (2016)"
+      "Instructor | Dec 2017 - Jun 2021\nMCC\n- Instructor highlight.\n\nCAET Specialist | Jul 2017 - Jun 2021\nMCC\n\nEarlier roles: Technician, Fiserv (2016)"
     );
     expect(text).not.toContain("Earlier roles: CAET");
   });
 
-  it("renders the employer heading and titles on the page, one block for a single role", async () => {
+  it("renders every role as a title with dates and the employer under it, with no employer heading", async () => {
     const element = createElement("c-resume-builder", { is: ResumeBuilder });
     document.body.appendChild(element);
     getResume.emit({
@@ -1549,17 +1759,22 @@ describe("grouping by employer and issuer", () => {
       element.shadowRoot.querySelectorAll(".resume-employer")
     );
     expect(groups).toHaveLength(2);
-    expect(
-      groups[0].querySelector(".employer-heading").textContent.trim()
-    ).toBe("Acme");
+    expect(element.shadowRoot.querySelector(".employer-heading")).toBeNull();
     expect(
       Array.from(groups[0].querySelectorAll(".role-title")).map((node) =>
         node.textContent.trim()
       )
     ).toEqual(["Developer", "Admin"]);
-    expect(groups[1].querySelector(".employer-heading")).toBeNull();
+    expect(
+      Array.from(groups[0].querySelectorAll(".role-employer")).map((node) =>
+        node.textContent.trim()
+      )
+    ).toEqual(["Acme", "Acme"]);
     expect(groups[1].querySelector(".role-heading").textContent.trim()).toBe(
-      "Solo Role, Alone"
+      "Solo Role"
+    );
+    expect(groups[1].querySelector(".role-employer").textContent.trim()).toBe(
+      "Alone"
     );
   });
 
@@ -1613,7 +1828,7 @@ describe("grouping by employer and issuer", () => {
     expect(shortCertName("Other Name", "Salesforce")).toBe("Other Name");
   });
 
-  it("writes one ATS line per role with the employer repeated and full certification names", () => {
+  it("writes two ATS lines per role, the employer repeated and full certification names", () => {
     const model = build(
       [
         role(
@@ -1641,10 +1856,10 @@ describe("grouping by employer and issuer", () => {
     );
     const text = toAtsText(buildLines(model));
     expect(text).toContain(
-      "CRM Developer | Creighton University | Aug 2025 - Apr 2026\n- CRM Developer highlight."
+      "CRM Developer | Aug 2025 - Apr 2026\nCreighton University\n- CRM Developer highlight."
     );
     expect(text).toContain(
-      "Application Administrator | Creighton University | Jun 2021 - Aug 2025\n- Application Administrator highlight."
+      "Application Administrator | Jun 2021 - Aug 2025\nCreighton University\n- Application Administrator highlight."
     );
     expect(text).toContain(
       "Salesforce Certified Platform App Builder, Salesforce, Mar 2024"

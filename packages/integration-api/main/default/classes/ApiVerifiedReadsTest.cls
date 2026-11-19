@@ -171,8 +171,9 @@ private class ApiVerifiedReadsTest {
         'experienceId' => null,
         'hasPersonas' => false,
         'adminOff' => true,
-        'developerOff' => true,
-        'architectOff' => true
+        'engineerOff' => true,
+        'architectOff' => true,
+        'consultantOff' => true
       }
     );
     assertRead(

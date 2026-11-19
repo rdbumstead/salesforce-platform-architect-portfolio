@@ -997,9 +997,9 @@ describe("c-skill-network (Large form factor)", () => {
   function taggedPayload() {
     const data = buildPayload();
     const tags = {
-      a01S1: "Developer;Architect",
-      a01S2: "Developer",
-      a01S4: "Architect;Admin"
+      a01S1: "Engineer;Architect",
+      a01S2: "Engineer",
+      a01S4: "Architect;Consultant"
     };
     data.uiapi.query.Skill__c.edges.forEach((edge) => {
       edge.node.Persona_Tag__c = { value: tags[edge.node.Id] || null };
@@ -1042,9 +1042,9 @@ describe("c-skill-network (Large form factor)", () => {
     const buttons = [...group.querySelectorAll("button")];
     expect(buttons.map((button) => button.textContent.trim())).toEqual([
       "All",
+      "Salesforce Engineer",
       "Platform Architect",
-      "Salesforce Developer",
-      "System Admin"
+      "Solution Consultant"
     ]);
     expect(
       buttons.map((button) => button.getAttribute("aria-pressed"))
@@ -1090,7 +1090,7 @@ describe("c-skill-network (Large form factor)", () => {
       if (edge.node.Persona_Tag__c.value) {
         edge.node.Persona_Tag__c.value = edge.node.Persona_Tag__c.value
           .split(";")
-          .filter((tag) => tag !== "Admin")
+          .filter((tag) => tag !== "Consultant")
           .join(";");
       }
     });
@@ -1102,12 +1102,12 @@ describe("c-skill-network (Large form factor)", () => {
     await flushPromises();
     expect(element.shadowRoot.querySelector(".selection-panel")).not.toBeNull();
 
-    personaButton(element, "Salesforce Developer").click();
+    personaButton(element, "Salesforce Engineer").click();
     await flushPromises();
     expect(element.shadowRoot.querySelector(".selection-panel")).toBeNull();
     expect(chipNames(element)).toEqual(["Lightning Web Components", "Apex"]);
 
-    personaButton(element, "System Admin").click();
+    personaButton(element, "Solution Consultant").click();
     await flushPromises();
     expect(count(element, "button.chip")).toBe(0);
     expect(
@@ -1180,7 +1180,7 @@ describe("c-skill-network (Large form factor)", () => {
     ).toContain("Flow:");
     attachNodeDrag.mockClear();
 
-    personaButton(element, "Salesforce Developer").click();
+    personaButton(element, "Salesforce Engineer").click();
     await flushPromises();
     expect(graphNode(element, "a01S3")).toBeNull();
     expect(
@@ -1198,7 +1198,7 @@ describe("c-skill-network (Large form factor)", () => {
       if (edge.node.Persona_Tag__c.value) {
         edge.node.Persona_Tag__c.value = edge.node.Persona_Tag__c.value
           .split(";")
-          .filter((tag) => tag !== "Admin")
+          .filter((tag) => tag !== "Consultant")
           .join(";");
       }
     });
@@ -1207,7 +1207,7 @@ describe("c-skill-network (Large form factor)", () => {
     await flushPromises();
     await openGraph(element);
 
-    personaButton(element, "System Admin").click();
+    personaButton(element, "Solution Consultant").click();
     await flushPromises();
     expect(drawnNodeIds(element).filter((id) => id.startsWith("a01S"))).toEqual(
       []

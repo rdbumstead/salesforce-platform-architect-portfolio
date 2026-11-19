@@ -48,7 +48,7 @@ private class ResumeControllerTest {
 
     Test.startTest();
     System.runAs(guest) {
-      serialized = JSON.serialize(ResumeController.getResume('Admin'));
+      serialized = JSON.serialize(ResumeController.getResume('Architect'));
     }
     Test.stopTest();
 
@@ -129,23 +129,21 @@ private class ResumeControllerTest {
   }
 
   @isTest
-  static void getResumeDeveloperPersonaFiltersAndOrdersByPersonaSort() {
+  static void getResumeEngineerPersonaFiltersAndOrdersByPersonaSort() {
     Test.startTest();
-    ResumeController.ResumeData resume = ResumeController.getResume(
-      'Developer'
-    );
+    ResumeController.ResumeData resume = ResumeController.getResume('Engineer');
     Test.stopTest();
 
-    Assert.areEqual('Developer', resume.persona, 'Persona echoed');
+    Assert.areEqual('Engineer', resume.persona, 'Persona echoed');
     Assert.areEqual(
       new List<String>{ 'Locked', 'Dev first', 'Dev second', 'Dev unsorted' },
       resume.roles[0].highlights,
-      'Locked row by Sort_Order__c, then Developer order, blanks last'
+      'Locked row by Sort_Order__c, then Engineer order, blanks last'
     );
     Assert.areEqual(
       0,
       resume.roles[1].highlights.size(),
-      'Past role has no Developer highlight'
+      'Past role has no Engineer highlight'
     );
   }
 
@@ -383,6 +381,214 @@ private class ResumeControllerTest {
       );
     }
     Test.stopTest();
+  }
+
+  @isTest
+  static void getResumeRefusesAdminAndDeveloper() {
+    Test.startTest();
+    for (String refused : new List<String>{ 'Admin', 'Developer' }) {
+      try {
+        ResumeController.getResume(refused);
+        Assert.fail(refused + ' is not a public focus');
+      } catch (AuraHandledException e) {
+        Assert.areEqual(
+          'Invalid persona. Valid values: Engineer, Architect, Consultant',
+          e.getMessage(),
+          'The message names the three focuses'
+        );
+      }
+    }
+    Test.stopTest();
+  }
+
+  @isTest
+  static void getResumeAcceptsEachPublicFocus() {
+    Test.startTest();
+    for (
+      String focus : new List<String>{ 'Engineer', 'Architect', 'Consultant' }
+    ) {
+      Assert.areEqual(
+        focus,
+        ResumeController.getResume(focus).persona,
+        'Persona echoed for ' + focus
+      );
+    }
+    Test.stopTest();
+  }
+
+  @isTest
+  static void getResumeConsultantPersonaOrdersByConsultantSort() {
+    List<Experience_Highlight__c> rows = [
+      SELECT Id, Name
+      FROM Experience_Highlight__c
+      WHERE Name IN ('Dev first', 'Dev second')
+    ];
+    for (Experience_Highlight__c row : rows) {
+      row.Persona_Tag__c = 'Consultant';
+      row.Consultant_Sort_Order__c = row.Name == 'Dev first' ? 2 : 1;
+    }
+    update rows;
+
+    Test.startTest();
+    ResumeController.ResumeData resume = ResumeController.getResume(
+      'Consultant'
+    );
+    Test.stopTest();
+
+    Assert.areEqual(
+      new List<String>{ 'Locked', 'Dev second', 'Dev first' },
+      resume.roles[0].highlights,
+      'Locked row first, then the Consultant order'
+    );
+  }
+
+  private static Resume_Variant__c variant(
+    String family,
+    String type,
+    String text,
+    String priority,
+    Boolean verified
+  ) {
+    return new Resume_Variant__c(
+      Name = 'Variant ' + family + ' ' + type + ' ' + priority,
+      Variant_Type__c = type,
+      Title_Family__c = family,
+      Text__c = text,
+      Selection_Priority__c = priority,
+      Is_Verified__c = verified,
+      Visibility__c = 'Public'
+    );
+  }
+
+  private static void setCareerObjective(String text) {
+    Contact owner = [SELECT Id FROM Contact WHERE Is_Portfolio_Owner__c = TRUE];
+    owner.Career_Objective__c = text;
+    update owner;
+  }
+
+  @isTest
+  static void getResumeSummaryComesFromTheFocusVariant() {
+    setCareerObjective('Owner fallback.');
+    insert new List<Resume_Variant__c>{
+      variant('engineer', 'Summary', 'Engineer summary.', '1', true),
+      variant('architect', 'Summary', ' Architect summary. ', '1', true),
+      variant('consultant', 'Summary', 'Consultant summary.', '1', true)
+    };
+
+    Test.startTest();
+    ResumeController.ResumeData engineer = ResumeController.getResume(
+      'Engineer'
+    );
+    ResumeController.ResumeData architect = ResumeController.getResume(
+      'Architect'
+    );
+    ResumeController.ResumeData consultant = ResumeController.getResume(
+      'Consultant'
+    );
+    Test.stopTest();
+
+    Assert.areEqual('Engineer summary.', engineer.summary, 'Engineer');
+    Assert.areEqual('Architect summary.', architect.summary, 'Trimmed');
+    Assert.areEqual('Consultant summary.', consultant.summary, 'Consultant');
+  }
+
+  @isTest
+  static void getResumeSummaryFallsBackToTheCareerObjective() {
+    setCareerObjective('  Owner fallback.  ');
+    insert variant('engineer', 'Summary', 'Engineer summary.', '1', true);
+
+    Test.startTest();
+    ResumeController.ResumeData consultant = ResumeController.getResume(
+      'Consultant'
+    );
+    ResumeController.ResumeData none = ResumeController.getResume(null);
+    Test.stopTest();
+
+    Assert.areEqual(
+      'Owner fallback.',
+      consultant.summary,
+      'No Consultant variant, so the career objective'
+    );
+    Assert.areEqual(
+      'Owner fallback.',
+      none.summary,
+      'No focus, so the career objective'
+    );
+  }
+
+  @isTest
+  static void getResumeSummaryIsNullWhenThereIsNothingToShow() {
+    Test.startTest();
+    ResumeController.ResumeData resume = ResumeController.getResume(
+      'Architect'
+    );
+    Test.stopTest();
+
+    Assert.isNull(resume.summary, 'No variant and no career objective');
+  }
+
+  @isTest
+  static void getResumeSummaryIgnoresVariantsThatAreNotPublicVerifiedSummaries() {
+    setCareerObjective('Owner fallback.');
+    Resume_Variant__c notPublic = variant(
+      'engineer',
+      'Summary',
+      'Not public.',
+      '1',
+      true
+    );
+    notPublic.Visibility__c = null;
+    insert new List<Resume_Variant__c>{
+      variant('engineer', 'Summary', 'Not verified.', '1', false),
+      notPublic,
+      variant('engineer', 'Headline', 'A headline.', '1', true),
+      variant('architect', 'Summary', 'Wrong focus.', '1', true),
+      variant('engineer', 'Summary', '   ', '1', true)
+    };
+
+    Test.startTest();
+    ResumeController.ResumeData resume = ResumeController.getResume('Engineer');
+    Test.stopTest();
+
+    Assert.areEqual(
+      'Owner fallback.',
+      resume.summary,
+      'Only a public verified Summary of the focus with text counts'
+    );
+  }
+
+  @isTest
+  static void getResumeSummaryTakesTheLowestSelectionPriority() {
+    insert new List<Resume_Variant__c>{
+      variant('engineer', 'Summary', 'Priority three.', '3', true),
+      variant('engineer', 'Summary', 'Priority two.', '2', true),
+      variant('engineer', 'Summary', 'No priority.', null, true)
+    };
+
+    Test.startTest();
+    ResumeController.ResumeData resume = ResumeController.getResume('Engineer');
+    Test.stopTest();
+
+    Assert.areEqual('Priority two.', resume.summary, 'Lowest priority wins');
+  }
+
+  @isTest
+  static void getResumeSummaryIsKeptForTheGuest() {
+    insert variant('architect', 'Summary', 'Architect summary.', '1', true);
+    User guest = SiteGuestTestSupport.preparedGuest();
+    ResumeController.ResumeData resume;
+
+    Test.startTest();
+    System.runAs(guest) {
+      resume = ResumeController.getResume('Architect');
+    }
+    Test.stopTest();
+
+    Assert.areEqual(
+      'Architect summary.',
+      resume.summary,
+      'The guest has no access to the variants, the read is in system mode'
+    );
   }
 
   private static final String VERIFY_URL = 'https://trailhead.salesforce.com/en/credentials/certification-detail-print/?searchString=abc+def+ghi';
@@ -862,41 +1068,43 @@ private class ResumeControllerTest {
 
   @isTest
   static void getResumePersonaKeepsTaggedAndUntaggedSkills() {
-    tagSkills('Developer;Architect', 'Admin');
+    tagSkills('Engineer;Architect', 'Consultant');
 
     Test.startTest();
-    ResumeController.ResumeData developer = ResumeController.getResume(
-      'Developer'
+    ResumeController.ResumeData engineer = ResumeController.getResume(
+      'Engineer'
     );
-    ResumeController.ResumeData admin = ResumeController.getResume('Admin');
+    ResumeController.ResumeData consultant = ResumeController.getResume(
+      'Consultant'
+    );
     Test.stopTest();
 
-    Assert.areEqual(2, developer.skillGroups.size(), 'Two groups');
+    Assert.areEqual(2, engineer.skillGroups.size(), 'Two groups');
     Assert.areEqual(
       new List<String>{ 'Apex' },
-      developer.skillGroups[0].skills,
-      'The skill tagged Developer, not the one tagged Admin'
+      engineer.skillGroups[0].skills,
+      'The skill tagged Engineer, not the one tagged Consultant'
     );
     Assert.areEqual(
       new List<String>{ 'LWC' },
-      developer.skillGroups[1].skills,
+      engineer.skillGroups[1].skills,
       'The untagged skill shows under every persona'
     );
     Assert.areEqual(
       new List<String>{ 'SOQL Queries' },
-      admin.skillGroups[0].skills,
-      'The skill tagged Admin only'
+      consultant.skillGroups[0].skills,
+      'The skill tagged Consultant only'
     );
     Assert.areEqual(
       new List<String>{ 'LWC' },
-      admin.skillGroups[1].skills,
+      consultant.skillGroups[1].skills,
       'The untagged skill again'
     );
   }
 
   @isTest
   static void getResumePersonaDropsAGroupWithNoSkillLeft() {
-    tagSkills('Developer', 'Admin');
+    tagSkills('Engineer', 'Consultant');
 
     Test.startTest();
     ResumeController.ResumeData resume = ResumeController.getResume(
@@ -914,7 +1122,7 @@ private class ResumeControllerTest {
 
   @isTest
   static void getResumeNoPersonaKeepsEveryTaggedSkill() {
-    tagSkills('Developer', 'Admin');
+    tagSkills('Engineer', 'Consultant');
 
     Test.startTest();
     ResumeController.ResumeData resume = ResumeController.getResume('  ');
@@ -1181,6 +1389,7 @@ private class ResumeControllerTest {
     Assert.areEqual(
       new Set<String>{
         'persona',
+        'summary',
         'header',
         'roles',
         'skillGroups',

@@ -22,15 +22,15 @@ public with sharing class ApiLabOptionsController implements QueryDefinitions.Pr
   private static final String QUERY_PREFIX = 'ApiLabOptionsController_';
 
   /**
-   * The persona values the API accepts today. The Persona_Tag__c picklist also holds values the
-   * API does not accept yet, so the persona list offers only these. The resume focus change
-   * replaces this list when the code that accepts the new values ships.
+   * The persona values the API Lab offers: the three public focuses. The Persona_Tag__c
+   * picklist also holds Developer, the old name of Engineer, and Admin, which stays a tag for
+   * private tailoring. The API still accepts both as aliases, but the Lab does not offer them.
    */
   @TestVisible
   private static final Set<String> ACCEPTED_PERSONAS = new Set<String>{
-    'Admin',
+    'Engineer',
     'Architect',
-    'Developer'
+    'Consultant'
   };
 
   /** The most options any one parameter gets. */

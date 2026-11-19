@@ -250,9 +250,9 @@ public with sharing class ApiMessages {
   }
 
   /** The 400 for a persona list that holds an unknown value. */
-  public static final String PERSONA_LIST_INVALID = 'persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.';
+  public static final String PERSONA_LIST_INVALID = 'persona must be Engineer, Architect or Consultant. To ask for more than one, separate them with commas.';
   /** The 400 for a single persona that is not one of the three. */
-  public static final String PERSONA_INVALID = 'persona must be Admin, Developer or Architect.';
+  public static final String PERSONA_INVALID = 'persona must be Engineer, Architect or Consultant.';
 
   /**
    * @description The 404 for a project path segment that matches no project.

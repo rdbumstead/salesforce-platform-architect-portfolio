@@ -14,17 +14,21 @@
 global with sharing class SAPIExperienceHighlight implements QueryDefinitions.Provider {
   private static final String LIST_QUERY = 'SAPIExperienceHighlight_List';
 
-  // Persona enum from the spec, keyed by lower case for case-insensitive matching.
+  // Persona values by lower case, so the match ignores letter case. developer is an alias
+  // that reads as Engineer, and admin is an internal focus. Both API versions share this map.
   private static final Map<String, String> PERSONAS = new Map<String, String>{
     'admin' => 'Admin',
-    'developer' => 'Developer',
-    'architect' => 'Architect'
+    'developer' => 'Engineer',
+    'engineer' => 'Engineer',
+    'architect' => 'Architect',
+    'consultant' => 'Consultant'
   };
 
   /**
    * @description GET method. Retrieves Experience_Highlight__c records with pagination and
    *              experienceId and persona filters. persona accepts one value or a
-   *              comma-separated list from Admin, Developer, Architect.
+   *              comma-separated list from Engineer, Architect, Consultant (Developer reads as
+   *              Engineer, and Admin is an internal focus).
    */
   @HttpGet
   global static void getExperienceHighlights() {
@@ -145,10 +149,12 @@ global with sharing class SAPIExperienceHighlight implements QueryDefinitions.Pr
           '(IsDeleted = :hasExperienceId OR Experience__c = :experienceId) AND ' +
           '(IsDeleted = :hasPersonas OR ' +
           '(IsDeleted = :adminOff AND Persona_Tag__c INCLUDES (\'Admin\')) OR ' +
-          '(IsDeleted = :developerOff AND ' +
-          'Persona_Tag__c INCLUDES (\'Developer\')) OR ' +
+          '(IsDeleted = :engineerOff AND ' +
+          'Persona_Tag__c INCLUDES (\'Engineer\')) OR ' +
           '(IsDeleted = :architectOff AND ' +
-          'Persona_Tag__c INCLUDES (\'Architect\')))'
+          'Persona_Tag__c INCLUDES (\'Architect\')) OR ' +
+          '(IsDeleted = :consultantOff AND ' +
+          'Persona_Tag__c INCLUDES (\'Consultant\')))'
       )
       .orderBy('Sort_Order__c ASC, Name ASC')
       .mode(QueryDefinitions.Mode.SYSTEM_MODE)
@@ -170,8 +176,9 @@ global with sharing class SAPIExperienceHighlight implements QueryDefinitions.Pr
       'experienceId' => experienceId,
       'hasPersonas' => !chosen.isEmpty(),
       'adminOff' => !chosen.contains('Admin'),
-      'developerOff' => !chosen.contains('Developer'),
-      'architectOff' => !chosen.contains('Architect')
+      'engineerOff' => !chosen.contains('Engineer'),
+      'architectOff' => !chosen.contains('Architect'),
+      'consultantOff' => !chosen.contains('Consultant')
     };
   }
 

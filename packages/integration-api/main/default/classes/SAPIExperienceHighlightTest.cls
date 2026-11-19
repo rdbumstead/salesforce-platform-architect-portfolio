@@ -86,7 +86,7 @@ private class SAPIExperienceHighlightTest {
   static void shouldMatchAnyPersonaWhenCommaSeparated() {
     SapiTestData.get(
       RESOURCE,
-      new Map<String, String>{ 'persona' => 'admin, Developer' }
+      new Map<String, String>{ 'persona' => 'admin, Engineer' }
     );
 
     Test.startTest();
@@ -97,8 +97,65 @@ private class SAPIExperienceHighlightTest {
     Assert.areEqual(
       2,
       SapiTestData.bodyAsList().size(),
-      'Admin or Developer matches two highlights, case-insensitively'
+      'Admin or Engineer matches two highlights, case-insensitively'
     );
+  }
+
+  private static List<Map<String, Object>> rowsFor(
+    String version,
+    String persona
+  ) {
+    RestTestUtil.initGetRaw(
+      '/services/apexrest/sapi/' + RESOURCE + '/',
+      new Map<String, String>{
+        'X-Request-Id' => UUID.randomUUID().toString(),
+        'X-API-Version' => version
+      },
+      new Map<String, String>{ 'persona' => persona }
+    );
+    SAPIExperienceHighlight.getExperienceHighlights();
+    assertOk();
+    return SapiTestData.bodyAsList();
+  }
+
+  @IsTest
+  static void shouldAcceptEachPersonaOnBothVersions() {
+    Map<String, Integer> counts = new Map<String, Integer>{
+      'Engineer' => 1,
+      'engineer' => 1,
+      'ARCHITECT' => 2,
+      'Consultant' => 1,
+      'Admin' => 1,
+      'admin' => 1
+    };
+
+    Test.startTest();
+    for (String version : new List<String>{ 'v1', 'v2' }) {
+      for (String sent : counts.keySet()) {
+        Assert.areEqual(
+          counts.get(sent),
+          rowsFor(version, sent).size(),
+          version + ' ' + sent
+        );
+      }
+    }
+    Test.stopTest();
+  }
+
+  @IsTest
+  static void shouldReadDeveloperAsEngineer() {
+    Test.startTest();
+    for (String version : new List<String>{ 'v1', 'v2' }) {
+      List<Map<String, Object>> alias = rowsFor(version, 'Developer');
+      List<Map<String, Object>> engineer = rowsFor(version, 'Engineer');
+      Assert.areEqual(engineer.size(), alias.size(), version + ' size');
+      Assert.areEqual(1, alias.size(), version + ' one Engineer row');
+      Assert.isTrue(
+        ((String) alias[0].get('personaTag')).split(';').contains('Engineer'),
+        version + ' row carries Engineer'
+      );
+    }
+    Test.stopTest();
   }
 
   @IsTest
@@ -113,6 +170,28 @@ private class SAPIExperienceHighlightTest {
     Test.stopTest();
 
     SapiTestData.assertError(400, 'BAD_REQUEST');
+  }
+
+  @IsTest
+  static void shouldReturn400ForUnknownPersonaOnBothVersions() {
+    Test.startTest();
+    for (String version : new List<String>{ 'v1', 'v2' }) {
+      RestTestUtil.initGetRaw(
+        '/services/apexrest/sapi/' + RESOURCE + '/',
+        new Map<String, String>{
+          'X-Request-Id' => UUID.randomUUID().toString(),
+          'X-API-Version' => version
+        },
+        new Map<String, String>{ 'persona' => 'Bogus' }
+      );
+      SAPIExperienceHighlight.getExperienceHighlights();
+      SapiTestData.assertError(400, 'BAD_REQUEST');
+      Assert.isTrue(
+        SapiTestData.bodyText().contains(ApiMessages.PERSONA_LIST_INVALID),
+        version + ' names the accepted values'
+      );
+    }
+    Test.stopTest();
   }
 
   @IsTest

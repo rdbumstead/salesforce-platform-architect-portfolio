@@ -1,9 +1,9 @@
 {
-  "persona": "Developer",
+  "persona": "Engineer",
+  "summary": "A planted summary for the page break test.",
   "header": {
     "name": "Avery Example",
     "title": "Example Platform Developer",
-    "careerObjective": "A planted summary for the page break test.",
     "linkedInUrl": null,
     "gitHubUrl": null,
     "trailheadUrl": null,
