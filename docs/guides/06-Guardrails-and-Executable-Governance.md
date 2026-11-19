@@ -140,7 +140,7 @@ We enforce "Green Builds" through automated gatekeeping in our GitHub Actions pi
 ### Scratch Org Validation
 
 **What is a Scratch Org?** A temporary, isolated Salesforce environment created from source control. Think "Docker container for Salesforce."  
-**Our process:** Every pull request that touches `packages/**` creates a one day scratch org, deploys the whole of `packages` to it, runs every local test through the coverage gate above, then validates the PR's delta check only against production with `RunRelevantTests`, the tests Salesforce picks from the delta ("Validate Delta Against Production (Check Only)"), so a component or relevant test that fails only in production stops the PR before the merge, and deletes the org. When the scratch org cannot be created, the job falls back to that delta dry run against production on its own (`pr.yml`, "Deploy & Test (Fallback Mode - DELTA)").  
+**Our process:** Every pull request that touches `packages/**` creates a one day scratch org, deploys the whole of `packages` to it, runs every local test through the coverage gate above, then GlassOps validates the PR's delta check only against production with `RunRelevantTests`, the tests Salesforce picks from the delta ("Validate Delta Against Production (GlassOps, Check Only)"), so a component or relevant test that fails only in production stops the PR before the merge, and deletes the org. When the scratch org cannot be created, the job falls back to that delta dry run against production on its own (`pr.yml`, "Deploy & Test (Fallback Mode - DELTA)").  
 **Why it matters:** Catches "works on my machine" issues. If the code can't deploy to a fresh org, it won't deploy to production.
 
 ## 5. Request Lifecycle & Governance Gates
@@ -149,8 +149,7 @@ Every interaction passes through three distinct "Gating Layers" to ensure perfor
 
 **Summary:** A 3-layer defense (Performance, Security, Governance). No request latency is measured, so no latency target is claimed. The measured numbers are the mobile LCP figures in [Technical Guide §2.11](./04-Technical-Guide.md#211-mobile-performance).
 
-<details>
-<summary>Click to view Request Lifecycle Diagram</summary>
+**Request lifecycle diagram**
 
 ```mermaid
 sequenceDiagram
@@ -188,8 +187,6 @@ sequenceDiagram
     A-->>B: Fixed response shape
     B-->>U: Render UI Update
 ```
-
-</details>
 
 **Permission checks:** a GraphQL read is checked against the guest's object and field permissions, and a field without them makes the query fail. An `@AuraEnabled` call needs class access in `Portfolio_Guest`. Inside Apex, the controllers that read records the guest cannot see (my Contact, experience highlights, the integration caches) do so in system mode through `without sharing` selectors with a fixed field list, and return only the shape the page needs.
 
