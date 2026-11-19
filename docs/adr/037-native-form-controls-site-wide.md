@@ -24,10 +24,10 @@ The site also had two native looks, not one. The contact forms and the API Lab's
 
 ## Alternatives considered
 
-| Option                                        | Why not                                                                                                                                                                                          |
-| :-------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Keep the base components and restyle them     | Their height is drawn inside the component, which the site's CSS does not reach, so the 44 px target could not be set from outside. [unverified] against each component's current styling hooks. |
-| Each component styles its own native controls | Two native looks already existed. A third copy is how the site got two.                                                                                                                          |
+| Option                                        | Why not                                                                                                                                                                                                     |
+| :-------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Keep the base components and restyle them     | Their height is drawn inside the component, which the site's CSS does not reach, so the 44 px target could not be set from outside. I have not checked this against each component's current styling hooks. |
+| Each component styles its own native controls | Two native looks already existed. A third copy is how the site got two.                                                                                                                                     |
 
 ## Implications
 
