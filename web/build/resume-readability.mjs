@@ -29,6 +29,7 @@ import {
   renderModel,
   readTextLayer,
   readingRows,
+  checkPageTops,
   variantsOf,
   resumesFrom,
   PAGE_OPTIONS
@@ -182,6 +183,14 @@ export function crossCheck(expected, resume) {
     }
   });
   return problems;
+}
+
+/**
+ * What each page after the first opens on, from the PDF's own text. Each row carries a kind:
+ * section, continued section, role or other, from checkPageTops.
+ */
+export function pageTopKinds(layer, layout) {
+  return checkPageTops(layer.items, layout, layer.pages[0].width).tops;
 }
 
 /** Marks the roles whose heading row is the first row of a page after the first. */
@@ -516,37 +525,32 @@ export function parseVeraJson(report) {
 }
 
 /**
- * The verdict on the repeated employer heading, from the scored runs. R26-D12: any employer,
- * title or date range missed on a role at a page top counts toward building it.
+ * The page top rule, from the runs (R26-D32, replacing the repeated employer heading rule). Every
+ * page after the first must open on a role heading, a section heading or a continued section
+ * heading. A page that opens on anything else, a bare bullet or a repeated employer heading, is
+ * listed. The parsers' page top misses are kept as a count to watch, and no longer decide anything.
  */
-export function headingVerdict(runs) {
-  const hits = [];
+export function pageTopVerdict(runs) {
+  const misses = [];
+  const tops = [];
+  runs.forEach((run) => {
+    (run.pageTopRows || []).forEach((row) => {
+      tops.push({ variant: run.name, page: row.page, kind: row.kind });
+      if (row.kind === "other") {
+        misses.push({ variant: run.name, page: row.page, text: row.text });
+      }
+    });
+  });
+  const parserMisses = [];
   runs.forEach((run) => {
     Object.entries(run.scores).forEach(([tool, score]) => {
       if (!score.reportsRoles) return;
       score.pageTopMisses.forEach((miss) =>
-        hits.push({ variant: run.name, tool, field: miss.field })
+        parserMisses.push({ variant: run.name, tool, field: miss.field })
       );
     });
   });
-  const controls = [];
-  runs.forEach((run) => {
-    Object.entries(run.scores).forEach(([tool, score]) => {
-      if (!score.reportsRoles) return;
-      score.misses
-        .filter(
-          (miss) =>
-            ["title", "employer", "dates"].includes(miss.kind) &&
-            miss.stacked &&
-            miss.groupIndex > 0 &&
-            !miss.pageTop
-        )
-        .forEach((miss) =>
-          controls.push({ variant: run.name, tool, field: miss.field })
-        );
-    });
-  });
-  return { build: hits.length > 0, hits, controls };
+  return { ok: misses.length === 0, tops, misses, parserMisses };
 }
 
 const cell = (text) => String(text).replace(/\|/g, "/");
@@ -652,7 +656,8 @@ export function loadRun(folder, entry) {
     },
     vera: vera === null ? null : parseVeraJson(JSON.parse(vera)),
     tags: entry.tags,
-    pages: entry.pages
+    pages: entry.pages,
+    pageTopRows: entry.pageTopRows || []
   };
 }
 
@@ -662,7 +667,7 @@ export function buildSummary(folder) {
     readFileSync(path.join(folder, "files", "manifest.json"), "utf8")
   );
   const runs = manifest.map((entry) => loadRun(folder, entry));
-  const verdict = headingVerdict(runs);
+  const verdict = pageTopVerdict(runs);
   const lines = [];
   lines.push("# R26-3 readability results", "");
   lines.push(
@@ -748,18 +753,18 @@ export function buildSummary(folder) {
       )
     );
   }
-  lines.push("", "## Verdict on the repeated employer heading", "");
+  lines.push("", "## Page top rule", "");
   lines.push(
-    verdict.build
-      ? `Build it. ${verdict.hits.length} core field misses sit on a role at a page top (R26-D12 counts any):`
-      : "Do not build it on this evidence. No parser missed a field on a role at a page top."
+    verdict.ok
+      ? `Holds. Every page after the first opens on a role heading, a section heading or a continued section heading (${verdict.tops.length} page tops read).`
+      : `Fails. ${verdict.misses.length} page tops open on something else:`
   );
-  verdict.hits.forEach((hit) =>
-    lines.push(`- ${hit.variant}, ${hit.tool}: ${hit.field}`)
+  verdict.misses.forEach((miss) =>
+    lines.push(`- ${miss.variant}, page ${miss.page}: ${miss.text}`)
   );
   lines.push(
     "",
-    `Control: ${verdict.controls.length} core misses on the second or later role of a stacked employer group that sits mid page, not at a page top. The same kind of miss happens without a page break.`
+    `Parser page top misses, for watching only: ${verdict.parserMisses.length}.`
   );
   lines.push("");
   return { markdown: lines.join("\n"), runs, verdict };
@@ -777,6 +782,11 @@ async function generate(readsFile, outDir) {
     const expected = expectedFromModel(model);
     const problems = crossCheck(expected, variant.resume);
     const pageTopRows = markPageTops(expected, layer);
+    const kinds = pageTopKinds(layer, (await loadShipped()).layout);
+    pageTopRows.forEach((row) => {
+      const found = kinds.find((top) => top.page === row.page);
+      row.kind = found ? found.kind : "other";
+    });
     const slug = slugOf(variant.name);
     writeFileSync(
       path.join(outDir, `${slug}.pdf`),

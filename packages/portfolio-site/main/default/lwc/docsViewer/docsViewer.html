@@ -29,6 +29,10 @@
                     <a class="doc-list-link" href={item.href}>
                       <span class="doc-badge">{item.badge}</span>
                       <span class="doc-name">{item.title}</span>
+                      <template lwc:if={item.hasMeta}>
+                        <span class="doc-status">{item.status}</span>
+                        <span class="doc-date">{item.date}</span>
+                      </template>
                     </a>
                   </li>
                 </template>
@@ -55,6 +59,10 @@
                       <a class="doc-list-link" href={item.href}>
                         <span class="doc-badge">{item.badge}</span>
                         <span class="doc-name">{item.title}</span>
+                        <template lwc:if={item.hasMeta}>
+                          <span class="doc-status">{item.status}</span>
+                          <span class="doc-date">{item.date}</span>
+                        </template>
                       </a>
                     </li>
                   </template>
@@ -66,9 +74,9 @@
                 href={decisionsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="View all decisions on GitHub, opens in a new tab"
+                aria-label="Open the decisions folder on GitHub, opens in a new tab"
                 data-id="all-decisions"
-                >View all decisions</a
+                >Open the decisions folder on GitHub</a
               >
             </template>
           </section>
@@ -154,8 +162,95 @@
               onclick={handleBodyClick}
             ></div>
           </div>
+          <nav class="doc-end" aria-label="After this document">
+            <a class="doc-end-back" href={listHref}>Back to all docs</a>
+            <a
+              lwc:if={hasNextDoc}
+              class="doc-end-next"
+              href={nextHref}
+              data-id="next-doc"
+            >
+              <span class="doc-end-hint">Next document</span>
+              <span class="doc-end-title">{nextTitle}</span>
+            </a>
+          </nav>
         </template>
       </template>
+    </template>
+    <template lwc:if={dialogOpen}>
+      <dialog
+        class="dd-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label={dialogLabel}
+        onkeydown={handleDialogKeydown}
+        onclick={handleBackdropClick}
+        onclose={handleDialogNativeClose}
+      >
+        <div class="dd-panel">
+          <div class="dd-bar">
+            <p class="dd-title">{dialogLabel}</p>
+            <div class="dd-tools">
+              <button
+                type="button"
+                class="dd-button"
+                data-id="zoom-out"
+                aria-label="Zoom out"
+                onclick={handleZoomOut}
+              >
+                &minus;
+              </button>
+              <span class="dd-zoom" role="status">{dialogZoomLabel}</span>
+              <button
+                type="button"
+                class="dd-button"
+                data-id="zoom-in"
+                aria-label="Zoom in"
+                onclick={handleZoomIn}
+              >
+                +
+              </button>
+              <button
+                type="button"
+                class="dd-button dd-text"
+                data-id="actual-size"
+                onclick={handleActualSize}
+              >
+                Actual size
+              </button>
+              <button
+                type="button"
+                class="dd-button dd-text"
+                data-id="fit-width"
+                onclick={handleFitWidth}
+              >
+                Fit width
+              </button>
+              <button
+                type="button"
+                class="dd-button dd-text dd-close"
+                data-id="close"
+                onclick={handleDialogClose}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+          <div
+            class="dd-scroll"
+            tabindex="0"
+            role="region"
+            aria-label="Diagram, scrolls in both directions"
+          >
+            <img
+              class="dd-img"
+              src={dialogSrc}
+              alt={dialogAlt}
+              style={dialogImgStyle}
+            />
+          </div>
+        </div>
+      </dialog>
     </template>
   </div>
 </template>

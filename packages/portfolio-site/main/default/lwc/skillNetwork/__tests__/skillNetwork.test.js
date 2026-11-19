@@ -13,7 +13,8 @@ import { createElement } from "@lwc/engine-dom";
 import SkillNetwork, {
   evidenceSentence,
   labelLines,
-  placeLabels
+  placeLabels,
+  shortLabel
 } from "c/skillNetwork";
 // Same module as the component, which the site pins.
 // eslint-disable-next-line @lwc/lwc/newer-version-available
@@ -1338,7 +1339,7 @@ describe("c-skill-network (Large form factor)", () => {
     expect(
       element.shadowRoot.querySelector(".graph-selection").textContent.trim()
     ).toBe(
-      "Apex: Architect, Senior Developer, Employer Hub, Portfolio, Salesforce Certified Platform Developer. Backed by a role, a project and a certification."
+      "Apex: Architect, Senior Developer, Employer Hub, Portfolio, Salesforce Certified Platform Developer. Backed by 2 roles, 2 projects and 1 certification."
     );
     graphNode(element, "a01C2").dispatchEvent(new CustomEvent("click"));
     await flushPromises();
@@ -1350,7 +1351,7 @@ describe("c-skill-network (Large form factor)", () => {
     expect(
       listed.find((item) => item.textContent.startsWith("Agentforce,"))
         .textContent
-    ).toContain("Backed by a project and a retired certification.");
+    ).toContain("Backed by 1 project and 1 retired certification.");
     expect(
       listed.find((item) =>
         item.textContent.startsWith("Salesforce Certified AI")
@@ -1423,7 +1424,7 @@ describe("c-skill-network (Large form factor)", () => {
       behavior: "auto"
     });
     expect(panel.querySelector(".selection-evidence").textContent).toBe(
-      "Backed by a role and a certification."
+      "Backed by 1 role and 1 certification."
     );
     expect(
       [...panel.querySelectorAll(".selection-certifications li")].map(
@@ -1533,18 +1534,55 @@ describe("c-skill-network evidence words and label placement", () => {
       certificationIds: certs
     });
     expect(evidenceSentence(skill(["r1", "r2"], [], []), certifications)).toBe(
-      "Backed by a role."
+      "Backed by 2 roles."
     );
     expect(evidenceSentence(skill(["r1"], ["p1"], []), certifications)).toBe(
-      "Backed by a role and a project."
+      "Backed by 1 role and 1 project."
     );
     expect(
       evidenceSentence(skill(["r1"], ["p1"], ["c1", "c2"]), certifications)
-    ).toBe("Backed by a role, a project and a certification.");
+    ).toBe("Backed by 1 role, 1 project and 2 certifications.");
+    expect(
+      evidenceSentence(
+        skill(["r1", "r2", "r3", "r4"], ["p1"], ["c1", "c2"]),
+        certifications
+      )
+    ).toBe("Backed by 4 roles, 1 project and 2 certifications.");
     expect(evidenceSentence(skill([], [], ["c2"]), certifications)).toBe(
-      "Backed by a retired certification."
+      "Backed by 1 retired certification."
     );
     expect(evidenceSentence(skill([], [], []), certifications)).toBe("");
+  });
+
+  it("shortens a long label at a space with an ellipsis and leaves a short one whole", () => {
+    expect(shortLabel("Platform Architect Portfolio")).toBe(
+      "Platform Architect Portfolio"
+    );
+    const long = shortLabel(
+      "Literacy program platform for an adult literacy nonprofit"
+    );
+    expect(long.endsWith("…")).toBe(true);
+    expect(long.length).toBeLessThanOrEqual(34);
+    expect(long).not.toContain("  ");
+  });
+
+  it("leaves an optional label out when no spot is clear and draws it when one is", () => {
+    const centre = { x: 0, y: 0 };
+    const entries = [
+      { id: "a", text: "Alpha", x: 100, y: 0, r: 8 },
+      { id: "b", text: "Beta", x: 100, y: 0, r: 8, optional: true }
+    ];
+    const blocked = placeLabels(entries, [], [], centre);
+    expect(blocked.has("a")).toBe(true);
+    expect(blocked.has("b")).toBe(true);
+    const walls = [{ left: -1000, right: 1000, top: -1000, bottom: 1000 }];
+    const none = placeLabels(
+      [{ id: "c", text: "Gamma", x: 0, y: 0, r: 8, optional: true }],
+      [],
+      walls,
+      centre
+    );
+    expect(none.has("c")).toBe(false);
   });
 
   it("puts a label where it covers no other label or node, and the outward side first", () => {

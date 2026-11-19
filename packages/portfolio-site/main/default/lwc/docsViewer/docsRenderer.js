@@ -43,6 +43,9 @@ const BREAK_TAG = /^<br\s*\/?>$/i;
 const MERMAID = "mermaid";
 const DEFAULT_ALT = "A diagram. Its Mermaid source follows the picture.";
 const OWN_CONTENTS = /^table of contents$/i;
+const STACK_COLUMNS = 4;
+const FRONT_LINE = /^(Project|Version|Owner|Date|Status):\s*(.+)$/;
+const FRONT_ORDER = ["Project", "Version", "Owner", "Date", "Status"];
 
 /** Decodes the few entities markdown text carries, for display as text. */
 export function decodeEntities(text) {
@@ -160,6 +163,52 @@ export function alertFrom(tokens) {
   }
   const body = rest.length ? [{ ...first, tokens: rest }] : [];
   return { type, tokens: [...body, ...tokens.slice(1)] };
+}
+
+/**
+ * Reads the Project, Version, Owner and Date or Status lines a document opens with. They are
+ * plain paragraphs, in a different order in each document, so they are taken out of the body
+ * and drawn as one line. Anything before them other than a rule or a blank is left alone, and
+ * fewer than two such lines is not front matter.
+ * @param {Array} tokens the lexer's block tokens after the title
+ * @returns {{ entries: Array<{label:string,value:string}>, rest: Array }}
+ */
+export function takeFrontMatter(tokens) {
+  const list = tokens || [];
+  const entries = [];
+  let at = 0;
+  let consumed = 0;
+  while (at < list.length) {
+    const token = list[at];
+    if (token.type === "space" || token.type === "hr") {
+      at++;
+      if (!entries.length) {
+        consumed = at;
+      }
+      continue;
+    }
+    if (token.type !== "paragraph") {
+      break;
+    }
+    const lines = plainText(token.tokens)
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    const found = lines.map((line) => FRONT_LINE.exec(line));
+    if (!lines.length || found.some((m) => !m)) {
+      break;
+    }
+    found.forEach((m) => entries.push({ label: m[1], value: m[2].trim() }));
+    at++;
+    consumed = at;
+  }
+  if (entries.length < 2) {
+    return { entries: [], rest: list };
+  }
+  entries.sort(
+    (a, b) => FRONT_ORDER.indexOf(a.label) - FRONT_ORDER.indexOf(b.label)
+  );
+  return { entries, rest: list.slice(consumed) };
 }
 
 /** Visits every block token in document order, including those inside lists and quotes. */
@@ -334,6 +383,20 @@ class Builder {
     }
   }
 
+  /** The Project, Version, Owner and Date or Status lines, as one line of label and value pairs. */
+  frontLine(entries) {
+    const line = this.el("p", "doc-front");
+    for (const entry of entries) {
+      const item = this.el("span", "doc-front-item");
+      const label = this.el("span", "doc-front-label");
+      label.appendChild(this.text(entry.label));
+      item.appendChild(label);
+      item.appendChild(this.text(` ${entry.value}`));
+      line.appendChild(item);
+    }
+    return line;
+  }
+
   alert(alert) {
     const title = ALERT_TYPES[alert.type];
     const box = this.el("div", `doc-alert doc-alert-${alert.type}`);
@@ -380,7 +443,7 @@ class Builder {
     code.appendChild(this.text(token.text || ""));
     pre.appendChild(code);
     if (!isDiagram) {
-      figure.appendChild(pre);
+      figure.appendChild(this.scrollBox(pre));
       return figure;
     }
     const drawing = this.drawing(token.text || "");
@@ -392,7 +455,7 @@ class Builder {
     const summary = this.el("summary", "doc-diagram-summary");
     summary.appendChild(this.text(label));
     details.appendChild(summary);
-    details.appendChild(pre);
+    details.appendChild(this.scrollBox(pre));
     figure.appendChild(details);
     const rendered = drawing ? null : diagramLink(this.ctx.baseUrl);
     if (rendered) {
@@ -405,6 +468,16 @@ class Builder {
       figure.appendChild(note);
     }
     return figure;
+  }
+
+  /** A code box with the same scroll cue as a table: a fade and "Scroll for more" while it overflows. */
+  scrollBox(pre) {
+    const box = this.el("div", "table-wrap code-wrap");
+    box.appendChild(pre);
+    const cue = this.el("p", "scroll-cue");
+    cue.appendChild(this.text("Scroll for more"));
+    box.appendChild(cue);
+    return box;
   }
 
   /**
@@ -423,12 +496,8 @@ class Builder {
     }
     const alt = String(entry.alt || "").trim() || DEFAULT_ALT;
     const wrap = this.el("div", "doc-drawing");
-    wrap.setAttribute("tabindex", "0");
     wrap.setAttribute("role", "group");
-    wrap.setAttribute(
-      "aria-label",
-      `Diagram ${this.codeCount}, scrolls sideways`
-    );
+    wrap.setAttribute("aria-label", `Diagram ${this.codeCount}`);
     for (const theme of ["light", "dark"]) {
       const img = this.el("img", `doc-drawing-img doc-drawing-${theme}`);
       img.setAttribute("src", `${diagrams.base}/${hash}-${theme}.svg`);
@@ -437,7 +506,20 @@ class Builder {
       img.setAttribute("decoding", "async");
       wrap.appendChild(img);
     }
-    return wrap;
+    const open = this.el("button", "doc-drawing-open");
+    open.setAttribute("type", "button");
+    open.setAttribute("aria-haspopup", "dialog");
+    open.setAttribute(
+      "aria-label",
+      `Open full size, diagram ${this.codeCount}`
+    );
+    open.dataset.hash = hash;
+    open.dataset.label = `Diagram ${this.codeCount}`;
+    open.appendChild(this.text("Open full size"));
+    const box = this.el("div", "doc-drawing-box");
+    box.appendChild(wrap);
+    box.appendChild(open);
+    return box;
   }
 
   list(token) {
@@ -467,21 +549,39 @@ class Builder {
 
   table(token) {
     this.tableCount++;
+    const cols = (token.header || []).length;
+    // Four columns or more stack as label and value pairs on a phone, so every cell has its
+    // column's name beside it. A table with fewer columns keeps its columns and scrolls.
+    const stacks = cols >= STACK_COLUMNS;
+    const labels = (token.header || []).map((cell) =>
+      plainText(cell.tokens).trim()
+    );
+    const outer = this.el(
+      "div",
+      stacks ? "table-wrap table-stack" : "table-wrap"
+    );
     const wrap = this.el("div", "table-scroll");
     wrap.setAttribute("tabindex", "0");
     wrap.setAttribute("role", "region");
-    const first = (token.header || [])[0];
-    const name = first ? plainText(first.tokens).trim() : "";
     wrap.setAttribute(
       "aria-label",
-      `Table ${this.tableCount}${name ? `: ${name}` : ""}, scrolls sideways`
+      `Table ${this.tableCount}${labels[0] ? `: ${labels[0]}` : ""}`
     );
     const table = this.el("table");
+    if (stacks) {
+      table.setAttribute("role", "table");
+    }
     const thead = this.el("thead");
     const headRow = this.el("tr");
+    if (stacks) {
+      headRow.setAttribute("role", "row");
+    }
     (token.header || []).forEach((cell, i) => {
       const th = this.el("th");
       th.setAttribute("scope", "col");
+      if (stacks) {
+        th.setAttribute("role", "columnheader");
+      }
       this.align(th, (token.align || [])[i]);
       this.inline(th, cell.tokens);
       headRow.appendChild(th);
@@ -491,8 +591,17 @@ class Builder {
     const tbody = this.el("tbody");
     for (const row of token.rows || []) {
       const tr = this.el("tr");
+      if (stacks) {
+        tr.setAttribute("role", "row");
+      }
       row.forEach((cell, i) => {
         const td = this.el("td");
+        if (stacks) {
+          td.setAttribute("role", "cell");
+        }
+        if (labels[i]) {
+          td.setAttribute("data-label", labels[i]);
+        }
         this.align(td, (token.align || [])[i]);
         this.inline(td, cell.tokens);
         tr.appendChild(td);
@@ -501,7 +610,12 @@ class Builder {
     }
     table.appendChild(tbody);
     wrap.appendChild(table);
-    return wrap;
+    outer.appendChild(wrap);
+    // Shown by the page only while the table is wider than its box.
+    const cue = this.el("p", "scroll-cue");
+    cue.appendChild(this.text("Scroll for more"));
+    outer.appendChild(cue);
+    return outer;
   }
 
   align(cell, value) {
@@ -635,7 +749,12 @@ export function renderMarkdown(marked, markdown, ctx) {
     title = plainText(first.tokens).trim();
     rest = tokens.slice(firstIndex + 1);
   }
+  const front = takeFrontMatter(rest);
+  rest = front.rest;
   const fragment = ctx.doc.createDocumentFragment();
+  if (front.entries.length) {
+    fragment.appendChild(builder.frontLine(front.entries));
+  }
   builder.blocks(fragment, rest);
   return {
     title,

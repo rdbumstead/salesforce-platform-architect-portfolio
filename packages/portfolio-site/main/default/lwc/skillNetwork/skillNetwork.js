@@ -228,6 +228,8 @@ const BOX_MARGIN = 40;
 const WORK_RADIUS = 10;
 // A label longer than this wraps onto a second line at a space. Labels are never cut.
 const LINE_MAX = 22;
+// A label longer than this is shortened with an ellipsis. The tooltip keeps the full name.
+const LABEL_MAX = 34;
 // Certification names all open with this. The label leaves it out, the title and lists keep it.
 const ERROR_TITLE = "The skills could not be loaded.";
 const CERTIFICATION_PREFIX = /^Salesforce Certified\s+/i;
@@ -287,6 +289,10 @@ const LINE_HEIGHT = 14;
 const CATEGORY_FONT = 13;
 const CATEGORY_CHAR = 0.6 * CATEGORY_FONT;
 const LABEL_GAP = 4;
+// How far a label tries to sit beyond its node when every near spot is taken.
+const FAR_STEP = 14;
+// Spare room kept round a skill's label drawn at rest, since a label box is an estimate.
+const REST_LABEL_PAD = 4;
 
 // sessionStorage key for the dragged positions of this visit.
 export const POSITIONS_KEY = "skillNetwork.positions";
@@ -445,12 +451,27 @@ export function labelLines(text) {
   return best ? [text.slice(0, best.at), text.slice(best.at + 1)] : [text];
 }
 
+/**
+ * Shortens a label that would run past two lines. The cut falls at a space and ends in an
+ * ellipsis, and the full name stays in the node's tooltip.
+ * @param {string} text the whole label
+ * @returns {string} the label, or its start and an ellipsis
+ */
+export function shortLabel(text) {
+  if (text.length <= LABEL_MAX) {
+    return text;
+  }
+  const cut = text.slice(0, LABEL_MAX - 1);
+  const space = cut.lastIndexOf(" ");
+  return `${(space > LINE_MAX ? cut.slice(0, space) : cut).trimEnd()}…`;
+}
+
 function labelOf(node) {
   const name =
     node.kind === "certification"
       ? node.name.replace(CERTIFICATION_PREFIX, "")
       : node.name;
-  return name || node.name;
+  return shortLabel(name || node.name);
 }
 
 function certificationText(certification) {
@@ -468,6 +489,10 @@ function evidenceOf(skill) {
   );
 }
 
+function countOf(count, one, many) {
+  return `${count} ${count === 1 ? one : many}`;
+}
+
 function joinKinds(parts) {
   if (parts.length < 2) {
     return parts.join("");
@@ -475,21 +500,29 @@ function joinKinds(parts) {
   return `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
 }
 
-// "Backed by a role, a project and a certification." A skill whose only certifications are
-// retired says "a retired certification". Empty for a skill with no evidence.
+// "Backed by 4 roles, 1 project and 4 certifications." The counts are the lengths of the lists
+// the detail panel shows under it. A skill whose only certifications are retired says
+// "retired certifications". Empty for a skill with no evidence.
 export function evidenceSentence(skill, certifications) {
   const parts = [];
   if (skill.roleIds.length) {
-    parts.push("a role");
+    parts.push(countOf(skill.roleIds.length, "role", "roles"));
   }
   if (skill.projectIds.length) {
-    parts.push("a project");
+    parts.push(countOf(skill.projectIds.length, "project", "projects"));
   }
-  if (skill.certificationIds.length) {
+  const held = skill.certificationIds.length;
+  if (held) {
     const allRetired = skill.certificationIds.every(
       (id) => certifications.get(id) && certifications.get(id).isRetired
     );
-    parts.push(allRetired ? "a retired certification" : "a certification");
+    parts.push(
+      countOf(
+        held,
+        allRetired ? "retired certification" : "certification",
+        allRetired ? "retired certifications" : "certifications"
+      )
+    );
   }
   return parts.length ? `Backed by ${joinKinds(parts)}.` : "";
 }
@@ -660,7 +693,14 @@ function labelSpots(entry, centre) {
   ];
   const sideFirst = x >= centre.x ? [right, left] : [left, right];
   const verticalFirst = y >= centre.y ? [below, above] : [above, below];
-  return [...sideFirst, ...verticalFirst, ...corners];
+  // Further out, for a node whose near spots are all taken.
+  const far = [FAR_STEP, 2 * FAR_STEP].flatMap((step) => [
+    { x: x + side + step, y: y + 4, anchor: "start", lift: 0.5 },
+    { x: x - side - step, y: y + 4, anchor: "end", lift: 0.5 },
+    { x, y: y - side - 1 - step, anchor: "middle", lift: 1 },
+    { x, y: y + side + 9 + step, anchor: "middle", lift: 0 }
+  ]);
+  return [...sideFirst, ...verticalFirst, ...corners, ...far];
 }
 
 // What placeLabels tries for one label, in order. A label that wraps tries every spot as two
@@ -687,7 +727,8 @@ function labelCandidates(entry, centre) {
  * Places labels one at a time, in the order given, at the first spot that covers no label
  * already placed, no fixed box and no other node. When every spot covers something, the one
  * covering least wins. Pure, so the same input always gives the same placement.
- * @param {Array<object>} entries each { id, text, x, y, r }
+ * @param {Array<object>} entries each { id, text, x, y, r, optional }. An optional entry is
+ *   placed only where it covers nothing, and is left out when there is no such spot.
  * @param {Array<object>} circles every drawn node as { id, x, y, r }
  * @param {Array<object>} fixed boxes labels must not cover, such as the category labels
  * @param {object} centre the graph's centre { x, y }, so labels lean outward
@@ -702,7 +743,21 @@ export function placeLabels(entries, circles, fixed, centre) {
     for (const spot of labelCandidates(entry, centre)) {
       const { lines } = spot;
       const y = spot.y - spot.lift * (lines.length - 1) * LINE_HEIGHT;
-      const box = textBox(spot.x, y, spot.anchor, lines, NODE_CHAR, NODE_FONT);
+      const margin = entry.optional ? REST_LABEL_PAD : 0;
+      const plain = textBox(
+        spot.x,
+        y,
+        spot.anchor,
+        lines,
+        NODE_CHAR,
+        NODE_FONT
+      );
+      const box = {
+        left: plain.left - margin,
+        right: plain.right + margin,
+        top: plain.top - margin,
+        bottom: plain.bottom + margin
+      };
       let hits = 0;
       taken.forEach((other) => {
         if (boxesOverlap(box, other)) {
@@ -721,6 +776,9 @@ export function placeLabels(entries, circles, fixed, centre) {
           break;
         }
       }
+    }
+    if (entry.optional && bestHits > 0) {
+      return;
     }
     placed.set(entry.id, best);
     taken.push(best.box);
@@ -975,6 +1033,11 @@ export default class SkillNetwork extends LightningElement {
 
   get showSwitch() {
     return !this.isSmall;
+  }
+
+  // Where the Graph switch is hidden, one line says why.
+  get showSmallNote() {
+    return this.isSmall;
   }
 
   get isMatrix() {
@@ -1791,7 +1854,14 @@ export default class SkillNetwork extends LightningElement {
     return ring ? node.radius + EVIDENCE_RING_GAP + ring : node.radius;
   }
 
-  // Labels shown at rest: every node that is not a skill. The rest are shown on hover.
+  // Evidence first, then proficiency, as one number for sorting.
+  skillRank(node) {
+    const skill = this.model.skills.get(node.id);
+    return skill ? skill.evidence * 10 + skill.proficiency : 0;
+  }
+
+  // Labels shown at rest: every role, project and certification, and each skill that has a
+  // clear spot. A skill without one is named on hover.
   labelPlan(nodes, categories, extraIds) {
     const centre = { x: this.layout.size / 2, y: this.layout.size / 2 };
     const circles = nodes.map((node) => ({
@@ -1823,8 +1893,20 @@ export default class SkillNetwork extends LightningElement {
       .map((id) => byId.get(id))
       .filter((node) => node && node.kind === "skill")
       .map(entryOf);
+    // Skill names at rest go last and only where they cover nothing, the best evidenced and
+    // highest rated first, so a crowded cluster drops its quietest names and not its best.
+    const named = new Set(extraIds);
+    const atRest = nodes
+      .filter((node) => node.kind === "skill" && !named.has(node.id))
+      .sort((a, b) => this.skillRank(b) - this.skillRank(a) || byName(a, b))
+      .map((node) => ({ ...entryOf(node), optional: true }));
     return {
-      placements: placeLabels([...rest, ...extra], circles, fixed, centre),
+      placements: placeLabels(
+        [...rest, ...extra, ...atRest],
+        circles,
+        fixed,
+        centre
+      ),
       circles,
       fixed
     };

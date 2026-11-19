@@ -65,45 +65,55 @@
           </div>
         </template>
 
+        <template lwc:if={showSmallNote}>
+          <p class="view-note">The graph view needs a wider screen.</p>
+        </template>
+
         <template lwc:if={showTierFilter}>
-          <div
-            class="nc-toggle-group persona-filter"
-            role="group"
-            aria-label="Show skills"
-          >
-            <template for:each={tierButtons} for:item="option">
-              <button
-                key={option.key}
-                type="button"
-                class={option.className}
-                data-value={option.value}
-                aria-pressed={option.pressed}
-                onclick={handleTierClick}
-              >
-                {option.label}
-              </button>
-            </template>
+          <div class="filter-row">
+            <p class="filter-label" aria-hidden="true">Show</p>
+            <div
+              class="nc-toggle-group persona-filter"
+              role="group"
+              aria-label="Show skills"
+            >
+              <template for:each={tierButtons} for:item="option">
+                <button
+                  key={option.key}
+                  type="button"
+                  class={option.className}
+                  data-value={option.value}
+                  aria-pressed={option.pressed}
+                  onclick={handleTierClick}
+                >
+                  {option.label}
+                </button>
+              </template>
+            </div>
           </div>
         </template>
 
         <template lwc:if={showPersonaFilter}>
-          <div
-            class="nc-toggle-group persona-filter"
-            role="group"
-            aria-label="Filter skills by persona"
-          >
-            <template for:each={personaButtons} for:item="option">
-              <button
-                key={option.key}
-                type="button"
-                class={option.className}
-                data-value={option.value}
-                aria-pressed={option.pressed}
-                onclick={handlePersonaClick}
-              >
-                {option.label}
-              </button>
-            </template>
+          <div class="filter-row">
+            <p class="filter-label" aria-hidden="true">Focus</p>
+            <div
+              class="nc-toggle-group persona-filter"
+              role="group"
+              aria-label="Filter skills by persona"
+            >
+              <template for:each={personaButtons} for:item="option">
+                <button
+                  key={option.key}
+                  type="button"
+                  class={option.className}
+                  data-value={option.value}
+                  aria-pressed={option.pressed}
+                  onclick={handlePersonaClick}
+                >
+                  {option.label}
+                </button>
+              </template>
+            </div>
           </div>
         </template>
 

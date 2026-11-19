@@ -74,10 +74,16 @@ const CATALOG_TEXT = readFileSync(
   "utf8"
 );
 
-/** Picks a path in the native endpoint select, as a visitor does. */
-function chooseEndpoint(select, path) {
-  select.value = path;
-  select.dispatchEvent(new CustomEvent("change"));
+/** Picks a path in the endpoint combobox as a visitor does: open the list, click the option. */
+async function chooseEndpoint(input, path) {
+  const root = input.getRootNode();
+  const tick = () => new Promise((resolve) => process.nextTick(resolve));
+  input.dispatchEvent(new CustomEvent("click"));
+  await tick();
+  root
+    .querySelector(`[role="option"][data-path="${path}"]`)
+    .dispatchEvent(new CustomEvent("click"));
+  await tick();
 }
 
 const flush = () => new Promise((resolve) => process.nextTick(resolve));
@@ -94,7 +100,7 @@ const $$ = (element, selector) =>
   Array.from(element.shadowRoot.querySelectorAll(selector));
 
 async function choosePath(element, path) {
-  chooseEndpoint($(element, "select.endpoint-picker"), path);
+  await chooseEndpoint($(element, "input.endpoint-picker"), path);
   await flush();
 }
 

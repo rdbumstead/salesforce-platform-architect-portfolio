@@ -9,6 +9,7 @@
         <c-view-source source-key="resumeBuilder"></c-view-source>
         <c-data-source
           source-keys="ResumeController_Roles,ResumeController_Skills,ResumeController_Certifications,ResumeController_Education,ResumeController_Highlights"
+          hide-counts
         ></c-data-source>
       </div>
     </template>
@@ -18,6 +19,7 @@
           <c-view-source source-key="resumeBuilder"></c-view-source>
           <c-data-source
             source-keys="ResumeController_Roles,ResumeController_Skills,ResumeController_Certifications,ResumeController_Education,ResumeController_Highlights"
+            hide-counts
           ></c-data-source>
         </div>
       </template>
@@ -55,7 +57,7 @@
                   onchange={handleToggle}
                   data-field="includeHeader"
                 />
-                <span class="toggle-label">Include header</span>
+                <span class="toggle-label">Include header and summary</span>
               </label>
               <label class="toggle">
                 <input
@@ -93,6 +95,8 @@
                 >Text version</a
               >
             </div>
+
+            <p lwc:if={printSummary} class="print-summary">{printSummary}</p>
 
             <div aria-live="polite" class="slds-m-top_small">
               <p lwc:if={exportMessage} class="export-message text-success">
@@ -148,13 +152,14 @@
                       </li>
                     </template>
                   </ul>
-                  <p
-                    lwc:if={model.header.careerObjective}
-                    class="resume-objective"
-                  >
-                    {model.header.careerObjective}
-                  </p>
                 </header>
+                <section
+                  lwc:if={model.hasSummary}
+                  class="resume-section resume-summary"
+                >
+                  <h3 class="section-title">{model.summaryLabel}</h3>
+                  <p class="resume-objective">{model.header.careerObjective}</p>
+                </section>
               </template>
 
               <template for:each={model.sections} for:item="section">
@@ -214,21 +219,11 @@
                       for:each={model.certificationGroups}
                       for:item="group"
                     >
-                      <div key={group.key} class="certification-group">
-                        <p lwc:if={group.hasIssuer} class="issuer-label">
-                          {group.issuer}
-                        </p>
-                        <ul class="current-certifications plain-list">
-                          <template
-                            for:each={group.certifications}
-                            for:item="cert"
-                          >
-                            <li key={cert.key} class="certification">
-                              {cert.text}
-                            </li>
-                          </template>
-                        </ul>
-                      </div>
+                      <p key={group.key} class="certification-line">
+                        <strong lwc:if={group.hasIssuer} class="issuer-label"
+                          >{group.labelText}</strong
+                        >{group.lineText}
+                      </p>
                     </template>
                     <p lwc:if={model.hasVerificationLink} class="verify">
                       <a
@@ -241,19 +236,14 @@
                         ></a
                       >
                     </p>
-                    <template lwc:if={model.hasRetiredCertifications}>
-                      <h4 class="retired-title">{model.retiredLabel}</h4>
-                      <ul class="retired-certifications plain-list">
-                        <template
-                          for:each={model.retiredCertifications}
-                          for:item="cert"
-                        >
-                          <li key={cert.key} class="retired-certification">
-                            {cert.text}
-                          </li>
-                        </template>
-                      </ul>
-                    </template>
+                    <p
+                      lwc:if={model.hasRetiredCertifications}
+                      class="retired-line"
+                    >
+                      <strong class="item-label retired-label"
+                        >{model.retiredLabelText}</strong
+                      >{model.retiredLine}
+                    </p>
                   </template>
 
                   <template lwc:if={section.isEducation}>

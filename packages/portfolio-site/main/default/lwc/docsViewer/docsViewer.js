@@ -30,8 +30,13 @@ import { REPO_URL } from "c/footer";
 import { renderMarkdown } from "./docsRenderer";
 
 const DOC_KEY_PATTERN = /^[a-z0-9-]{1,40}$/;
-const PHONE_QUERY = "(max-width: 47.99em)";
+// Below 64em the Contents box stacks above the text instead of sitting beside it.
+const STACKED_QUERY = "(max-width: 63.99em)";
 const SETTLE_MS = 600;
+const TITLE_SUFFIX = "Ryan Bumstead";
+const ZOOM_STEP = 1.25;
+const ZOOM_MIN = 0.25;
+const ZOOM_MAX = 4;
 
 let markedPromise;
 let diagramsPromise;
@@ -63,6 +68,36 @@ export function loadDiagrams() {
       .catch(() => ({}));
   }
   return diagramsPromise;
+}
+
+/** Forgets the list of drawings, so the next call reads it again. For tests. */
+export function resetDiagrams() {
+  diagramsPromise = undefined;
+}
+
+/**
+ * The width a drawing is meant to be shown at, read from its viewBox, else its max-width style.
+ * The drawings carry a width of 100%, so the browser gives them no size of their own. Null when
+ * the file cannot be read or names neither.
+ * @param {string} src the drawing's address
+ * @returns {Promise<number|null>} the width in pixels
+ */
+export function drawingWidth(src) {
+  if (typeof fetch !== "function") {
+    return Promise.resolve(null);
+  }
+  return fetch(src, { credentials: "same-origin" })
+    .then((response) => (response && response.ok ? response.text() : ""))
+    .then((text) => {
+      const box =
+        /viewBox="\s*[-\d.]+[\s,]+[-\d.]+[\s,]+([\d.]+)[\s,]+[\d.]+\s*"/.exec(
+          text
+        );
+      const style = /max-width:\s*([\d.]+)px/.exec(text);
+      const width = Number((box && box[1]) || (style && style[1]));
+      return width > 0 ? width : null;
+    })
+    .catch(() => null);
 }
 
 /** "dark" or "light": the site's data-theme on the page, else the visitor's system setting. */
@@ -166,9 +201,9 @@ export function docHref(key, hash) {
   return `${docsPath()}?doc=${encodeURIComponent(key)}${hash ? `#${hash}` : ""}`;
 }
 
-function isPhone() {
+function isStacked() {
   try {
-    return window.matchMedia(PHONE_QUERY).matches;
+    return window.matchMedia(STACKED_QUERY).matches;
   } catch {
     return false;
   }
@@ -188,6 +223,13 @@ export default class DocsViewer extends LightningElement {
   marked;
   diagrams;
   tocOpen = true;
+  // The full size view of a diagram. Zoom is a multiple of the drawing's own width, and fit
+  // shows it at the width of the window instead.
+  dialogHash = "";
+  dialogLabel = "";
+  dialogWidth = 0;
+  dialogZoom = 1;
+  dialogFit = false;
   // Which closed-by-default groups the visitor has opened. A closed group draws no rows, so
   // a link nobody can reach is never in the page.
   openedGroups = {};
@@ -204,6 +246,11 @@ export default class DocsViewer extends LightningElement {
   _themeObserver;
   _themeQuery;
   _onThemeChange;
+  _baseTitle;
+  _opener;
+  _dialogFocusPending = false;
+  _onResize;
+  _scrollTarget;
 
   @wire(CurrentPageReference)
   wiredPageRef(pageRef) {
@@ -239,7 +286,10 @@ export default class DocsViewer extends LightningElement {
   }
 
   connectedCallback() {
-    this.tocOpen = !isPhone();
+    this.tocOpen = !isStacked();
+    this._baseTitle = document.title;
+    this._onResize = () => this.refreshScrollCues();
+    window.addEventListener("resize", this._onResize);
     this._onPopState = () => {
       this.setDocKey(docKeyFrom(null, window.location.search), true);
       this._pendingHash = this.currentHash();
@@ -280,6 +330,14 @@ export default class DocsViewer extends LightningElement {
 
   disconnectedCallback() {
     window.removeEventListener("popstate", this._onPopState);
+    window.removeEventListener("resize", this._onResize);
+    if (this._scrollTarget) {
+      this._scrollTarget.removeEventListener("scroll", this._onResize, true);
+      this._scrollTarget = undefined;
+    }
+    if (this._baseTitle !== undefined) {
+      document.title = this._baseTitle;
+    }
     if (this._themeObserver) {
       this._themeObserver.disconnect();
     }
@@ -300,6 +358,10 @@ export default class DocsViewer extends LightningElement {
     if (key === this.docKey) {
       return;
     }
+    if (!key && this._baseTitle !== undefined) {
+      document.title = this._baseTitle;
+    }
+    this.closeDialog(false);
     if (navigated) {
       this._focusPending = true;
     }
@@ -337,7 +399,11 @@ export default class DocsViewer extends LightningElement {
       key: d.key,
       title: d.title,
       badge: badgeFor(d.key),
-      href: docHref(d.key)
+      href: docHref(d.key),
+      // Shown when the list read carries them. Today it carries neither.
+      status: d.status || "",
+      date: d.date || "",
+      hasMeta: Boolean(d.status || d.date)
     }));
   }
 
@@ -387,6 +453,57 @@ export default class DocsViewer extends LightningElement {
     return this.showDoc && this.renderError && !this.docError;
   }
 
+  /** The next document in the list's order, or null at the end. */
+  get nextDoc() {
+    const order = this.groups.flatMap((group) => group.items);
+    const at = order.findIndex((item) => item.key === this.docKey);
+    return at >= 0 && at < order.length - 1 ? order[at + 1] : null;
+  }
+
+  get hasNextDoc() {
+    return Boolean(this.nextDoc);
+  }
+
+  get nextHref() {
+    return this.nextDoc ? this.nextDoc.href : "";
+  }
+
+  get nextTitle() {
+    return this.nextDoc ? this.nextDoc.title : "";
+  }
+
+  get dialogOpen() {
+    return Boolean(this.dialogHash);
+  }
+
+  get dialogSrc() {
+    return this.dialogHash
+      ? `${MERMAID_DIAGRAMS}/${this.dialogHash}-${activeTheme()}.svg`
+      : "";
+  }
+
+  get dialogAlt() {
+    const entry = this.diagrams && this.diagrams[this.dialogHash];
+    return (entry && entry.alt) || "A diagram.";
+  }
+
+  get dialogImgStyle() {
+    if (this.dialogFit) {
+      return "width: 100%";
+    }
+    if (!this.dialogWidth) {
+      // Until the drawing's width is read it is held back, so it never shows at the wrong size.
+      return "width: 100%; visibility: hidden";
+    }
+    return `width: ${Math.round(this.dialogWidth * this.dialogZoom)}px; max-width: none`;
+  }
+
+  get dialogZoomLabel() {
+    return this.dialogFit
+      ? "Fit to width"
+      : `${Math.round(this.dialogZoom * 100)} percent`;
+  }
+
   get pageTitle() {
     return this.title || (this.doc && this.doc.title) || "";
   }
@@ -427,6 +544,22 @@ export default class DocsViewer extends LightningElement {
   renderedCallback() {
     this.paint();
     this.settleFocus();
+    if (this._dialogFocusPending) {
+      const dialog = this.template.querySelector("dialog.dd-dialog");
+      const close = this.template.querySelector(".dd-close");
+      if (dialog && close) {
+        this._dialogFocusPending = false;
+        // A modal dialog sits in the top layer, above the site's sticky header.
+        if (!dialog.open) {
+          if (typeof dialog.showModal === "function") {
+            dialog.showModal();
+          } else {
+            dialog.setAttribute("open", "");
+          }
+        }
+        close.focus();
+      }
+    }
   }
 
   /**
@@ -494,6 +627,8 @@ export default class DocsViewer extends LightningElement {
         this.headings = result.headings;
         this.title = result.title || this.doc.title || this.docKey;
         this.renderError = false;
+        document.title = `${this.title} | ${TITLE_SUFFIX}`;
+        this.watchScroll(target);
       } catch {
         this.renderError = true;
         return;
@@ -503,7 +638,37 @@ export default class DocsViewer extends LightningElement {
         trackEvent(EVENTS.DOCS_OPENED, { doc_key: this.docKey });
       }
     }
+    this.refreshScrollCues();
     this.scrollToPending();
+  }
+
+  /** Listens for a table scrolling inside the body, which does not bubble, so its cue can update. */
+  watchScroll(target) {
+    if (this._scrollTarget !== target) {
+      if (this._scrollTarget) {
+        this._scrollTarget.removeEventListener("scroll", this._onResize, true);
+      }
+      target.addEventListener("scroll", this._onResize, true);
+      this._scrollTarget = target;
+    }
+  }
+
+  /**
+   * Marks each table that is wider than its box, and each that has reached its right edge, so
+   * the page shows "Scroll for more" and the fade only while there is more to see.
+   */
+  refreshScrollCues() {
+    const body = this.template.querySelector(".doc-body");
+    if (!body) {
+      return;
+    }
+    for (const wrap of body.querySelectorAll(".table-wrap")) {
+      const box = wrap.querySelector(".table-scroll, .doc-pre");
+      const more = box ? box.scrollWidth - box.clientWidth : 0;
+      const scrollable = more > 1;
+      wrap.classList.toggle("is-scrollable", scrollable);
+      wrap.classList.toggle("at-end", scrollable && box.scrollLeft >= more - 1);
+    }
   }
 
   scrollToPending() {
@@ -566,6 +731,12 @@ export default class DocsViewer extends LightningElement {
 
   /** A click on an in-document link: scroll and focus, and keep the address in step. */
   handleBodyClick(event) {
+    const opener =
+      event.target.closest && event.target.closest("button.doc-drawing-open");
+    if (opener) {
+      this.openDialog(opener);
+      return;
+    }
     const anchor = event.target.closest ? event.target.closest("a") : null;
     if (!anchor || !anchor.dataset || !anchor.dataset.hash) {
       return;
@@ -575,13 +746,13 @@ export default class DocsViewer extends LightningElement {
   }
 
   /**
-   * A contents link. On a phone the contents close first and the scroll waits for that
+   * A contents link. Below 64em the contents close first and the scroll waits for that
    * render, because closing them moves every heading up.
    */
   handleTocClick(event) {
     event.preventDefault();
     const id = event.currentTarget.dataset.id;
-    if (isPhone() && this.tocOpen) {
+    if (isStacked() && this.tocOpen) {
       this.tocOpen = false;
       this._pendingHash = id;
       this.updateAddress(id);
@@ -606,6 +777,108 @@ export default class DocsViewer extends LightningElement {
     } catch {
       // The address stays as it was. The page still scrolls.
     }
+  }
+
+  /** Opens the full size view of the drawing a button names, at the drawing's own width. */
+  openDialog(button) {
+    const hash = button.dataset.hash;
+    if (!hash) {
+      return;
+    }
+    this._opener = button;
+    this.dialogLabel = button.dataset.label || "Diagram";
+    this.dialogZoom = 1;
+    this.dialogFit = false;
+    this.dialogWidth = 0;
+    this.dialogHash = hash;
+    this._dialogFocusPending = true;
+    drawingWidth(this.dialogSrc).then((width) => {
+      if (this.dialogHash !== hash) {
+        return;
+      }
+      if (width) {
+        this.dialogWidth = width;
+      } else {
+        this.dialogFit = true;
+      }
+    });
+  }
+
+  closeDialog(restoreFocus = true) {
+    if (!this.dialogHash) {
+      return;
+    }
+    this.dialogHash = "";
+    this._dialogFocusPending = false;
+    const opener = this._opener;
+    this._opener = undefined;
+    if (restoreFocus && opener && typeof opener.focus === "function") {
+      opener.focus();
+    }
+  }
+
+  /** The browser closed the dialog itself, for example with Escape. */
+  handleDialogNativeClose() {
+    this.closeDialog();
+  }
+
+  handleDialogClose() {
+    this.closeDialog();
+  }
+
+  handleBackdropClick(event) {
+    if (event.target === event.currentTarget) {
+      this.closeDialog();
+    }
+  }
+
+  handleDialogKeydown(event) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      this.closeDialog();
+      return;
+    }
+    if (event.key !== "Tab") {
+      return;
+    }
+    const items = [
+      ...this.template.querySelectorAll(
+        ".dd-panel button, .dd-panel [tabindex='0']"
+      )
+    ];
+    if (!items.length) {
+      return;
+    }
+    const active = this.template.activeElement;
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (event.shiftKey && (active === first || !active)) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && active === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
+  handleZoomIn() {
+    this.dialogFit = false;
+    this.dialogZoom = Math.min(ZOOM_MAX, this.dialogZoom * ZOOM_STEP);
+  }
+
+  handleZoomOut() {
+    this.dialogFit = false;
+    this.dialogZoom = Math.max(ZOOM_MIN, this.dialogZoom / ZOOM_STEP);
+  }
+
+  handleActualSize() {
+    this.dialogFit = false;
+    this.dialogZoom = 1;
+  }
+
+  handleFitWidth() {
+    this.dialogFit = true;
   }
 
   handleGroupToggle(event) {

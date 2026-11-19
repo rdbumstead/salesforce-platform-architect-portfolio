@@ -17,6 +17,9 @@ import {
   parseFields,
   monthRange,
   checkModel,
+  pageGaps,
+  checkPageTops,
+  MAX_GAP,
   failuresOf,
   classifyFailures,
   resumesFrom,
@@ -161,14 +164,14 @@ test('the fields check recovers every role and certification from the fixture PD
   const planted = structuredClone(model);
   planted.header.careerObjective = 'Planted summary.';
   planted.employers[0].roles[0].title = 'Planted Title';
-  planted.retiredCertifications[0].text = 'Planted Certification, Jan 2000';
+  planted.retiredCertifications[0].line = 'Planted Certification (2000)';
   const bad = checkFields(planted, layer.items, layout, format.employerLabel, layer.pages[0].width);
   assert.deepEqual(
     bad.misses.map((miss) => [miss.field, miss.expected]),
     [
       ['summary', 'Planted summary.'],
       ['role 1 title', 'Planted Title'],
-      ['retired certification', 'Planted Certification, Jan 2000']
+      ['retired certification', 'Planted Certification (2000)']
     ]
   );
 });
@@ -272,6 +275,9 @@ test('all six variants over the fixture data pass, with no known failure listed'
     assert.deepEqual(variant.order.missing, [], variant.name);
     assert.equal(variant.order.equal, true, variant.name);
     assert.deepEqual(variant.failures, [], variant.name);
+    // R27-D10: no page but the last ends more than MAX_GAP points above the bottom margin.
+    variant.gaps.filter((gap) => !gap.last).forEach((gap) => assert.ok(gap.gap <= MAX_GAP, `${variant.name} page ${gap.page} gap ${gap.gap}`));
+    assert.deepEqual(variant.pageTops.misses, [], variant.name);
   });
   assert.equal(report.ok, true);
   assert.equal(summaryRows(report).length, 6);
@@ -281,18 +287,18 @@ test('the command line takes any getResume payload and checks no page budget unl
   const folder = mkdtempSync(path.join(tmpdir(), 'resume-pdf-check-'));
   try {
     const payload = path.join(folder, 'resume.json');
-    writeFileSync(payload, JSON.stringify(resumesFrom(reads).find((entry) => entry.persona === 'Engineer').resume));
+    writeFileSync(payload, JSON.stringify(resumesFrom(reads).find((entry) => entry.persona === 'Architect').resume));
     const script = path.join(here, '..', 'build', 'resume-pdf-check.mjs');
     const run = (...extra) => spawnSync(process.execPath, [script, payload, ...extra], { encoding: 'utf8' });
     const open = run();
     assert.equal(open.status, 0, open.stderr);
     const report = JSON.parse(open.stdout);
     assert.deepEqual(report.variants.map((variant) => [variant.name, variant.budget]), [
-      ['Engineer with retired', null],
-      ['Engineer without retired', null]
+      ['Architect with retired', null],
+      ['Architect without retired', null]
     ]);
     const tightFile = path.join(folder, 'budget.json');
-    writeFileSync(tightFile, JSON.stringify({ 'Engineer with retired': 1 }));
+    writeFileSync(tightFile, JSON.stringify({ 'Architect with retired': 2 }));
     const tight = run('--budget', tightFile);
     assert.equal(tight.status, 1);
     assert.deepEqual(JSON.parse(tight.stdout).variants[0].unexpectedFailures, ['pages']);
@@ -387,4 +393,64 @@ test('roles that run across a page break are read back field by field', async ()
       ['Project Helper', 'Sample Training Institute']
     ]
   );
+});
+
+test('a page that ends more than 100 points above the bottom margin fails, and the last page never does', () => {
+  // Boxes in PDF coordinates, bottom up: the margin line is 54, so a box bottom of 200 leaves 146.
+  const box = (bottom) => ({ left: 54, right: 100, bottom, top: bottom + 10 });
+  const items = [
+    { page: 1, box: box(200) },
+    { page: 2, box: box(60) },
+    { page: 3, box: box(400) }
+  ];
+  const pages = [1, 2, 3].map((number) => ({ number, height: 792 }));
+  const gaps = pageGaps(items, pages, 54);
+  assert.deepEqual(gaps.map((gap) => [gap.gap, gap.over]), [[146, true], [6, false], [346, false]]);
+  assert.equal(failuresOf({ ...okResult(), gaps }).includes('gaps'), true);
+  assert.equal(failuresOf({ ...okResult(), gaps: gaps.slice(1) }).includes('gaps'), false);
+});
+
+function okResult() {
+  return {
+    collisions: [],
+    order: { equal: true, missing: [], outOfOrder: [], streamMatchesReading: true },
+    roundTrip: { percent: 100, misses: [] },
+    fields: { misses: [] },
+    reproducible: true,
+    pages: 2,
+    budget: 2
+  };
+}
+
+test('every page after the first must open on a role heading, a section heading or a continued section heading', async () => {
+  const { layout } = await loadShipped();
+  const section = (text, page) => ({ ...item(text, 54, 740, 120, { page, size: 9 }) });
+  const role = (page) => [item('Lead Role', 54, 740, 60, { page }), item('Jan 2021 - Present', 458, 740, 100, { page })];
+  const good = indexed([item('x', 54, 700, 10), section('EXPERIENCE (continued)', 2), ...role(3), section('SKILLS', 4)]);
+  const found = checkPageTops(good, layout, 612);
+  assert.deepEqual(found.tops.map((top) => top.kind), ['continued section', 'role', 'section']);
+  assert.deepEqual(found.misses, []);
+  const bad = indexed([item('x', 54, 700, 10), item('A bullet that carries on', 69, 740, 200, { page: 2 })]);
+  assert.deepEqual(checkPageTops(bad, layout, 612).misses.map((top) => top.page), [2]);
+  assert.deepEqual(failuresOf({ ...okResult(), pageTops: checkPageTops(bad, layout, 612) }), ['pageTops']);
+});
+
+test('a long section carries over with its heading and "(continued)", and a role keeps its first bullet', async () => {
+  const { format, layout } = await loadShipped();
+  const model = format.buildViewModel(pageTopGroup, PAGE_OPTIONS);
+  const layer = await readTextLayer((await renderModel(model)).bytes);
+  const tops = checkPageTops(layer.items, layout, layer.pages[0].width).tops;
+  assert.deepEqual(tops.map((top) => [top.page, top.kind, top.text]), [[2, 'continued section', 'EXPERIENCE (continued)']]);
+  const rows = readingRows(layer.items);
+  const lastOfPageOne = rows.filter((row) => row.page === 1).pop();
+  assert.ok(/Planted highlight|first page|two pages/.test(lastOfPageOne.text), 'page one ends inside the long role');
+});
+
+test('the check names a current role with no highlight and leaves it printed', async () => {
+  const { format } = await loadShipped();
+  const resume = { ...pageTopGroup, roles: [{ ...pageTopGroup.roles[0], highlights: [] }, ...pageTopGroup.roles.slice(1)] };
+  const model = format.buildViewModel(resume, PAGE_OPTIONS);
+  const result = await checkModel(model, {});
+  assert.deepEqual(result.bareCurrentRoles, ['Lead Developer, Example Labs']);
+  assert.deepEqual(result.failures, []);
 });

@@ -71,7 +71,7 @@
       "isCurrent": false,
       "isRemote": false,
       "isPartTime": true,
-      "highlights": []
+      "highlights": ["Planted highlight for the tutor role."]
     },
     {
       "id": "role-4",
@@ -82,7 +82,7 @@
       "isCurrent": false,
       "isRemote": false,
       "isPartTime": false,
-      "highlights": []
+      "highlights": ["Planted highlight for the helper role."]
     }
   ],
   "skillGroups": [

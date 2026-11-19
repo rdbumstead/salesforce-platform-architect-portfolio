@@ -14,8 +14,10 @@
  **/
 import { createElement } from "@lwc/engine-dom";
 import ApiReference, {
-  REDOC_ACTIVE_MENU_COLOR,
+  DARK_TOKENS,
+  LIGHT_TOKENS,
   REDOC_OPTIONS,
+  buildRedocTheme,
   REDOC_STYLE_OVERRIDES,
   disposePreviousRedoc,
   headerOffset
@@ -288,9 +290,13 @@ describe("c-api-reference menu rows", () => {
 
   it("draws the open row's label in a blue readable on Redoc's active row grey", () => {
     expect(REDOC_OPTIONS.theme.sidebar.activeTextColor).toBe(
-      REDOC_ACTIVE_MENU_COLOR
+      LIGHT_TOKENS.strongAccent
     );
-    expect(REDOC_ACTIVE_MENU_COLOR).toBe("#1D4ED8");
+    expect(LIGHT_TOKENS.strongAccent).toBe("#1d4ed8");
+    // In dark the active label is the site's dark accent on the darkened dark menu.
+    expect(buildRedocTheme(DARK_TOKENS).sidebar.activeTextColor).toBe(
+      DARK_TOKENS.accent
+    );
   });
 
   describe("header measured through a layout it cannot open", () => {
