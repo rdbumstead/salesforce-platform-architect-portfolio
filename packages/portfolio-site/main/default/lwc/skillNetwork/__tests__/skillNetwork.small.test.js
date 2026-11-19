@@ -107,6 +107,25 @@ describe("c-skill-network (Small form factor)", () => {
     expect(layoutGraph).not.toHaveBeenCalled();
   });
 
+  it("says the graph view needs a wider screen where the switch is hidden", async () => {
+    const element = await mountWithData();
+
+    const note = element.shadowRoot.querySelector(".view-note");
+    expect(note).not.toBeNull();
+    expect(note.textContent).toBe("The graph view needs a wider screen.");
+  });
+
+  it("keeps each chip detail as one element so a value is never split", async () => {
+    const element = await mountWithData();
+
+    const parts = element.shadowRoot.querySelectorAll(".chip-meta > span");
+    expect(parts.length).toBeGreaterThan(0);
+    parts.forEach((part) => {
+      expect(part.children).toHaveLength(0);
+      expect(part.textContent.trim()).not.toBe("");
+    });
+  });
+
   it("still selects a chip and lists where it was used", async () => {
     const element = await mountWithData();
 

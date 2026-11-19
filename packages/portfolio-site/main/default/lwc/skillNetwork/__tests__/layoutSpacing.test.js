@@ -374,7 +374,7 @@ describe("c-skill-network graph spacing on production shaped data", () => {
       circleOverlaps: 0,
       clusterGap: 54.7,
       onClamp: 0,
-      restLabels: 36,
+      restLabels: 91,
       restLabelOverlaps: 0,
       restLabelsOnNodes: 0,
       labelsOutsideView: 0,
