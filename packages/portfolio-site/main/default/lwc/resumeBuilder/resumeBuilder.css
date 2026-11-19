@@ -36,6 +36,20 @@
   gap: var(--pf-space-2);
 }
 
+/* The site's own link rule outranks .nc-button on an anchor, so the Text version link restates
+   the secondary button's look from the shared tokens and adds nothing of its own. */
+a.text-version:link,
+a.text-version:visited {
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  text-decoration: none;
+}
+
+a.text-version:link:hover,
+a.text-version:visited:hover {
+  background-color: var(--pf-subtle);
+}
+
 .text-success {
   color: var(--pf-ok);
 }
@@ -168,9 +182,15 @@
   margin-top: var(--resume-role-after);
 }
 
-/* Titles under one employer sit close together, the employer is the heading above them. */
+/* Every role is two lines, the title with its dates and the employer under it, so the roles
+   keep the same gap whoever the employer is. */
 .resume-employer .resume-role + .resume-role {
-  margin-top: var(--resume-item-gap);
+  margin-top: var(--resume-role-after);
+}
+
+.role-employer {
+  font-size: var(--resume-role-heading-size);
+  font-weight: var(--resume-role-heading-weight);
 }
 
 /* The two include toggles: a native checkbox inside its label, so the whole 44 px row is the
@@ -195,10 +215,6 @@
 .toggle-input:focus-visible {
   outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
-}
-
-.employer-heading {
-  margin-bottom: var(--resume-item-gap);
 }
 
 .issuer-label {

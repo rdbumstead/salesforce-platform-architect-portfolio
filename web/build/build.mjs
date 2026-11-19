@@ -33,7 +33,8 @@ import {
   FIXTURE_SNAPSHOT_FILE
 } from './export.mjs';
 import { copyResources, resourceIndex, resourcesNamedIn } from './resources.mjs';
-import { writePages } from './pages.mjs';
+import { writePages, readHeadMarkup } from './pages.mjs';
+import { writeTextPages } from './text-pages.mjs';
 import { readKey } from '../src/shims/site-data.js';
 import { WEB_DIR } from './site-plugin.mjs';
 import { writeLabPaths } from './lab-paths.mjs';
@@ -209,7 +210,14 @@ export async function build(args = new Set()) {
     console.log('No rendered Mermaid drawings: run scripts/render-mermaid.js first to include them.');
   }
 
-  writePages({ routes, scripts: bundled.scripts, readKeys, reads, manifest, resourceUrls, distDir: DIST_DIR });
+  const pageFiles = writePages({ routes, scripts: bundled.scripts, readKeys, reads, manifest, resourceUrls, distDir: DIST_DIR });
+  const textPages = await writeTextPages({
+    distDir: DIST_DIR,
+    reads,
+    routes,
+    head: readHeadMarkup(resourceUrls).tags,
+    styles: pageFiles.styles
+  });
   writeLabPaths();
   copyRecorded(DIST_DIR, undefined, { fixture: Boolean(manifest.fixture) });
   writeHostFiles(copied.lines, isPreviewBuild(args));
@@ -220,6 +228,7 @@ export async function build(args = new Set()) {
     fixture: Boolean(manifest.fixture),
     prerendered: prerendered.map((entry) => entry.path),
     routes: routes.map((route) => route.path || route.file),
+    textPages,
     skippedRoutes: skipped.map((route) => route.path),
     reads: Object.keys(reads).length,
     resources: [...wanted].sort(),
