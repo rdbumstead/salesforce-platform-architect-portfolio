@@ -2,7 +2,7 @@
 
 Section 0 was run on 2026-11-04 and 2026-11-05. Sections 1 to 3 were run on 2026-11-09, and the notes below say what each run found. Section 4 is the rollback for the two weeks after that, and sections 5 and 6 come later. This runbook moves `ryanbumstead.com` from a Cloudflare 301 to the Experience Cloud site over to the static site on Cloudflare Pages ([ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)). I run it by hand. Nothing in Salesforce changes at cutover, so the rollback takes minutes.
 
-A fact I could not settle from code or documentation is marked `[unverified]`. I check each one in the dashboard before step 1, and I do not run a step that still carries one.
+A fact I could not settle from code or documentation is marked "unverified" in the text. I check each one in the dashboard before step 1, and I do not run a step that still carries one.
 
 ## 0. Setup that must exist first
 
@@ -83,16 +83,16 @@ What the policy covers. Cloudflare's known issues page says the application it c
 
 Do not start until every line is true.
 
-- [ ] The production Pages build is green: `site.yml` on `main` succeeded and its summary shows the export read from Salesforce, not fixtures.
-- [ ] Smoke is green against the production `*.pages.dev` address: run `scripts/live-smoke.js` with the base set to it. Every row passes.
-- [ ] Lighthouse is green against it. The workflow's medians are in the job summary, and I have recorded them in [Technical Guide §2.11](./04-Technical-Guide.md#211-mobile-performance) as Cloudflare numbers, not local ones.
-- [ ] All five switches read `recorded` on the `*.pages.dev` address: `/api/features` shows five `recorded` values and each page shows its paused note, sample letter or build snapshot. They stay that way until cutover (0.4), because the rate limit cannot cover that address.
-- [ ] The edge user check in 0.1 passed, including a cover letter that reports Agentforce as the provider.
-- [ ] The Cloudflare secrets in 0.2 are set, the rate limit in 0.3 is in place and the switch order in 0.4 was followed.
-- [ ] The Turnstile widget exists, and the edge user and the External Client App exist.
-- [ ] Previews are behind Cloudflare Access (0.5).
-- [ ] The cache warmer is paused (step 1.1 below).
-- [ ] The open licensing question in the ADR is either answered or I accept that the kill switches are my fallback.
+- The production Pages build is green: `site.yml` on `main` succeeded and its summary shows the export read from Salesforce, not fixtures.
+- Smoke is green against the production `*.pages.dev` address: run `scripts/live-smoke.js` with the base set to it. Every row passes.
+- Lighthouse is green against it. The workflow's medians are in the job summary, and I have recorded them in [Technical Guide §2.11](./04-Technical-Guide.md#211-mobile-performance) as Cloudflare numbers, not local ones.
+- All five switches read `recorded` on the `*.pages.dev` address: `/api/features` shows five `recorded` values and each page shows its paused note, sample letter or build snapshot. They stay that way until cutover (0.4), because the rate limit cannot cover that address.
+- The edge user check in 0.1 passed, including a cover letter that reports Agentforce as the provider.
+- The Cloudflare secrets in 0.2 are set, the rate limit in 0.3 is in place and the switch order in 0.4 was followed.
+- The Turnstile widget exists, and the edge user and the External Client App exist.
+- Previews are behind Cloudflare Access (0.5).
+- The cache warmer is paused (step 1.1 below).
+- The open licensing question in the ADR is either answered or I accept that the kill switches are my fallback.
 
 ### 1.1 Pause the cache warmer
 

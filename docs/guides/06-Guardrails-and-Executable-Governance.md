@@ -149,8 +149,7 @@ Every interaction passes through three distinct "Gating Layers" to ensure perfor
 
 **Summary:** A 3-layer defense (Performance, Security, Governance). No request latency is measured, so no latency target is claimed. The measured numbers are the mobile LCP figures in [Technical Guide §2.11](./04-Technical-Guide.md#211-mobile-performance).
 
-<details>
-<summary>Click to view Request Lifecycle Diagram</summary>
+**Request lifecycle diagram**
 
 ```mermaid
 sequenceDiagram
@@ -188,8 +187,6 @@ sequenceDiagram
     A-->>B: Fixed response shape
     B-->>U: Render UI Update
 ```
-
-</details>
 
 **Permission checks:** a GraphQL read is checked against the guest's object and field permissions, and a field without them makes the query fail. An `@AuraEnabled` call needs class access in `Portfolio_Guest`. Inside Apex, the controllers that read records the guest cannot see (my Contact, experience highlights, the integration caches) do so in system mode through `without sharing` selectors with a fixed field list, and return only the shape the page needs.
 

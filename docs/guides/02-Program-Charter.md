@@ -311,6 +311,8 @@ Before user stories are written, features are evaluated against a "Problem State
   - Filters by persona ("Platform Architect", "Salesforce Developer" or "System Admin").
   - Exports to clean PDF.
 
+> Note, 2026-11-18: the original charter named Platform Architect, Salesforce Developer and System Admin as the personas. They are now Salesforce Engineer, Platform Architect and Solution Consultant. The rest of this charter stays as history.
+
 ### 5.3 Core User Stories
 
 | ID          | Persona               | I Want To...                     | So That...                                                                                                                                                    |

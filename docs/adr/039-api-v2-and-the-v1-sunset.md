@@ -42,7 +42,7 @@ I decided that v2 is a breaking contract, selected by header, with keys only. v1
 ## Implications
 
 - **A missing header is v1.** After the sunset a call with no `X-API-Version` also gets 410, except on the token and health paths, so a client has to send `v2`.
-- **`Vary: X-API-Version` is sent on every response**, because the body differs by version. I added it for any cache in front. It and the `Link` header are appended to a value already set, not replaced. Whether a given cache honours it is [unverified].
+- **`Vary: X-API-Version` is sent on every response**, because the body differs by version. I added it for any cache in front. It and the `Link` header are appended to a value already set, not replaced. Whether a given cache honours it is not yet checked.
 - **Both dates ship blank.** Until I set them, v1 carries only `X-API-Version`, `Vary` and the `Link` header, and nothing answers 410.
 - **After the sunset** I delete the v1 spec files, the `V1_SPECS` list in `scripts/sync-specs.js`, the `SAPI_Spec`, `PAPI_Spec`, `SAPI_OpenAPI` and `PAPI_OpenAPI` static resources, the v1 option in the API Lab and API reference pickers, and the v1 mapping in `OpenApiDocument`. The Maintenance Guide lists the steps.
 - **ADR-038 is carried out.** Its note that a v2 would remove `id` and each reference Id is what `toV2` does.
