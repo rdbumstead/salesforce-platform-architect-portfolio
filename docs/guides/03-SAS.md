@@ -1078,7 +1078,7 @@ Granular bullet points for resume generation.
 | **Persona Tag**      | `Persona_Tag__c`               | Multi-select Picklist | -      | Yes      | Target audience filter (Engineer, Architect, Consultant, and Admin).                          |
 | **Sort (Universal)** | `Sort_Order__c`                | Number                | 3,0    | Yes      | Default order within a role.                                                                  |
 | **Admin Sort**       | `Admin_Sort_Order__c`          | Number                | 3,0    | No       | Sort order for Admin resume.                                                                  |
-| **Dev Sort**         | `Developer_Sort_Order__c`      | Number                | 3,0    | No       | Sort order for the old Developer value, kept until it is deactivated.                         |
+| **Dev Sort**         | `Developer_Sort_Order__c`      | Number                | 3,0    | No       | Sort order for the old Developer value. No code reads it and nothing writes it.               |
 | **Engineer Sort**    | `Engineer_Sort_Order__c`       | Number                | 3,0    | No       | Sort order for Engineer resume.                                                               |
 | **Architect Sort**   | `Architect_Sort_Order__c`      | Number                | 3,0    | No       | Sort order for Architect resume.                                                              |
 | **Consultant Sort**  | `Consultant_Sort_Order__c`     | Number                | 3,0    | No       | Sort order for Consultant resume.                                                             |

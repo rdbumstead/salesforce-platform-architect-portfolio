@@ -170,7 +170,6 @@ private class SiteQueryDefinitionsTest {
             Persona_Tag__c,
             Sort_Order__c,
             Admin_Sort_Order__c,
-            Developer_Sort_Order__c,
             Engineer_Sort_Order__c,
             Architect_Sort_Order__c,
             Consultant_Sort_Order__c,

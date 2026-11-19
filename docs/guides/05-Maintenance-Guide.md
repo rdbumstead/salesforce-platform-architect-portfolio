@@ -337,6 +337,8 @@ The public focuses are Engineer, Architect and Consultant ([ADR-009 amendment](.
    - `Developer_Sort_Order__c` itself stays until I decide to delete the field. Deleting it also means removing it from the layout and from the two permission sets that grant it.
    - Read back: a deployed flow has no Developer branch (a Tooling query on the flow's metadata), the resume and the Apex tests above still pass, and the live resume shows the three focuses.
 
+Steps 3 and 4 shipped together in one change on 2026-11-18, after the live check passed. Developer is inactive on both fields and the code leftovers are gone.
+
 ## 4. Disaster Recovery
 
 ### 4.1 Scenario: Deployment Failure

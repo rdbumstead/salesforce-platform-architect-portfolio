@@ -372,8 +372,9 @@ private class ApiLabOptionsControllerTest {
   }
 
   /**
-   * The picklist holds Developer and Admin as well as the three public focuses. The persona
-   * list must keep to the three focuses, so the Lab never offers the old name or the internal tag.
+   * The picklist keeps Developer as an inactive value and Admin as an active tag, beside the
+   * three public focuses. The persona list must keep to the three focuses, so the Lab never
+   * offers the old name or the internal tag.
    */
   @isTest
   static void personaListKeepsToAcceptedValues() {
@@ -391,7 +392,7 @@ private class ApiLabOptionsControllerTest {
       active.contains('Consultant'),
       'Consultant is an active value'
     );
-    Assert.isTrue(active.contains('Developer'), 'Developer is still active');
+    Assert.isFalse(active.contains('Developer'), 'Developer is inactive');
     Assert.isTrue(active.contains('Admin'), 'Admin is still active');
 
     Test.startTest();
@@ -429,7 +430,7 @@ private class ApiLabOptionsControllerTest {
     Assert.areEqual(1, narrowed.size(), 'One accepted value gives one option');
     Assert.areEqual('Engineer', narrowed[0].value, 'The accepted value');
     Assert.isTrue(
-      everything.size() >= 5,
+      everything.size() >= 4,
       'No accepted set keeps every active value'
     );
   }
