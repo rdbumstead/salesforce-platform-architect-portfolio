@@ -10,7 +10,7 @@ import {
   fromPyresparser,
   landmarksOf,
   landmarkOrder,
-  headingVerdict,
+  pageTopVerdict,
   summaryTable,
   parseVeraJson,
   hasStructureTree,
@@ -186,16 +186,29 @@ test("landmark order finds a displaced line and a missing one", () => {
   assert.deepEqual(landmarkOrder(marks, lost).missing, ["Did two"]);
 });
 
-test("the heading verdict builds only on a miss from a parser that reports roles", () => {
+test("the page top rule holds when every page opens on a heading and names a page that does not", () => {
   const none = scoreParse(expected(), { roles: [] });
-  const part = scoreParse(expected(), {
-    roles: [{ title: "Lead", employer: "Acme", dates: "Jan 2020 - Present" }]
-  });
-  assert.equal(headingVerdict([{ name: "v", scores: { none } }]).build, false);
-  const verdict = headingVerdict([{ name: "v", scores: { part } }]);
-  assert.equal(verdict.build, true);
-  assert.equal(verdict.hits.length, 3);
-  assert.equal(verdict.controls.length, 0);
+  const good = pageTopVerdict([
+    {
+      name: "v",
+      scores: { none },
+      pageTopRows: [
+        { page: 2, text: "EXPERIENCE (continued)", kind: "continued section" },
+        { page: 3, text: "Lead Jan 2020 - Present", kind: "role" }
+      ]
+    }
+  ]);
+  assert.equal(good.ok, true);
+  assert.equal(good.tops.length, 2);
+  const bad = pageTopVerdict([
+    {
+      name: "v",
+      scores: { none },
+      pageTopRows: [{ page: 2, text: "Acme", kind: "other" }]
+    }
+  ]);
+  assert.equal(bad.ok, false);
+  assert.deepEqual(bad.misses, [{ variant: "v", page: 2, text: "Acme" }]);
 });
 
 test("the summary table has one row per variant and parser", () => {

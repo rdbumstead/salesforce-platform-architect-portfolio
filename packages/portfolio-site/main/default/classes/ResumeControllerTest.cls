@@ -573,6 +573,77 @@ private class ResumeControllerTest {
   }
 
   @isTest
+  static void getResumeHeadlineComesFromTheFocusVariant() {
+    insert new List<Resume_Variant__c>{
+      variant('engineer', 'Headline', 'Salesforce Engineer', '2', true),
+      variant(
+        'engineer',
+        'Headline',
+        ' Salesforce Engineer, Apex and LWC ',
+        '1',
+        true
+      ),
+      variant('architect', 'Headline', 'Platform Architect', '1', true),
+      variant('architect', 'Summary', 'Architect summary.', '1', true)
+    };
+
+    Test.startTest();
+    ResumeController.ResumeData engineer = ResumeController.getResume(
+      'Engineer'
+    );
+    ResumeController.ResumeData architect = ResumeController.getResume(
+      'Architect'
+    );
+    ResumeController.ResumeData consultant = ResumeController.getResume(
+      'Consultant'
+    );
+    ResumeController.ResumeData none = ResumeController.getResume(null);
+    Test.stopTest();
+
+    Assert.areEqual(
+      'Salesforce Engineer, Apex and LWC',
+      engineer.headline,
+      'Lowest priority wins and the text is trimmed'
+    );
+    Assert.areEqual('Platform Architect', architect.headline, 'Architect');
+    Assert.areEqual(
+      'Architect summary.',
+      architect.summary,
+      'A Summary and a Headline of one focus do not mix'
+    );
+    Assert.isNull(consultant.headline, 'No Consultant headline');
+    Assert.isNull(none.headline, 'No focus, no headline');
+  }
+
+  @isTest
+  static void getResumeHeadlineIgnoresVariantsThatAreNotPublicVerifiedHeadlines() {
+    Resume_Variant__c notPublic = variant(
+      'engineer',
+      'Headline',
+      'Not public.',
+      '1',
+      true
+    );
+    notPublic.Visibility__c = null;
+    insert new List<Resume_Variant__c>{
+      variant('engineer', 'Headline', 'Not verified.', '1', false),
+      notPublic,
+      variant('engineer', 'Summary', 'A summary.', '1', true),
+      variant('architect', 'Headline', 'Wrong focus.', '1', true),
+      variant('engineer', 'Headline', '   ', '1', true)
+    };
+
+    Test.startTest();
+    ResumeController.ResumeData resume = ResumeController.getResume('Engineer');
+    Test.stopTest();
+
+    Assert.isNull(
+      resume.headline,
+      'Only a public verified Headline of the focus with text counts'
+    );
+  }
+
+  @isTest
   static void getResumeSummaryIsKeptForTheGuest() {
     insert variant('architect', 'Summary', 'Architect summary.', '1', true);
     User guest = SiteGuestTestSupport.preparedGuest();
@@ -1390,6 +1461,7 @@ private class ResumeControllerTest {
       new Set<String>{
         'persona',
         'summary',
+        'headline',
         'header',
         'roles',
         'skillGroups',

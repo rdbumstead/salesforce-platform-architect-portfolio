@@ -14,13 +14,13 @@
         <field>Fields__c</field>
         <value
       xsi:type="xsd:string"
-    >Text__c, Title_Family__c, Selection_Priority__c</value>
+    >Text__c, Title_Family__c, Selection_Priority__c, Variant_Type__c</value>
     </values>
     <values>
         <field>Filter__c</field>
         <value
       xsi:type="xsd:string"
-    >Variant_Type__c = 'Summary' AND Visibility__c = 'Public' AND Is_Verified__c = TRUE AND Title_Family__c = :titleFamily</value>
+    >Variant_Type__c IN ('Summary', 'Headline') AND Visibility__c = 'Public' AND Is_Verified__c = TRUE AND Title_Family__c = :titleFamily</value>
     </values>
     <values>
         <field>Order_By__c</field>
@@ -42,10 +42,10 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >Resume summary of one focus, from its public verified Summary variants.</value>
+    >Resume summary and headline of one focus, from its public verified Summary and Headline variants.</value>
     </values>
     <values>
         <field>Visitor_Label__c</field>
-        <value xsi:type="xsd:string">summaries</value>
+        <value xsi:type="xsd:string">summaries and headlines</value>
     </values>
 </CustomMetadata>
