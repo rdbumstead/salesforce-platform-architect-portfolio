@@ -16,7 +16,9 @@ import DocsViewer, {
   docKeyFrom,
   badgeFor,
   groupFor,
-  activeTheme
+  activeTheme,
+  resetDiagrams,
+  drawingWidth
 } from "c/docsViewer";
 import getDocs from "@salesforce/apex/SourceController.getDocs";
 import getDoc from "@salesforce/apex/SourceController.getDoc";
@@ -28,7 +30,8 @@ import {
   resolveHref,
   renderMarkdown,
   indexHeadings,
-  dropOwnContents
+  dropOwnContents,
+  takeFrontMatter
 } from "../docsRenderer";
 import { diagramHash } from "../diagramHash";
 
@@ -342,14 +345,14 @@ describe("c-docs-viewer list", () => {
     );
     const link = decisions.querySelector('.nc-button[data-id="all-decisions"]');
     expect(link).not.toBeNull();
-    expect(link.textContent).toBe("View all decisions");
+    expect(link.textContent).toBe("Open the decisions folder on GitHub");
     expect(link.getAttribute("href")).toBe(
       "https://github.com/rdbumstead/salesforce-platform-architect-portfolio/tree/main/docs/adr"
     );
     expect(link.getAttribute("rel")).toBe("noopener noreferrer");
     expect(link.getAttribute("target")).toBe("_blank");
     expect(link.getAttribute("aria-label")).toBe(
-      "View all decisions on GitHub, opens in a new tab"
+      "Open the decisions folder on GitHub, opens in a new tab"
     );
     // Outside the details element, so it shows with the group closed.
     expect(link.closest("details")).toBeNull();
@@ -795,9 +798,9 @@ describe("Mermaid drawings", () => {
       "A flows to B.",
       "A flows to B."
     ]);
-    expect(holder.querySelector(".doc-drawing").getAttribute("tabindex")).toBe(
-      "0"
-    );
+    const open = holder.querySelector("button.doc-drawing-open");
+    expect(open.textContent).toBe("Open full size");
+    expect(open.dataset.hash).toBe(hash);
     expect(
       holder.querySelector("details.doc-diagram-source code").textContent
     ).toContain("A-->B");
@@ -914,5 +917,250 @@ describe("c-docs-viewer focus and announcement", () => {
     const h1 = shadow(el).querySelector("h1");
     expect(shadow(el).activeElement).toBe(h1);
     expect(announced(el)).toBe("Document list");
+  });
+});
+
+const CODE_DOC = ["# T", "", "```js", "const a = 1;", "```"].join("\n");
+
+describe("c-docs-viewer tables, front matter, title and the end of a document", () => {
+  const WIDE = [
+    "# Title",
+    "",
+    "Project: Salesforce Platform Architect Portfolio",
+    "",
+    "Owner: Ryan Bumstead",
+    "",
+    "Version: 1.0",
+    "",
+    "Date: Live since October 2026",
+    "",
+    "## Matrix",
+    "",
+    "| Role | Read | Write | Notes |",
+    "| --- | --- | --- | --- |",
+    "| Guest | yes | no | Public |",
+    "",
+    "| A | B |",
+    "| --- | --- |",
+    "| 1 | 2 |"
+  ].join("\n");
+
+  it("stacks a table of four columns or more with a label on each cell, and leaves a narrow one", async () => {
+    const el = await openDoc("sas", WIDE);
+    const wraps = shadow(el).querySelectorAll(".doc-body .table-wrap");
+    expect(wraps.length).toBe(2);
+    expect(wraps[0].classList.contains("table-stack")).toBe(true);
+    const cells = [...wraps[0].querySelectorAll("td")];
+    expect(cells.map((c) => c.dataset.label)).toEqual([
+      "Role",
+      "Read",
+      "Write",
+      "Notes"
+    ]);
+    expect(wraps[0].querySelector("table").getAttribute("role")).toBe("table");
+    expect(wraps[1].classList.contains("table-stack")).toBe(false);
+    expect(wraps[0].querySelector(".scroll-cue").textContent).toBe(
+      "Scroll for more"
+    );
+    expect(
+      wraps[0].querySelector(".table-scroll").getAttribute("tabindex")
+    ).toBe("0");
+  });
+
+  it("marks a table wider than its box so the cue shows", async () => {
+    const el = await openDoc("sas", WIDE);
+    const wrap = shadow(el).querySelector(".doc-body .table-wrap");
+    const box = wrap.querySelector(".table-scroll");
+    Object.defineProperty(box, "scrollWidth", { value: 900 });
+    Object.defineProperty(box, "clientWidth", { value: 300 });
+    window.dispatchEvent(new CustomEvent("resize"));
+    expect(wrap.classList.contains("is-scrollable")).toBe(true);
+    expect(wrap.classList.contains("at-end")).toBe(false);
+    box.scrollLeft = 600;
+    window.dispatchEvent(new CustomEvent("resize"));
+    expect(wrap.classList.contains("at-end")).toBe(true);
+  });
+
+  it("draws Project, Version, Owner and Date as one meta line in a fixed order", async () => {
+    const el = await openDoc("sas", WIDE);
+    const lines = shadow(el).querySelectorAll(".doc-body .doc-front");
+    expect(lines.length).toBe(1);
+    const labels = [...lines[0].querySelectorAll(".doc-front-label")].map(
+      (n) => n.textContent
+    );
+    expect(labels).toEqual(["Project", "Version", "Owner", "Date"]);
+    expect(lines[0].textContent).toContain("Live since October 2026");
+    expect(shadow(el).querySelector(".doc-body").textContent).not.toContain(
+      "Project: Salesforce"
+    );
+  });
+
+  it("gives a code block the same scroll cue as a table", async () => {
+    const el = await openDoc("sas", CODE_DOC);
+    const box = shadow(el).querySelector(".doc-body .code-wrap");
+    expect(box.querySelector("pre.doc-pre")).not.toBeNull();
+    expect(box.querySelector(".scroll-cue").textContent).toBe(
+      "Scroll for more"
+    );
+  });
+
+  it("leaves one such line alone", () => {
+    const tokens = MARKED.lexer("Version: 1.0\n\nText.\n", { gfm: true });
+    expect(takeFrontMatter(tokens).entries).toEqual([]);
+  });
+
+  it("sets the tab title to the document and puts it back on the list", async () => {
+    document.title = "Architecture docs | Ryan Bumstead";
+    const el = await openDoc("sas", WIDE);
+    expect(document.title).toBe("Title | Ryan Bumstead");
+    document.body.removeChild(el);
+    expect(document.title).toBe("Architecture docs | Ryan Bumstead");
+  });
+
+  it("ends a document with a way back and the next document", async () => {
+    const el = await openDoc("sas", SAS);
+    const end = shadow(el).querySelector("nav.doc-end");
+    expect(end.querySelector(".doc-end-back").getAttribute("href")).toBe(
+      "/portfolio/docs"
+    );
+    expect(end.querySelector(".doc-end-next").getAttribute("href")).toBe(
+      "/portfolio/docs?doc=adr-027"
+    );
+    expect(end.querySelector(".doc-end-title").textContent).toBe(
+      "Platform auth"
+    );
+  });
+
+  it("shows no next link on the last document", async () => {
+    const el = await create({ doc: "adr-027" });
+    getDoc.emit({
+      key: "adr-027",
+      title: "Platform auth",
+      path: "docs/adr/027-platform-auth.md",
+      content: "# ADR\n\nText.",
+      htmlUrl: "https://github.com/o/r/blob/main/docs/adr/027.md",
+      fetchedAt: "2026-10-24T06:00:00.000Z",
+      truncated: false
+    });
+    await flush();
+    await flush();
+    expect(shadow(el).querySelector(".doc-end-next")).toBeNull();
+    expect(shadow(el).querySelector(".doc-end-back")).not.toBeNull();
+  });
+
+  it("shows a decision's status and date when the list carries them", async () => {
+    const el = await create({}, [
+      { ...DOCS[1], status: "Accepted", date: "2026-10-01" }
+    ]);
+    const details = shadow(el).querySelector("details.doc-group-details");
+    details.open = true;
+    details.dispatchEvent(new CustomEvent("toggle"));
+    await flush();
+    expect(shadow(el).querySelector(".doc-status").textContent).toBe(
+      "Accepted"
+    );
+    expect(shadow(el).querySelector(".doc-date").textContent).toBe(
+      "2026-10-01"
+    );
+  });
+});
+
+describe("c-docs-viewer diagram dialog", () => {
+  const SOURCE = "flowchart LR\n  A[Site] --> B[Apex]";
+  const HASH = diagramHash(SOURCE);
+  const DOC = ["# T", "", "## One", "", "```mermaid", SOURCE, "```"].join("\n");
+
+  beforeEach(() => {
+    resetDiagrams();
+    global.fetch = jest.fn((url) => {
+      if (String(url).endsWith("manifest.json")) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({ diagrams: { [HASH]: { alt: "Site to Apex." } } })
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        text: () =>
+          Promise.resolve(
+            '<svg width="100%" viewBox="0 0 1400 500" style="max-width: 1400px"></svg>'
+          )
+      });
+    });
+  });
+
+  afterEach(() => {
+    delete global.fetch;
+    resetDiagrams();
+  });
+
+  async function opened() {
+    const el = await openDoc("sas", DOC);
+    await flush();
+    const button = shadow(el).querySelector("button.doc-drawing-open");
+    button.click();
+    await flush();
+    await flush();
+    return { el, button };
+  }
+
+  it("reads a drawing's width from its viewBox", async () => {
+    await expect(drawingWidth("/x.svg")).resolves.toBe(1400);
+  });
+
+  it("opens the drawing at its own width, with the alt, and focuses Close", async () => {
+    const { el } = await opened();
+    const dialog = shadow(el).querySelector('[role="dialog"]');
+    expect(dialog.getAttribute("aria-modal")).toBe("true");
+    const img = dialog.querySelector("img.dd-img");
+    expect(img.getAttribute("alt")).toBe("Site to Apex.");
+    expect(img.getAttribute("src")).toContain(`${HASH}-`);
+    expect(img.getAttribute("style")).toContain("width: 1400px");
+    expect(shadow(el).activeElement.dataset.id).toBe("close");
+  });
+
+  it("zooms in, out and back to fit", async () => {
+    const { el } = await opened();
+    const root = shadow(el);
+    root.querySelector('[data-id="zoom-in"]').click();
+    await flush();
+    expect(root.querySelector("img.dd-img").getAttribute("style")).toContain(
+      "width: 1750px"
+    );
+    root.querySelector('[data-id="zoom-out"]').click();
+    root.querySelector('[data-id="zoom-out"]').click();
+    await flush();
+    expect(root.querySelector("img.dd-img").getAttribute("style")).toContain(
+      "width: 1120px"
+    );
+    root.querySelector('[data-id="fit-width"]').click();
+    await flush();
+    expect(root.querySelector("img.dd-img").getAttribute("style")).toContain(
+      "width: 100%"
+    );
+    root.querySelector('[data-id="actual-size"]').click();
+    await flush();
+    expect(root.querySelector("img.dd-img").getAttribute("style")).toContain(
+      "width: 1400px"
+    );
+  });
+
+  it("closes on Escape and on Close, and gives focus back to the button", async () => {
+    const { el, button } = await opened();
+    const root = shadow(el);
+    root
+      .querySelector('[role="dialog"]')
+      .dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
+      );
+    await flush();
+    expect(root.querySelector('[role="dialog"]')).toBeNull();
+    expect(root.activeElement).toBe(button);
+    button.click();
+    await flush();
+    root.querySelector('[data-id="close"]').click();
+    await flush();
+    expect(root.querySelector('[role="dialog"]')).toBeNull();
   });
 });
