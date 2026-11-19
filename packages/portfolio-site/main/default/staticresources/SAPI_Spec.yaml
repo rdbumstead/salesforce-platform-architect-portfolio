@@ -23,7 +23,7 @@ info:
     - **Traceability**: Each API resource maps 1:1 to an Apex `@RestResource` class (`SAPI<Resource>`), and every class runs through the shared `ApiRequestContext`.
 
     ### Non-Functional Requirements (NFRs)
-    - **Observability**: `X-Request-Id` **mandatory** in Request/Response for distributed tracing. A missing or non-UUID value returns `400 BAD_REQUEST` (`ApiRequestContext.applyRequestRules`). The platform echoes a caller-supplied value on every response; Apex sets the header only when it generated the value (ADR-026).
+    - **Observability**: `X-Request-Id` **mandatory** in Request/Response for distributed tracing. A missing or non-UUID value returns `400 BAD_REQUEST` (`ApiRequestContext.applyRequestRules`). The platform echoes a caller-supplied value on every response. Apex sets the header only when it generated the value (ADR-026).
     - **Latency**: Target < 500ms for internal processing.
     - **Resilience**: 120 requests per minute per caller key, enforced by `RateWindowLimiter` (ADR-025), with `429` responses and `Retry-After` headers. Every vended evaluator token is the same session, so all evaluators share one key and one limit of 120 per minute (ADR-028).
     - **Caching Strategy**: 
@@ -33,7 +33,7 @@ info:
     ### Design Constraints & Trade-offs
     - **Pagination**: Offset-based pagination implemented for simplicity (<200 records). 
       - *Enterprise Note*: For volumes >2,000, this would be refactored to **Keyset/Cursor Pagination** (`WHERE Id > lastSeenId`).
-    - **Versioning**: Header version (`X-API-Version`) takes precedence over URL versioning. A missing header resolves to `v1`; any other value returns `400 BAD_REQUEST` with message `Unsupported X-API-Version` (ADR-026). Both `X-Request-Id` and `X-API-Version` are echoed on every response.
+    - **Versioning**: Header version (`X-API-Version`) takes precedence over URL versioning. A missing header resolves to `v1`. Any other value returns `400 BAD_REQUEST` with message `Unsupported X-API-Version` (ADR-026). Both `X-Request-Id` and `X-API-Version` are echoed on every response.
   contact:
     name: Ryan Bumstead
     email: ryan@ryanbumstead.com
@@ -92,7 +92,7 @@ components:
 
   headers:
     RequestIdResponse:
-      description: "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header)."
+      description: "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header)."
       schema:
         type: string
         format: uuid
@@ -124,7 +124,7 @@ components:
       name: X-API-Version
       in: header
       required: false
-      description: "API Contract Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026)."
+      description: "API Contract Version. Missing resolves to v1. Any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026)."
       schema:
         type: string
         example: "v1"
@@ -133,7 +133,7 @@ components:
       name: X-Request-Id
       in: header
       required: true
-      description: "Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026)."
+      description: "Correlation ID for distributed tracing. Required on SAPI. Missing or non-UUID returns 400 BAD_REQUEST (ADR-026)."
       schema:
         type: string
         format: uuid
@@ -1489,7 +1489,7 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/RequestIdResponse"
             Cache-Control:
-              description: "Private configuration data; shared caches must not store it."
+              description: "Private configuration data. Shared caches must not store it."
               schema:
                 type: string
                 example: "max-age=300, private"
