@@ -217,7 +217,7 @@
    and dropping when the page arrives. */
 .region-content {
   flex: 1 0 auto;
-  min-height: var(--pf-region-min-height, 100vh);
+  min-height: 100vh;
   /* Every page sits in the same centred column as the header bar. The sections inside add the
      same side gutter the header has, so the brand, the heading and the content share a left
      edge. Below this width nothing changes. */
