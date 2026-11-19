@@ -12,11 +12,11 @@ import { join } from "path";
 import { createElement } from "@lwc/engine-dom";
 import ApiReference, {
   HOSTED_REFERENCE_URL,
-  REDOC_OPTIONS,
+  LIGHT_TOKENS,
+  REDOC_PANEL_BACKGROUND,
   REDOC_STYLE_OVERRIDES,
   REDOC_FOCUS_RULE,
   normaliseHeadingLevels,
-  REDOC_LINK_COLOR,
   REDOC_TAB_COLORS,
   REFERENCE_EVENT,
   RENDER_TIMEOUT_MS,
@@ -202,7 +202,7 @@ describe("c-api-reference", () => {
     expect(window.Redoc.init).toHaveBeenCalledTimes(1);
     const [spec, options, target] = window.Redoc.init.mock.calls[0];
     expect(spec).toBe("SAPI_Spec_V2");
-    expect(options.theme).toBe(REDOC_OPTIONS.theme);
+    expect(options.theme.colors.primary.main).toBe(LIGHT_TOKENS.accent);
     expect(options.disableSearch).toBe(true);
     expect(typeof options.scrollYOffset).toBe("number");
     expect(options.disableSearch).toBe(true);
@@ -529,25 +529,28 @@ describe("c-api-reference", () => {
     expect(meta).toMatch(/name="openOnLoad"/);
   });
 
-  it("gives Redoc's links the light accent, readable on its white panel in both themes", async () => {
+  it("draws Redoc's links in the site accent, with no light panel left behind", async () => {
     const element = createComponent();
     await flushPromises();
     openButton(element).click();
     await flushPromises();
 
     const options = window.Redoc.init.mock.calls[0][1];
-    expect(REDOC_LINK_COLOR).toBe("#2563EB");
-    expect(options.theme.colors.primary.main).toBe(REDOC_LINK_COLOR);
+    const accent = LIGHT_TOKENS.accent;
+    expect(options.theme.colors.primary.main).toBe(accent);
     expect(options.theme.colors.tonalOffset).toBe(0);
-    expect(options.theme.colors.primary.light).toBe(REDOC_LINK_COLOR);
-    expect(options.theme.colors.primary.dark).toBe(REDOC_LINK_COLOR);
-    expect(options.theme.typography.links.color).toBe(REDOC_LINK_COLOR);
-    expect(options.theme.typography.links.visited).toBe(REDOC_LINK_COLOR);
-    expect(options.theme.typography.links.hover).toBe(REDOC_LINK_COLOR);
+    expect(options.theme.colors.primary.light).toBe(accent);
+    expect(options.theme.colors.primary.dark).toBe(accent);
+    expect(options.theme.typography.links.color).toBe(accent);
+    expect(options.theme.typography.links.visited).toBe(accent);
+    expect(options.theme.typography.links.hover).toBe(accent);
 
     const css = readFileSync(join(__dirname, "..", "apiReference.css"), "utf8");
-    expect(css).toMatch(/\.redoc-panel \{[^}]*--pf-accent: var\(--pf-btn\)/);
-    expect(css).toMatch(/\.redoc-panel a \{[^}]*color: var\(--pf-btn\)/);
+    const panel = css.match(/\.redoc-panel \{[^}]*\}/)[0];
+    expect(panel).toContain("background-color: var(--pf-surface)");
+    expect(panel).toContain("color: var(--pf-text)");
+    expect(css).not.toMatch(/background-color:\s*white/);
+    expect(css).not.toMatch(/[^-]color:\s*black/);
   });
 
   it("gives every response tab a colour readable on Redoc's dark code panel", async () => {
@@ -557,7 +560,7 @@ describe("c-api-reference", () => {
     await flushPromises();
 
     const responses = window.Redoc.init.mock.calls[0][1].theme.colors.responses;
-    // WCAG ratio against the panel as rendered, rgb(17,23,26).
+    // WCAG ratio against the code panel, which is the same in both schemes.
     const luminance = (hex) => {
       const channels = hex
         .match(/\w\w/g)
@@ -567,7 +570,7 @@ describe("c-api-reference", () => {
         });
       return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
     };
-    const panel = luminance("#11171A");
+    const panel = luminance(REDOC_PANEL_BACKGROUND);
     for (const kind of ["success", "error", "redirect", "info"]) {
       const color = responses[kind].tabTextColor;
       expect(color).toBe(REDOC_TAB_COLORS[kind]);
@@ -692,7 +695,7 @@ describe("c-api-reference accessibility of the generated markup", () => {
     delete window.Redoc;
   });
 
-  it("rings every kind of generated control in the site accent", () => {
+  it("rings every kind of generated control in the site focus colour", () => {
     ["a", "button", "[role=button]", "[role=tab]", "[role=menuitem]"].forEach(
       (kind) => {
         expect(REDOC_FOCUS_RULE).toContain(
@@ -700,7 +703,7 @@ describe("c-api-reference accessibility of the generated markup", () => {
         );
       }
     );
-    expect(REDOC_FOCUS_RULE).toContain("var(--pf-accent");
+    expect(REDOC_FOCUS_RULE).toContain("var(--pf-focus");
     expect(REDOC_STYLE_OVERRIDES).toContain(REDOC_FOCUS_RULE);
   });
 
