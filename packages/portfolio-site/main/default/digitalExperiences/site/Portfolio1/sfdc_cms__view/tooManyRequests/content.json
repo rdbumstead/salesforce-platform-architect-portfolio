@@ -25,17 +25,15 @@
                   "children": [
                     {
                       "attributes": {
-                        "body": "Many people are visiting at once. This page tries again by itself in a moment, so there is nothing for you to do.",
-                        "heading": "The site is busy right now"
+                        "body": "The site had more requests than it could answer in a short time. Wait about a minute, then choose Try again.",
+                        "eyebrow": "Error 429",
+                        "heading": "Too many requests",
+                        "homeLabel": "Go to the home page",
+                        "retryLabel": "Try again",
+                        "showHome": true
                       },
                       "definition": "c:messagePage",
                       "id": "5fdbd446-e061-42ac-b93a-5e296634fc98",
-                      "type": "component"
-                    },
-                    {
-                      "attributes": {},
-                      "definition": "experience_availability:autoRefresh",
-                      "id": "c7352a60-dd6e-4c23-b380-0b83ef4d760f",
                       "type": "component"
                     }
                   ],
@@ -53,6 +51,25 @@
           "id": "6d30c3a3-ff61-4a54-9f6d-f18b38f5ddfc",
           "name": "content",
           "title": "Content",
+          "type": "region"
+        },
+        {
+          "children": [
+            {
+              "attributes": {
+                "customHeadTags": "",
+                "description": "",
+                "pageTitle": "Too many requests | Ryan Bumstead",
+                "recordId": "{!recordId}"
+              },
+              "definition": "community_builder:seoAssistant",
+              "id": "2b4f1c6e-7d1a-4e0a-9b43-1f6f7c1d0a29",
+              "type": "component"
+            }
+          ],
+          "id": "2b4f1c6e-7d1a-4e0a-9b43-1f6f7c1d0a21",
+          "name": "sfdcHiddenRegion",
+          "title": "sfdcHiddenRegion",
           "type": "region"
         }
       ],

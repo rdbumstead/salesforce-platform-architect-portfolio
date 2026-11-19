@@ -36,6 +36,12 @@
         description="Text of the home link. Go to the home page when blank."
       />
             <property
+        name="retryLabel"
+        type="String"
+        label="Try again button text"
+        description="Text of a button that reloads the page. No button when blank."
+      />
+            <property
         name="showHome"
         type="Boolean"
         label="Show the home link"

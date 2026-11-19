@@ -14,7 +14,11 @@ export const SITE_DIR = path.join(
 /** The canonical public address. */
 export const SITE_ORIGIN = 'https://ryanbumstead.com';
 
-/** Views that become static error pages, by the file name they are served as. */
+/**
+ * Views that become static error pages, by the file name they are served as. Every error page is
+ * drawn in the site layout with its footer, so the busy and unavailable pages read like the 404
+ * (R27-8). On the Salesforce site those two use the service layout, which has no footer.
+ */
 export const ERROR_PAGES = {
   error: '404',
   tooManyRequests: '429',
@@ -155,7 +159,7 @@ export function readRoutes(siteDir = SITE_DIR) {
         path: errorCode ? null : `/${urlPrefix}`,
         file: errorCode ? `${errorCode}.html` : urlPrefix ? `${urlPrefix}.html` : 'index.html',
         errorCode: errorCode || null,
-        layout,
+        layout: errorCode ? 'portfolio' : layout,
         title: placed.seo.pageTitle || view.title,
         description: placed.seo.description || '',
         headTags: placed.seo.customHeadTags || '',

@@ -25,6 +25,7 @@ export default class MessagePage extends LightningElement {
   @api body;
   @api homeLabel;
   @api showHome = false;
+  @api retryLabel;
 
   get eyebrowText() {
     return clean(this.eyebrow);
@@ -48,5 +49,21 @@ export default class MessagePage extends LightningElement {
 
   get hasHome() {
     return this.showHome === true || this.showHome === "true";
+  }
+
+  get retryText() {
+    return clean(this.retryLabel);
+  }
+
+  get hasRetry() {
+    return this.retryText !== "";
+  }
+
+  get hasActions() {
+    return this.hasHome || this.hasRetry;
+  }
+
+  handleRetry() {
+    window.location.reload();
   }
 }
