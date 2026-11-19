@@ -1,5 +1,7 @@
 # ADR-004: Static Resource Code Rendering
 
+> Later built another way: the source is read from GitHub into an org cache, not from a static resource. See the [amendment](#amendment-2026-10-23-source-from-github-cached-in-the-org) below.
+
 ## Status
 
 - **Decision:** Accepted

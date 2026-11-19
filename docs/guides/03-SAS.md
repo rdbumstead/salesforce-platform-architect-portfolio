@@ -441,8 +441,7 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 
 Every attempt is recorded with its outcome (`served`, `skipped_off`, `skipped_open_circuit`, `budget_exhausted`, `failed`), its time and, on a failure, a short `detail` (an HTTP status or the exception type, never a key), and the API returns them as `attempts` beside `provider`, `model`, `fallbackOccurred`, `latencyMs` and `promptShown`. Three failures in a row open that provider's circuit breaker (`CircuitBreaker`, keys `gemini` and `agentforce`) for 30 minutes, and the provider is skipped until the next try succeeds. A 429 or a 401 never counts as an Agentforce failure. Breaker state is written after every provider has been tried, never before a callout. `GeminiService.generateContent` reports a failure as text starting `Error: Unable to generate content.` or `Exception: `, which the dispatch treats as a failed attempt.
 
-<details>
-<summary>Click to view Sequence Diagram</summary>
+**Sequence diagram**
 
 > _What This Diagram Shows: a cover letter from the site page as built. Agentforce is asked through the API, then Gemini and the template run in process._
 
@@ -488,8 +487,6 @@ sequenceDiagram
         Lab-->>Page: CoverLetterResult (badge and panel read from it)
     end
 ```
-
-</details>
 
 - **Privacy:** Inputs are processed transiently and never stored in Salesforce. The prompt shown to the visitor holds only what they typed and public portfolio facts.
 
@@ -624,8 +621,7 @@ flowchart LR
 
 Full architectural decisions are documented in the `docs/adr/` directory.
 
-<details>
-<summary>Click to view full list of Architectural Decision Records (ADRs)</summary>
+**Full list of Architectural Decision Records (ADRs)**
 
 | ID                                                                                     | Title                                                           | Decision           | Build                                                                                                                 |
 | :------------------------------------------------------------------------------------- | :-------------------------------------------------------------- | :----------------- | :-------------------------------------------------------------------------------------------------------------------- |
@@ -672,8 +668,6 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 | [ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)                 | Headless Static Front End on Cloudflare Pages                   | Accepted           | [Live](../../docs/guides/cutover-runbook.md)                                                                          |
 | [ADR-043](../adr/043-provider-router-for-tailored-letters.md)                          | A Provider Router for Tailored Letters                          | Accepted           | Designed                                                                                                              |
 | [ADR-044](../adr/044-glassops-makes-the-production-deploy.md)                          | GlassOps Makes the Production Deploy                            | Accepted           | [Live](../../.github/workflows/deploy.yml)                                                                            |
-
-</details>
 
 ## 8. Contingency & Rollback Plans
 
@@ -1007,7 +1001,7 @@ curl -s "<instance_url>/services/apexrest/sapi/skills?limit=5" \
 EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design" ./scripts/api-smoke.sh
 ```
 
-**Correlation id on live responses.** The platform echoes a caller-supplied `X-Request-Id` exactly once, on My Domain and on the site domain (site domain observed in an integration scratch org, including on an Apex 503), and Apex does not set it again (`ApiRequestContext.applyRequestRules`). With no `X-Request-Id`, the platform returns its own 32-character hex id (no dashes) on responses it generates before Apex runs, such as a 401. On My Domain the platform also injects that id into the request when the caller sends none. The first live smoke found PAPI then answered 400 with two ids. Since 2026-10-21, PAPI treats a 32-character hex id as missing, generates a UUID as its correlation id, and adds no header of its own (`ApiRequestContext.applyRequestRules`, my decision). The response should then carry one id, the platform's, while an error body's `correlationId` carries the UUID. [unverified] until the next live smoke confirms it. SAPI still requires a UUID. Send your own UUID to get a single, predictable id back.
+**Correlation id on live responses.** The platform echoes a caller-supplied `X-Request-Id` exactly once, on My Domain and on the site domain (site domain observed in an integration scratch org, including on an Apex 503), and Apex does not set it again (`ApiRequestContext.applyRequestRules`). With no `X-Request-Id`, the platform returns its own 32-character hex id (no dashes) on responses it generates before Apex runs, such as a 401. On My Domain the platform also injects that id into the request when the caller sends none. The first live smoke found PAPI then answered 400 with two ids. Since 2026-10-21, PAPI treats a 32-character hex id as missing, generates a UUID as its correlation id, and adds no header of its own (`ApiRequestContext.applyRequestRules`, my decision). The response should then carry one id, the platform's, while an error body's `correlationId` carries the UUID. I have not yet checked this against a live response, and the next live smoke will. SAPI still requires a UUID. Send your own UUID to get a single, predictable id back.
 
 ### Appendix C: MuleSoft Code, Governance, & Proxy Configuration (Reference)
 
@@ -1042,7 +1036,7 @@ The following policies were configured in API Manager to demonstrate enterprise 
    - Premium Tier: 10,000 req/hr (Contract Required). Reserved for high-volume enterprise consumers.
 
 3. **CORS Policy**
-   - Allowed Origins: https://ryanbumstead.com, http://localhost:\* (dev only)
+   - Allowed Origins: https://ryanbumstead.com, `http://localhost:*` (dev only)
    - Allowed Methods: GET, OPTIONS
    - Allowed Headers: client_id, client_secret, Content-Type
 

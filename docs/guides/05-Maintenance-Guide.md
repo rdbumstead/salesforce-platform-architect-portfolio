@@ -61,8 +61,7 @@ To demonstrate enterprise compliance standards, the JWT authentication keys used
 
 Run the following OpenSSL commands in your terminal:
 
-<details>
-<summary>Click to view OpenSSL Commands</summary>
+**OpenSSL commands**
 
 ```bash
 # 1. Generate 4096-bit Private Key
@@ -74,8 +73,6 @@ openssl rsa -passin pass:SomePassword -in portfolio.pass.key -out portfolio.key
 # 3. Generate Certificate (Valid for ~13 Months)
 openssl req -new -key portfolio.key -x509 -days 400 -out portfolio.crt
 ```
-
-</details>
 
 **2. Update Salesforce Connected App**
 
