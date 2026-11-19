@@ -31,6 +31,10 @@ export const RESUME_LAYOUT = Object.freeze({
     "skills",
     "education"
   ]),
+  // The most the Skills section prints, so each focus fits on two pages. The read keeps
+  // the owner's category order and each category's skills by proficiency, so this keeps the
+  // first categories and the strongest skills.
+  skills: Object.freeze({ categories: 6, perCategory: 4 }),
   labels: Object.freeze({
     summary: "Summary",
     experience: "Experience",

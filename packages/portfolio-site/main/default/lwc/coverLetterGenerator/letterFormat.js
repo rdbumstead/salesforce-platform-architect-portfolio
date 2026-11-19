@@ -13,6 +13,9 @@
  **/
 import { DOCUMENT_LAYOUT, createPdfWriter, fileNamePart } from "c/documentPdf";
 
+/** The document language written to the PDF, the same as the resume. */
+const LETTER_LANGUAGE = "en";
+
 /** The shared document spec, with one body line of space after each paragraph. */
 export const LETTER_LAYOUT = Object.freeze({
   ...DOCUMENT_LAYOUT,
@@ -46,7 +49,8 @@ export function letterParagraphs(text) {
  * page when it fits. When trace is an array, every drawn piece is pushed onto it.
  * @param {object} doc a jsPDF document in points
  * @param {object} letter { header: { name, title, links }, content }
- * @param {object} options { family, trace }
+ * @param {object} options { family, trace, tagged, title }: with tagged the document is tagged
+ *                 for PDF/UA, and title is its document title
  * @returns {object} the document
  */
 export function writeLetterPdf(doc, letter, options = {}) {
@@ -54,8 +58,17 @@ export function writeLetterPdf(doc, letter, options = {}) {
   const writer = createPdfWriter(doc, {
     family: options.family,
     trace: options.trace,
-    layout
+    layout,
+    tagged: options.tagged,
+    title: options.title || "Cover letter",
+    language: LETTER_LANGUAGE
   });
+  if (options.title && typeof doc.setProperties === "function") {
+    doc.setProperties({ title: options.title });
+  }
+  if (typeof doc.setLanguage === "function") {
+    doc.setLanguage(LETTER_LANGUAGE);
+  }
   const { type, space } = layout;
   writer.header(letter && letter.header);
   writer.setSection("letter");
@@ -67,6 +80,20 @@ export function writeLetterPdf(doc, letter, options = {}) {
     writer.block(rows, space.paragraphAfter);
   });
   return writer.draw();
+}
+
+/**
+ * The PDF document title: the owner name, "cover letter," and the company when one is known, for
+ * example "Ryan Bumstead cover letter, Acme Financial".
+ * @param {string} name the owner's name from the header
+ * @param {string} company the company the visitor typed
+ * @returns {string} the title
+ */
+export function letterTitle(name, company) {
+  const owner = String(name || "").trim();
+  const firm = String(company || "").trim();
+  const base = owner ? `${owner} cover letter` : "Cover letter";
+  return firm ? `${base}, ${firm}` : base;
 }
 
 /**

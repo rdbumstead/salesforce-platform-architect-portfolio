@@ -454,3 +454,54 @@ test('the check names a current role with no highlight and leaves it printed', a
   assert.deepEqual(result.bareCurrentRoles, ['Lead Developer, Example Labs']);
   assert.deepEqual(result.failures, []);
 });
+
+// R27-19: the PDFs the check builds are tagged, and tagging changes no text or position.
+test('the check builds tagged PDFs, and the text layer is the same as an untagged build', async () => {
+  const model = await engineerModel();
+  const tagged = await renderModel(model);
+  const plain = await renderModel(model, { tagged: false });
+  const source = (bytes) => Buffer.from(bytes).toString('latin1');
+  assert.match(source(tagged.bytes), /\/StructTreeRoot/);
+  assert.match(source(tagged.bytes), /\/MarkInfo <<\/Marked true>>/);
+  assert.match(source(tagged.bytes), /\/Type \/StructElem \/S \/H1/);
+  assert.match(source(tagged.bytes), /<pdfuaid:part>1<\/pdfuaid:part>/);
+  assert.doesNotMatch(source(plain.bytes), /\/StructTreeRoot/);
+  // Tagging puts every drawn piece in its own marked content, so pdf.js no longer merges a label
+  // and its text into one item. The rows a reader sees, their text and positions, are the same.
+  const rowsOf = async (bytes) =>
+    readingRows((await readTextLayer(bytes)).items).map((row) => [
+      row.page,
+      row.baseline,
+      row.items[0].x,
+      row.items.map((entry) => entry.str).join('').replace(/\s+/g, '')
+    ]);
+  assert.deepEqual(await rowsOf(tagged.bytes), await rowsOf(plain.bytes));
+});
+
+// R27-24 and R27-D12: a resume as long as the live Architect read, with every skill category
+// full, is two pages with the skills cap and three without it.
+test('an Architect with seven roles and ten full skill categories fits on two pages', async () => {
+  const { format } = await loadShipped();
+  const base = resumesFrom(reads).find((entry) => entry.persona === 'Architect').resume;
+  const categories = ['Core Platform', 'Strategy', 'Process Automation', 'Frontend', 'Backend', 'Integration', 'Cloud', 'Data', 'AI', 'DevOps'];
+  const skillGroups = categories.map((category, index) => ({
+    category,
+    skills: Array.from({ length: index % 3 === 0 ? 13 : 5 }, (_, count) => `${category.split(' ')[0]} skill number ${count + 1}`)
+  }));
+  const resume = { ...base, roles: base.roles.filter((role) => (role.highlights || []).length > 0).slice(0, 7), skillGroups };
+  const model = format.buildViewModel(resume, PAGE_OPTIONS);
+  assert.equal(model.skillGroups.length, 6);
+  assert.equal((await renderModel(model)).pages, 2);
+  // The same resume with every skill printed, as before the cap.
+  const everything = {
+    ...model,
+    skillGroups: skillGroups.map((group, index) => ({
+      key: `skills-${index}`,
+      category: group.category,
+      labelText: `${group.category}: `,
+      skillsText: group.skills.join(', '),
+      count: group.skills.length
+    }))
+  };
+  assert.equal((await renderModel(everything)).pages, 3);
+});
