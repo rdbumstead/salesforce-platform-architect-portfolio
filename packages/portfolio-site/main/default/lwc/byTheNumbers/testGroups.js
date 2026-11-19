@@ -55,7 +55,7 @@ export const JEST_GROUPS = [
   },
   {
     name: "Delivery, docs and pillar pages",
-    tests: 413
+    tests: 426
   },
   {
     name: "Skills, graphs and resume",
