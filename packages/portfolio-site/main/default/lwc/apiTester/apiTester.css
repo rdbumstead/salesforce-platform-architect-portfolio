@@ -542,12 +542,13 @@
   font-weight: 700;
 }
 
-/* A long line scrolls inside the block, never the page. */
+/* A long line wraps inside the block, so a URL is never cut at the edge. */
 .curl-block {
   margin: 0;
   max-width: 100%;
   overflow-x: auto;
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   padding: var(--pf-space-3);
   background-color: var(--pf-code);
   color: var(--pf-code-text);
@@ -634,4 +635,96 @@
   background-color: var(--pf-surface);
   color: var(--pf-text);
   overflow-wrap: anywhere;
+}
+
+/* The endpoint combobox: a filter box with a grouped list under it. The list is placed and
+   sized from the script, so it stays inside the window. */
+.combo {
+  position: relative;
+  min-width: 0;
+}
+
+.combo .endpoint-picker {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.combo-list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  z-index: 10;
+  margin-top: var(--pf-space-1);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-sm);
+  box-shadow: var(--pf-shadow);
+}
+
+.combo-list[hidden] {
+  display: none;
+}
+
+.combo-group-label {
+  position: sticky;
+  top: 0;
+  padding: var(--pf-space-1) var(--pf-space-3);
+  background-color: var(--pf-subtle);
+  color: var(--pf-muted);
+  border-bottom: 1px solid var(--pf-border);
+  font-size: var(--pf-font-meta, 12px);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.combo-option {
+  display: flex;
+  flex-direction: column;
+  min-height: 44px;
+  padding: var(--pf-space-2) var(--pf-space-3);
+  box-sizing: border-box;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+}
+
+.combo-option_chosen {
+  border-left-color: var(--pf-accent);
+}
+
+.combo-option_active {
+  background-color: var(--pf-chip);
+  color: var(--pf-text);
+  outline: 2px solid var(--pf-focus);
+  outline-offset: -2px;
+}
+
+.combo-option-path {
+  font-family: var(--pf-font-mono);
+  font-size: var(--pf-font-caption, 14px);
+  overflow-wrap: anywhere;
+}
+
+.combo-option-summary {
+  color: var(--pf-body);
+  font-size: var(--pf-font-meta, 12px);
+}
+
+.combo-empty {
+  margin: 0;
+  padding: var(--pf-space-3);
+  color: var(--pf-body);
+}
+
+.combo-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

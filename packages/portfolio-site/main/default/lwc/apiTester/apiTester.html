@@ -9,22 +9,62 @@
         <div class="control-row control-row_invoke">
           <div class="nc-field row-field">
             <label class="nc-label row-label" for="endpoint">Endpoint</label>
-            <select
-              id="endpoint"
-              name="endpoint"
-              class="nc-control row-control endpoint-picker"
-              onchange={handleEndpointChange}
-            >
-              <template for:each={endpointOptions} for:item="option">
-                <option
-                  key={option.value}
-                  value={option.value}
-                  selected={option.selected}
-                >
-                  {option.label}
-                </option>
-              </template>
-            </select>
+            <div class="combo">
+              <input
+                id="endpoint"
+                name="endpoint"
+                type="text"
+                role="combobox"
+                class="nc-control row-control endpoint-picker"
+                aria-autocomplete="list"
+                aria-expanded={comboExpanded}
+                aria-controls="endpoint-listbox"
+                autocomplete="off"
+                autocapitalize="none"
+                spellcheck="false"
+                placeholder="Filter endpoints"
+                value={endpointInputValue}
+                oninput={handleComboInput}
+                onclick={handleComboClick}
+                onkeydown={handleComboKeydown}
+                onblur={handleComboBlur}
+              />
+              <div
+                id="endpoint-listbox"
+                class="combo-list"
+                role="listbox"
+                aria-label="Endpoints"
+                hidden={comboHidden}
+                onmousedown={handleListMouseDown}
+              >
+                <template for:each={endpointGroups} for:item="group">
+                  <div key={group.key} role="group" aria-label={group.label}>
+                    <div class="combo-group-label" aria-hidden="true">
+                      {group.label}
+                    </div>
+                    <template for:each={group.options} for:item="option">
+                      <div
+                        key={option.value}
+                        role="option"
+                        class={option.className}
+                        aria-selected={option.ariaSelected}
+                        data-path={option.value}
+                        onclick={handleOptionClick}
+                      >
+                        <span class="combo-option-path">{option.label}</span>
+                        <span class="combo-option-summary"
+                          >{option.summary}</span
+                        >
+                      </div>
+                    </template>
+                  </div>
+                </template>
+                <p lwc:if={noEndpointMatch} class="combo-empty">
+                  No endpoint matches.
+                </p>
+              </div>
+              <span class="combo-status" role="status">{comboStatus}</span>
+            </div>
           </div>
           <div class="nc-field row-field">
             <label class="nc-label row-label" for="api-version">Version</label>
@@ -554,11 +594,34 @@
               </template>
             </template>
           </div>
+        </div>
+      </section>
 
-          <section class="quickstart" aria-labelledby="quickstart-heading">
-            <h3 id="quickstart-heading" class="quickstart-heading">
+      <section class="tools-section slds-m-top_large">
+        <template lwc:if={isPhone}>
+          <h2 class="disclosure-heading">
+            <button
+              type="button"
+              class="disclosure"
+              data-section="tools"
+              aria-expanded={toolsExpanded}
+              aria-controls="tools-panel"
+              onclick={handleSectionToggle}
+            >
               Use the API from your own tools
-            </h3>
+            </button>
+          </h2>
+        </template>
+        <template lwc:else>
+          <h2 id="quickstart-heading" class="slds-text-heading_small">
+            Use the API from your own tools
+          </h2>
+        </template>
+        <div id="tools-panel" class="section-panel" hidden={toolsHidden}>
+          <section
+            class="quickstart"
+            aria-label="Use the API from your own tools"
+          >
             <ol class="setup-steps">
               <li>
                 Download the Postman collection and import it. If you use Run in
@@ -591,7 +654,7 @@
               </template>
             </div>
 
-            <h4 class="curl-heading">Or try it with curl</h4>
+            <h3 class="curl-heading">Or try it with curl</h3>
             <template for:each={curlExamples} for:item="example">
               <div key={example.key} class="curl-example">
                 <div class="curl-head">

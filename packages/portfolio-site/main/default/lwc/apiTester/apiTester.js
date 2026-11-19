@@ -157,19 +157,19 @@ export const STATUS_MESSAGES = {
 /** The platform's own wording when it could not read the server's answer. */
 const RAW_ERROR = /failed to get error from response|^unknown error$/i;
 
+/** What a failed person check says, whether the server or the browser reported it. */
+export const PERSON_CHECK_MESSAGE =
+  "The check that you are a person could not run. Reload the page and try again.";
+
+/** The server's and the browser's own wordings for a person check that could not run. */
+const PERSON_CHECK_FAILED =
+  /check that you are a person could not (be )?run|turnstile did not load/i;
+
 /**
- * A plain sentence for a failed Apex call: the meaning of a 401, 429 or 503, else the
- * server's own message, else a sentence that says the request did not get through. Never the
- * platform's "Failed to get error from response".
+ * The messages an error carries, in the order they were given: the entries of a body list,
+ * the body's own message, else the error's message. Raw platform wording is dropped.
  */
-export function reduceError(error) {
-  if (!error) {
-    return UNREACHABLE_MESSAGE;
-  }
-  const status = Number(error.status);
-  if (STATUS_MESSAGES[status]) {
-    return STATUS_MESSAGES[status];
-  }
+function ownMessages(error) {
   let messages = [];
   if (Array.isArray(error.body)) {
     messages = error.body.map((entry) => entry && entry.message);
@@ -178,13 +178,33 @@ export function reduceError(error) {
   } else if (typeof error.message === "string") {
     messages = [error.message];
   }
-  const useful = messages.filter(
+  return messages.filter(
     (message) =>
       typeof message === "string" &&
       message.trim().length > 0 &&
       !RAW_ERROR.test(message.trim())
   );
-  return useful.length ? useful.join(", ") : UNREACHABLE_MESSAGE;
+}
+
+/**
+ * A plain sentence for a failed call. The server's own message, or the browser's own reason,
+ * comes first whatever the status, because it says what went wrong. A person check that could
+ * not run says to reload the page. The line for a 401, 429 or 503 is used only when the error
+ * carries no message, and a sentence that says the request did not get through only when there
+ * is neither. Never the platform's "Failed to get error from response".
+ */
+export function reduceError(error) {
+  if (!error) {
+    return UNREACHABLE_MESSAGE;
+  }
+  const own = ownMessages(error);
+  if (own.some((message) => PERSON_CHECK_FAILED.test(message))) {
+    return PERSON_CHECK_MESSAGE;
+  }
+  if (own.length) {
+    return own.map((message) => message.trim()).join(", ");
+  }
+  return STATUS_MESSAGES[Number(error.status)] || UNREACHABLE_MESSAGE;
 }
 
 /** True for an https link on postman.com or getpostman.com, the only Run in Postman links shown. */
@@ -297,12 +317,60 @@ export const SECTION_FILTERS = "filters";
 export const SECTION_ADVANCED = "advanced";
 export const SECTION_RESPONSE = "response";
 export const SECTION_TOKEN = "token";
+export const SECTION_TOOLS = "tools";
 export const SECTIONS = [
   SECTION_FILTERS,
   SECTION_ADVANCED,
   SECTION_RESPONSE,
-  SECTION_TOKEN
+  SECTION_TOKEN,
+  SECTION_TOOLS
 ];
+
+/** The heading of each group in the endpoint list, by the catalog's api value. */
+export const GROUP_LABELS = { sapi: "System API", papi: "Process API" };
+
+/** True when every word of the filter appears in the entry's path, summary or group name. */
+export function matchesEndpoint(entry, filter) {
+  const words = String(filter || "")
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean);
+  const haystack = `get ${entry.path} ${entry.summary || ""} ${
+    GROUP_LABELS[entry.api] || ""
+  }`.toLowerCase();
+  return words.every((word) => haystack.includes(word));
+}
+
+/**
+ * The catalog's paths that match the filter, grouped by API in catalog order.
+ * Groups with no match are left out.
+ */
+export function groupEndpoints(paths, filter) {
+  const groups = [];
+  (paths || []).forEach((entry) => {
+    if (!matchesEndpoint(entry, filter)) {
+      return;
+    }
+    const key = entry.api || "other";
+    let group = groups.find((item) => item.key === key);
+    if (!group) {
+      group = { key, label: GROUP_LABELS[key] || "Other", entries: [] };
+      groups.push(group);
+    }
+    group.entries.push(entry);
+  });
+  return groups;
+}
+
+/** The room the endpoint list may use, in px, and whether it opens upward. */
+export function listPlacement(inputRect, viewportHeight, topOffset = 0) {
+  const margin = 12;
+  const below = viewportHeight + topOffset - inputRect.bottom - margin;
+  const above = inputRect.top - topOffset - margin;
+  const up = below < 200 && above > below;
+  const room = Math.max(96, Math.floor(up ? above : below));
+  return { up, maxHeight: Math.min(320, room) };
+}
 
 export const ID_HINT =
   "Paste a key from an earlier response, for example from /sapi/projects.";
@@ -577,6 +645,10 @@ export default class ApiTester extends LightningElement {
   options = {};
   isPhone = false;
   openSections = {};
+  comboOpen = false;
+  comboTyping = false;
+  comboFilter = "";
+  activePath;
   phoneQuery;
   phoneListener;
 
@@ -672,6 +744,52 @@ export default class ApiTester extends LightningElement {
     this.paintBody();
     this.revealAnswer();
     this.returnFocusToExecute();
+    this.syncCombobox();
+  }
+
+  /**
+   * Gives each option an id and points aria-activedescendant at the active one. Ids are set
+   * here and not in the template, because a reference to an id that the template binds is not
+   * rewritten with it under the site runtime. Also keeps the list inside the window.
+   */
+  syncCombobox() {
+    const input = this.template.querySelector("input.endpoint-picker");
+    const list = this.template.querySelector(".combo-list");
+    if (!input || !list) {
+      return;
+    }
+    let activeId = "";
+    list.querySelectorAll('[role="option"]').forEach((option, index) => {
+      option.id = `endpoint-option-${index}`;
+      if (option.dataset.path === this.activePath) {
+        activeId = option.id;
+        if (this.comboOpen) {
+          const top = option.offsetTop;
+          const bottom = top + option.offsetHeight;
+          if (top < list.scrollTop) {
+            list.scrollTop = top;
+          } else if (bottom > list.scrollTop + list.clientHeight) {
+            list.scrollTop = bottom - list.clientHeight;
+          }
+        }
+      }
+    });
+    if (activeId && this.comboOpen) {
+      input.setAttribute("aria-activedescendant", activeId);
+    } else {
+      input.removeAttribute("aria-activedescendant");
+    }
+    if (this.comboOpen) {
+      const view = window.visualViewport;
+      const placement = listPlacement(
+        input.getBoundingClientRect(),
+        view ? view.height : window.innerHeight,
+        view ? view.offsetTop : 0
+      );
+      list.style.maxHeight = `${placement.maxHeight}px`;
+      list.style.top = placement.up ? "auto" : "100%";
+      list.style.bottom = placement.up ? "100%" : "auto";
+    }
   }
 
   /**
@@ -741,12 +859,202 @@ export default class ApiTester extends LightningElement {
     return this.catalog ? this.catalog.paths : [];
   }
 
-  get endpointOptions() {
-    return this.catalogPaths.map((entry) => ({
-      label: `GET ${entry.path}`,
-      value: entry.path,
-      selected: entry.path === this.selectedPath
-    }));
+  /** The text in the endpoint box: what the visitor is typing, else the chosen route. */
+  get endpointInputValue() {
+    return this.comboTyping ? this.comboFilter : this.selectedLabel;
+  }
+
+  get selectedLabel() {
+    return this.selectedPath ? `GET ${this.selectedPath}` : "";
+  }
+
+  get activeFilter() {
+    return this.comboTyping ? this.comboFilter : "";
+  }
+
+  /** The visible options in order, across the groups. */
+  get visibleEntries() {
+    return groupEndpoints(this.catalogPaths, this.activeFilter).flatMap(
+      (group) => group.entries
+    );
+  }
+
+  get endpointGroups() {
+    return groupEndpoints(this.catalogPaths, this.activeFilter).map(
+      (group) => ({
+        key: group.key,
+        label: group.label,
+        options: group.entries.map((entry) => {
+          const active = entry.path === this.activePath;
+          return {
+            value: entry.path,
+            label: `GET ${entry.path}`,
+            summary: entry.summary || "",
+            ariaSelected: active ? "true" : "false",
+            className: [
+              "combo-option",
+              active ? "combo-option_active" : "",
+              entry.path === this.selectedPath ? "combo-option_chosen" : ""
+            ]
+              .filter(Boolean)
+              .join(" ")
+          };
+        })
+      })
+    );
+  }
+
+  get comboExpanded() {
+    return this.comboOpen ? "true" : "false";
+  }
+
+  get comboHidden() {
+    return !this.comboOpen;
+  }
+
+  get noEndpointMatch() {
+    return this.comboOpen && this.visibleEntries.length === 0;
+  }
+
+  /** Read out by a screen reader as the filter changes. */
+  get comboStatus() {
+    if (!this.comboOpen) {
+      return "";
+    }
+    const count = this.visibleEntries.length;
+    if (!count) {
+      return "No endpoint matches.";
+    }
+    return count === 1 ? "1 endpoint." : `${count} endpoints.`;
+  }
+
+  openCombo(position) {
+    const entries = this.visibleEntries;
+    this.comboOpen = true;
+    if (position === "last") {
+      this.activePath = entries.length
+        ? entries[entries.length - 1].path
+        : undefined;
+      return;
+    }
+    const start =
+      entries.find((entry) => entry.path === this.selectedPath) || entries[0];
+    this.activePath = start ? start.path : undefined;
+  }
+
+  closeCombo() {
+    this.comboOpen = false;
+    this.comboTyping = false;
+    this.comboFilter = "";
+    this.activePath = undefined;
+  }
+
+  /** Moves the active option by a step, wrapping, or to the first or last option. */
+  moveActive(step) {
+    const entries = this.visibleEntries;
+    if (!entries.length) {
+      return;
+    }
+    const index = entries.findIndex((entry) => entry.path === this.activePath);
+    let next = index + step;
+    if (step === Infinity) {
+      next = entries.length - 1;
+    } else if (step === -Infinity) {
+      next = 0;
+    } else if (next < 0) {
+      next = entries.length - 1;
+    } else if (next >= entries.length) {
+      next = 0;
+    }
+    this.activePath = entries[next].path;
+  }
+
+  handleComboInput(event) {
+    this.comboTyping = true;
+    this.comboFilter = event.target.value;
+    this.comboOpen = true;
+    const entries = this.visibleEntries;
+    this.activePath = entries.length ? entries[0].path : undefined;
+  }
+
+  handleComboClick() {
+    if (this.comboOpen) {
+      this.closeCombo();
+    } else {
+      this.openCombo();
+    }
+  }
+
+  handleComboBlur() {
+    this.closeCombo();
+  }
+
+  handleComboKeydown(event) {
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        if (!this.comboOpen) {
+          this.openCombo();
+        } else if (!event.altKey) {
+          this.moveActive(1);
+        }
+        break;
+      case "ArrowUp":
+        event.preventDefault();
+        if (!this.comboOpen) {
+          this.openCombo("last");
+        } else {
+          this.moveActive(-1);
+        }
+        break;
+      case "Home":
+        if (this.comboOpen) {
+          event.preventDefault();
+          this.moveActive(-Infinity);
+        }
+        break;
+      case "End":
+        if (this.comboOpen) {
+          event.preventDefault();
+          this.moveActive(Infinity);
+        }
+        break;
+      case "Enter":
+        if (this.comboOpen) {
+          event.preventDefault();
+          if (this.activePath) {
+            this.chooseEndpoint(this.activePath);
+          }
+        }
+        break;
+      case "Escape":
+        if (this.comboOpen || this.comboTyping) {
+          event.preventDefault();
+          event.stopPropagation();
+          this.closeCombo();
+        }
+        break;
+      case "Tab":
+        this.closeCombo();
+        break;
+      default:
+    }
+  }
+
+  /** Keeps focus in the text box while the pointer is on the list. */
+  handleListMouseDown(event) {
+    event.preventDefault();
+  }
+
+  handleOptionClick(event) {
+    this.chooseEndpoint(event.currentTarget.dataset.path);
+  }
+
+  chooseEndpoint(path) {
+    this.selectedPath = path;
+    // The controls belong to a path. The Advanced text stays, as it always has.
+    this.paramValues = {};
+    this.closeCombo();
   }
 
   get versionOptions() {
@@ -906,6 +1214,14 @@ export default class ApiTester extends LightningElement {
 
   get tokenExpanded() {
     return this.tokenHidden ? "false" : "true";
+  }
+
+  get toolsHidden() {
+    return !this.isSectionOpen(SECTION_TOOLS);
+  }
+
+  get toolsExpanded() {
+    return this.toolsHidden ? "false" : "true";
   }
 
   /** Opens or closes one folded section on a phone and records it once per press. */
@@ -1128,12 +1444,6 @@ export default class ApiTester extends LightningElement {
     // The shown answer belongs to the version that made it.
     this.result = undefined;
     this.invokeError = "";
-  }
-
-  handleEndpointChange(event) {
-    this.selectedPath = event.target.value;
-    // The controls belong to a path. The Advanced text stays, as it always has.
-    this.paramValues = {};
   }
 
   setParam(name, value) {
