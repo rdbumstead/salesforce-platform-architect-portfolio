@@ -531,4 +531,44 @@ private class SourceControllerTest {
     Assert.areEqual('adr-031', adr, 'Prefix gone, lower case, hyphen');
     Assert.areEqual('', none, 'No record, no key');
   }
+
+  @IsTest
+  static void shouldReadTheOrgRecordsWhenNoOverrideIsSet() {
+    SourceController.filesOverride = null;
+
+    Test.startTest();
+    List<Source_File__mdt> files = SourceController.configuredFiles();
+    Test.stopTest();
+
+    Assert.isNotNull(files, 'Never null');
+    for (Source_File__mdt file : files) {
+      Assert.isTrue(
+        String.isNotBlank(file.Path__c),
+        'Every configured file has a path'
+      );
+      Assert.isTrue(
+        String.isNotBlank(file.Source_Key__c),
+        'Every configured file has a key'
+      );
+    }
+  }
+
+  @IsTest
+  static void shouldOwnBothQueryDefaults() {
+    Map<String, QueryDefinitions.QueryDefault> defaults = new SourceController()
+      .queryDefaults();
+
+    Assert.areEqual(2, defaults.size(), 'Two reads');
+    Assert.isTrue(
+      defaults.containsKey('SourceController_FetchedRows'),
+      'The rows read'
+    );
+    Assert.isTrue(
+      defaults.containsKey('SourceController_FetchedPaths'),
+      'The paths read'
+    );
+    for (String name : defaults.keySet()) {
+      Assert.isNotNull(defaults.get(name), name + ' has a default');
+    }
+  }
 }
