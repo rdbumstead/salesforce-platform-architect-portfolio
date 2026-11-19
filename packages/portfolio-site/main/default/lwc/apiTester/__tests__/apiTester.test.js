@@ -67,10 +67,16 @@ const INVOKE_RESULT = {
   path: "/sapi/skills"
 };
 
-/** Picks a path in the native endpoint select, as a visitor does. */
-function chooseEndpoint(select, path) {
-  select.value = path;
-  select.dispatchEvent(new CustomEvent("change"));
+/** Picks a path in the endpoint combobox as a visitor does: open the list, click the option. */
+async function chooseEndpoint(input, path) {
+  const root = input.getRootNode();
+  const tick = () => new Promise((resolve) => process.nextTick(resolve));
+  input.dispatchEvent(new CustomEvent("click"));
+  await tick();
+  root
+    .querySelector(`[role="option"][data-path="${path}"]`)
+    .dispatchEvent(new CustomEvent("click"));
+  await tick();
 }
 
 const flushPromises = () => new Promise((resolve) => process.nextTick(resolve));
@@ -120,13 +126,18 @@ describe("c-api-tester", () => {
     const element = createComponent();
     await flushPromises();
 
-    const select = query(element, "select.endpoint-picker");
-    const options = Array.from(select.querySelectorAll("option"));
-    expect(options.map((option) => option.value)).toEqual(CATALOG_PATHS);
-    expect(options[0].textContent.trim()).toBe("GET /sapi/health");
-    // The native select is labelled and shows the first path as chosen.
-    expect(select.id).toBeTruthy();
-    expect(options[0].selected).toBe(true);
+    const input = query(element, "input.endpoint-picker");
+    // The combobox shows the first path as chosen and lists every path when opened.
+    expect(input.id).toBeTruthy();
+    expect(input.getAttribute("role")).toBe("combobox");
+    expect(input.value).toBe("GET /sapi/health");
+    input.dispatchEvent(new CustomEvent("click"));
+    await flushPromises();
+    const options = Array.from(
+      element.shadowRoot.querySelectorAll('[role="option"]')
+    );
+    expect(options.map((option) => option.dataset.path)).toEqual(CATALOG_PATHS);
+    expect(options[0].textContent).toContain("GET /sapi/health");
     expect(CATALOG_PATHS).toHaveLength(21);
     // SAPIResume was removed, so no SAPI path may end in /resume.
     expect(
@@ -198,7 +209,10 @@ describe("c-api-tester", () => {
     const element = createComponent();
     await flushPromises();
 
-    chooseEndpoint(query(element, "select.endpoint-picker"), "/sapi/skills");
+    await chooseEndpoint(
+      query(element, "input.endpoint-picker"),
+      "/sapi/skills"
+    );
     setInput(element, "input.query-input", "limit=5&offset=0");
     await flushPromises();
 
@@ -273,7 +287,7 @@ describe("c-api-tester", () => {
       )
     );
     [
-      "select.endpoint-picker",
+      "input.endpoint-picker",
       "input.query-input",
       "input.token-email",
       "input.token-purpose"
@@ -292,7 +306,10 @@ describe("c-api-tester", () => {
     invoke.mockRejectedValueOnce({ body: { message: "unreachable" } });
     const element = createComponent();
     await flushPromises();
-    chooseEndpoint(query(element, "select.endpoint-picker"), "/sapi/skills");
+    await chooseEndpoint(
+      query(element, "input.endpoint-picker"),
+      "/sapi/skills"
+    );
     await flushPromises();
 
     query(element, "button.execute-button").click();

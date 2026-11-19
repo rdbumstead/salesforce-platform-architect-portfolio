@@ -11,8 +11,8 @@
  **/
 import { createElement } from "@lwc/engine-dom";
 import ApiReference, {
+  LIGHT_TOKENS,
   REDOC_OPTIONS,
-  REDOC_CONSTRAINT_COLOR,
   errorEntry,
   headerOffset
 } from "c/apiReference";
@@ -301,7 +301,7 @@ describe("c-api-reference section links", () => {
     expect(REDOC_OPTIONS.scrollYOffset).toBe(headerOffset);
     expect(headerOffset()).toBe(0);
     expect(REDOC_OPTIONS.theme.extensionsHook("ConstraintItem")).toContain(
-      REDOC_CONSTRAINT_COLOR
+      LIGHT_TOKENS.strongAccent
     );
     expect(REDOC_OPTIONS.theme.extensionsHook("Other")).toBe("");
     expect(REDOC_OPTIONS.theme.typography.links.textDecoration).toBe(

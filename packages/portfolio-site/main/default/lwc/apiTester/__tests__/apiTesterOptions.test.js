@@ -98,10 +98,16 @@ const OPTIONS = {
   contactName: []
 };
 
-/** Picks a path in the native endpoint select, as a visitor does. */
-function chooseEndpoint(select, path) {
-  select.value = path;
-  select.dispatchEvent(new CustomEvent("change"));
+/** Picks a path in the endpoint combobox as a visitor does: open the list, click the option. */
+async function chooseEndpoint(input, path) {
+  const root = input.getRootNode();
+  const tick = () => new Promise((resolve) => process.nextTick(resolve));
+  input.dispatchEvent(new CustomEvent("click"));
+  await tick();
+  root
+    .querySelector(`[role="option"][data-path="${path}"]`)
+    .dispatchEvent(new CustomEvent("click"));
+  await tick();
 }
 
 const flush = () => new Promise((resolve) => process.nextTick(resolve));
@@ -140,7 +146,7 @@ function create(options = OPTIONS) {
 }
 
 async function choosePath(element, path) {
-  chooseEndpoint($(element, "select.endpoint-picker"), path);
+  await chooseEndpoint($(element, "input.endpoint-picker"), path);
   await flush();
 }
 
@@ -394,9 +400,9 @@ describe("c-api-tester phone sections", () => {
     const element = create();
     await flush();
 
-    expect($(element, "select.endpoint-picker")).not.toBeNull();
+    expect($(element, "input.endpoint-picker")).not.toBeNull();
     expect($(element, "button.execute-button")).not.toBeNull();
-    ["filters", "advanced", "token"].forEach((section) => {
+    ["filters", "advanced", "token", "tools"].forEach((section) => {
       const button = disclosure(element, section);
       expect(button.tagName).toBe("BUTTON");
       expect(button.getAttribute("aria-expanded")).toBe("false");

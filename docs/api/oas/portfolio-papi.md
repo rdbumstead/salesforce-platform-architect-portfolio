@@ -173,9 +173,9 @@ The "Hydration" endpoint. Returns the entire portfolio state in a single call.
 {
   "config": {
     "linkedInUrl": "https://linkedin.com/in/ryanbumstead",
-    "calendlyUrl": "https://example.com/schedule",
-    "githubUrl": "https://example.com/source",
-    "trailheadUrl": "https://example.com/trailhead",
+    "calendlyUrl": "https://ryanbumstead.com/schedule",
+    "githubUrl": "https://ryanbumstead.com/source",
+    "trailheadUrl": "https://ryanbumstead.com/trailhead",
     "personalWebsiteUrl": "https://ryanbumstead.com",
     "careerObjective": "Driving digital transformation through architecture."
   },
@@ -184,8 +184,8 @@ The "Hydration" endpoint. Returns the entire portfolio state in a single call.
     "fullName": "Ryan Bumstead",
     "title": "Platform Architect",
     "linkedIn": "https://linkedin.com/in/ryanbumstead",
-    "github": "https://example.com/source",
-    "trailhead": "https://example.com/trailhead",
+    "github": "https://ryanbumstead.com/source",
+    "trailhead": "https://ryanbumstead.com/trailhead",
     "portfolioUrl": "https://ryanbumstead.com",
     "bio": "Specializing in API-led connectivity..."
   },
@@ -238,9 +238,9 @@ The "Hydration" endpoint. Returns the entire portfolio state in a single call.
       "businessValue": "Increased interview rate by 40%",
       "status": "Live – In Production",
       "completionDate": "2025-12-01",
-      "heroImageUrl": "https://example.com/images/hero.png",
-      "liveUrl": "https://example.com/portfolio",
-      "repositoryUrl": "https://example.com/source",
+      "heroImageUrl": "https://ryanbumstead.com/images/hero.png",
+      "liveUrl": "https://ryanbumstead.com/portfolio",
+      "repositoryUrl": "https://ryanbumstead.com/source",
       "technologies": [
         "LWR",
         "Apex"
@@ -272,12 +272,12 @@ The "Hydration" endpoint. Returns the entire portfolio state in a single call.
   "testimonials": [
     {
       "id": "a055e00000B2O3DAAV",
-      "author": "Jane Doe",
+      "author": "Morgan Ellis",
       "title": "VP of Engineering",
       "relationship": "Manager",
       "quote": "Ryan is a beast at architecture.",
       "vibe": "Professional",
-      "avatarUrl": "https://example.com/images/avatar.jpg"
+      "avatarUrl": "https://ryanbumstead.com/images/avatar.jpg"
     }
   ],
   "integrityNote": "complete"
@@ -430,8 +430,8 @@ strictest-policy-wins.
     "fullName": "Ryan Bumstead",
     "title": "Platform Architect",
     "linkedIn": "https://linkedin.com/in/ryanbumstead",
-    "github": "https://example.com/source",
-    "trailhead": "https://example.com/trailhead",
+    "github": "https://ryanbumstead.com/source",
+    "trailhead": "https://ryanbumstead.com/trailhead",
     "portfolioUrl": "https://ryanbumstead.com",
     "bio": "Specializing in API-led connectivity..."
   },
@@ -639,9 +639,9 @@ and their assets, each in one query for every project at once.
     "businessValue": "Increased interview rate by 40%",
     "status": "Live – In Production",
     "completionDate": "2025-12-01",
-    "heroImageUrl": "https://example.com/images/hero.png",
-    "liveUrl": "https://example.com/portfolio",
-    "repositoryUrl": "https://example.com/source",
+    "heroImageUrl": "https://ryanbumstead.com/images/hero.png",
+    "liveUrl": "https://ryanbumstead.com/portfolio",
+    "repositoryUrl": "https://ryanbumstead.com/source",
     "technologies": [
       "Apex"
     ],
@@ -649,7 +649,7 @@ and their assets, each in one query for every project at once.
     "assets": [
       {
         "type": "Image",
-        "url": "https://example.com/images/diagram.png",
+        "url": "https://ryanbumstead.com/images/diagram.png",
         "caption": "System Architecture Diagram"
       }
     ]
@@ -879,7 +879,7 @@ curl -H "Authorization: Bearer $TOKEN" -H "Accept: text/plain" "$INSTANCE_URL/se
   "integrityNote": "complete",
   "generatedText": "Ryan Bumstead\nSalesforce Platform Architect\n\nEXPERIENCE\n\nSalesforce | Senior Technical Architect\nJan 2023 - Present\n- Designed multi-cloud solutions...\n- Led DevOps transformation...\n",
   "persona": "Architect",
-  "generatedAt": "2019-08-24T14:15:22Z"
+  "generatedAt": "2026-11-18T14:15:22Z"
 }
 ```
 
@@ -1045,12 +1045,12 @@ any other value returns 400 BAD_REQUEST. Ordered by sort order, then newest firs
   {
     "id": "a055e00000B2O3DAAV",
     "key": "tst_2y7a5d9wmh",
-    "author": "Jane Doe",
+    "author": "Morgan Ellis",
     "title": "VP of Engineering",
     "relationship": "Manager",
     "quote": "Ryan is a beast at architecture",
     "vibe": "Professional",
-    "avatarUrl": "https://example.com/images/avatar.jpg"
+    "avatarUrl": "https://ryanbumstead.com/images/avatar.jpg"
   }
 ]
 ```
@@ -1321,7 +1321,7 @@ failure is 503 `ALL_PROVIDERS_UNAVAILABLE`.
   "model": "gemini-2.5-flash",
   "type": "CoverLetter",
   "tone": "Professional",
-  "generatedAt": "2019-08-24T14:15:22Z",
+  "generatedAt": "2026-11-18T14:15:22Z",
   "fallbackOccurred": false,
   "latencyMs": 1240,
   "attempts": [
@@ -1523,7 +1523,7 @@ down or any Named Credential is not CONFIGURED, otherwise UP. Always returns 200
 {
   "status": "UP",
   "checkType": "DEEP",
-  "timestamp": "2019-08-24T14:15:22Z",
+  "timestamp": "2026-11-18T14:15:22Z",
   "dependencies": {
     "sapi": "UP",
     "credential": "UP",
@@ -1568,7 +1568,7 @@ Evaluator token vending (ADR-028)
 
 ```javascript
 const inputBody = '{
-  "email": "reviewer@example.com",
+  "email": "reviewer@ryanbumstead.com",
   "purpose": "Evaluating API contract parity"
 }';
 const headers = {
@@ -1627,7 +1627,7 @@ This is the only path served on the Experience Cloud site domain, not on My Doma
 
 ```json
 {
-  "email": "reviewer@example.com",
+  "email": "reviewer@ryanbumstead.com",
   "purpose": "Evaluating API contract parity"
 }
 ```
@@ -1757,7 +1757,7 @@ This operation does not require authentication
 {
   "status": "UP",
   "checkType": "DEEP",
-  "timestamp": "2019-08-24T14:15:22Z",
+  "timestamp": "2026-11-18T14:15:22Z",
   "dependencies": {
     "sapi": "UP",
     "credential": "UP",
@@ -1823,9 +1823,9 @@ This operation does not require authentication
 {
   "config": {
     "linkedInUrl": "https://linkedin.com/in/ryanbumstead",
-    "calendlyUrl": "https://example.com/schedule",
-    "githubUrl": "https://example.com/source",
-    "trailheadUrl": "https://example.com/trailhead",
+    "calendlyUrl": "https://ryanbumstead.com/schedule",
+    "githubUrl": "https://ryanbumstead.com/source",
+    "trailheadUrl": "https://ryanbumstead.com/trailhead",
     "personalWebsiteUrl": "https://ryanbumstead.com",
     "careerObjective": "Driving digital transformation through architecture.",
     "jiraProjectKey": "SPAP",
@@ -1837,8 +1837,8 @@ This operation does not require authentication
     "fullName": "Ryan Bumstead",
     "title": "Platform Architect",
     "linkedIn": "https://linkedin.com/in/ryanbumstead",
-    "github": "https://example.com/source",
-    "trailhead": "https://example.com/trailhead",
+    "github": "https://ryanbumstead.com/source",
+    "trailhead": "https://ryanbumstead.com/trailhead",
     "portfolioUrl": "https://ryanbumstead.com",
     "bio": "Specializing in API-led connectivity..."
   },
@@ -1883,9 +1883,9 @@ This operation does not require authentication
       "businessValue": "Increased interview rate by 40%",
       "status": "Live – In Production",
       "completionDate": "2025-12-01",
-      "heroImageUrl": "https://example.com/images/hero.png",
-      "liveUrl": "https://example.com/portfolio",
-      "repositoryUrl": "https://example.com/source",
+      "heroImageUrl": "https://ryanbumstead.com/images/hero.png",
+      "liveUrl": "https://ryanbumstead.com/portfolio",
+      "repositoryUrl": "https://ryanbumstead.com/source",
       "technologies": [
         "Apex"
       ],
@@ -1893,7 +1893,7 @@ This operation does not require authentication
       "assets": [
         {
           "type": "Image",
-          "url": "https://example.com/images/diagram.png",
+          "url": "https://ryanbumstead.com/images/diagram.png",
           "caption": "System Architecture Diagram"
         }
       ]
@@ -1926,12 +1926,12 @@ This operation does not require authentication
     {
       "id": "a055e00000B2O3DAAV",
       "key": "tst_2y7a5d9wmh",
-      "author": "Jane Doe",
+      "author": "Morgan Ellis",
       "title": "VP of Engineering",
       "relationship": "Manager",
       "quote": "Ryan is a beast at architecture",
       "vibe": "Professional",
-      "avatarUrl": "https://example.com/images/avatar.jpg"
+      "avatarUrl": "https://ryanbumstead.com/images/avatar.jpg"
     }
   ],
   "integrityNote": "complete"
@@ -1971,8 +1971,8 @@ The master payload for initial app load
     "fullName": "Ryan Bumstead",
     "title": "Platform Architect",
     "linkedIn": "https://linkedin.com/in/ryanbumstead",
-    "github": "https://example.com/source",
-    "trailhead": "https://example.com/trailhead",
+    "github": "https://ryanbumstead.com/source",
+    "trailhead": "https://ryanbumstead.com/trailhead",
     "portfolioUrl": "https://ryanbumstead.com",
     "bio": "Specializing in API-led connectivity..."
   },
@@ -2106,9 +2106,9 @@ Work Experience enriched with related Skills and Highlights
   "businessValue": "Increased interview rate by 40%",
   "status": "Live – In Production",
   "completionDate": "2025-12-01",
-  "heroImageUrl": "https://example.com/images/hero.png",
-  "liveUrl": "https://example.com/portfolio",
-  "repositoryUrl": "https://example.com/source",
+  "heroImageUrl": "https://ryanbumstead.com/images/hero.png",
+  "liveUrl": "https://ryanbumstead.com/portfolio",
+  "repositoryUrl": "https://ryanbumstead.com/source",
   "technologies": [
     "Apex"
   ],
@@ -2116,7 +2116,7 @@ Work Experience enriched with related Skills and Highlights
   "assets": [
     {
       "type": "Image",
-      "url": "https://example.com/images/diagram.png",
+      "url": "https://ryanbumstead.com/images/diagram.png",
       "caption": "System Architecture Diagram"
     }
   ]
@@ -2168,12 +2168,12 @@ Project enriched with Skills and Assets
 {
   "id": "a055e00000B2O3DAAV",
   "key": "tst_2y7a5d9wmh",
-  "author": "Jane Doe",
+  "author": "Morgan Ellis",
   "title": "VP of Engineering",
   "relationship": "Manager",
   "quote": "Ryan is a beast at architecture",
   "vibe": "Professional",
-  "avatarUrl": "https://example.com/images/avatar.jpg"
+  "avatarUrl": "https://ryanbumstead.com/images/avatar.jpg"
 }
 
 ```
@@ -2213,9 +2213,9 @@ Project enriched with Skills and Assets
 ```json
 {
   "linkedInUrl": "https://linkedin.com/in/ryanbumstead",
-  "calendlyUrl": "https://example.com/schedule",
-  "githubUrl": "https://example.com/source",
-  "trailheadUrl": "https://example.com/trailhead",
+  "calendlyUrl": "https://ryanbumstead.com/schedule",
+  "githubUrl": "https://ryanbumstead.com/source",
+  "trailheadUrl": "https://ryanbumstead.com/trailhead",
   "personalWebsiteUrl": "https://ryanbumstead.com",
   "careerObjective": "Driving digital transformation through architecture.",
   "jiraProjectKey": "SPAP",
@@ -2253,8 +2253,8 @@ Public configuration. The owner's email and phone are never returned.
   "fullName": "Ryan Bumstead",
   "title": "Platform Architect",
   "linkedIn": "https://linkedin.com/in/ryanbumstead",
-  "github": "https://example.com/source",
-  "trailhead": "https://example.com/trailhead",
+  "github": "https://ryanbumstead.com/source",
+  "trailhead": "https://ryanbumstead.com/trailhead",
   "portfolioUrl": "https://ryanbumstead.com",
   "bio": "Specializing in API-led connectivity..."
 }
@@ -2392,7 +2392,7 @@ Educational background
 
 ```json
 {
-  "email": "reviewer@example.com",
+  "email": "reviewer@ryanbumstead.com",
   "purpose": "Evaluating API contract parity"
 }
 

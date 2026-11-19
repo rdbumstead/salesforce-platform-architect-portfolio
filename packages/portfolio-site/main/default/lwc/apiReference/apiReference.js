@@ -117,23 +117,133 @@ export const DEPRECATED_VERSION = "v1";
 
 /** The one line shown under the picker while v1 is open. */
 export const V1_NOTICE =
-  "v1 is deprecated. It stays for one month after v2 reaches production, then answers 410 Gone. Its responses carry Deprecation, Sunset and Link headers.";
+  "v1 is deprecated and retires on November 29, 2026. After that date it answers 410 Gone. Its responses carry Deprecation, Sunset and Link headers.";
 
 const SYSTEM_FONTS =
   '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 const MONO_FONTS = 'Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace';
 
 /**
- * Link and primary colour inside the Redoc panel. The panel is white in both site themes,
- * so it takes the light accent (the light --pf-accent, --pf-btn in both themes), 5.17:1
- * on white, never the dark theme accent, which is 2.54:1 there.
+ * The site tokens Redoc is drawn from, as their values in each scheme. They are the values in
+ * styles.css, and are used only where the page's own tokens cannot be read (the real values
+ * are read from the page, so a change to the site palette flows through). Redoc's theme takes
+ * literal colours, never var(), because it lightens and darkens some of them.
  */
-export const REDOC_LINK_COLOR = "#2563EB";
+export const LIGHT_TOKENS = {
+  bg: "#ffffff",
+  surface: "#ffffff",
+  subtle: "#f9fafb",
+  border: "#e5e7eb",
+  text: "#101828",
+  body: "#344054",
+  muted: "#667085",
+  accent: "#2563eb",
+  chip: "#f2f4f7",
+  ok: "#067647",
+  warnText: "#92400e",
+  errorText: "#b42318",
+  btn: "#2563eb",
+  btnText: "#ffffff",
+  /** Text of Redoc's constraint chips and of the active menu row, darker than the accent. */
+  strongAccent: "#1d4ed8"
+};
+
+export const DARK_TOKENS = {
+  bg: "#0b0f17",
+  surface: "#111827",
+  subtle: "#0f1520",
+  border: "#1f2937",
+  text: "#f3f4f6",
+  body: "#d0d5dd",
+  muted: "#98a2b3",
+  accent: "#60a5fa",
+  chip: "#1d2939",
+  ok: "#47cd89",
+  warnText: "#fcd34d",
+  errorText: "#fda29b",
+  btn: "#2563eb",
+  btnText: "#ffffff",
+  strongAccent: "#60a5fa"
+};
+
+/** The site token each entry above is read from. strongAccent has none and keeps its value. */
+const TOKEN_NAMES = {
+  bg: "--pf-bg",
+  surface: "--pf-surface",
+  subtle: "--pf-subtle",
+  border: "--pf-border",
+  text: "--pf-text",
+  body: "--pf-body",
+  muted: "--pf-muted",
+  accent: "--pf-accent",
+  chip: "--pf-chip",
+  ok: "--pf-ok",
+  warnText: "--pf-warn-text",
+  errorText: "--pf-error-text",
+  btn: "--pf-btn",
+  btnText: "--pf-btn-text"
+};
+
+/** A hex colour such as #fff or #1d4ed8, the form Redoc can lighten and darken. */
+const HEX_COLOR = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
+
+/** Redoc folds its menu behind a button below 50rem. The theme's spacing follows the same line. */
+export const COMPACT_QUERY = "(max-width: 49.99rem)";
+
+/** True below Redoc's menu breakpoint. False where there is no matchMedia. */
+export function isCompact() {
+  try {
+    return window.matchMedia(COMPACT_QUERY).matches;
+  } catch {
+    return false;
+  }
+}
+
+/** "dark" or "light": the site's data-theme on the page, else the visitor's system setting. */
+export function activeScheme() {
+  try {
+    const set = document.documentElement.getAttribute("data-theme");
+    if (set === "dark" || set === "light") {
+      return set;
+    }
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  } catch {
+    return "light";
+  }
+}
 
 /**
- * Response tab text on Redoc's dark code panel (rgb(17,23,26) as rendered). With no
- * tonalOffset Redoc's own reds and greens fall to 3.45:1 and 3.64:1 there, so each tab
- * colour is set from the site's dark palette, every one above 6:1 on that panel.
+ * The tokens for a scheme. Each is read from the page when the element has it as a hex colour,
+ * so the reference always matches the site, and falls back to the table above otherwise.
+ * @param {Element} [element] an element inside the site, whose computed style holds the tokens
+ * @param {string} [scheme] "light" or "dark", the page's own scheme when left out
+ */
+export function readTokens(element, scheme = activeScheme()) {
+  const fallback = scheme === "dark" ? DARK_TOKENS : LIGHT_TOKENS;
+  const tokens = { ...fallback };
+  try {
+    const style = element ? window.getComputedStyle(element) : undefined;
+    if (style) {
+      Object.keys(TOKEN_NAMES).forEach((key) => {
+        const value = style.getPropertyValue(TOKEN_NAMES[key]).trim();
+        if (HEX_COLOR.test(value)) {
+          tokens[key] = value;
+        }
+      });
+    }
+  } catch {
+    // No computed style (a test DOM). The table above stands.
+  }
+  return tokens;
+}
+
+/**
+ * Response tab text on Redoc's code panel, which is dark in both schemes
+ * (REDOC_PANEL_BACKGROUND). With no tonalOffset Redoc's own reds and greens fall to 3.45:1
+ * and 3.64:1 there, so each tab colour is set from the site's dark palette, every one above
+ * 6:1 on the panel.
  */
 export const REDOC_TAB_COLORS = {
   success: "#47CD89",
@@ -143,19 +253,129 @@ export const REDOC_TAB_COLORS = {
 };
 
 /**
- * Text of Redoc's constraint chips such as "[ 1 .. 200 ]". Redoc draws them in the primary
- * colour at 90% opacity on a 5% primary tint, 4.3:1 at 13 px (axe color-contrast).
- * This darker blue at full opacity is 6.6:1 on that tint.
+ * The code panel is the site's dark subtle background (--pf-subtle in the dark set, a step
+ * above the dark page so it reads as a panel) with light text, in both schemes.
  */
-export const REDOC_CONSTRAINT_COLOR = "#1D4ED8";
+export const REDOC_PANEL_BACKGROUND = "#0f1520";
+export const REDOC_PANEL_TEXT = "#e2e8f0";
 
 /**
- * Label of the active menu row. Redoc draws it in the primary colour on its sidebar grey
- * darkened for the active row, #ededed for a tag (4.41:1) and #e1e1e1 for a group (3.95:1).
- * This darker blue is 5.72:1 and 5.12:1 there. A tag is active whenever it is open, so the
- * open row needs it.
+ * The CSS Redoc appends to its constraint chips such as "[ 1 .. 200 ]". Redoc draws them in the
+ * primary colour at 90% opacity on a 5% primary tint, 4.3:1 at 13 px (axe color-contrast) in
+ * light. The strong accent at full opacity is above 6:1 on that tint, in both schemes.
  */
-export const REDOC_ACTIVE_MENU_COLOR = "#1D4ED8";
+export function constraintCss(tokens) {
+  return `color: ${tokens.strongAccent}; font-weight: 600;`;
+}
+
+/**
+ * The CSS Redoc appends to a named styled component (extensionsHook). The grey small caps
+ * labels such as Authorizations, the label of a code panel and a deprecated property name are
+ * drawn in fixed greys that fail contrast on the dark scheme.
+ * @param {string} name the styled component
+ * @param {object} tokens a token set from readTokens
+ */
+export function hookCss(name, tokens) {
+  switch (name) {
+    case "ConstraintItem":
+      return constraintCss(tokens);
+    case "UnderlinedHeader":
+      return `color: ${tokens.muted}; border-bottom-color: ${tokens.border};`;
+    case "RightPanelHeader":
+      return `color: ${REDOC_PANEL_TEXT};`;
+    case "PropertyNameCell":
+      return `&.deprecated span.property-name { color: ${tokens.muted}; }`;
+    default:
+      return "";
+  }
+}
+
+/**
+ * Redoc's theme, drawn from the site tokens. The left and middle panels follow the site's
+ * scheme, the code panel on the right stays the site's dark code colour in both. Every pair
+ * is a site pair that the site already meets contrast with: text on surface, body on subtle,
+ * the accent on surface, body on the chip.
+ * @param {object} tokens a token set from readTokens
+ * @param {boolean} [compact] true below Redoc's menu breakpoint, a phone or narrow window
+ */
+export function buildRedocTheme(tokens, compact = false) {
+  return {
+    // On a phone the text starts at the same left edge as the page's own.
+    spacing: {
+      unit: 5,
+      sectionHorizontal: compact ? 0 : 32,
+      sectionVertical: compact ? 24 : 32
+    },
+    colors: {
+      // No lightened or darkened shades: Redoc's lightened primary was 2.41:1 on white.
+      tonalOffset: 0,
+      primary: {
+        main: tokens.accent,
+        light: tokens.accent,
+        dark: tokens.accent
+      },
+      text: { primary: tokens.text, secondary: tokens.body },
+      border: { dark: tokens.border, light: tokens.border },
+      responses: {
+        success: { color: tokens.ok, tabTextColor: REDOC_TAB_COLORS.success },
+        error: {
+          color: tokens.errorText,
+          tabTextColor: REDOC_TAB_COLORS.error
+        },
+        redirect: {
+          color: tokens.warnText,
+          tabTextColor: REDOC_TAB_COLORS.redirect
+        },
+        info: { color: tokens.accent, tabTextColor: REDOC_TAB_COLORS.info }
+      }
+    },
+    sidebar: {
+      backgroundColor: tokens.subtle,
+      textColor: tokens.body,
+      activeTextColor: tokens.strongAccent,
+      groupItems: { textTransform: "none" },
+      level1Items: { textTransform: "none" }
+    },
+    rightPanel: {
+      backgroundColor: REDOC_PANEL_BACKGROUND,
+      textColor: REDOC_PANEL_TEXT
+    },
+    schema: {
+      nestedBackground: tokens.subtle,
+      linesColor: tokens.border,
+      // Redoc draws type names at 90% opacity, so the muted grey would fall under 4.5:1 in light.
+      typeNameColor: tokens.body,
+      typeTitleColor: tokens.body,
+      requireLabelColor: tokens.errorText
+    },
+    fab: { backgroundColor: tokens.btn, color: tokens.btnText },
+    typography: {
+      fontFamily: SYSTEM_FONTS,
+      fontSize: "16px",
+      lineHeight: "1.6",
+      headings: { fontFamily: SYSTEM_FONTS, fontWeight: "700" },
+      code: {
+        fontFamily: MONO_FONTS,
+        fontSize: "0.875em",
+        // The site's chip pair, not Redoc's red.
+        color: tokens.body,
+        backgroundColor: tokens.chip,
+        wrap: false
+      },
+      links: {
+        color: tokens.accent,
+        visited: tokens.accent,
+        hover: tokens.accent,
+        // A link inside text needs more than colour (axe link-in-text-block).
+        textDecoration: "underline",
+        hoverTextDecoration: "underline"
+      }
+    },
+    // Redoc appends this CSS to the named styled component. These are the places where it draws
+    // a colour of its own that no theme option reaches.
+    extensionsHook: (name) => hookCss(name, tokens)
+  };
+}
 
 /**
  * The bottom edge of the sticky or fixed element at the top of the viewport, the site
@@ -230,53 +450,28 @@ function pinnedBottom(host) {
  * search in a web worker built from a blob URL, which Lightning Web Security may block.
  * The 2.5.4 bundle has no telemetry, so no telemetry option is needed. scrollYOffset is
  * the site header's height, so Redoc's own active item tracking allows for it.
+ * The theme follows the site's scheme (buildRedocTheme).
+ * @param {object} tokens a token set from readTokens
+ * @param {number|Function} [scrollYOffset] the header offset, measured when the reference draws
+ * @param {boolean} [compact] true below Redoc's menu breakpoint
  */
-export const REDOC_OPTIONS = {
-  disableSearch: true,
-  hideDownloadButton: true,
-  nativeScrollbars: true,
-  scrollYOffset: headerOffset,
-  expandResponses: "200",
-  theme: {
-    colors: {
-      // No lightened or darkened shades: Redoc's lightened primary was 2.41:1 on white.
-      tonalOffset: 0,
-      primary: {
-        main: REDOC_LINK_COLOR,
-        light: REDOC_LINK_COLOR,
-        dark: REDOC_LINK_COLOR
-      },
-      responses: {
-        success: { tabTextColor: REDOC_TAB_COLORS.success },
-        error: { tabTextColor: REDOC_TAB_COLORS.error },
-        redirect: { tabTextColor: REDOC_TAB_COLORS.redirect },
-        info: { tabTextColor: REDOC_TAB_COLORS.info }
-      }
-    },
-    sidebar: {
-      activeTextColor: REDOC_ACTIVE_MENU_COLOR
-    },
-    typography: {
-      fontFamily: SYSTEM_FONTS,
-      headings: { fontFamily: SYSTEM_FONTS },
-      code: { fontFamily: MONO_FONTS },
-      links: {
-        color: REDOC_LINK_COLOR,
-        visited: REDOC_LINK_COLOR,
-        hover: REDOC_LINK_COLOR,
-        // A link inside text needs more than colour (axe link-in-text-block).
-        textDecoration: "underline",
-        hoverTextDecoration: "underline"
-      }
-    },
-    // Redoc appends this CSS to the named styled component.
-    extensionsHook: (name) => {
-      return name === "ConstraintItem"
-        ? `color: ${REDOC_CONSTRAINT_COLOR}; font-weight: 600;`
-        : "";
-    }
-  }
-};
+export function buildRedocOptions(
+  tokens,
+  scrollYOffset = headerOffset,
+  compact = false
+) {
+  return {
+    disableSearch: true,
+    hideDownloadButton: true,
+    nativeScrollbars: true,
+    scrollYOffset,
+    expandResponses: "200",
+    theme: buildRedocTheme(tokens, compact)
+  };
+}
+
+/** The options for the light scheme, with the tokens above. The component builds its own. */
+export const REDOC_OPTIONS = buildRedocOptions(LIGHT_TOKENS);
 
 /**
  * A section id the menu and deep links use, such as tag/Skills or operation/getSkills, or an
@@ -288,8 +483,9 @@ const SECTION_HASH = /^((tag|operation|section|schema)\/|error-[a-z-]+$)/;
 /**
  * A visible ring on every control Redoc draws (Expand all, Collapse all, Copy, the expand
  * toggles, menu rows, tabs, permalinks and links). Redoc removes the browser outline on most
- * of them. The ring is the site's own token. The panel is light in both themes and
- * .redoc-panel points --pf-accent at --pf-btn, so one rule serves both.
+ * of them. The ring is the site's focus token, which holds the light and dark values, so one
+ * rule serves both schemes. A menu row sits in a box that scrolls and clips, so its ring is
+ * drawn inside the row.
  */
 export const REDOC_FOCUS_RULE = [
   ".redoc-target a:focus-visible, .redoc-target button:focus-visible,",
@@ -297,7 +493,8 @@ export const REDOC_FOCUS_RULE = [
   ".redoc-target [role=menuitem]:focus-visible, .redoc-target [tabindex]:focus-visible,",
   ".redoc-target input:focus-visible, .redoc-target select:focus-visible,",
   ".redoc-target textarea:focus-visible, .redoc-target summary:focus-visible",
-  " { outline: 2px solid var(--pf-accent, #2563eb) !important; outline-offset: 2px !important; }"
+  " { outline: 2px solid var(--pf-focus, #2563eb) !important; outline-offset: 2px !important; }",
+  ".redoc-target [role=menuitem]:focus-visible { outline-offset: -2px !important; }"
 ].join("\n");
 
 const HEADING_SELECTOR = "h1, h2, h3, h4, h5, h6";
@@ -376,7 +573,42 @@ export const REDOC_STYLE_OVERRIDES = [
   "@media (min-width: 50rem) { .redoc-panel_full .menu-content {",
   " top: var(--reference-menu-top, 0px) !important;",
   " height: calc(100vh - var(--reference-menu-top, 0px)) !important; } }",
-  "@media (max-width: 49.99rem) { .menu-content { left: 0; } }"
+  "@media (max-width: 49.99rem) { .menu-content { left: 0; } }",
+  // Redoc's floating menu button covers the text on a phone. The pinned bar has its own
+  // Menu button, which presses this one, so it is hidden from phone widths up to Redoc's menu.
+  "@media (max-width: 49.99rem) { [data-pf-fab] { display: none !important; } }",
+  // Short inline code is kept whole (X-API-Version never breaks at its hyphen). Long code wraps.
+  '.redoc-target code[data-pf-fit="short"] { white-space: nowrap; }',
+  '.redoc-target code[data-pf-fit="long"] { overflow-wrap: anywhere; }',
+  // The JSON and code samples wrap, so no line is cut at the edge of the panel.
+  ".redoc-target .redoc-json, .redoc-target .redoc-json code, .redoc-target pre code { white-space: pre-wrap; overflow-wrap: anywhere; }",
+  // A table from the spec's own text scrolls sideways inside itself, with its edges shaded as
+  // the cue, and its cells keep their words whole.
+  ".redoc-target table:not([class]) { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse;",
+  " background: linear-gradient(to right, var(--pf-surface) 30%, transparent) left center / 28px 100% no-repeat local,",
+  " linear-gradient(to left, var(--pf-surface) 30%, transparent) right center / 28px 100% no-repeat local,",
+  " linear-gradient(to right, rgba(0, 0, 0, 0.35), transparent) left center / 12px 100% no-repeat scroll,",
+  " linear-gradient(to left, rgba(0, 0, 0, 0.35), transparent) right center / 12px 100% no-repeat scroll; }",
+  ".redoc-target table:not([class]) th, .redoc-target table:not([class]) td { min-width: 6.5rem; padding: 6px 10px; border: 1px solid var(--pf-border); text-align: left; vertical-align: top; }",
+  ".redoc-target table:not([class]) th { background-color: var(--pf-subtle); color: var(--pf-text); }",
+  ".redoc-target pre[data-pf-scroll] { max-width: 100%; }",
+  // The response codes (200 400 401 ...) wrap to a second line instead of running past the edge.
+  ".redoc-target .react-tabs__tab-list { display: flex; flex-wrap: wrap; white-space: normal; }",
+  // Redoc paints a table row white, which a dark scheme cannot read its text on.
+  ".redoc-target table:not([class]) tr { background-color: transparent; }",
+  // The selected tab is drawn on the light text colour of the code panel, so its label is dark.
+  ".redoc-target .react-tabs__tab--selected { color: #101828 !important; }",
+  ".redoc-target [role=region]:focus-visible { outline-offset: 0; }",
+  // The media type in a section label (application/json) is drawn black by default.
+  ".redoc-target h5 span { color: inherit; }",
+  // Section headings read as headings: Redoc draws some of them in a regular weight.
+  ".redoc-target h2, .redoc-target h3 { font-weight: 700; }",
+  // A selected response tab is drawn on the light text colour of the code panel, so its label
+  // takes a dark colour from the site's light palette (4.6:1 or more on that light grey).
+  ".redoc-target .tab-success.react-tabs__tab--selected { color: #067647 !important; }",
+  ".redoc-target .tab-error.react-tabs__tab--selected { color: #b42318 !important; }",
+  ".redoc-target .tab-redirect.react-tabs__tab--selected { color: #92400e !important; }",
+  ".redoc-target .tab-info.react-tabs__tab--selected { color: #1d4ed8 !important; }"
 ].join("\n");
 
 /**
@@ -519,6 +751,84 @@ export function errorEntry(element) {
   return element;
 }
 
+/**
+ * Redoc's floating menu button: the fixed block inside its wrap that holds the menu icon, other
+ * than the menu itself and the credit line. Found by what it is, because Redoc's class names
+ * are generated. Null where nothing fixed is drawn (a test DOM).
+ * @param {Element} root the Redoc target
+ */
+export function findMenuButton(root) {
+  if (!root) {
+    return null;
+  }
+  const blocks = root.querySelectorAll(".redoc-wrap > div");
+  for (const block of blocks) {
+    if (
+      !block.classList.contains("menu-content") &&
+      block.querySelector("svg") &&
+      !block.querySelector("a")
+    ) {
+      return block;
+    }
+  }
+  return null;
+}
+
+/**
+ * A table or code block that scrolls sideways takes the keyboard focus and a name, so it can
+ * be scrolled without a pointer (axe scrollable-region-focusable). One that fits is left alone.
+ * @param {Element} root the Redoc target
+ */
+export function makeScrollersFocusable(root) {
+  if (!root) {
+    return;
+  }
+  root
+    .querySelectorAll(
+      "table:not([class]):not([data-pf-scroll]), pre:not([data-pf-scroll])"
+    )
+    .forEach((element) => {
+      if (element.scrollWidth <= element.clientWidth + 1) {
+        return;
+      }
+      element.setAttribute("data-pf-scroll", "");
+      if (!element.hasAttribute("tabindex")) {
+        element.setAttribute("tabindex", "0");
+      }
+      element.setAttribute("role", "region");
+      element.setAttribute(
+        "aria-label",
+        element.tagName === "TABLE"
+          ? "Table, scrolls sideways"
+          : "Code, scrolls sideways"
+      );
+    });
+}
+
+/** The longest inline code, in characters, that is kept whole on one line. */
+export const CODE_PILL_MAX = 28;
+
+/**
+ * Marks each short inline code (a header name such as X-API-Version, a status, a field) so it
+ * is not broken at a hyphen, and each long one so it may wrap. The mark is an attribute that
+ * Redoc's markup does not use, so React leaves it alone.
+ * @param {Element} root the Redoc target
+ */
+export function fitCodePills(root) {
+  if (!root) {
+    return;
+  }
+  root
+    .querySelectorAll("code:not([data-pf-fit]):not(pre code)")
+    .forEach((code) => {
+      const length = (code.textContent || "").length;
+      code.setAttribute(
+        "data-pf-fit",
+        length <= CODE_PILL_MAX ? "short" : "long"
+      );
+    });
+}
+
 /** An id as the inside of a double quoted CSS attribute value. */
 function cssString(value) {
   return String(value).replace(/["\\]/g, "\\$&");
@@ -551,6 +861,8 @@ export default class ApiReference extends LightningElement {
 
   selectedSpec = "sapi";
   selectedVersion = DEFAULT_VERSION;
+  /** True while Redoc's phone menu is open, read from the page after each change. */
+  menuOpen = false;
   autoOpened = false;
   isOpen = false;
   isLoading = false;
@@ -725,6 +1037,51 @@ export default class ApiReference extends LightningElement {
       }
     };
     window.addEventListener("hashchange", this.boundHashChange);
+    this.watchScheme();
+  }
+
+  /**
+   * Redoc takes literal colours when it draws, so a change of the site's scheme, by the header
+   * toggle (data-theme) or by the visitor's system setting, draws the open reference again from
+   * the new tokens. The section in the URL hash is kept.
+   */
+  watchScheme() {
+    this.paintedScheme = activeScheme();
+    this.boundSchemeChange = () => {
+      const scheme = activeScheme();
+      if (scheme === this.paintedScheme) {
+        return;
+      }
+      this.paintedScheme = scheme;
+      if (this.isOpen && !this.isLoading) {
+        this.pendingHash = this.sectionHash();
+        this.renderReference();
+      }
+    };
+    try {
+      this.schemeObserver = new MutationObserver(this.boundSchemeChange);
+      this.schemeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["data-theme"]
+      });
+      this.schemeQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      this.schemeQuery.addEventListener("change", this.boundSchemeChange);
+      this.paintedCompact = isCompact();
+      this.compactQuery = window.matchMedia(COMPACT_QUERY);
+      this.boundCompactChange = () => {
+        const compact = isCompact();
+        if (compact !== this.paintedCompact) {
+          this.paintedCompact = compact;
+          if (this.isOpen && !this.isLoading) {
+            this.pendingHash = this.sectionHash();
+            this.renderReference();
+          }
+        }
+      };
+      this.compactQuery.addEventListener("change", this.boundCompactChange);
+    } catch {
+      // Without the observers the reference keeps the scheme it was drawn in.
+    }
   }
 
   disconnectedCallback() {
@@ -736,6 +1093,16 @@ export default class ApiReference extends LightningElement {
     }
     if (this.boundHashChange) {
       window.removeEventListener("hashchange", this.boundHashChange);
+    }
+    if (this.schemeObserver) {
+      this.schemeObserver.disconnect();
+      this.schemeObserver = undefined;
+    }
+    if (this.schemeQuery && this.boundSchemeChange) {
+      this.schemeQuery.removeEventListener("change", this.boundSchemeChange);
+    }
+    if (this.compactQuery && this.boundCompactChange) {
+      this.compactQuery.removeEventListener("change", this.boundCompactChange);
     }
   }
 
@@ -808,16 +1175,72 @@ export default class ApiReference extends LightningElement {
     return true;
   }
 
-  /** Header, the pinned spec switch on its own page, and a small gap, in pixels. */
+  /**
+   * The bar pinned under the header on the dedicated page: the specification switch from 50rem
+   * up, and on a phone, where that switch is too tall to pin, the bar with the Menu button.
+   */
+  pinnedBar() {
+    const bars = [".spec-bar", ".menu-bar"]
+      .map((selector) => this.template.querySelector(selector))
+      .filter(Boolean);
+    const sticky = bars.find(
+      (bar) => window.getComputedStyle(bar).position === "sticky"
+    );
+    return sticky || bars[0] || null;
+  }
+
+  /** Header, the pinned bar on its own page, and a small gap, in pixels. */
   sectionOffset() {
-    const toggle = this.fullWidth
-      ? this.template.querySelector(".spec-toggle")
-      : null;
+    const toggle = this.fullWidth ? this.pinnedBar() : null;
     return (
       headerOffset(this.template.host) +
       (toggle ? toggle.offsetHeight : 0) +
       SECTION_GAP
     );
+  }
+
+  /** The menu button in the pinned bar, phone widths only, and only while the reference is open. */
+  get showMenuButton() {
+    return this.fullWidth && this.isOpen && !this.hasError;
+  }
+
+  get menuExpanded() {
+    return this.menuOpen ? "true" : "false";
+  }
+
+  get menuLabel() {
+    return this.menuOpen ? "Close menu" : "Menu";
+  }
+
+  /**
+   * Redoc's own menu button floats over the text on a phone. It is hidden there, and this
+   * button in the pinned bar presses it, so the menu opens and closes from a place that covers
+   * nothing.
+   */
+  handleMenuClick() {
+    const fab = findMenuButton(this.template.querySelector(".redoc-target"));
+    if (fab) {
+      fab.click();
+      setTimeout(() => this.syncMenuState(), CLICK_SETTLE_MS);
+    }
+  }
+
+  /** Reads whether Redoc's menu is showing, and hides its floating button. */
+  syncMenuState() {
+    const target = this.template.querySelector(".redoc-target");
+    if (!target) {
+      return;
+    }
+    const fab = findMenuButton(target);
+    // Only the dedicated page has the pinned bar with its own Menu button.
+    if (this.fullWidth && fab && !fab.hasAttribute("data-pf-fab")) {
+      fab.setAttribute("data-pf-fab", "");
+    }
+    const menu = target.querySelector(".menu-content");
+    const open = Boolean(menu && menu.offsetWidth > 0);
+    if (open !== this.menuOpen) {
+      this.menuOpen = open;
+    }
   }
 
   /** A wheel turn over the menu that the menu cannot use is cancelled, so the page stays put. */
@@ -923,9 +1346,7 @@ export default class ApiReference extends LightningElement {
     const card = this.template.querySelector("article");
     if (card) {
       const header = headerOffset(this.template.host);
-      const toggle = this.fullWidth
-        ? this.template.querySelector(".spec-toggle")
-        : null;
+      const toggle = this.fullWidth ? this.pinnedBar() : null;
       card.style.setProperty("--reference-sticky-top", `${header}px`);
       card.style.setProperty(
         "--reference-menu-top",
@@ -1037,8 +1458,12 @@ export default class ApiReference extends LightningElement {
       try {
         redoc.init(
           VERSIONS[this.selectedVersion].urls[this.selectedSpec],
-          // A number, measured now, so Redoc scrolls a section below the header.
-          { ...REDOC_OPTIONS, scrollYOffset: this.sectionOffset() },
+          buildRedocOptions(
+            readTokens(this.template.host),
+            // A number, measured now, so Redoc scrolls a section below the header.
+            this.sectionOffset(),
+            isCompact()
+          ),
           target,
           (error) => (error ? reject(error) : resolve())
         );
@@ -1058,6 +1483,9 @@ export default class ApiReference extends LightningElement {
     const apply = () => {
       normaliseHeadingLevels(target, this.fullWidth ? 1 : 2);
       nameSectionLinks(target);
+      fitCodePills(target);
+      makeScrollersFocusable(target);
+      this.syncMenuState();
       // Redoc adds style rules as new states first draw (a row opens, the phone menu
       // opens). They land in the head after the first copy, so copy them again.
       this.adoptRedocStyles(this.styleBaseline);

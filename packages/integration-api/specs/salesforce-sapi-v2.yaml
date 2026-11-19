@@ -695,6 +695,7 @@ components:
         timestamp:
           type: string
           format: date-time
+          example: "2026-11-18T14:15:22Z"
           description: "ISO 8601 Timestamp of the health check."
         orgTimeZone:
           type: string
@@ -818,13 +819,13 @@ components:
         heroImageUrl:
           type: string
           format: uri
-          example: "https://example.com/images/hero.jpg"
+          example: "https://ryanbumstead.com/images/hero.jpg"
           nullable: true
           description: "Banner Image URL"
         liveUrl:
           type: string
           format: uri
-          example: "https://example.com/demo"
+          example: "https://ryanbumstead.com/demo"
           nullable: true
           description: "Live Demo URL"
         repositoryUrl:
@@ -985,7 +986,7 @@ components:
         externalUrl:
           type: string
           format: uri
-          example: "https://example.com/images/diagram.png"
+          example: "https://ryanbumstead.com/images/diagram.png"
           description: "Asset URL"
         altText:
           type: string
@@ -1011,11 +1012,11 @@ components:
           description: "Stable public key of the record. It is set once and never changes."
         name:
           type: string
-          example: "Testimonial from Jane Doe"
+          example: "Testimonial from Morgan Ellis"
           description: "Testimonial Name"
         authorName:
           type: string
-          example: "Jane Doe"
+          example: "Morgan Ellis"
           description: "Author Name"
         authorTitle:
           type: string
@@ -1025,7 +1026,7 @@ components:
         avatarUrl:
           type: string
           format: uri
-          example: "https://example.com/images/avatar.jpg"
+          example: "https://ryanbumstead.com/images/avatar.jpg"
           nullable: true
           description: "Author Avatar URL"
         relationshipType:
@@ -1163,13 +1164,13 @@ components:
         gitHubProfileUrl:
           type: string
           format: uri
-          example: "https://example.com/source"
+          example: "https://ryanbumstead.com/source"
           nullable: true
           description: "GitHub URL"
         calendlyUrl:
           type: string
           format: uri
-          example: "https://example.com/schedule"
+          example: "https://ryanbumstead.com/schedule"
           nullable: true
           description: "Calendly URL. Optional. Null until a scheduling link is set."
         trailblazerProfileUrl:

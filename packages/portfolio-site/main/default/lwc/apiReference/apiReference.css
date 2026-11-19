@@ -4,10 +4,10 @@
  * Colours come only from the --pf- site tokens, which hold the light and dark values.
  * Every element that sets a background also sets its text colour from the matching token
  * pair. Controls are at least 24 px and buttons 44 px high. The version and specification
- * switches are shared toggles (c/nativeControls), keyed on aria-pressed. The one exception is
- * the Redoc panel: Redoc 2.5.4 draws dark text on a transparent background whatever the
- * site theme, so its panel stays white with black text in both themes. No site token is
- * light in the dark theme, so the panel uses the white and black keywords.
+ * switches are shared toggles (c/nativeControls), keyed on aria-pressed. The Redoc panel
+ * follows the site's scheme: it sits on the surface token, and Redoc is drawn from the same
+ * tokens (buildRedocTheme in the script), drawn again when the scheme changes. Only Redoc's
+ * code panel on the right stays dark in both schemes, as the site's own code blocks are.
  */
 :host {
   display: block;
@@ -23,7 +23,8 @@
 /* Pinned just below the site header, whose height the component measures. Redoc's middle
    panel is z-index 1 and comes later, so the switch sits above it at 3, still below Redoc's
    phone menu (20) and the site header. */
-.reference-body_full .spec-toggle {
+.reference-body_full .spec-bar,
+.reference-body_full .menu-bar {
   position: sticky;
   top: var(--reference-sticky-top, 0);
   z-index: 3;
@@ -68,7 +69,8 @@
   padding-bottom: var(--pf-space-4);
 }
 
-.reference-card_full .reference-body_full .spec-toggle {
+.reference-card_full .reference-body_full .spec-bar,
+.reference-card_full .reference-body_full .menu-bar {
   background-color: var(--pf-bg);
 }
 
@@ -140,25 +142,21 @@
 }
 
 .redoc-panel {
-  /* The panel is light in both themes, so links inside it take the light accent.
-     --pf-btn is the same blue in both themes, 5.17:1 on white. */
-  --pf-accent: var(--pf-btn);
-  --dxp-s-link-text-color: var(--pf-btn);
-  background-color: white;
-  color: black;
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
   margin-top: var(--pf-space-4);
+  border: 1px solid var(--pf-border);
   border-radius: var(--pf-radius-sm);
   max-height: 80vh;
   overflow: auto;
 }
 
-.redoc-panel a {
-  color: var(--pf-btn);
-}
-
 .redoc-panel_full {
+  background-color: var(--pf-bg);
   max-height: none;
   overflow: visible;
+  border: 0;
+  border-radius: 0;
 }
 
 /*
@@ -227,11 +225,66 @@
   font-size: var(--pf-font-caption, 14px);
 }
 
-/* The one line under the version picker while the deprecated version is open. */
+/* A visible label over each switch, so a pair of buttons reads as a choice. */
+.spec-bar-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--pf-space-1);
+  min-width: 0;
+}
+
+.version-bar {
+  margin-bottom: var(--pf-space-2);
+}
+
+.toggle-label {
+  color: var(--pf-muted);
+  font-size: var(--pf-font-meta, 12px);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.spec-bar-group .nc-toggle-group {
+  margin-bottom: 0;
+}
+
+/* The pinned bar holds the specification switch and, on a phone, the menu button. */
+.spec-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--pf-space-2);
+  margin-bottom: var(--pf-space-2);
+}
+
+/* Redoc's own menu button floats over the text on a phone, so it is hidden there and this
+   bar's button presses it. From 50rem Redoc shows its menu beside the text and needs no
+   button. On a phone the two switches scroll away and only this bar stays pinned, because the
+   switches together are too tall to keep on a small screen. */
+.reference-body_full .menu-bar {
+  display: none;
+}
+
+@media (max-width: 49.99rem) {
+  .reference-body_full .menu-bar {
+    display: block;
+  }
+
+  .reference-body_full .spec-bar {
+    position: static;
+  }
+}
+
+/* The deprecation note for v1: a warning with its date, under both switches. */
 .version-notice {
   margin: 0 0 var(--pf-space-2);
   padding: var(--pf-space-2) var(--pf-space-3);
-  border-left: 4px solid var(--pf-accent);
-  background-color: var(--pf-surface);
-  color: var(--pf-text);
+  border-left: 4px solid var(--pf-warn-text);
+  border-radius: var(--pf-radius-sm);
+  background-color: var(--pf-warn);
+  color: var(--pf-warn-text);
+  font-weight: 600;
 }

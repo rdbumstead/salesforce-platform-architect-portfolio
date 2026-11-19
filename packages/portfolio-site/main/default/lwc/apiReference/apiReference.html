@@ -45,45 +45,65 @@
       </p>
     </header>
     <div class={bodyClass}>
-      <div
-        class="nc-toggle-group version-toggle slds-m-bottom_small"
-        role="group"
-        aria-label="API version"
-      >
-        <template for:each={versionButtons} for:item="version">
-          <button
-            key={version.value}
-            type="button"
-            class={version.cssClass}
-            aria-pressed={version.pressed}
-            data-version={version.value}
-            onclick={handleVersionClick}
-          >
-            {version.label}
-          </button>
-        </template>
+      <div class="spec-bar-group version-bar">
+        <span class="toggle-label" aria-hidden="true">Version</span>
+        <div
+          class="nc-toggle-group version-toggle slds-m-bottom_small"
+          role="group"
+          aria-label="API version"
+        >
+          <template for:each={versionButtons} for:item="version">
+            <button
+              key={version.value}
+              type="button"
+              class={version.cssClass}
+              aria-pressed={version.pressed}
+              data-version={version.value}
+              onclick={handleVersionClick}
+            >
+              {version.label}
+            </button>
+          </template>
+        </div>
       </div>
+      <div class="spec-bar">
+        <div class="spec-bar-group">
+          <span class="toggle-label" aria-hidden="true">Specification</span>
+          <div
+            class="nc-toggle-group spec-toggle slds-m-bottom_small"
+            role="group"
+            aria-label="Specification"
+          >
+            <template for:each={specButtons} for:item="spec">
+              <button
+                key={spec.value}
+                type="button"
+                class={spec.cssClass}
+                aria-pressed={spec.pressed}
+                data-spec={spec.value}
+                onclick={handleSpecClick}
+              >
+                {spec.label}
+              </button>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <div lwc:if={showMenuButton} class="menu-bar">
+        <button
+          type="button"
+          class="nc-button nc-button_secondary menu-button"
+          aria-expanded={menuExpanded}
+          onclick={handleMenuClick}
+        >
+          {menuLabel}
+        </button>
+      </div>
+
       <p lwc:if={isDeprecatedVersion} class="version-notice" role="note">
         {versionNotice}
       </p>
-      <div
-        class="nc-toggle-group spec-toggle slds-m-bottom_small"
-        role="group"
-        aria-label="Specification"
-      >
-        <template for:each={specButtons} for:item="spec">
-          <button
-            key={spec.value}
-            type="button"
-            class={spec.cssClass}
-            aria-pressed={spec.pressed}
-            data-spec={spec.value}
-            onclick={handleSpecClick}
-          >
-            {spec.label}
-          </button>
-        </template>
-      </div>
 
       <template lwc:if={showOpenButton}>
         <button
