@@ -172,12 +172,22 @@ test("adapters build the common shape", () => {
 
 test("landmark order finds a displaced line and a missing one", () => {
   const marks = landmarksOf(expected());
-  assert.deepEqual(marks.slice(0, 3), ["summary", "experience", "Lead"]);
+  // Certifications sit under the summary, where the PDF and the text page print them (R27-23).
+  assert.deepEqual(marks.slice(0, 4), [
+    "summary",
+    "Platform Administrator",
+    "experience",
+    "Lead"
+  ]);
   const good =
-    "Summary\nExperience\nLead\nDid one\nAnalyst\nDid two\nSkills\nPlatform Administrator\nEducation";
+    "Summary\nPlatform Administrator\nExperience\nLead\nDid one\nAnalyst\nDid two\nSkills\nEducation";
   assert.equal(landmarkOrder(marks, good).equal, true);
+  const late =
+    "Summary\nExperience\nLead\nDid one\nAnalyst\nDid two\nSkills\nPlatform Administrator\nEducation";
+  // The old order, certifications after skills, no longer reads as equal.
+  assert.equal(landmarkOrder(marks, late).equal, false);
   const moved =
-    "Summary\nExperience\nLead\nAnalyst\nDid two\nDid one\nSkills\nPlatform Administrator\nEducation";
+    "Summary\nPlatform Administrator\nExperience\nLead\nAnalyst\nDid two\nDid one\nSkills\nEducation";
   assert.deepEqual(landmarkOrder(marks, moved).outOfOrder, [
     "Analyst",
     "Did two"
