@@ -49,7 +49,7 @@ export const DEFAULT_TAB = "indeterminate";
 // The tour's stop E points at the In Progress column, or its tab on a phone.
 export const TOUR_STOP = "E";
 export const SIMULATE_HINT =
-  "See how the roadmap and Latest Updates behave if Jira or GitHub is down.";
+  "See how the roadmap and the latest updates behave if Jira or GitHub is down.";
 
 export const COLUMNS = [
   { category: "new", label: "To Do" },

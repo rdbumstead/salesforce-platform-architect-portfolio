@@ -63,12 +63,12 @@
   border-top: none;
 }
 
-/* The pill spec comes from c/pill. The box is 20 px high, so a top margin of half the
+/* The pill spec comes from c/pill and the pill is only as wide as its words (F-62), so Passed
+   is a small tag and not a wide capsule. The box is 20 px high, so a top margin of half the
    difference to the 1.65 line of the label centres it on the first text line. */
 .state {
   flex: 0 0 auto;
   justify-content: center;
-  min-width: 7.5rem;
   margin-top: calc((1.65 * 1rem - 1.25rem) / 2);
   text-align: center;
 }

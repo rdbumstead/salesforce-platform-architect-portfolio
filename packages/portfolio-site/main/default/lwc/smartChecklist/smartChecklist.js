@@ -6,7 +6,7 @@
  *                      streaming subscription. The pipeline publishes a platform event, a
  *                      trigger stores it, and this component reads the stored result.
  *                      Each time shows in the visitor's own time and zone first, for example
- *                      "Oct 24, 8:06 AM EDT", inside a time element whose datetime is the ISO
+ *                      "Oct 24, 2026, 8:06 AM EDT", inside a time element whose datetime is the ISO
  *                      value and whose title is the UTC time ("2026-10-24 12:06 UTC"). Where
  *                      the browser cannot format a local time the UTC time is shown instead. A
  *                      missing or unreadable value shows no time. The three items read as plain
@@ -97,7 +97,7 @@ export function localTime(value) {
 
 /**
  * The visitor's own date, time and short zone name for an Apex Datetime, such as
- * "Oct 24, 8:06 AM EDT". Returns "" for a missing or unreadable value or where Intl cannot
+ * "Oct 24, 2026, 8:06 AM EDT". Returns "" for a missing or unreadable value or where Intl cannot
  * format it.
  * @param {string} value ISO 8601 date time
  * @returns {string} the local date and time with the zone
@@ -115,6 +115,7 @@ export function localDateTime(value) {
       new Intl.DateTimeFormat("en-US", {
         month: "short",
         day: "numeric",
+        year: "numeric",
         hour: "numeric",
         minute: "2-digit",
         timeZoneName: "short"

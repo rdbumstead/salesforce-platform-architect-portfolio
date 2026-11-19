@@ -120,10 +120,12 @@
 }
 
 /* Three equal columns on a wide screen. Below 768px they stack into one column, so
-   every column shares the same left edge and nothing scrolls sideways. */
+   every column shares the same left edge and nothing scrolls sideways. Each column is only as
+   tall as its own cards, so a short column leaves no empty strip (F-62). */
 .roadmap-board {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
   gap: var(--pf-space-4);
   margin-top: var(--pf-space-2);
 }
@@ -157,9 +159,9 @@
 
 .column-title {
   color: var(--pf-text);
-  font-size: var(--pf-font-card, 17px);
-  font-weight: var(--pf-weight-card, 600);
-  line-height: var(--pf-line-card, 1.3);
+  font-size: var(--pf-font-panel, 20px);
+  font-weight: var(--pf-weight-panel, 700);
+  line-height: var(--pf-line-panel, 1.3);
   margin: 0 0 var(--pf-space-2);
 }
 
