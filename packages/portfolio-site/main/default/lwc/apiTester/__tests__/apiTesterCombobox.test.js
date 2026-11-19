@@ -255,6 +255,15 @@ describe("c-api-tester endpoint combobox", () => {
     expect($(element, "input.endpoint-picker").value).toBe("GET /sapi/skills");
   });
 
+  it("selects the chosen route on focus, so typing replaces it as the filter", async () => {
+    const element = create();
+    await tick();
+    const input = $(element, "input.endpoint-picker");
+    input.select = jest.fn();
+    input.dispatchEvent(new CustomEvent("focus"));
+    expect(input.select).toHaveBeenCalledTimes(1);
+  });
+
   it("closes when the box loses focus", async () => {
     const element = create();
     await tick();

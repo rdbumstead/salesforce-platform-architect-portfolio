@@ -977,6 +977,13 @@ export default class ApiTester extends LightningElement {
     this.activePath = entries.length ? entries[0].path : undefined;
   }
 
+  /** The chosen route is selected on focus, so the first key typed replaces it as the filter. */
+  handleComboFocus(event) {
+    if (typeof event.target.select === "function") {
+      event.target.select();
+    }
+  }
+
   handleComboClick() {
     if (this.comboOpen) {
       this.closeCombo();
