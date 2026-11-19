@@ -63,7 +63,7 @@ export const JEST_GROUPS = [
   },
   {
     name: "Skills, graphs and resume",
-    tests: 254
+    tests: 261
   },
   {
     name: "Contact and testimonial forms",
