@@ -106,7 +106,7 @@ Shallow check: runtime availability, the current transaction's governor-limit sn
 {
   "status": "UP",
   "checkType": "SHALLOW",
-  "timestamp": "2019-08-24T14:15:22Z",
+  "timestamp": "2026-11-18T14:15:22Z",
   "orgTimeZone": "America/Chicago",
   "dependencies": {
     "salesforce": "UP"
@@ -633,8 +633,8 @@ Example Usage: `/projects?isFeatured=true`
     "businessValue": "Reduced data storage costs by 40%.",
     "status": "Active Development",
     "dateCompleted": "2025-12-01",
-    "heroImageUrl": "https://example.com/images/hero.jpg",
-    "liveUrl": "https://example.com/demo",
+    "heroImageUrl": "https://ryanbumstead.com/images/hero.jpg",
+    "liveUrl": "https://ryanbumstead.com/demo",
     "repositoryUrl": "https://github.com/rdbumstead/project",
     "pillar": "A",
     "pillarLabel": "Pillar A: Business Architecture",
@@ -785,7 +785,7 @@ Retrieves assets (images, links) associated with a project. A malformed Salesfor
     "projectKey": "prj_8f3k2m9qtz",
     "projectName": "Global CRM Migration",
     "type": "Image",
-    "externalUrl": "https://example.com/images/diagram.png",
+    "externalUrl": "https://ryanbumstead.com/images/diagram.png",
     "altText": "C4 Model System Context Diagram",
     "sortOrder": 1
   }
@@ -915,10 +915,10 @@ Retrieves received testimonials. Returns only records where Approved__c = true.
   {
     "id": "a055e00000B2O3DAAV",
     "key": "tst_2y7a5d9wmh",
-    "name": "Testimonial from Jane Doe",
-    "authorName": "Jane Doe",
+    "name": "Testimonial from Morgan Ellis",
+    "authorName": "Morgan Ellis",
     "authorTitle": "CTO, Tech Corp",
-    "avatarUrl": "https://example.com/images/avatar.jpg",
+    "avatarUrl": "https://ryanbumstead.com/images/avatar.jpg",
     "relationshipType": "Manager",
     "vibeMode": "Professional",
     "context": "Worked together on the Q1 digital transformation."
@@ -1941,8 +1941,8 @@ Returns the singleton Global Configuration object (Metadata-driven). Not pageabl
 ```json
 {
   "linkedInUrl": "https://linkedin.com/in/ryanbumstead",
-  "gitHubProfileUrl": "https://example.com/source",
-  "calendlyUrl": "https://example.com/schedule",
+  "gitHubProfileUrl": "https://ryanbumstead.com/source",
+  "calendlyUrl": "https://ryanbumstead.com/schedule",
   "trailblazerProfileUrl": "https://trailblazer.me/id/rbumstead",
   "personalWebsiteUrl": "https://ryanbumstead.com",
   "careerObjective": "Looking for Principal Architect roles.",
@@ -2193,7 +2193,7 @@ Tone/Style Category
 {
   "status": "UP",
   "checkType": "SHALLOW",
-  "timestamp": "2019-08-24T14:15:22Z",
+  "timestamp": "2026-11-18T14:15:22Z",
   "orgTimeZone": "America/Chicago",
   "dependencies": {
     "salesforce": "UP"
@@ -2328,8 +2328,8 @@ Contact Information Schema. The contact's email and phone are never returned.
   "businessValue": "Reduced data storage costs by 40%.",
   "status": "Active Development",
   "dateCompleted": "2025-12-01",
-  "heroImageUrl": "https://example.com/images/hero.jpg",
-  "liveUrl": "https://example.com/demo",
+  "heroImageUrl": "https://ryanbumstead.com/images/hero.jpg",
+  "liveUrl": "https://ryanbumstead.com/demo",
   "repositoryUrl": "https://github.com/rdbumstead/project",
   "pillar": "A",
   "pillarLabel": "Pillar A: Business Architecture",
@@ -2471,7 +2471,7 @@ Experience Bullet Point Schema.
   "projectKey": "prj_8f3k2m9qtz",
   "projectName": "Global CRM Migration",
   "type": "Image",
-  "externalUrl": "https://example.com/images/diagram.png",
+  "externalUrl": "https://ryanbumstead.com/images/diagram.png",
   "altText": "C4 Model System Context Diagram",
   "sortOrder": 1
 }
@@ -2506,10 +2506,10 @@ Project Asset (Image/Video) Schema.
 {
   "id": "a055e00000B2O3DAAV",
   "key": "tst_2y7a5d9wmh",
-  "name": "Testimonial from Jane Doe",
-  "authorName": "Jane Doe",
+  "name": "Testimonial from Morgan Ellis",
+  "authorName": "Morgan Ellis",
   "authorTitle": "CTO, Tech Corp",
-  "avatarUrl": "https://example.com/images/avatar.jpg",
+  "avatarUrl": "https://ryanbumstead.com/images/avatar.jpg",
   "relationshipType": "Manager",
   "vibeMode": "Professional",
   "context": "Worked together on the Q1 digital transformation."
@@ -2663,8 +2663,8 @@ Junction Object: Certification <-> Skill.
 ```json
 {
   "linkedInUrl": "https://linkedin.com/in/ryanbumstead",
-  "gitHubProfileUrl": "https://example.com/source",
-  "calendlyUrl": "https://example.com/schedule",
+  "gitHubProfileUrl": "https://ryanbumstead.com/source",
+  "calendlyUrl": "https://ryanbumstead.com/schedule",
   "trailblazerProfileUrl": "https://trailblazer.me/id/rbumstead",
   "personalWebsiteUrl": "https://ryanbumstead.com",
   "careerObjective": "Looking for Principal Architect roles.",

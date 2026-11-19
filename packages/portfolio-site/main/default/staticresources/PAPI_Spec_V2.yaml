@@ -617,6 +617,7 @@ components:
         timestamp:
           type: string
           format: date-time
+          example: "2026-11-18T14:15:22Z"
         dependencies:
           type: object
           properties:
@@ -818,15 +819,15 @@ components:
           type: string
           format: uri
           description: URL of the main display image. Matches SAPI field name.
-          example: "https://example.com/images/hero.png"
+          example: "https://ryanbumstead.com/images/hero.png"
         liveUrl:
           type: string
           format: uri
-          example: "https://example.com/portfolio"
+          example: "https://ryanbumstead.com/portfolio"
         repositoryUrl:
           type: string
           format: uri
-          example: "https://example.com/source"
+          example: "https://ryanbumstead.com/source"
         technologies:
           type: array
           description: Skill names from ProjectSkill junction
@@ -854,7 +855,7 @@ components:
               url:
                 type: string
                 format: uri
-                example: "https://example.com/images/diagram.png"
+                example: "https://ryanbumstead.com/images/diagram.png"
               caption:
                 type: string
                 example: "System Architecture Diagram"
@@ -873,7 +874,7 @@ components:
           description: "Stable public key of the record. It is set once and never changes."
         author:
           type: string
-          example: "Jane Doe"
+          example: "Morgan Ellis"
         title:
           type: string
           example: "VP of Engineering"
@@ -891,7 +892,7 @@ components:
         avatarUrl:
           type: string
           format: uri
-          example: "https://example.com/images/avatar.jpg"
+          example: "https://ryanbumstead.com/images/avatar.jpg"
 
     # --- Basic DTOs ---
     PortfolioConfig:
@@ -906,15 +907,15 @@ components:
           type: string
           format: uri
           description: Optional. The scheduling link. Null or empty until one is set in the portfolio configuration.
-          example: "https://example.com/schedule"
+          example: "https://ryanbumstead.com/schedule"
         githubUrl:
           type: string
           format: uri
-          example: "https://example.com/source"
+          example: "https://ryanbumstead.com/source"
         trailheadUrl:
           type: string
           format: uri
-          example: "https://example.com/trailhead"
+          example: "https://ryanbumstead.com/trailhead"
         personalWebsiteUrl:
           type: string
           format: uri
@@ -958,11 +959,11 @@ components:
         github:
           type: string
           format: uri
-          example: "https://example.com/source"
+          example: "https://ryanbumstead.com/source"
         trailhead:
           type: string
           format: uri
-          example: "https://example.com/trailhead"
+          example: "https://ryanbumstead.com/trailhead"
         portfolioUrl:
           type: string
           format: uri
@@ -1082,7 +1083,7 @@ components:
           type: string
           format: email
           maxLength: 254
-          example: "reviewer@example.com"
+          example: "reviewer@ryanbumstead.com"
         purpose:
           type: string
           maxLength: 280
@@ -1212,7 +1213,7 @@ paths:
             schema:
               $ref: "#/components/schemas/TokenRequest"
             example:
-              email: "reviewer@example.com"
+              email: "reviewer@ryanbumstead.com"
               purpose: "Evaluating API contract parity"
       responses:
         "200":
@@ -1284,9 +1285,9 @@ paths:
               example:
                 config:
                   linkedInUrl: "https://linkedin.com/in/ryanbumstead"
-                  calendlyUrl: "https://example.com/schedule"
-                  githubUrl: "https://example.com/source"
-                  trailheadUrl: "https://example.com/trailhead"
+                  calendlyUrl: "https://ryanbumstead.com/schedule"
+                  githubUrl: "https://ryanbumstead.com/source"
+                  trailheadUrl: "https://ryanbumstead.com/trailhead"
                   personalWebsiteUrl: "https://ryanbumstead.com"
                   careerObjective: "Driving digital transformation through architecture."
                 contactInfo:
@@ -1294,8 +1295,8 @@ paths:
                   fullName: "Ryan Bumstead"
                   title: "Platform Architect"
                   linkedIn: "https://linkedin.com/in/ryanbumstead"
-                  github: "https://example.com/source"
-                  trailhead: "https://example.com/trailhead"
+                  github: "https://ryanbumstead.com/source"
+                  trailhead: "https://ryanbumstead.com/trailhead"
                   portfolioUrl: "https://ryanbumstead.com"
                   bio: "Specializing in API-led connectivity..."
                 summary: "Salesforce Platform Architect with nearly a decade on the platform, focused on higher education"
@@ -1334,9 +1335,9 @@ paths:
                     businessValue: "Increased interview rate by 40%"
                     status: "Live – In Production"
                     completionDate: "2025-12-01"
-                    heroImageUrl: "https://example.com/images/hero.png"
-                    liveUrl: "https://example.com/portfolio"
-                    repositoryUrl: "https://example.com/source"
+                    heroImageUrl: "https://ryanbumstead.com/images/hero.png"
+                    liveUrl: "https://ryanbumstead.com/portfolio"
+                    repositoryUrl: "https://ryanbumstead.com/source"
                     technologies:
                       - "LWR"
                       - "Apex"
@@ -1357,12 +1358,12 @@ paths:
                     gpa: 3.8
                 testimonials:
                   - key: "tst_2y7a5d9wmh"
-                    author: "Jane Doe"
+                    author: "Morgan Ellis"
                     title: "VP of Engineering"
                     relationship: "Manager"
                     quote: "Ryan is a beast at architecture."
                     vibe: "Professional"
-                    avatarUrl: "https://example.com/images/avatar.jpg"
+                    avatarUrl: "https://ryanbumstead.com/images/avatar.jpg"
                 integrityNote: "complete"
         "400":
           $ref: "#/components/responses/BadRequest"
@@ -1533,6 +1534,7 @@ paths:
                   generatedAt:
                     type: string
                     format: date-time
+                    example: "2026-11-18T14:15:22Z"
                     description: ISO 8601 timestamp of generation
             text/plain:
               schema:
@@ -1864,6 +1866,7 @@ paths:
                   generatedAt:
                     type: string
                     format: date-time
+                    example: "2026-11-18T14:15:22Z"
                   fallbackOccurred:
                     type: boolean
                     description: True when the local template served the request or an earlier provider failed

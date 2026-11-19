@@ -800,7 +800,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"reviewer@example.com\",\n  \"purpose\": \"Evaluating API contract parity\"\n}",
+              "raw": "{\n  \"email\": \"reviewer@ryanbumstead.com\",\n  \"purpose\": \"Evaluating API contract parity\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
