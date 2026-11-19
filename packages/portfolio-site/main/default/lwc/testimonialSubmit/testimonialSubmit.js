@@ -439,6 +439,27 @@ export default class TestimonialSubmit extends LightningElement {
         : without(this.errors, field);
   }
 
+  /**
+   * Leaving a text box checks that box alone, so an empty name or a review over its limit is
+   * named at once, and handleInput clears the message once the value is valid. Send still
+   * checks every field. A blur caused by a press on Send is skipped.
+   * @param {FocusEvent} event the blur event
+   */
+  handleBlur(event) {
+    const field = event.target.name;
+    if (!["authorName", "authorTitle", "ownWords", "note"].includes(field)) {
+      return;
+    }
+    const target = event.relatedTarget;
+    if (target && target.dataset && target.dataset.id === "submit") {
+      return;
+    }
+    const message = this.validate()[field];
+    this.errors = message
+      ? { ...this.errors, [field]: message }
+      : without(this.errors, field);
+  }
+
   // A recruiter or a visitor cannot keep an outcome only a colleague could choose.
   keepAllowedOutcome(next) {
     const outcome = this.fragments.find((f) => f.id === next.outcome);

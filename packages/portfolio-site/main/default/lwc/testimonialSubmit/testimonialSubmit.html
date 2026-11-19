@@ -1,6 +1,6 @@
 <template>
   <section class="testimonial pf-panel" aria-labelledby="testimonial-heading">
-    <h2 id="testimonial-heading" class={titleClass}>Leave a Review</h2>
+    <h2 id="testimonial-heading" class={titleClass}>Leave a review</h2>
 
     <template lwc:if={isSent}>
       <div class="thanks" data-id="success" tabindex="-1">
@@ -30,6 +30,7 @@
             aria-describedby="authorName-count authorName-error"
             value={form.authorName}
             oninput={handleInput}
+            onblur={handleBlur}
           />
           <p
             id="authorName-count"
@@ -65,6 +66,7 @@
             aria-describedby="authorTitle-count authorTitle-error"
             value={form.authorTitle}
             oninput={handleInput}
+            onblur={handleBlur}
           />
           <p
             id="authorTitle-count"
@@ -189,6 +191,7 @@
               aria-invalid={ownWordsInvalid}
               aria-describedby="ownWords-count ownWords-error"
               oninput={handleInput}
+              onblur={handleBlur}
             ></textarea>
             <p
               id="ownWords-count"
@@ -339,6 +342,7 @@
               aria-invalid={noteInvalid}
               aria-describedby="note-count note-error"
               oninput={handleInput}
+              onblur={handleBlur}
             ></textarea>
             <p id="note-count" class={noteLimit.className} data-id="note-count">
               {noteLimit.text}
