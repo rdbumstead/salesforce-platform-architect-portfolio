@@ -12,7 +12,10 @@
  *                      it plus every untagged skill, and no persona gets them all.
  *                      The public focuses are Engineer, Architect and Consultant. Each has its
  *                      own summary, read from the public verified Summary variant for that focus
- *                      and falling back to the owner's career objective.
+ *                      and falling back to the owner's career objective. Each also has its own
+ *                      headline, the line under the name, read from the public verified Headline
+ *                      variant for that focus in the same query. It is null when there is none, and
+ *                      the page then keeps the owner's contact title.
  *                      getHeader also returns heroLine (the hero's title line) and valueSentence
  *                      (the hero's one sentence on what the owner does), for the home hero.
  *                      Never returns an email, a phone number, an address or
@@ -33,6 +36,8 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
   private static final String TIMELINE_ROLES_QUERY = 'ResumeController_TimelineRoles';
   private static final String EDUCATION_QUERY = 'ResumeController_Education';
   private static final String VARIANTS_QUERY = 'ResumeController_Variants';
+  private static final String SUMMARY_TYPE = 'Summary';
+  private static final String HEADLINE_TYPE = 'Headline';
   @TestVisible
   private static final String INVALID_PERSONA_MESSAGE = 'Invalid persona. Valid values: Engineer, Architect, Consultant';
   // The public focuses. Admin stays a tag for private tailoring and the agent, and Developer
@@ -67,6 +72,8 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
    *              summary is the focus's own summary: the public verified Summary variant whose
    *              Title_Family__c is the focus in lower case, lowest Selection_Priority__c first.
    *              With no such variant, or no focus, it is the owner's career objective.
+   *              headline is the focus's own headline: the public verified Headline variant, lowest
+   *              Selection_Priority__c first, or null when there is none.
    * @param persona Blank for every highlight and skill, or one of Engineer, Architect, Consultant.
    * @return ResumeData The resume in its fixed shape.
    * @throws AuraHandledException When the persona is not blank and not a valid value.
@@ -84,12 +91,11 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
     ResumeData resume = new ResumeData();
     resume.persona = normalizedPersona;
     resume.header = toHeader(selector.selectOwner());
-    resume.summary = summaryFor(
-      normalizedPersona == null
-        ? new List<Resume_Variant__c>()
-        : selector.selectVariants(normalizedPersona.toLowerCase()),
-      resume.header?.careerObjective
-    );
+    List<Resume_Variant__c> variants = normalizedPersona == null
+      ? new List<Resume_Variant__c>()
+      : selector.selectVariants(normalizedPersona.toLowerCase());
+    resume.summary = summaryFor(variants, resume.header?.careerObjective);
+    resume.headline = headlineFor(variants);
     List<Experience__c> experiences = selector.selectRoles();
     resume.roles = toRoles(
       experiences,
@@ -144,7 +150,7 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
   }
 
   /**
-   * The summary text for a focus. Among the variants read for it, a row with no text is
+   * The summary text for a focus. Among the Summary variants read for it, a row with no text is
    * skipped and the lowest Selection_Priority__c wins, a blank priority last, the first row
    * read winning a tie. With no usable variant it is the fallback, trimmed, or null when blank.
    */
@@ -153,10 +159,33 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
     List<Resume_Variant__c> variants,
     String fallback
   ) {
+    String best = bestText(variants, SUMMARY_TYPE);
+    if (best != null) {
+      return best;
+    }
+    return String.isBlank(fallback) ? null : fallback.trim();
+  }
+
+  /**
+   * The headline text for a focus, picked the same way as the summary: a row with no text is
+   * skipped and the lowest Selection_Priority__c wins. Null when there is no usable Headline.
+   */
+  @TestVisible
+  private static String headlineFor(List<Resume_Variant__c> variants) {
+    return bestText(variants, HEADLINE_TYPE);
+  }
+
+  private static String bestText(
+    List<Resume_Variant__c> variants,
+    String variantType
+  ) {
     String best;
     Integer bestPriority;
     for (Resume_Variant__c variant : variants) {
-      if (String.isBlank(variant.Text__c)) {
+      if (
+        variant.Variant_Type__c != variantType ||
+        String.isBlank(variant.Text__c)
+      ) {
         continue;
       }
       Integer priority = String.isBlank(variant.Selection_Priority__c)
@@ -167,10 +196,7 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
         bestPriority = priority;
       }
     }
-    if (best != null) {
-      return best;
-    }
-    return String.isBlank(fallback) ? null : fallback.trim();
+    return best;
   }
 
   private static Integer salesforceStartYear() {
@@ -643,10 +669,10 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
   private static QueryDefinitions.QueryDefault variantsDefault() {
     return new QueryDefinitions.QueryDefault(
         'Resume_Variant__c',
-        'Text__c, Title_Family__c, Selection_Priority__c'
+        'Text__c, Title_Family__c, Selection_Priority__c, Variant_Type__c'
       )
       .filter(
-        'Variant_Type__c = \'Summary\' AND Visibility__c = \'Public\' AND Is_Verified__c = TRUE AND Title_Family__c = :titleFamily'
+        'Variant_Type__c IN (\'Summary\', \'Headline\') AND Visibility__c = \'Public\' AND Is_Verified__c = TRUE AND Title_Family__c = :titleFamily'
       )
       .orderBy('Name ASC')
       .mode(QueryDefinitions.Mode.SYSTEM_MODE)
@@ -792,6 +818,8 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
     public String persona;
     @AuraEnabled
     public String summary;
+    @AuraEnabled
+    public String headline;
     @AuraEnabled
     public Header header;
     @AuraEnabled

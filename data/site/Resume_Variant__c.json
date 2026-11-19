@@ -76,6 +76,51 @@
       "Selection_Priority__c": "2",
       "Is_Verified__c": false,
       "Visibility__c": "Public"
+    },
+    {
+      "attributes": {
+        "type": "Resume_Variant__c",
+        "referenceId": "SeedVariantEngineerPublicHeadlineRef"
+      },
+      "Name": "Seed engineer focus headline",
+      "Public_Key__c": "seed-engineer-line",
+      "Contact__c": "@SeedOwnerRef",
+      "Variant_Type__c": "Headline",
+      "Title_Family__c": "engineer",
+      "Text__c": "Seed Salesforce Engineer",
+      "Selection_Priority__c": "1",
+      "Is_Verified__c": true,
+      "Visibility__c": "Public"
+    },
+    {
+      "attributes": {
+        "type": "Resume_Variant__c",
+        "referenceId": "SeedVariantArchitectPublicHeadlineRef"
+      },
+      "Name": "Seed architect focus headline",
+      "Public_Key__c": "seed-architect-line",
+      "Contact__c": "@SeedOwnerRef",
+      "Variant_Type__c": "Headline",
+      "Title_Family__c": "architect",
+      "Text__c": "Seed Platform Architect",
+      "Selection_Priority__c": "1",
+      "Is_Verified__c": true,
+      "Visibility__c": "Public"
+    },
+    {
+      "attributes": {
+        "type": "Resume_Variant__c",
+        "referenceId": "SeedVariantConsultantPublicHeadlineRef"
+      },
+      "Name": "Seed consultant focus headline",
+      "Public_Key__c": "seed-consultant-line",
+      "Contact__c": "@SeedOwnerRef",
+      "Variant_Type__c": "Headline",
+      "Title_Family__c": "consultant",
+      "Text__c": "Seed Solution Consultant",
+      "Selection_Priority__c": "1",
+      "Is_Verified__c": true,
+      "Visibility__c": "Public"
     }
   ]
 }
