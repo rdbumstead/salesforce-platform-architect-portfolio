@@ -485,19 +485,23 @@ jobs:
   # Checks the live site read only after a deploy that changed production, once the deploy job
   # has published it. A failure fails this run and writes a smoke Failure row, and undoes
   # nothing. The same check can be run by hand from the Live Smoke Test workflow.
+  # A condition without a status check gets an implicit success(), which is false when any job
+  # further up, such as a skipped glassops job, did not succeed. always() and !cancelled() leave
+  # the decision to this job's own condition.
   smoke:
     needs: [deploy]
-    if: needs.deploy.result == 'success' && needs.deploy.outputs.deployed == 'true'
+    if: always() && !cancelled() && needs.deploy.result == 'success' && needs.deploy.outputs.deployed == 'true'
     uses: ./.github/workflows/smoke.yml
     secrets: inherit
 
   # Refreshes the docs cache in production after a push to main that changes docs/**, so the
   # docs page matches the repository within minutes. It needs the deploy job, so on a push
   # that changes both packages/** and docs/** a new Source_File record is in production
-  # before the forced run reads it. The page still reads only the cache.
+  # before the forced run reads it. The page still reads only the cache. always() and
+  # !cancelled() keep a skipped glassops job, as on a docs only push, from skipping this one.
   docs-cache:
     needs: [deploy]
-    if: github.event_name == 'push' && needs.deploy.result == 'success'
+    if: always() && !cancelled() && github.event_name == 'push' && needs.deploy.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
