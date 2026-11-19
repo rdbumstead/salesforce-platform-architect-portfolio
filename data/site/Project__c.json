@@ -6,6 +6,7 @@
         "referenceId": "SeedProjectAlphaRef"
       },
       "Name": "Seed Project Alpha",
+      "Public_Key__c": "seed-project-alpha",
       "Pillar__c": "C",
       "Is_Featured__c": true,
       "Sort_Order__c": 1,
@@ -25,6 +26,7 @@
         "referenceId": "SeedProjectBetaRef"
       },
       "Name": "Seed Project Beta",
+      "Public_Key__c": "seed-project-beta",
       "Pillar__c": "E",
       "Is_Featured__c": false,
       "Sort_Order__c": 2,

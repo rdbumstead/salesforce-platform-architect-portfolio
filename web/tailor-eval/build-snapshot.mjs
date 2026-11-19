@@ -22,7 +22,7 @@ const EVAL_DIR = path.dirname(fileURLToPath(import.meta.url));
 export const FIXTURE_READS = path.resolve(EVAL_DIR, '..', 'fixtures', 'reads.json');
 export const FIXTURE_OVERLAY = path.join(EVAL_DIR, 'snapshot', 'overlay.fixture.json');
 export const COMMITTED_SNAPSHOT = path.join(EVAL_DIR, 'snapshot', 'resume-snapshot.json');
-export const PERSONAS = ['Architect', 'Developer', 'Admin'];
+export const PERSONAS = ['Architect', 'Engineer', 'Consultant'];
 export const TYPES = ['headline', 'summary', 'bullet', 'skill', 'project', 'certification'];
 const DEFAULT_PRIORITY = 2;
 
