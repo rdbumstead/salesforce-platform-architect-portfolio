@@ -59,7 +59,7 @@ export const JEST_GROUPS = [
   },
   {
     name: "Skills, graphs and resume",
-    tests: 257
+    tests: 261
   },
   {
     name: "API Lab, API reference and AI Lab",

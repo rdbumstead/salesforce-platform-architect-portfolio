@@ -47,9 +47,33 @@
   min-width: 88px;
 }
 
-/* The tier and persona filters, each a shared row of toggles. */
-.persona-filter {
-  margin-bottom: var(--pf-space-2);
+/* The tier and focus filters: a visible label, then a shared row of toggles. */
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pf-space-1) var(--pf-space-3);
+  margin-bottom: var(--pf-space-3);
+}
+
+.filter-label {
+  flex: 0 0 100%;
+  margin: 0;
+  font-weight: 600;
+  color: var(--pf-text);
+}
+
+@media (min-width: 768px) {
+  .filter-label {
+    flex-basis: 6rem;
+  }
+}
+
+/* The line that says why the Graph switch is missing on a small screen. */
+.view-note {
+  margin: 0 0 var(--pf-space-3);
+  font-size: var(--pf-font-caption, 14px);
+  color: var(--pf-muted);
 }
 
 .persona-summary,
@@ -85,9 +109,9 @@
   margin: 0;
   padding-top: var(--pf-space-2);
   font-family: var(--pf-font-mono);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--pf-muted);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--pf-text);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -104,7 +128,10 @@
 /* A skill chip is a shared toggle, 44 px high, with its name and meta on one line. The chosen
    chip has the solid pressed fill, keyed on aria-pressed. */
 .chip {
+  flex-wrap: wrap;
+  max-width: 100%;
   justify-content: flex-start;
+  column-gap: var(--pf-space-2);
   padding: var(--pf-space-1) var(--pf-space-3);
   font-size: var(--pf-font-caption, 14px);
   font-weight: 400;
@@ -116,17 +143,24 @@
   font-weight: 600;
 }
 
+/* The details sit beside the name, and a whole value moves to the next line when the chip is
+   full, never part of one. The dot between values trails the value before it, so no line
+   opens with one. */
 .chip-meta {
   display: inline-flex;
-  gap: var(--pf-space-2);
-  font-size: 0.75rem;
+  flex-wrap: wrap;
+  column-gap: var(--pf-space-2);
+  font-size: 0.8125rem;
   color: inherit;
 }
 
-.chip-years::before,
-.chip-evidence::before {
+.chip-meta > span {
+  white-space: nowrap;
+}
+
+.chip-meta > span:not(:last-child)::after {
   content: "\00B7";
-  margin-right: var(--pf-space-2);
+  margin-left: var(--pf-space-2);
 }
 
 /* Selection panel, under the row of the chip that opened it, across both columns. */
@@ -469,6 +503,13 @@
   }
 }
 
+/* From 1024 up the detail sits under the chips, in the chip column, so the grid holds. */
+@media (min-width: 1024px) {
+  .selection {
+    grid-column: 2;
+  }
+}
+
 /* View source and the live data marker share the card title row on the right, centred on
    one line with a gap, and wrap under each other when the row is narrow. */
 .card-actions {
@@ -479,10 +520,22 @@
   gap: var(--pf-space-2);
 }
 
-/* On a narrow screen the same pair opens the card body, from the start of the row. */
+/* On a narrow screen the same pair opens the card body, from the start of the row. View source
+   keeps its size and the live data marker takes the rest of the row, so neither is alone. */
 .card-actions_body {
+  flex-wrap: nowrap;
+  align-items: stretch;
   justify-content: flex-start;
   margin-bottom: var(--pf-space-3);
+}
+
+.card-actions_body c-view-source {
+  flex: none;
+}
+
+.card-actions_body c-data-source {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 /* View source pushes itself to the end of a title row, which a body row does not want. */
