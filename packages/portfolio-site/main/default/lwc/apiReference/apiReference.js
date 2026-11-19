@@ -260,6 +260,24 @@ export const REDOC_PANEL_BACKGROUND = "#0f1520";
 export const REDOC_PANEL_TEXT = "#e2e8f0";
 
 /**
+ * The method badges, in the site's light palette. Each carries white text (Redoc sets it), so
+ * each is a site colour that holds 4.5:1 or more against white: the ok green, the strong
+ * accent, the warning brown, the error red and the body grey. The same badge sits on the
+ * side menu in both schemes and on the dark code panel, so one set serves both.
+ */
+export const REDOC_HTTP_COLORS = {
+  get: "#067647",
+  post: "#1d4ed8",
+  put: "#92400e",
+  patch: "#92400e",
+  delete: "#b42318",
+  options: "#344054",
+  head: "#344054",
+  basic: "#344054",
+  link: "#344054"
+};
+
+/**
  * The CSS Redoc appends to its constraint chips such as "[ 1 .. 200 ]". Redoc draws them in the
  * primary colour at 90% opacity on a 5% primary tint, 4.3:1 at 13 px (axe color-contrast) in
  * light. The strong accent at full opacity is above 6:1 on that tint, in both schemes.
@@ -309,6 +327,7 @@ export function buildRedocTheme(tokens, compact = false) {
     colors: {
       // No lightened or darkened shades: Redoc's lightened primary was 2.41:1 on white.
       tonalOffset: 0,
+      http: { ...REDOC_HTTP_COLORS },
       primary: {
         main: tokens.accent,
         light: tokens.accent,
@@ -338,7 +357,13 @@ export function buildRedocTheme(tokens, compact = false) {
     },
     rightPanel: {
       backgroundColor: REDOC_PANEL_BACKGROUND,
-      textColor: REDOC_PANEL_TEXT
+      textColor: REDOC_PANEL_TEXT,
+      // The server panel that opens from the method bar is the site's surface with the
+      // site's text, not Redoc's near white with its dark grey, in both schemes.
+      servers: {
+        overlay: { backgroundColor: tokens.surface, textColor: tokens.text },
+        url: { backgroundColor: tokens.surface }
+      }
     },
     schema: {
       nestedBackground: tokens.subtle,
@@ -577,6 +602,21 @@ export const REDOC_STYLE_OVERRIDES = [
   // Redoc's floating menu button covers the text on a phone. The pinned bar has its own
   // Menu button, which presses this one, so it is hidden from phone widths up to Redoc's menu.
   "@media (max-width: 49.99rem) { [data-pf-fab] { display: none !important; } }",
+  // The method badge in the side menu. Redoc sizes it from the code font size, which the theme
+  // gives in em, so it came out 6 px tall with 7 px text. It takes a readable size, and grows
+  // to fit its word (DELETE) while keeping its label beside it.
+  ".redoc-target .operation-type { box-sizing: border-box; flex: none; width: auto; min-width: 40px; height: auto; padding: 2px 5px; font-size: 11px; font-weight: 700; line-height: 1.3; text-align: center; }",
+  // The address in the server panel breaks nowhere. It scrolls inside its own box, which is
+  // the focusable button Redoc draws around it, with the edges shaded as the cue.
+  ".redoc-target [data-pf-server-url] { overflow-x: auto; border: 1px solid var(--pf-border); background-color: var(--pf-surface);",
+  " background-image: linear-gradient(to right, var(--pf-surface) 30%, transparent), linear-gradient(to left, var(--pf-surface) 30%, transparent),",
+  " linear-gradient(to right, rgba(0, 0, 0, 0.35), transparent), linear-gradient(to left, rgba(0, 0, 0, 0.35), transparent);",
+  " background-position: left center, right center, left center, right center; background-repeat: no-repeat;",
+  " background-size: 28px 100%, 28px 100%, 12px 100%, 12px 100%; background-attachment: local, local, scroll, scroll; }",
+  ".redoc-target [data-pf-server-url] > div { min-width: max-content; border: 0; background: transparent; white-space: nowrap; word-break: normal; overflow-wrap: normal; }",
+  // The chevron that opens the authorization details sits beside its label. Redoc let it wrap
+  // to a line of its own when the scheme name beside it took the width.
+  ".redoc-target div:has(> h5 + svg:last-child) { flex: none; white-space: nowrap; }",
   // Short inline code is kept whole (X-API-Version never breaks at its hyphen). Long code wraps.
   '.redoc-target code[data-pf-fit="short"] { white-space: nowrap; }',
   '.redoc-target code[data-pf-fit="long"] { overflow-wrap: anywhere; }',
@@ -803,6 +843,27 @@ export function makeScrollersFocusable(root) {
           : "Code, scrolls sideways"
       );
     });
+}
+
+/**
+ * Marks the address in each endpoint's server panel, so it scrolls instead of breaking
+ * inside a word. The panel opens from the method bar (the button that holds the verb) and
+ * holds the address in a focusable button of its own, which becomes the scroll box.
+ * @param {Element} root the Redoc target
+ */
+export function markServerUrls(root) {
+  if (!root) {
+    return;
+  }
+  root.querySelectorAll(".http-verb").forEach((verb) => {
+    const bar = verb.closest("button");
+    const panel = bar ? bar.nextElementSibling : null;
+    if (panel) {
+      panel.querySelectorAll('[role="button"]').forEach((address) => {
+        address.setAttribute("data-pf-server-url", "");
+      });
+    }
+  });
 }
 
 /** The longest inline code, in characters, that is kept whole on one line. */
@@ -1484,6 +1545,7 @@ export default class ApiReference extends LightningElement {
       normaliseHeadingLevels(target, this.fullWidth ? 1 : 2);
       nameSectionLinks(target);
       fitCodePills(target);
+      markServerUrls(target);
       makeScrollersFocusable(target);
       this.syncMenuState();
       // Redoc adds style rules as new states first draw (a row opens, the phone menu

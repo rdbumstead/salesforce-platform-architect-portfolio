@@ -15,6 +15,7 @@ import ApiReference, {
   DARK_TOKENS,
   LIGHT_TOKENS,
   REDOC_PANEL_BACKGROUND,
+  REDOC_HTTP_COLORS,
   REDOC_PANEL_TEXT,
   REDOC_STYLE_OVERRIDES,
   REDOC_TAB_COLORS,
@@ -24,6 +25,7 @@ import ApiReference, {
   fitCodePills,
   hookCss,
   makeScrollersFocusable,
+  markServerUrls,
   readTokens
 } from "c/apiReference";
 import { loadScript } from "lightning/platformResourceLoader";
@@ -134,6 +136,30 @@ describe("the Redoc theme in each scheme", () => {
     expect(light.rightPanel.backgroundColor).toBe(REDOC_PANEL_BACKGROUND);
     // Literal colours only: Redoc lightens and darkens some of them.
     expect(JSON.stringify(dark.colors)).not.toContain("var(");
+  });
+
+  it.each([
+    ["light", LIGHT_TOKENS],
+    ["dark", DARK_TOKENS]
+  ])(
+    "draws the server panel from the %s tokens, with the address readable",
+    (name, tokens) => {
+      const { servers } = buildRedocTheme(tokens).rightPanel;
+      expect(servers.overlay.backgroundColor).toBe(tokens.surface);
+      expect(servers.overlay.textColor).toBe(tokens.text);
+      expect(servers.url.backgroundColor).toBe(tokens.surface);
+      // The panel text, the address (the accent) and the host part of it (the text colour).
+      expect(ratio(tokens.text, tokens.surface)).toBeGreaterThanOrEqual(4.5);
+      expect(ratio(tokens.accent, tokens.surface)).toBeGreaterThanOrEqual(4.5);
+    }
+  );
+
+  it("draws every method badge in a site colour that holds white text at 4.5:1", () => {
+    const theme = buildRedocTheme(LIGHT_TOKENS);
+    expect(theme.colors.http).toEqual(REDOC_HTTP_COLORS);
+    Object.values(REDOC_HTTP_COLORS).forEach((color) => {
+      expect(ratio("#ffffff", color)).toBeGreaterThanOrEqual(4.5);
+    });
   });
 
   it("starts the text at the page's left edge on a phone", () => {
@@ -320,6 +346,32 @@ describe("helpers for the markup Redoc draws", () => {
     expect(REDOC_STYLE_OVERRIDES).toContain(
       'code[data-pf-fit="short"] { white-space: nowrap; }'
     );
+  });
+
+  it("marks the address in each server panel, so it scrolls and never breaks inside a word", () => {
+    const root = document.createElement("div");
+    fill(
+      root,
+      '<div><button><span class="http-verb">get</span></button><div aria-hidden="true"><div role="button" tabindex="0"><div><span>https://{domain}/services/apexrest/sapi</span>/contacts</div></div></div></div><div role="button" id="other"></div>'
+    );
+    markServerUrls(root);
+    expect(
+      root.querySelector('[role="button"][data-pf-server-url]')
+    ).not.toBeNull();
+    expect(
+      root.querySelector("#other").hasAttribute("data-pf-server-url")
+    ).toBe(false);
+    expect(REDOC_STYLE_OVERRIDES).toContain("[data-pf-server-url]");
+    expect(REDOC_STYLE_OVERRIDES).toContain("word-break: normal");
+    expect(REDOC_STYLE_OVERRIDES).not.toContain("break-all");
+    markServerUrls(null);
+  });
+
+  it("keeps the side menu badge readable and the authorization chevron beside its label", () => {
+    expect(REDOC_STYLE_OVERRIDES).toMatch(
+      /.operation-type {[^}]*height: auto[^}]*font-size: 11px/
+    );
+    expect(REDOC_STYLE_OVERRIDES).toContain("h5 + svg:last-child");
   });
 
   it("gives a table or code block that scrolls sideways a focus stop and a name, and leaves one that fits", () => {
