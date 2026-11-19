@@ -78,10 +78,15 @@ function joinNames(names) {
  * The stat one Project__c row gives its pillar card: the number and its label, only when both
  * are set.
  * @param {object} row a ProjectCardController.PillarCard
+ * @param {string} [noun] the noun to put after a number that has none
  * @returns {object} hasStat, statNumber and statLabel
  */
-function toStat(row) {
-  const number = textOrNull(row && row.headlineMetric);
+function toStat(row, noun) {
+  const stored = textOrNull(row && row.headlineMetric);
+  // A stored number with no noun, such as "3", takes the pillar's own noun so every card
+  // leads with a count and a noun, like "9 objects" and "23 API paths".
+  const number =
+    stored && noun && /^\d+$/.test(stored) ? `${stored} ${noun}` : stored;
   const label = textOrNull(row && row.headlineLabel);
   const hasStat = Boolean(number && label);
   return {
@@ -108,7 +113,7 @@ export default class SiteBuildSection extends LightningElement {
       }
     });
     return LIVE_PILLARS.map((pillar) => ({
-      ...toStat(rowsByLetter.get(pillar.letter)),
+      ...toStat(rowsByLetter.get(pillar.letter), pillar.statNoun),
       key: pillar.key,
       letter: pillar.letter,
       name: pillar.pageLabel,

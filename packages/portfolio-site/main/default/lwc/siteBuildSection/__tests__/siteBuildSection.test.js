@@ -36,6 +36,7 @@ jest.mock(
         sasName: `${pageLabel} long name`,
         href: `/portfolio/${key}`,
         summary: `${pageLabel} summary.`,
+        statNoun: letter === "B" ? "platform options" : undefined,
         inProgress: coming.includes(letter)
       }));
     const api = {
@@ -201,6 +202,29 @@ describe("c-site-build-section", () => {
     expect(element.shadowRoot.querySelectorAll(".card")).toHaveLength(3);
     expect(text(byId(element, "coming-note"))).toBe(
       "Pillars D and E, AI Lab and Delivery, are coming."
+    );
+  });
+
+  it("puts the pillar's noun after a stored number that has none, so a card leads with a count and a noun", async () => {
+    const element = render();
+    getPillarCards.emit([
+      {
+        pillar: "B",
+        headlineMetric: "3",
+        headlineLabel: "scored against ten criteria"
+      },
+      {
+        pillar: "C",
+        headlineMetric: "23 API paths",
+        headlineLabel: "in two specs"
+      }
+    ]);
+    await flush();
+    expect(
+      text(card(element, "nonprofit-solutions").querySelector(".metric-number"))
+    ).toBe("3 platform options");
+    expect(text(card(element, "api-lab").querySelector(".metric-number"))).toBe(
+      "23 API paths"
     );
   });
 

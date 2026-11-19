@@ -196,6 +196,24 @@ describe("c-project-asset-gallery", () => {
     expect(link.getAttribute("rel")).toBe("noopener");
   });
 
+  it("gives every image an Open full size link for the phone, with the same address", async () => {
+    const element = await mountLoaded();
+    graphql.emit({ data: PAYLOAD, errors: undefined });
+    await flushPromises();
+
+    const links = qa(element, "a.full-size-link");
+    const images = qa(element, "a.image-link");
+    expect(links).toHaveLength(images.length);
+    links.forEach((link, index) => {
+      expect(link.textContent).toContain("Open full size");
+      expect(link.getAttribute("href")).toBe(
+        images[index].getAttribute("href")
+      );
+      expect(link.getAttribute("target")).toBe("_blank");
+      expect(link.getAttribute("rel")).toBe("noopener");
+    });
+  });
+
   it("renders video and link rows as external links with no embed", async () => {
     const element = await mountLoaded();
     graphql.emit({ data: PAYLOAD, errors: undefined });
@@ -441,6 +459,19 @@ describe("c-project-asset-gallery", () => {
     it("fits its columns to the items so no empty column is left", () => {
       expect(css).toMatch(/repeat\(auto-fit, minmax\(260px, 1fr\)\)/);
       expect(css).not.toMatch(/auto-fill/);
+    });
+
+    it("frames each picture with a border and a mat in the page's own colours", () => {
+      const rule = css.match(/\.image-link \{[^}]*\}/)[0];
+      expect(rule).toMatch(/border:\s*1px solid var\(--pf-border\)/);
+      expect(rule).toMatch(/padding:\s*var\(--pf-space-2\)/);
+      expect(rule).toMatch(/background-color:\s*var\(--pf-subtle\)/);
+    });
+
+    it("shows the full size link on a phone and hides it from 768 px", () => {
+      expect(css).toMatch(
+        /@media \(min-width: 768px\) \{\s*\.full-size-link \{\s*display:\s*none/
+      );
     });
 
     it("dims images with an overlay that multiplies the page background", () => {

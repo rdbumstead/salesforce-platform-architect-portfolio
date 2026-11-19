@@ -372,3 +372,31 @@ describe("c-schema-visualizer", () => {
     );
   });
 });
+
+describe("c-schema-visualizer type scale", () => {
+  const { readFileSync } = require("fs");
+  const { join } = require("path");
+  const css = readFileSync(
+    join(__dirname, "..", "schemaVisualizer.css"),
+    "utf8"
+  );
+
+  it("sets the caption in the body face, not the code face", () => {
+    const rule = css.match(/\.caption \{[^}]*\}/)[0];
+    expect(rule).not.toMatch(/font-mono/);
+  });
+
+  it("sets the box title at the section size and its h3 titles at the panel size", () => {
+    expect(css.match(/\.erd-title \{[^}]*\}/)[0]).toMatch(
+      /font-size:\s*var\(--pf-font-section, 32px\)/
+    );
+    expect(css).toMatch(
+      /max-width: 767\.98px\) \{\s*\.erd-title \{\s*font-size:\s*var\(--pf-font-section-sm, 26px\)/
+    );
+    ["panel-title", "list-title"].forEach((name) => {
+      expect(css.match(new RegExp(`\\.${name} \\{[^}]*\\}`))[0]).toMatch(
+        /font-size:\s*var\(--pf-font-panel, 20px\)/
+      );
+    });
+  });
+});

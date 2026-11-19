@@ -53,7 +53,8 @@ const SOURCE = [
     tour: "Move one weight in the matrix and watch the ranking change.",
     tourMinutes: 3,
     tags: ["Solution design", "Decision matrix"],
-    inProgress: false
+    inProgress: false,
+    statNoun: "platform options"
   },
   {
     key: "api-lab",
@@ -105,7 +106,9 @@ const SOURCE = [
 /**
  * The five pillars, A to E, in tour order. Each entry is frozen, tags and sub links included.
  * Fields: key, letter, pageLabel, sasName, menuNote, url, href, summary, tour, tourMinutes, tags,
- * inProgress, subLinks, and code where a pillar has a code line to show.
+ * inProgress, subLinks, and code where a pillar has a code line to show. statNoun, on pillar B
+ * only, is the noun a card puts after a stored number that has no noun of its own, so the card
+ * reads "3 platform options" and not a bare "3".
  * sasName is the name the solution architecture document uses and the Project pillar label
  * formula repeats, so a test pins it. menuNote is the line under the name in the header menu.
  * tour is the stop's task line in the tour bar, at most TOUR_TASK_MAX characters, and doubles as

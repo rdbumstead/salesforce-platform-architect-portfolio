@@ -1,9 +1,7 @@
 <template>
   <article class="story">
     <section class="story-section pf-panel" data-section="client">
-      <h2 class="story-heading section-heading section-heading-panel">
-        1. The client
-      </h2>
+      <h2 class="story-heading section-heading">1. The client</h2>
       <p>
         An adult literacy nonprofit that teaches reading, writing and work
         skills to adults in small classes.
@@ -27,9 +25,7 @@
     </section>
 
     <section class="story-section pf-panel" data-section="discovery">
-      <h2 class="story-heading section-heading section-heading-panel">
-        2. Discovery
-      </h2>
+      <h2 class="story-heading section-heading">2. Discovery</h2>
       <p data-id="framing">
         I ran this in two parts. First a pre-sales cycle: discovery, a demo and
         the decision matrix below, before the nonprofit chose a platform. Then a
@@ -48,84 +44,120 @@
         role="region"
         aria-label="Lifecycle concepts table, scrolls sideways"
       >
-        <table class="story-table">
+        <table class="story-table stack-table lifecycle-table" role="table">
           <caption>
             Lifecycle concepts mapped to each option's objects
           </caption>
-          <thead>
-            <tr>
-              <th scope="col">Concept</th>
-              <th scope="col">NPSP and PMM</th>
-              <th scope="col">Education Cloud*</th>
-              <th scope="col">What to watch</th>
+          <thead role="rowgroup">
+            <tr role="row">
+              <th scope="col" role="columnheader">Concept</th>
+              <th scope="col" role="columnheader">NPSP and PMM</th>
+              <th scope="col" role="columnheader">Education Cloud*</th>
+              <th scope="col" role="columnheader">What to watch</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <th scope="row">Learner</th>
-              <td>Contact in a Household Account</td>
-              <td>Contact, or Person Account (the side varies by object)</td>
-              <td>Name the side, always</td>
+          <tbody role="rowgroup">
+            <tr role="row">
+              <th scope="row" role="rowheader">Learner</th>
+              <td role="cell" data-label="NPSP and PMM">
+                Contact in a Household Account
+              </td>
+              <td role="cell" data-label="Education Cloud*">
+                Contact, or Person Account (the side varies by object)
+              </td>
+              <td role="cell" data-label="What to watch">
+                Name the side, always
+              </td>
             </tr>
-            <tr>
-              <th scope="row">What the nonprofit offers</th>
-              <td>Program</td>
-              <td>
+            <tr role="row">
+              <th scope="row" role="rowheader">What the nonprofit offers</th>
+              <td role="cell" data-label="NPSP and PMM">Program</td>
+              <td role="cell" data-label="Education Cloud*">
                 Learning Program for academics, Program for services and
                 benefits
               </td>
-              <td>Three different "Programs"</td>
+              <td role="cell" data-label="What to watch">
+                Three different "Programs"
+              </td>
             </tr>
-            <tr>
-              <th scope="row">A learner in the offering</th>
-              <td>Program Engagement</td>
-              <td>Learner Program (academic), Program Enrollment (services)</td>
-              <td>"Enrollment" is not one concept</td>
+            <tr role="row">
+              <th scope="row" role="rowheader">A learner in the offering</th>
+              <td role="cell" data-label="NPSP and PMM">Program Engagement</td>
+              <td role="cell" data-label="Education Cloud*">
+                Learner Program (academic), Program Enrollment (services)
+              </td>
+              <td role="cell" data-label="What to watch">
+                "Enrollment" is not one concept
+              </td>
             </tr>
-            <tr>
-              <th scope="row">A class or cohort</th>
-              <td>Program Cohort, Service Schedule</td>
-              <td>Course Offering, Course Offering Schedule</td>
-              <td></td>
+            <tr role="row">
+              <th scope="row" role="rowheader">A class or cohort</th>
+              <td role="cell" data-label="NPSP and PMM">
+                Program Cohort, Service Schedule
+              </td>
+              <td role="cell" data-label="Education Cloud*">
+                Course Offering, Course Offering Schedule
+              </td>
+              <td role="cell" data-label="What to watch"></td>
             </tr>
-            <tr>
-              <th scope="row">A seat in the class</th>
-              <td>Service Participant</td>
-              <td>Course Offering Participant</td>
-              <td></td>
+            <tr role="row">
+              <th scope="row" role="rowheader">A seat in the class</th>
+              <td role="cell" data-label="NPSP and PMM">Service Participant</td>
+              <td role="cell" data-label="Education Cloud*">
+                Course Offering Participant
+              </td>
+              <td role="cell" data-label="What to watch"></td>
             </tr>
-            <tr>
-              <th scope="row">Attendance</th>
-              <td>Service Delivery per session</td>
-              <td>
+            <tr role="row">
+              <th scope="row" role="rowheader">Attendance</th>
+              <td role="cell" data-label="NPSP and PMM">
+                Service Delivery per session
+              </td>
+              <td role="cell" data-label="Education Cloud*">
                 An Attendance domain in the data model, and Benefit Session in
                 the services model
               </td>
-              <td>Two places attendance could live</td>
+              <td role="cell" data-label="What to watch">
+                Two places attendance could live
+              </td>
             </tr>
-            <tr>
-              <th scope="row">Assessment and gain</th>
-              <td>Custom Assessment object</td>
-              <td>Assessment, Course Offering Participant Result</td>
-              <td></td>
+            <tr role="row">
+              <th scope="row" role="rowheader">Assessment and gain</th>
+              <td role="cell" data-label="NPSP and PMM">
+                Custom Assessment object
+              </td>
+              <td role="cell" data-label="Education Cloud*">
+                Assessment, Course Offering Participant Result
+              </td>
+              <td role="cell" data-label="What to watch"></td>
             </tr>
-            <tr>
-              <th scope="row">Employment outcome</th>
-              <td>Custom Employment object</td>
-              <td>Person Employment</td>
-              <td></td>
+            <tr role="row">
+              <th scope="row" role="rowheader">Employment outcome</th>
+              <td role="cell" data-label="NPSP and PMM">
+                Custom Employment object
+              </td>
+              <td role="cell" data-label="Education Cloud*">
+                Person Employment
+              </td>
+              <td role="cell" data-label="What to watch"></td>
             </tr>
-            <tr>
-              <th scope="row">Referral partner</th>
-              <td>Custom Partner Referral object</td>
-              <td>Partnership Agreement, Partnership Person Placement</td>
-              <td></td>
+            <tr role="row">
+              <th scope="row" role="rowheader">Referral partner</th>
+              <td role="cell" data-label="NPSP and PMM">
+                Custom Partner Referral object
+              </td>
+              <td role="cell" data-label="Education Cloud*">
+                Partnership Agreement, Partnership Person Placement
+              </td>
+              <td role="cell" data-label="What to watch"></td>
             </tr>
-            <tr>
-              <th scope="row">Volunteer tutor</th>
-              <td>Volunteers for Salesforce: Volunteer Job, Shift, Hours</td>
-              <td>None</td>
-              <td></td>
+            <tr role="row">
+              <th scope="row" role="rowheader">Volunteer tutor</th>
+              <td role="cell" data-label="NPSP and PMM">
+                Volunteers for Salesforce: Volunteer Job, Shift, Hours
+              </td>
+              <td role="cell" data-label="Education Cloud*">None</td>
+              <td role="cell" data-label="What to watch"></td>
             </tr>
           </tbody>
         </table>
@@ -137,9 +169,7 @@
     </section>
 
     <section class="story-section pf-panel" data-section="matrix">
-      <h2 class="story-heading section-heading section-heading-panel">
-        3. The decision matrix
-      </h2>
+      <h2 class="story-heading section-heading">3. The decision matrix</h2>
       <p>
         The matrix below scores three options against ten criteria: NPSP with
         the Program Management Module, which the nonprofit chose, Education
@@ -154,9 +184,7 @@
     <c-decision-matrix class="matrix-host"></c-decision-matrix>
 
     <section class="story-section pf-panel" data-section="roi">
-      <h2 class="story-heading section-heading section-heading-panel">
-        4. Cost and effort
-      </h2>
+      <h2 class="story-heading section-heading">4. Cost and effort</h2>
       <p>
         Cost is compared from public licence facts only. Effort is a relative
         band, not an estimate, and no client rates or totals appear here.
@@ -167,7 +195,7 @@
         role="region"
         aria-label="Licence and effort table, scrolls sideways"
       >
-        <table class="story-table cost-table" role="table">
+        <table class="story-table stack-table cost-table" role="table">
           <caption>
             Licence model and implementation effort by option, from public
             sources
@@ -305,9 +333,7 @@
     </section>
 
     <section class="story-section pf-panel" data-section="design">
-      <h2 class="story-heading section-heading section-heading-panel">
-        5. Solution design
-      </h2>
+      <h2 class="story-heading section-heading">5. Solution design</h2>
       <figure class="architecture">
         <a
           class="architecture-link"
@@ -336,7 +362,9 @@
           >
         </figcaption>
       </figure>
-      <h3 class="sub-heading">Architecture decisions</h3>
+      <h3 class="sub-heading section-heading section-heading-panel">
+        Architecture decisions
+      </h3>
       <ul class="decisions">
         <li>
           Minimalist model: start with the fewest objects the staff can run, and
@@ -369,7 +397,9 @@
           and the existing donor system keeps fundraising.
         </li>
       </ul>
-      <h3 class="sub-heading">What we deliberately did not build</h3>
+      <h3 class="sub-heading section-heading section-heading-panel">
+        What we deliberately did not build
+      </h3>
       <ul class="not-built">
         <li>Fundraising, gifts or donor records.</li>
         <li>A portal for learners or instructors, who hold no licences.</li>
@@ -379,9 +409,7 @@
     </section>
 
     <section class="story-section pf-panel" data-section="outcome">
-      <h2 class="story-heading section-heading section-heading-panel">
-        6. Outcome
-      </h2>
+      <h2 class="story-heading section-heading">6. Outcome</h2>
       <p>
         I led the build on NPSP with the Program Management Module on the
         minimalist model, and the nonprofit is in user acceptance testing,
@@ -392,9 +420,7 @@
     </section>
 
     <section class="story-section pf-panel" data-section="revisit">
-      <h2 class="story-heading section-heading section-heading-panel">
-        7. What I would revisit
-      </h2>
+      <h2 class="story-heading section-heading">7. What I would revisit</h2>
       <p>
         The client has no assigned technical resource for maintenance, so the
         lighter platform was the safer one, and that is why NPSP leads the

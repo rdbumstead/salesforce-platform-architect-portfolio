@@ -12,7 +12,7 @@
 .build {
   max-width: var(--portfolio-content-width, 1024px);
   margin: 0 auto;
-  padding: 0 0 48px;
+  padding: 0 0 40px;
   color: var(--pf-text);
   font-family: var(--pf-font-sans);
   font-size: var(--pf-font-body, 16px);
@@ -20,6 +20,8 @@
   overflow-wrap: anywhere;
 }
 
+/* The space under the cards is 24px here plus 40px on .build, which equals the 64px above the
+   heading, so the gaps before "How this site is built" and the next group match. */
 .section {
   padding: 64px 0 24px;
 }
