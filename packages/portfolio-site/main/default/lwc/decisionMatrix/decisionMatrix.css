@@ -357,15 +357,76 @@
     flex: 1 1 8rem;
   }
 
+  /*
+   * Compact phone card (F-69): the criterion and its weight span the card, and the three option
+   * scores sit side by side under it, each with its option name above the score. An opened
+   * score takes the full row so its reason can be read at width.
+   */
+  .matrix-table tr.criterion-row,
+  .matrix-table tr.total-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .matrix-table tbody th.criterion,
+  .matrix-table tfoot th,
+  .matrix-table .criterion-row .weight-cell,
+  .matrix-table .total-row .total-spacer,
+  .matrix-table .score-cell:has(.score-details[open]) {
+    grid-column: 1 / -1;
+  }
+
+  .matrix-table .criterion-description {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+  }
+
+  .matrix-table tbody th.criterion {
+    padding: var(--pf-space-2) var(--pf-space-3);
+  }
+
+  .criterion-row,
+  .total-row {
+    margin-bottom: var(--pf-space-2);
+  }
+
+  .matrix-table .criterion-row .score-cell {
+    padding: var(--pf-space-1) var(--pf-space-2);
+    border-bottom: 0;
+  }
+
   .matrix-table .score-summary {
     display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
     width: 100%;
     min-height: 44px;
   }
 
-  .matrix-table .score-summary::after {
+  .matrix-table .score-summary::before {
     flex: 0 0 auto;
-    margin-right: 0.3em;
+    color: var(--pf-muted);
+    font-size: var(--pf-font-caption, 14px);
+  }
+
+  .matrix-table .score-summary::after {
+    margin: 0 0 0 0.1em;
+  }
+
+  .matrix-table .total-row .total-cell {
+    display: block;
+    padding: var(--pf-space-2);
+  }
+
+  .matrix-table .total-row .total-cell::before {
+    display: block;
+    flex: none;
+    color: var(--pf-muted);
+    font-size: var(--pf-font-caption, 14px);
   }
 
   .matrix-table .total-spacer {

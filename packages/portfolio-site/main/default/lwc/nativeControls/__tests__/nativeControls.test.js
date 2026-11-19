@@ -162,4 +162,19 @@ describe("c/nativeControls", () => {
       CSS.indexOf('.nc-toggle[aria-pressed="true"]:disabled')
     ).toBeGreaterThan(CSS.indexOf(".nc-toggle:disabled"));
   });
+
+  it("draws selects and range sliders the same in every browser", () => {
+    expect(rule("select.nc-control")).toMatch(/appearance: none/);
+    expect(rule("select.nc-control")).toMatch(/var\(--pf-text\)/);
+    expect(rule('input[type="range"].nc-range')).toMatch(/appearance: none/);
+    expect(rule('input[type="range"].nc-range::-webkit-slider-thumb')).toMatch(
+      /appearance: none/
+    );
+    expect(rule('input[type="range"].nc-range::-webkit-slider-thumb')).toMatch(
+      /background-color: var\(--pf-accent\)/
+    );
+    expect(rule('input[type="range"].nc-range::-moz-range-thumb')).toMatch(
+      /width: 24px/
+    );
+  });
 });
