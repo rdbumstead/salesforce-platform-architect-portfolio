@@ -228,9 +228,12 @@ export async function runReads(connection, reads) {
   return results;
 }
 
-/** Writes the results and the manifest that says where and when they were read. */
+/**
+ * Writes the results and the manifest that says where and when they were read. It replaces
+ * only those two files. The folder can hold other files, such as web/fixtures/recorded and
+ * the fixture resume snapshot, and a refresh of the reads must leave them alone.
+ */
 export function writeData(results, manifest, dir = DATA_DIR) {
-  fs.rmSync(dir, { recursive: true, force: true });
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'reads.json'), JSON.stringify(results));
   fs.writeFileSync(path.join(dir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
