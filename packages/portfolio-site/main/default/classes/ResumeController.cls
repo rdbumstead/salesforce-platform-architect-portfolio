@@ -621,7 +621,7 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
   private static QueryDefinitions.QueryDefault highlightsDefault() {
     return new QueryDefinitions.QueryDefault(
         'Experience_Highlight__c',
-        'Experience__c, Description__c, Timeline_Text__c, Persona_Tag__c, Sort_Order__c, Admin_Sort_Order__c, Developer_Sort_Order__c, Engineer_Sort_Order__c, Architect_Sort_Order__c, Consultant_Sort_Order__c, Lock_Sort_Across_Personas__c'
+        'Experience__c, Description__c, Timeline_Text__c, Persona_Tag__c, Sort_Order__c, Admin_Sort_Order__c, Engineer_Sort_Order__c, Architect_Sort_Order__c, Consultant_Sort_Order__c, Lock_Sort_Across_Personas__c'
       )
       .filter('Is_Verified__c = TRUE AND Experience__c IN :experienceIds')
       .orderBy('Sort_Order__c ASC')

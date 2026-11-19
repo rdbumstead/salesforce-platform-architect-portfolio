@@ -20,6 +20,7 @@
             <value>
                 <fullName>Developer</fullName>
                 <default>false</default>
+                <isActive>false</isActive>
                 <label>Developer</label>
             </value>
             <value>

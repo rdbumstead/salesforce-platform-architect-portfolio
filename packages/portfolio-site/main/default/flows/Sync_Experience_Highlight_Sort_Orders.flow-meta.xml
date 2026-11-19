@@ -33,24 +33,6 @@
             </value>
         </assignmentItems>
         <connector>
-            <targetReference>Check_Developer_Persona</targetReference>
-        </connector>
-    </assignments>
-
-    <assignments>
-        <name>Sync_Developer_Sort</name>
-        <label>Sync Developer Sort</label>
-        <locationX>264</locationX>
-        <locationY>803</locationY>
-        <assignmentItems>
-            <assignToReference
-      >$Record.Developer_Sort_Order__c</assignToReference>
-            <operator>Assign</operator>
-            <value>
-                <elementReference>varUniversalSort</elementReference>
-            </value>
-        </assignmentItems>
-        <connector>
             <targetReference>Check_Engineer_Persona</targetReference>
         </connector>
     </assignments>
@@ -128,7 +110,7 @@
         <locationX>176</locationX>
         <locationY>395</locationY>
         <defaultConnector>
-            <targetReference>Check_Developer_Persona</targetReference>
+            <targetReference>Check_Engineer_Persona</targetReference>
         </defaultConnector>
         <defaultConnectorLabel>Skip</defaultConnectorLabel>
         <rules>
@@ -145,32 +127,6 @@
                 <targetReference>Sync_Architect_Sort</targetReference>
             </connector>
             <label>Is Architect</label>
-        </rules>
-    </decisions>
-
-    <decisions>
-        <name>Check_Developer_Persona</name>
-        <label>Check if Developer persona selected</label>
-        <locationX>176</locationX>
-        <locationY>695</locationY>
-        <defaultConnector>
-            <targetReference>Check_Engineer_Persona</targetReference>
-        </defaultConnector>
-        <defaultConnectorLabel>Skip</defaultConnectorLabel>
-        <rules>
-            <name>Is_Developer</name>
-            <conditionLogic>and</conditionLogic>
-            <conditions>
-                <leftValueReference>$Record.Persona_Tag__c</leftValueReference>
-                <operator>Contains</operator>
-                <rightValue>
-                    <stringValue>Dev</stringValue>
-                </rightValue>
-            </conditions>
-            <connector>
-                <targetReference>Sync_Developer_Sort</targetReference>
-            </connector>
-            <label>Is Developer</label>
         </rules>
     </decisions>
 
@@ -257,11 +213,10 @@
         <dataType>Number</dataType>
         <scale>0</scale>
         <expression>BLANKVALUE({!$Record.Architect_Sort_Order__c}, 
-            BLANKVALUE({!$Record.Developer_Sort_Order__c}, 
             BLANKVALUE({!$Record.Engineer_Sort_Order__c}, 
             BLANKVALUE({!$Record.Consultant_Sort_Order__c}, 
             BLANKVALUE({!$Record.Admin_Sort_Order__c}, 
-            {!$Record.Sort_Order__c})))))</expression>
+            {!$Record.Sort_Order__c}))))</expression>
     </formulas>
 
     <interviewLabel
