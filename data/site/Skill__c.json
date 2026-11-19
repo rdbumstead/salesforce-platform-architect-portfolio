@@ -6,12 +6,14 @@
         "referenceId": "SeedSkillApexRef"
       },
       "Name": "Seed Apex",
+      "Public_Key__c": "seed-skill-apex",
       "Category__c": "Backend",
       "Category_Order__c": 1,
       "Proficiency__c": 5,
       "Color_Hex__c": "#1B96FF",
       "Persona_Tag__c": "Engineer;Architect;Consultant",
-      "Is_Verified__c": true
+      "Is_Verified__c": true,
+      "Requirement_Tags__c": "backend"
     },
     {
       "attributes": {
@@ -19,6 +21,7 @@
         "referenceId": "SeedSkillSOQLRef"
       },
       "Name": "Seed SOQL",
+      "Public_Key__c": "seed-skill-soql",
       "Category__c": "Backend",
       "Category_Order__c": 1,
       "Proficiency__c": 4,
@@ -32,13 +35,16 @@
         "referenceId": "SeedSkillIntegrationPatternsRef"
       },
       "Name": "Seed Integration Patterns",
+      "Public_Key__c": "seed-skill-integration",
       "Category__c": "Backend",
       "Category_Order__c": 1,
       "Proficiency__c": 3,
       "Color_Hex__c": "#1B96FF",
       "Display_Name__c": "Seed Integration",
       "Persona_Tag__c": "Architect;Consultant",
-      "Is_Verified__c": true
+      "Is_Verified__c": true,
+      "Requirement_Tags__c": "integration",
+      "Selection_Priority__c": "3"
     },
     {
       "attributes": {
@@ -46,6 +52,7 @@
         "referenceId": "SeedSkillLWCRef"
       },
       "Name": "Seed LWC",
+      "Public_Key__c": "seed-skill-lwc",
       "Category__c": "Frontend",
       "Category_Order__c": 2,
       "Proficiency__c": 5,
@@ -60,6 +67,7 @@
         "referenceId": "SeedSkillJavaScriptRef"
       },
       "Name": "Seed JavaScript",
+      "Public_Key__c": "seed-skill-js",
       "Category__c": "Frontend",
       "Category_Order__c": 2,
       "Proficiency__c": 4,
@@ -72,11 +80,12 @@
         "referenceId": "SeedSkillSLDSRef"
       },
       "Name": "Seed SLDS",
+      "Public_Key__c": "seed-skill-slds",
       "Category__c": "Frontend",
       "Category_Order__c": 2,
       "Proficiency__c": 3,
       "Color_Hex__c": "#04844B",
-      "Persona_Tag__c": "Admin",
+      "Persona_Tag__c": "Consultant;Admin",
       "Is_Verified__c": true
     }
   ]

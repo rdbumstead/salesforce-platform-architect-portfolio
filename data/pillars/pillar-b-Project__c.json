@@ -6,6 +6,7 @@
         "referenceId": "PillarBProjectRef"
       },
       "Name": "Literacy program platform for an adult literacy nonprofit",
+      "Public_Key__c": "pillar-b-project",
       "Pillar__c": "B",
       "Is_Featured__c": false,
       "Sort_Order__c": 20,
