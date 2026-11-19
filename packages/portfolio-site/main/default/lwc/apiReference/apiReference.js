@@ -592,6 +592,10 @@ export const REDOC_STYLE_OVERRIDES = [
   ".redoc-target table:not([class]) th, .redoc-target table:not([class]) td { min-width: 6.5rem; padding: 6px 10px; border: 1px solid var(--pf-border); text-align: left; vertical-align: top; }",
   ".redoc-target table:not([class]) th { background-color: var(--pf-subtle); color: var(--pf-text); }",
   ".redoc-target pre[data-pf-scroll] { max-width: 100%; }",
+  // Redoc paints a table row white, which a dark scheme cannot read its text on.
+  ".redoc-target table:not([class]) tr { background-color: transparent; }",
+  // The selected tab is drawn on the light text colour of the code panel, so its label is dark.
+  ".redoc-target .react-tabs__tab--selected { color: #101828; }",
   ".redoc-target [role=region]:focus-visible { outline-offset: 0; }",
   // The media type in a section label (application/json) is drawn black by default.
   ".redoc-target h5 span { color: inherit; }",
