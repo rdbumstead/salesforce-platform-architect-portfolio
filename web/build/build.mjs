@@ -53,6 +53,9 @@ const DOCS_KEY = readKey('SourceController.getDocs', {});
 /** Text longer than this is cut in the fixtures. Documents and source files are the long ones. */
 export const FIXTURE_TEXT_LIMIT = 1500;
 
+/** Every read of one document starts its key with this, for example SourceController.getDoc|{"docKey":"sas"}. */
+const DOC_READ_PREFIX = 'SourceController.getDoc|';
+
 function isJsonText(text) {
   try {
     JSON.parse(text);
@@ -66,6 +69,8 @@ function isJsonText(text) {
  * The fixtures keep every read and its shape, with long text cut, so a build with no
  * Salesforce secrets still exercises every section without a copy of every document.
  * Text that is itself JSON (the API Lab catalog) stays whole, because the page parses it.
+ * A document read (SourceController.getDoc) stays whole too, so the checks that read a docs
+ * page see the real text and not a sample cut at FIXTURE_TEXT_LIMIT.
  */
 export function fixtureReads(reads) {
   const cut = (value) => {
@@ -79,7 +84,9 @@ export function fixtureReads(reads) {
     }
     return value;
   };
-  return cut(reads);
+  return Object.fromEntries(
+    Object.entries(reads).map(([key, value]) => [key, key.startsWith(DOC_READ_PREFIX) ? value : cut(value)])
+  );
 }
 
 function docKeysFrom(reads) {

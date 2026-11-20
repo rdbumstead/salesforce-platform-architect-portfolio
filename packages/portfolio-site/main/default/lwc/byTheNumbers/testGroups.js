@@ -28,7 +28,7 @@ export const APEX_GROUPS = [
   },
   {
     name: "Delivery data and the numbers panel",
-    tests: 228
+    tests: 235
   },
   {
     name: "Rate limits, tokens and request rules",

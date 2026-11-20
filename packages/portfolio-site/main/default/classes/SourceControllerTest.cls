@@ -23,6 +23,9 @@ private class SourceControllerTest {
   // Cut the way the refresh job cuts: inside the heading's ##, no whitespace at either end.
   private static final String SAS_FIRST = '# SAS\n## One\nfirst part\n#';
   private static final String SAS_SECOND = '# Two\nsecond part';
+  private static final String ADR_TEXT =
+    '# ADR-027: Platform auth\n\n## Status\n\n- **Decision:** Accepted\n- **Build:** [Live](x)\n\n' +
+    'Accepted (2026-10-01). Amended 2026-10-20.\n\n## Context\n\nAccepted (2030-01-01) is not read here.';
 
   /** Fails any callout, so a test that reaches GitHub fails loudly. */
   private class NoCalloutMock implements HttpCalloutMock {
@@ -140,7 +143,7 @@ private class SourceControllerTest {
       ),
       new Source_Cache__c(
         Path__c = ADR_PATH,
-        Content__c = '# ADR-027: Platform auth\n',
+        Content__c = ADR_TEXT,
         Html_Url__c = 'https://github.com/o/r/blob/main/' + ADR_PATH,
         Fetched_At__c = fetched,
         Checked_At__c = fetched,
@@ -361,6 +364,79 @@ private class SourceControllerTest {
     );
     Assert.areEqual(SAS_PATH, docs[0].path, 'Path');
     Assert.areEqual('adr-027', docs[1].key, 'Underscore becomes a hyphen');
+    Assert.areEqual('Accepted', docs[1].status, 'An ADR carries its status');
+    Assert.areEqual(
+      '2026-10-01',
+      docs[1].decisionDate,
+      'An ADR carries its date'
+    );
+    Assert.areEqual('', docs[0].status, 'A guide has no status');
+    Assert.areEqual('', docs[0].decisionDate, 'A guide has no date');
+  }
+
+  @IsTest
+  static void shouldReadTheStatusFromTheDecisionLine() {
+    Assert.areEqual(
+      'Accepted',
+      SourceController.statusOf('## Status\n\n- **Decision:** Accepted.\n'),
+      'Trailing full stop dropped'
+    );
+    Assert.areEqual(
+      'Superseded',
+      SourceController.statusOf(
+        '## Status\n\n- **Decision:** Superseded in part by [ADR-041](041.md), for the front end.\n'
+      ),
+      'First word only'
+    );
+    Assert.areEqual(
+      'Deferred',
+      SourceController.statusOf(
+        '## Status\n\n- **Decision:** Deferred (V2.0).\n\n## Context'
+      ),
+      'Bracket ends the word'
+    );
+    Assert.areEqual('', SourceController.statusOf(null), 'No text');
+    Assert.areEqual('', SourceController.statusOf('# Title only'), 'No status');
+    Assert.areEqual(
+      '',
+      SourceController.statusOf('## Status\n\nNo decision line'),
+      'No decision line'
+    );
+  }
+
+  @IsTest
+  static void shouldReadTheDecisionDateAndSkipAmendmentDates() {
+    String head = '## Status\n\n- **Decision:** ';
+    Assert.areEqual(
+      '2026-10-22',
+      SourceController.statusDateOf(
+        head + 'Deferred (2026-10-22, see below).\n\nDeferred (2026-10-23).'
+      ),
+      'The Decision line wins'
+    );
+    Assert.areEqual(
+      '2026-10-23',
+      SourceController.statusDateOf(
+        head +
+        'Accepted\n- **Build:** x\n\nAccepted (2026-10-23). Amended 2026-10-25.\n'
+      ),
+      'The first line of prose under Status'
+    );
+    Assert.areEqual(
+      '',
+      SourceController.statusDateOf(
+        head + 'Accepted\n\nAmended 2026-10-23 (see below): built.\n'
+      ),
+      'A date after amended dates a change, not the decision'
+    );
+    Assert.areEqual(
+      '',
+      SourceController.statusDateOf(
+        head + 'Accepted\n\n## Context\n\n2026-01-01'
+      ),
+      'Nothing below the Status section is read'
+    );
+    Assert.areEqual('', SourceController.statusDateOf(''), 'No text');
   }
 
   @IsTest
@@ -454,5 +530,45 @@ private class SourceControllerTest {
 
     Assert.areEqual('adr-031', adr, 'Prefix gone, lower case, hyphen');
     Assert.areEqual('', none, 'No record, no key');
+  }
+
+  @IsTest
+  static void shouldReadTheOrgRecordsWhenNoOverrideIsSet() {
+    SourceController.filesOverride = null;
+
+    Test.startTest();
+    List<Source_File__mdt> files = SourceController.configuredFiles();
+    Test.stopTest();
+
+    Assert.isNotNull(files, 'Never null');
+    for (Source_File__mdt file : files) {
+      Assert.isTrue(
+        String.isNotBlank(file.Path__c),
+        'Every configured file has a path'
+      );
+      Assert.isTrue(
+        String.isNotBlank(file.Source_Key__c),
+        'Every configured file has a key'
+      );
+    }
+  }
+
+  @IsTest
+  static void shouldOwnBothQueryDefaults() {
+    Map<String, QueryDefinitions.QueryDefault> defaults = new SourceController()
+      .queryDefaults();
+
+    Assert.areEqual(2, defaults.size(), 'Two reads');
+    Assert.isTrue(
+      defaults.containsKey('SourceController_FetchedRows'),
+      'The rows read'
+    );
+    Assert.isTrue(
+      defaults.containsKey('SourceController_FetchedPaths'),
+      'The paths read'
+    );
+    for (String name : defaults.keySet()) {
+      Assert.isNotNull(defaults.get(name), name + ' has a default');
+    }
   }
 }
