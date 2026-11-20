@@ -173,6 +173,8 @@
         "outageSimulation/*",
         "pillarAWalkthrough/*",
         "pillarBStory/*",
+        "storyDecisions/*",
+        "glassopsStory/*",
         "pillarData/*",
         "smartChecklist/*",
         "projectAssetGallery/*"

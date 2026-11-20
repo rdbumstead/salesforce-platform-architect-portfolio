@@ -48,6 +48,14 @@
                       "definition": "c:projectAssetGallery",
                       "id": "d1adcdba-cf97-4bab-95b2-90bfa3aa72d5",
                       "type": "component"
+                    },
+                    {
+                      "attributes": {
+                        "storyKey": "nonprofit-solutions"
+                      },
+                      "definition": "c:storyDecisions",
+                      "id": "ab3de327-e292-4cf2-a38f-5d935be45602",
+                      "type": "component"
                     }
                   ],
                   "id": "b149cbf5-e0ad-4204-a97e-38683b5d1ded",

@@ -1,0 +1,150 @@
+<template>
+  <article class="story">
+    <section
+      class="story-section pf-panel"
+      data-section="context"
+      aria-labelledby="context-heading"
+    >
+      <h2 id="context-heading" class="story-heading section-heading">
+        Context
+      </h2>
+      <p>
+        A Salesforce release pipeline usually answers one question: did the
+        deploy succeed. It rarely answers the ones an auditor or a tired release
+        manager asks later. Was this the change that was reviewed? Was it tested
+        against the org it went to? Who approved it? Did the org end up holding
+        what we meant to ship?
+      </p>
+      <p>
+        On most teams those answers live in a CI log, a chat thread and
+        somebody's memory. The checks themselves are shell steps copied from one
+        workflow file to the next, and each copy drifts. A deploy to the wrong
+        org or a deploy of a change nobody validated is one bad variable away.
+      </p>
+      <p>
+        I wanted the release path for this site to be something I could defend
+        line by line. So I built GlassOps, an open source command line tool
+        (Apache 2.0) that is the release pipeline itself. It works out what
+        changed, checks it, records a signed decision about whether it may ship,
+        deploys only under that decision, and then reads the org back to confirm
+        the result.
+      </p>
+      <p data-id="links">
+        The code is in&#32;<a
+          class="story-link"
+          href={repoUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-id="repo-link"
+          >the GlassOps repository<span class="assistive"
+            >, opens in a new tab</span
+          ></a
+        >
+        &#32;and the docs are on&#32;<a
+          class="story-link"
+          href={docsUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-id="docs-link"
+          >the GlassOps docs site<span class="assistive"
+            >, opens in a new tab</span
+          ></a
+        >.
+      </p>
+    </section>
+
+    <section
+      class="story-section pf-panel"
+      data-section="decision"
+      aria-labelledby="decision-heading"
+    >
+      <h2 id="decision-heading" class="story-heading section-heading">
+        Decision
+      </h2>
+      <p>
+        The model came from Terraform. Plan the change, check the plan against
+        policy, then apply exactly the plan that was checked. Infrastructure
+        teams have worked that way for years, and I wanted the same discipline
+        for Salesforce releases.
+      </p>
+      <p>
+        The core call was to make the decision a file. Each step is its own
+        command: plan, validate, gate, deploy, verify, report. The gate step
+        runs the policy rules and writes a signed permit (PERMIT in the docs)
+        that names the target org, the commit, the plan and the config. The
+        deploy step refuses to touch an org without a valid permit for exactly
+        that change. A deny is signed and kept too, so the record shows what was
+        blocked and why.
+      </p>
+      <p>
+        The second call was to fail closed. Missing evidence is never a pass. If
+        a rule needs a fact that is not there, or a tool breaks while gathering
+        it, the answer is no. Before any step touches an org, a guard compares
+        the org the login reached with the org the config names, so a wrong
+        credential stops the run before it can do anything.
+      </p>
+      <p>
+        The third call was to make the safe path the fast one. Validate runs the
+        tests once in a check only run against production. The gate binds that
+        validation into the permit, and deploy then quick deploys the already
+        validated change. The tests run once, and what ships is the thing that
+        was tested. After the deploy, verify reads the org back and compares it
+        with the plan.
+      </p>
+      <p data-id="go-reasons">
+        I wrote it in Go. It is the language most cloud tooling is written in,
+        and the tools GlassOps works with for policy and signing are Go projects
+        too. It is type safe, and its standard library is strong. It also
+        compiles to one binary for any platform with no runtime to install,
+        which keeps the tool independent of any one CI system and leaves room to
+        add providers beyond Salesforce.
+      </p>
+    </section>
+
+    <section
+      class="story-section pf-panel"
+      data-section="outcome"
+      aria-labelledby="outcome-heading"
+    >
+      <h2 id="outcome-heading" class="story-heading section-heading">
+        Outcome
+      </h2>
+      <p>This site deploys to production through GlassOps.</p>
+      <ul class="outcomes" data-id="outcomes">
+        <li>
+          On 18 November 2026 the first production deploy ran through the full
+          chain. It deployed 46 components with a quick deploy from the bound
+          validation, and verify confirmed 46 of 46.
+        </li>
+        <li>
+          On 19 November 2026 came the first deploy with Apex, on GlassOps
+          v1.0.1. The pull request check ran 122 relevant tests with 0 failures,
+          the merge quick deployed 20 components, and verify confirmed 20 of 20.
+        </li>
+        <li>
+          Before its first real deploy, GlassOps ran in shadow beside the
+          existing pipeline. In 23 compared pull request runs from 30 October to
+          7 November 2026 it disagreed 0 times. Every compared run was a passing
+          change, so agreement on a failing change was not shown.
+        </li>
+        <li>
+          It took 24 days from the design decision on 25 October to the first
+          production deploy.
+        </li>
+        <li>
+          Every production deploy needs my approval in a protected environment
+          and carries a signed permit. Seven built in rules feed that permit.
+        </li>
+        <li>
+          The tool is about 17,100 lines of Go with about 24,800 lines of tests
+          across 740 test functions.
+        </li>
+        <li>
+          Releases: v1.0.0 and v1.0.1 on 19 November 2026, then v1.1.0. v1.1.0
+          adds opt in keyless signing, custom policy rules, a pull request
+          comment and telemetry export. This site is pinned to v1.0.1.
+        </li>
+      </ul>
+    </section>
+  </article>
+</template>

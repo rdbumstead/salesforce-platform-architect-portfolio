@@ -161,6 +161,10 @@ const ROUTES = [
       "c-decision-matrix",
       { tag: "c-project-asset-gallery", mayBeEmpty: true }
     ]
+  },
+  {
+    path: "/glassops",
+    components: ["c-glassops-story", "c-story-decisions"]
   }
 ];
 

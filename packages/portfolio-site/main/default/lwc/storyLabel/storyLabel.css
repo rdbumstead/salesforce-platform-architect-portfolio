@@ -1,0 +1,15 @@
+/*
+ * The one look for the Context, Decision and Outcome label above a story section, shared by CSS
+ * import (@import "c/storyLabel"). Add the class "story-label" to a paragraph that sits above
+ * the section heading. It matches the eyebrow of c/pageIntro, a small muted line, and uses only
+ * the --pf- tokens, so it follows the light and dark themes. It is a label and not a heading,
+ * so a screen reader reads it as a plain line before the heading.
+ */
+.story-label {
+  margin: 0 0 var(--pf-space-2);
+  color: var(--pf-muted);
+  font-size: var(--pf-font-caption, 14px);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
