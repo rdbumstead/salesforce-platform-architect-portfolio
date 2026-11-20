@@ -261,9 +261,8 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  background: var(--pf-glass);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  /* Opaque, so page text never shows through behind the brand and links. */
+  background: var(--pf-bg);
   border-bottom: 1px solid var(--pf-border);
 }
 
