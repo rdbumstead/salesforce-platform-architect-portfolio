@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Jest_Coverage__c</fullName>
+    <description
+  >Line coverage of the site components in percent from the Jest run on the same deploy, for example 82.5. Blank when the run did not run Jest.</description>
+    <inlineHelpText
+  >Set by the deploy workflow from the Jest coverage summary, as a number from 0 to 100.</inlineHelpText>
+    <isFilteringDisabled>false</isFilteringDisabled>
+    <isNameField>false</isNameField>
+    <isSortingDisabled>false</isSortingDisabled>
+    <label>Jest Coverage</label>
+    <precision>5</precision>
+    <required>false</required>
+    <scale>2</scale>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

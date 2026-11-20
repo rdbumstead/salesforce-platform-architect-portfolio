@@ -349,6 +349,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Pipeline_Run__c.Jest_Coverage__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Pipeline_Run__c.Run_Id__c</field>
         <readable>true</readable>
     </fieldPermissions>

@@ -58,7 +58,8 @@ private class GovernanceEventHandlerTest {
         Tests_Passed__c,
         Org_Coverage__c,
         Jest_Tests_Run__c,
-        Jest_Tests_Passed__c
+        Jest_Tests_Passed__c,
+        Jest_Coverage__c
       FROM Pipeline_Run__c
       ORDER BY Run_Key__c
     ];
@@ -429,6 +430,7 @@ private class GovernanceEventHandlerTest {
     both.Org_Coverage__c = 98;
     both.Jest_Tests_Run__c = 748;
     both.Jest_Tests_Passed__c = 747;
+    both.Jest_Coverage__c = 81.5;
     Governance_Event__e jestOnly = event('deploy', 'Success', '311');
     jestOnly.Jest_Tests_Run__c = 10;
     jestOnly.Jest_Tests_Passed__c = 10;
@@ -448,11 +450,43 @@ private class GovernanceEventHandlerTest {
       'Jest passed'
     );
     Assert.areEqual(1000, byKey.get('deploy:310').Tests_Run__c, 'Apex kept');
+    Assert.areEqual(
+      81.5,
+      byKey.get('deploy:310').Jest_Coverage__c,
+      'Jest coverage'
+    );
+    Assert.isNull(
+      byKey.get('deploy:311').Jest_Coverage__c,
+      'No coverage when the event has none'
+    );
     Assert.areEqual(10, byKey.get('deploy:311').Jest_Tests_Run__c, 'Alone');
     Assert.isNull(
       byKey.get('deploy:311').Tests_Run__c,
       'A Jest pair does not need an Apex one'
     );
+  }
+
+  @isTest
+  static void shouldDropJestCoverageOutsideZeroToHundred() {
+    Assert.isTrue(GovernanceEventHandler.validCoverage(0), 'Zero fits');
+    Assert.isTrue(GovernanceEventHandler.validCoverage(100), 'A hundred fits');
+    Assert.isFalse(GovernanceEventHandler.validCoverage(100.5), 'Over');
+    Assert.isFalse(GovernanceEventHandler.validCoverage(-1), 'Under');
+    Assert.isFalse(GovernanceEventHandler.validCoverage(null), 'Blank');
+    Governance_Event__e bad = event('deploy', 'Success', '315');
+    bad.Jest_Tests_Run__c = 10;
+    bad.Jest_Tests_Passed__c = 10;
+    bad.Jest_Coverage__c = 120;
+    Test.startTest();
+    publishAndDeliver(new List<Governance_Event__e>{ bad });
+    Test.stopTest();
+    Pipeline_Run__c stored = [
+      SELECT Jest_Tests_Run__c, Jest_Coverage__c
+      FROM Pipeline_Run__c
+      WHERE Run_Id__c = '315'
+    ];
+    Assert.areEqual(10, stored.Jest_Tests_Run__c, 'The counts stay');
+    Assert.isNull(stored.Jest_Coverage__c, 'The coverage goes');
   }
 
   @isTest

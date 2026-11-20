@@ -3,7 +3,8 @@
  *                      PortfolioStatsController.getStats once through the wire service and
  *                      shows each count as text: production deploys recorded, the newest
  *                      deploy's Apex and Jest tests each with one plain line on what they
- *                      prove, evaluator tokens issued since the month the first was issued,
+ *                      prove, the Apex and Jest line coverage of that deploy as two tiles of
+ *                      their own (a tile with no figure is left out), evaluator tokens issued since the month the first was issued,
  *                      cover letters written and API Lab requests sent since the month
  *                      counting began, a closed "What the tests
  *                      cover" disclosure, and a table of approved testimonials by vibe once
@@ -48,9 +49,10 @@ const PLACEHOLDER_STATS = Object.freeze({
   deployRuns: 0,
   latestTestsRun: 0,
   latestTestsPassed: 0,
-  latestCoverage: 0,
+  latestCoverage: 99,
   latestJestRun: 0,
   latestJestPassed: 0,
+  latestJestCoverage: 99,
   tokensIssued: 0,
   tokensSince: "2026-01-01",
   coverLettersWritten: 0,
@@ -123,7 +125,7 @@ export function formatDay(isoDate) {
 }
 
 /**
- * The detail under the Apex count: how many ran in the newest deploy and the coverage.
+ * The detail under the Apex count: how many ran in the newest deploy.
  * @param {object} stats the server's counts
  * @returns {string} the text, empty when there is no result
  */
@@ -131,12 +133,7 @@ export function apexDetail(stats) {
   if (!stats || !Number.isFinite(stats.latestTestsRun)) {
     return "";
   }
-  let text = `of ${formatCount(stats.latestTestsRun)} run in the newest deploy`;
-  const coverage = formatPercent(stats.latestCoverage);
-  if (coverage) {
-    text += `, ${coverage} org coverage`;
-  }
-  return `${text}.`;
+  return `of ${formatCount(stats.latestTestsRun)} run in the newest deploy.`;
 }
 
 /**
@@ -269,7 +266,7 @@ export default class ByTheNumbers extends LightningElement {
     // Tokens are counted from their own records, so they carry their own month.
     const tokensMonth = formatMonth(stats.tokensSince);
     const tokensSinceText = tokensMonth ? `since ${tokensMonth}` : "";
-    return [
+    const tiles = [
       this.tile("deploys", stats.deployRuns, "Production deploys recorded"),
       this.testTile(
         "apex",
@@ -291,6 +288,18 @@ export default class ByTheNumbers extends LightningElement {
         "No deploy has a Jest result yet.",
         JEST_LINE
       ),
+      this.coverageTile(
+        "apex-coverage",
+        stats.latestCoverage,
+        "Apex coverage",
+        "of Apex lines, run in production after the newest deploy."
+      ),
+      this.coverageTile(
+        "jest-coverage",
+        stats.latestJestCoverage,
+        "Jest coverage",
+        "of site component lines, from the Jest run on the newest deploy."
+      ),
       // Cover letters come before the two API Lab counts, so those two sit side by side.
       this.tile(
         "letters",
@@ -311,6 +320,7 @@ export default class ByTheNumbers extends LightningElement {
         sinceText
       )
     ];
+    return tiles.filter(Boolean);
   }
 
   tile(key, count, label, detail = "", line = "") {
@@ -325,6 +335,28 @@ export default class ByTheNumbers extends LightningElement {
       line,
       hasDetail: !!detail,
       hasLine: !!line
+    };
+  }
+
+  /**
+   * A coverage tile. Its big number is the percentage. With no figure, or a figure of zero
+   * that no real run produces, it has no tile at all, so it is never drawn as 0%.
+   */
+  coverageTile(key, value, label, detail) {
+    if (!Number.isFinite(value) || value <= 0) {
+      return null;
+    }
+    const text = formatPercent(value);
+    return {
+      key,
+      hasValue: true,
+      valueText: text,
+      liveText: text,
+      label,
+      detail,
+      line: "",
+      hasDetail: true,
+      hasLine: false
     };
   }
 

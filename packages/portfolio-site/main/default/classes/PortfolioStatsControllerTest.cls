@@ -191,6 +191,8 @@ private class PortfolioStatsControllerTest {
     older.Jest_Tests_Passed__c = 700;
     newest.Jest_Tests_Run__c = 748;
     newest.Jest_Tests_Passed__c = 747;
+    older.Jest_Coverage__c = 80.25;
+    newest.Jest_Coverage__c = 81.5;
     insert new List<Pipeline_Run__c>{
       older,
       newest,
@@ -211,6 +213,7 @@ private class PortfolioStatsControllerTest {
     Assert.areEqual(98, stats.latestCoverage, 'Coverage');
     Assert.areEqual(748, stats.latestJestRun, 'Jest run');
     Assert.areEqual(747, stats.latestJestPassed, 'Jest passed');
+    Assert.areEqual(81.5, stats.latestJestCoverage, 'Jest coverage');
   }
 
   @isTest
@@ -226,6 +229,7 @@ private class PortfolioStatsControllerTest {
     Assert.areEqual(965, stats.latestTestsRun, 'Apex still shows');
     Assert.isNull(stats.latestJestRun, 'No Jest run');
     Assert.isNull(stats.latestJestPassed, 'No Jest passed');
+    Assert.isNull(stats.latestJestCoverage, 'No Jest coverage');
   }
 
   private static Usage_Counter__c usage(String kind, Date day, Integer count) {
@@ -417,6 +421,7 @@ private class PortfolioStatsControllerTest {
         'latestCoverage',
         'latestJestRun',
         'latestJestPassed',
+        'latestJestCoverage',
         'tokensIssued',
         'tokensSince',
         'coverLettersWritten',
