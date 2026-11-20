@@ -103,7 +103,15 @@ async function pageFor(html) {
   } catch (error) {
     return null;
   }
-  const browser = await chromium.launch();
+  // The package can be installed while its browser is not, as on the CI step that runs these
+  // tests. That case skips like a missing package. Any other launch failure still fails.
+  let browser;
+  try {
+    browser = await chromium.launch();
+  } catch (error) {
+    if (/Executable doesn't exist/.test(String(error && error.message))) return null;
+    throw error;
+  }
   const page = await browser.newPage({ viewport: { width: 390, height: 800 } });
   await page.setContent(html);
   return { browser, page };
@@ -116,7 +124,7 @@ test("the page scan flags a scroll box with no cue, a clipped table and a wide p
     <div id="clip" style="width:300px;overflow-x:hidden"><table style="width:900px"><tr><td>z</td></tr></table></div>
     <div id="fits" style="width:300px"><table style="width:100%"><tr><td>ok</td></tr></table></div>
   </body>`);
-  if (!opened) return t.skip("Playwright is not installed here");
+  if (!opened) return t.skip("Playwright or its browser is not installed here");
   try {
     const findings = await opened.page.evaluate(scanPage);
     const kinds = findings.map((f) => f.kind).sort();
@@ -136,7 +144,7 @@ test("the page scan flags a page that scrolls sideways and an unwrapped wide tab
   const opened = await pageFor(
     '<body style="margin:0"><table style="width:900px"><tr><td>x</td></tr></table></body>'
   );
-  if (!opened) return t.skip("Playwright is not installed here");
+  if (!opened) return t.skip("Playwright or its browser is not installed here");
   try {
     const kinds = (await opened.page.evaluate(scanPage))
       .map((f) => f.kind)
