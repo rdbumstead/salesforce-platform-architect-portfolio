@@ -3,7 +3,7 @@
     <header class="changelog-header">
       <div class="changelog-title-group">
         <h2 id="changelog-heading" class="changelog-title section-heading">
-          Latest Updates
+          Latest updates
         </h2>
       </div>
       <div class="changelog-meta">
@@ -30,7 +30,7 @@
     <template lwc:if={showCompare}>
       <c-outage-compare
         source="GitHub"
-        subject="Latest Updates"
+        subject="Latest updates"
         fetched-at={fetchedAt}
         age-minutes={ageMinutes}
         failure-threshold={failureThreshold}
@@ -64,7 +64,13 @@
                 onclick={handleCommitClick}
                 >{commit.shortSha}</a
               >
-              <span class="commit-date" data-id="date">{commit.date}</span>
+              <time
+                class="commit-date"
+                data-id="date"
+                datetime={commit.dateIso}
+                title={commit.dateTitle}
+                >{commit.date}</time
+              >
             </p>
           </li>
         </template>

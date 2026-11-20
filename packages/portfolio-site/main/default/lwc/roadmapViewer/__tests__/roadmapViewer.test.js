@@ -611,7 +611,7 @@ describe("c-roadmap-viewer", () => {
       1
     );
     expect(q(element, '[data-id="simulate-hint"]').textContent.trim()).toBe(
-      "See how the roadmap and Latest Updates behave if Jira or GitHub is down."
+      "See how the roadmap and the latest updates behave if Jira or GitHub is down."
     );
   });
 

@@ -55,6 +55,40 @@ describe("c-message-page", () => {
     expect(link.textContent).toBe("Back home");
   });
 
+  it("draws a Try again button that reloads the page when it has a label", () => {
+    const original = window.location;
+    const reload = jest.fn();
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { ...original, reload }
+    });
+    try {
+      const root = mount({
+        heading: "Busy",
+        retryLabel: "Try again",
+        showHome: true
+      }).shadowRoot;
+      const button = root.querySelector(".message-retry");
+      expect(button.tagName).toBe("BUTTON");
+      expect(button.getAttribute("type")).toBe("button");
+      expect(button.textContent.trim()).toBe("Try again");
+      expect(root.querySelector(".message-home")).not.toBeNull();
+      button.click();
+      expect(reload).toHaveBeenCalledTimes(1);
+    } finally {
+      Object.defineProperty(window, "location", {
+        configurable: true,
+        value: original
+      });
+    }
+  });
+
+  it("draws no Try again button when the label is blank", () => {
+    const root = mount({ heading: "Busy", retryLabel: "  " }).shadowRoot;
+    expect(root.querySelector(".message-retry")).toBeNull();
+    expect(root.querySelector(".message-actions")).toBeNull();
+  });
+
   it("shows no home link and no empty paragraphs by default", () => {
     const root = mount({ heading: "Busy" }).shadowRoot;
     expect(root.querySelector(".message-home")).toBeNull();

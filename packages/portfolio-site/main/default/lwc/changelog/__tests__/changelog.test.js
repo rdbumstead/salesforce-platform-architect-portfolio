@@ -13,8 +13,11 @@ import Changelog, {
   STATUS_NOTES,
   ageLabel,
   formatDate,
+  formatDateUtc,
+  isInternal,
   isMerge,
-  parseMessage
+  parseMessage,
+  stripReferences
 } from "c/changelog";
 import getRecentCommits from "@salesforce/apex/DeliveryController.getRecentCommits";
 import { trackEvent } from "c/analyticsService";
@@ -121,11 +124,19 @@ describe("c-changelog", () => {
     expect(link.getAttribute("target")).toBe("_blank");
     expect(link.getAttribute("rel")).toBe("noopener noreferrer");
     expect(first.querySelector('[data-id="author"]')).toBeNull();
-    expect(first.querySelector('[data-id="date"]').textContent).toBe(
-      "2026-10-21"
-    );
+    const dateOf = (iso) =>
+      new Intl.DateTimeFormat("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      }).format(new Date(iso));
+    const firstDate = first.querySelector('[data-id="date"]');
+    expect(firstDate.textContent).toBe(dateOf(ITEMS[0].committedAt));
+    expect(firstDate.tagName).toBe("TIME");
+    expect(firstDate.getAttribute("datetime")).toBe(ITEMS[0].committedAt);
+    expect(firstDate.getAttribute("title")).toBe("Oct 21, 2026 UTC");
     expect(rows[1].querySelector('[data-id="date"]').textContent).toBe(
-      "2026-10-20"
+      dateOf(ITEMS[1].committedAt)
     );
 
     const age = q(element, '[data-id="age-label"]');
@@ -272,8 +283,8 @@ describe("c-changelog", () => {
     getRecentCommits.emit(feed("FRESH"));
     await flushPromises();
     const rows = qa(element, "li.commit-item");
-    // An unknown prefix is left alone and has no tag.
-    expect(rows[0].querySelector('[data-id="tag"]')).toBeNull();
+    // An unknown prefix is left alone and carries the tag Update, so every row has a tag.
+    expect(rows[0].querySelector('[data-id="tag"]').textContent).toBe("Update");
     expect(rows[1].querySelector('[data-id="tag"]').textContent).toBe("Fix");
     expect(rows[1].querySelector('[data-id="message"]').textContent).toBe(
       "Second commit"
@@ -305,17 +316,25 @@ describe("c-changelog", () => {
       tag: "Feature",
       text: "Break it"
     });
-    // Known types without a tag lose the prefix only.
+    // A tooling type loses the prefix and takes the default tag, though isInternal keeps it off the list.
     expect(parseMessage("ci(refs): gate the docs")).toEqual({
-      tag: "",
+      tag: "Update",
       text: "Gate the docs"
     });
-    expect(parseMessage("refactor: tidy")).toEqual({ tag: "", text: "Tidy" });
+    expect(parseMessage("refactor: tidy")).toEqual({
+      tag: "Update",
+      text: "Tidy"
+    });
     // No type, an unknown type, or nothing after the colon stays as written.
     expect(parseMessage("Plain sentence")).toEqual({
-      tag: "",
+      tag: "Update",
       text: "Plain sentence"
     });
+    expect(
+      parseMessage(
+        "feat(site): API reference follows the scheme (R27-3, F-4, F-15 to F-17)"
+      )
+    ).toEqual({ tag: "Feature", text: "API reference follows the scheme" });
     expect(parseMessage("seed: delivery walk").text).toBe(
       "seed: delivery walk"
     );
@@ -393,7 +412,7 @@ describe("c-changelog live data marker", () => {
       const compare = q(element, "c-outage-compare");
       expect(compare).not.toBeNull();
       expect(compare.source).toBe("GitHub");
-      expect(compare.subject).toBe("Latest Updates");
+      expect(compare.subject).toBe("Latest updates");
       expect(compare.ageMinutes).toBe(21);
       expect(compare.failureThreshold).toBe(5);
       expect(compare.openMinutes).toBe(45);
@@ -431,5 +450,112 @@ describe("c-changelog live data marker", () => {
       await flushPromises();
       expect(getRecentCommits.getLastConfig()).toEqual({ simulate: false });
     });
+  });
+});
+
+describe("c-changelog plain English entries (R27-D5, F-63)", () => {
+  afterEach(() => {
+    while (document.body.firstChild) {
+      document.body.removeChild(document.body.firstChild);
+    }
+    jest.restoreAllMocks();
+  });
+
+  it("leaves out merges, tooling only types and internal words", () => {
+    expect(isInternal("Merge pull request #1 from a/b")).toBe(true);
+    expect(isInternal("ci: pin the image")).toBe(true);
+    expect(isInternal("chore(site): regenerate test group counts")).toBe(true);
+    expect(isInternal("build(web): bump a dependency")).toBe(true);
+    expect(isInternal("refactor: tidy the loop")).toBe(true);
+    expect(isInternal("feat(ci): run a GlassOps shadow gate")).toBe(true);
+    expect(isInternal("fix(site): stop the Wave 2 flicker")).toBe(true);
+    expect(isInternal("feat(web): three focus fixtures")).toBe(true);
+    expect(isInternal("docs: the tailoring snapshot")).toBe(true);
+    expect(isInternal("feat(site): phone pass on the skills page")).toBe(false);
+    expect(isInternal("fix(site): wrap the response codes")).toBe(false);
+    expect(isInternal("docs(guides): bring the guides in line")).toBe(false);
+    expect(isInternal("Plain sentence")).toBe(false);
+    expect(isInternal(undefined)).toBe(false);
+    // A word only counts whole, so a longer word that holds one is kept.
+    expect(isInternal("feat(site): a wavelength note")).toBe(false);
+  });
+
+  it("takes a closing list of round and finding numbers off a sentence", () => {
+    expect(stripReferences("Fit a phone (R27-3, F-4, F-15 to F-17)")).toBe(
+      "Fit a phone"
+    );
+    expect(stripReferences("Real samples (ADR-026)")).toBe("Real samples");
+    expect(stripReferences("Keep this (a real note)")).toBe(
+      "Keep this (a real note)"
+    );
+    expect(stripReferences("No brackets")).toBe("No brackets");
+    expect(stripReferences("Empty ()")).toBe("Empty ()");
+  });
+
+  it("shows only public entries, each with a tag and no round numbers", async () => {
+    const element = createElement("c-changelog", { is: Changelog });
+    document.body.appendChild(element);
+    getRecentCommits.emit(
+      feed("FRESH", {
+        items: [
+          { ...ITEMS[0], message: "chore(site): recount the test groups" },
+          {
+            ...ITEMS[1],
+            sha: "1111222233334444555566667777888899990000",
+            message: "feat(site): phone pass on the skills page (R27-3, F-4)"
+          },
+          {
+            ...ITEMS[0],
+            sha: "2222333344445555666677778888999900001111",
+            message: "ci: run the smoke jobs after a skipped glassops job"
+          },
+          {
+            ...ITEMS[1],
+            sha: "3333444455556666777788889999000011112222",
+            message: "A plain sentence with no type"
+          }
+        ]
+      })
+    );
+    await flushPromises();
+    const rows = Array.from(
+      element.shadowRoot.querySelectorAll("li.commit-item")
+    );
+    expect(rows).toHaveLength(2);
+    const tags = rows.map(
+      (row) => row.querySelector('[data-id="tag"]').textContent
+    );
+    expect(tags).toEqual(["Feature", "Update"]);
+    expect(rows[0].querySelector('[data-id="message"]').textContent).toBe(
+      "Phone pass on the skills page"
+    );
+  });
+
+  it("writes a date only stamp in the visitor zone, and the UTC date with the zone as a fallback", () => {
+    jest.restoreAllMocks();
+    const RealFormat = Intl.DateTimeFormat;
+    jest
+      .spyOn(Intl, "DateTimeFormat")
+      .mockImplementation(
+        (locale, options) =>
+          new RealFormat(locale, { ...options, timeZone: "America/Toronto" })
+      );
+    // 01:33 UTC on the 19th is still the evening of the 18th in Toronto.
+    expect(formatDate("2026-11-19T01:33:00.000Z")).toBe("Nov 18, 2026");
+    jest.restoreAllMocks();
+    jest
+      .spyOn(Intl, "DateTimeFormat")
+      .mockImplementation(
+        (locale, options) =>
+          new RealFormat(locale, { ...options, timeZone: "UTC" })
+      );
+    expect(formatDate("2026-11-19T01:33:00.000Z")).toBe("Nov 19, 2026");
+    expect(formatDateUtc("2026-11-19T01:33:00.000Z")).toBe("Nov 19, 2026 UTC");
+    expect(formatDateUtc("nope")).toBe("");
+    jest.restoreAllMocks();
+    jest.spyOn(Intl, "DateTimeFormat").mockImplementation(() => {
+      throw new RangeError("no zone data");
+    });
+    expect(formatDate("2026-11-19T01:33:00.000Z")).toBe("Nov 19, 2026 UTC");
   });
 });

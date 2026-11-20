@@ -25,8 +25,12 @@
                   "children": [
                     {
                       "attributes": {
-                        "body": "Please try again in a bit.",
-                        "heading": "The site is taking a short break"
+                        "body": "The site cannot answer right now. Wait a few minutes, then choose Try again.",
+                        "eyebrow": "Error 503",
+                        "heading": "The site is taking a short break",
+                        "homeLabel": "Go to the home page",
+                        "retryLabel": "Try again",
+                        "showHome": true
                       },
                       "definition": "c:messagePage",
                       "id": "f0530616-29e1-4d49-935a-37339286ffd6",
@@ -47,6 +51,25 @@
           "id": "faf3f555-dfdb-43b8-9c78-707a24434020",
           "name": "content",
           "title": "Content",
+          "type": "region"
+        },
+        {
+          "children": [
+            {
+              "attributes": {
+                "customHeadTags": "",
+                "description": "",
+                "pageTitle": "Service not available | Ryan Bumstead",
+                "recordId": "{!recordId}"
+              },
+              "definition": "community_builder:seoAssistant",
+              "id": "8c1d5a7b-3e92-4f61-a0c8-6d2b9e4f7a13",
+              "type": "component"
+            }
+          ],
+          "id": "8c1d5a7b-3e92-4f61-a0c8-6d2b9e4f7a11",
+          "name": "sfdcHiddenRegion",
+          "title": "sfdcHiddenRegion",
           "type": "region"
         }
       ],
