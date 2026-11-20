@@ -74,6 +74,79 @@ textarea.nc-control {
   cursor: not-allowed;
 }
 
+/*
+ * One look for a select in every browser (F-42). WebKit draws its own grey fill and triangle
+ * unless appearance is none, so the arrow is drawn here from two gradients on the text token,
+ * which follows light and dark. The room on the right keeps long option text off the arrow.
+ */
+select.nc-control {
+  appearance: none;
+  padding-inline-end: 2.25rem;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--pf-text) 50%),
+    linear-gradient(135deg, var(--pf-text) 50%, transparent 50%);
+  background-position:
+    calc(100% - 1.25rem) 50%,
+    calc(100% - 0.875rem) 50%;
+  background-size:
+    0.375rem 0.375rem,
+    0.375rem 0.375rem;
+  background-repeat: no-repeat;
+  text-overflow: ellipsis;
+}
+
+/*
+ * A range slider with the same look in WebKit, Chromium and Firefox (F-42). A component opts
+ * in with class="nc-range". The track is a 3:1 edged bar and the thumb is a 24 px accent disc
+ * ringed in the surface colour, all from the tokens.
+ */
+input[type="range"].nc-range {
+  appearance: none;
+  box-sizing: border-box;
+  height: 24px;
+  margin: 0;
+  background: transparent;
+  color-scheme: var(--pf-color-scheme, normal);
+}
+
+input[type="range"].nc-range::-webkit-slider-runnable-track {
+  box-sizing: border-box;
+  height: 8px;
+  background-color: var(--pf-subtle);
+  border: 1px solid var(--pf-muted);
+  border-radius: 4px;
+}
+
+input[type="range"].nc-range::-moz-range-track {
+  height: 8px;
+  box-sizing: border-box;
+  background-color: var(--pf-subtle);
+  border: 1px solid var(--pf-muted);
+  border-radius: 4px;
+}
+
+input[type="range"].nc-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  margin-top: -8px;
+  box-sizing: border-box;
+  background-color: var(--pf-accent);
+  border: 2px solid var(--pf-surface);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--pf-muted);
+}
+
+input[type="range"].nc-range::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  background-color: var(--pf-accent);
+  border: 2px solid var(--pf-surface);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--pf-muted);
+}
+
 .nc-button {
   box-sizing: border-box;
   min-height: 44px;

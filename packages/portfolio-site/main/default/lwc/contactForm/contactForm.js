@@ -2,8 +2,9 @@
  * @description       : Contact form for the /contact page (ADR-031). It
  *                      sends the message to ContactFormController, which saves a Lead so the
  *                      org's Lead rules run. The send button stays enabled except while a send
- *                      is in flight. A send with a field missing or wrong shows a message under
- *                      each such field and moves focus to the first. The page shows "Thanks,
+ *                      is in flight. A field left empty or wrong shows its message on blur, which
+ *                      clears once the value is valid. A send with a field missing or wrong
+ *                      shows a message under each such field and moves focus to the first. The page shows "Thanks,
  *                      check your inbox" inline in a panel that fades in and takes focus, with
  *                      no redirect. A honeypot field and the time since the form appeared
  *                      go with each message for SubmissionGuard. When the address ends in
@@ -262,6 +263,32 @@ export default class ContactForm extends LightningElement {
     this.serverError = "";
     // A message goes as soon as its field is touched.
     if (this.errors[field]) {
+      const next = { ...this.errors };
+      delete next[field];
+      this.errors = next;
+    }
+  }
+
+  /**
+   * Leaving a field checks that field alone, so a bad email or an empty required field is
+   * named at once and the message clears as soon as the value is valid (handleInput). The
+   * other fields are left as they are, and Send still checks every one. A blur caused by a
+   * press on Send is skipped, because Send is about to report all of them.
+   * @param {FocusEvent} event the blur event
+   */
+  handleBlur(event) {
+    const field = event.target.name;
+    if (!FIELD_ORDER.includes(field)) {
+      return;
+    }
+    const target = event.relatedTarget;
+    if (target && target.getAttribute && target.dataset.id === "submit") {
+      return;
+    }
+    const message = this.validate()[field];
+    if (message) {
+      this.errors = { ...this.errors, [field]: message };
+    } else if (this.errors[field]) {
       const next = { ...this.errors };
       delete next[field];
       this.errors = next;

@@ -78,31 +78,44 @@ describe("c-testimonial-wall", () => {
     }
   });
 
-  it("renders nothing until there is an approved testimonial", async () => {
+  it("renders nothing until the read answers, then says there are no reviews yet", async () => {
     const element = createComponent();
     await flushPromises();
     expect(element.shadowRoot.children.length).toBe(0);
+    expect(element.classList.contains("is-empty")).toBe(true);
     getApprovedTestimonials.emit([]);
     await flushPromises();
-    expect(q(element, "section")).toBeNull();
+    expect(q(element, ".wall-filter, .filter")).toBeNull();
+    expect(q(element, '[data-id="no-reviews"]').textContent).toContain(
+      "no reviews yet"
+    );
+    expect(element.classList.contains("is-empty")).toBe(false);
   });
 
-  it("renders nothing when the read fails", async () => {
+  it("says there are no reviews yet when the read fails too", async () => {
     const element = createComponent();
     getApprovedTestimonials.error();
     await flushPromises();
-    expect(q(element, "section")).toBeNull();
+    expect(q(element, '[data-id="no-reviews"]')).not.toBeNull();
+    expect(q(element, "ul")).toBeNull();
   });
 
-  it("marks the host empty while there is nothing to show, so it takes no gap", async () => {
+  it("drops the empty line once a testimonial is approved", async () => {
+    const element = createComponent();
+    getApprovedTestimonials.emit([]);
+    await flushPromises();
+    getApprovedTestimonials.emit(ITEMS);
+    await flushPromises();
+    expect(q(element, '[data-id="no-reviews"]')).toBeNull();
+    expect(cards(element)).toHaveLength(3);
+  });
+
+  it("hides the host until the read answers, so it takes no gap", async () => {
     const element = createComponent();
     expect(element.classList.contains("is-empty")).toBe(true);
     getApprovedTestimonials.emit(ITEMS);
     await flushPromises();
     expect(element.classList.contains("is-empty")).toBe(false);
-    getApprovedTestimonials.emit([]);
-    await flushPromises();
-    expect(element.classList.contains("is-empty")).toBe(true);
   });
 
   it("draws the filter as shared toggles and the tone as the shared pill", async () => {

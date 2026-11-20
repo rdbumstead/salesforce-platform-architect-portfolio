@@ -23,12 +23,13 @@
   background-color: var(--pf-bg);
   color: var(--pf-text);
   max-width: 60rem;
-  margin: 0 auto 2rem;
+  margin: 0 0 2rem;
   overflow-wrap: anywhere;
 }
 
 .count,
-.empty {
+.empty,
+.no-reviews {
   color: var(--pf-muted);
   background-color: var(--pf-bg);
   margin: 0.75rem 0;

@@ -1,4 +1,12 @@
 <template>
+  <template lwc:if={showEmptyNotice}>
+    <section class="wall wall-empty" aria-label="Reviews">
+      <p class="no-reviews" data-id="no-reviews">
+        There are no reviews yet. Yours can be the first, and the form is just
+        below.
+      </p>
+    </section>
+  </template>
   <template lwc:if={hasItems}>
     <section class="wall" aria-labelledby="wall-heading">
       <div class="title-row heading-row">

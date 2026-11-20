@@ -17,7 +17,7 @@
 
 .testimonial {
   max-width: 40rem;
-  margin: 0 auto;
+  margin: 0;
   overflow-wrap: anywhere;
 }
 

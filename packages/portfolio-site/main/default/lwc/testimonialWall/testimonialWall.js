@@ -3,10 +3,11 @@
  *                      approved testimonials from TestimonialController.getApprovedTestimonials,
  *                      each in its own tone. A "Professional / All" filter uses the API feed's
  *                      rule, worked out on the server: the Professional vibe from a Manager,
- *                      Client or Peer. Renders nothing at all when there are no approved
- *                      testimonials or the read fails, so the page can ship before real quotes
- *                      exist. Switching the filter sends testimonials_filtered with the new
- *                      filter, all or professional.
+ *                      Client or Peer. With no approved testimonial, once the read has
+ *                      answered, it says plainly that there are no reviews yet, above the form
+ *                      that follows it on the page. Until the read answers it renders
+ *                      nothing, so the line never flashes. Switching the filter sends
+ *                      testimonials_filtered with the new filter, all or professional.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -30,6 +31,7 @@ const RELATIONSHIP_LABELS = {
 
 export default class TestimonialWall extends LightningElement {
   items = [];
+  loaded = false;
   filter = FILTER_ALL;
 
   connectedCallback() {
@@ -40,8 +42,10 @@ export default class TestimonialWall extends LightningElement {
   wiredTestimonials({ data, error }) {
     if (data) {
       this.items = data;
+      this.loaded = true;
     } else if (error) {
       this.items = [];
+      this.loaded = true;
     }
     this.markEmpty();
   }
@@ -51,7 +55,11 @@ export default class TestimonialWall extends LightningElement {
    * goes on the host itself, where the page puts the space under each section.
    */
   markEmpty() {
-    this.classList.toggle("is-empty", !this.hasItems);
+    this.classList.toggle("is-empty", !this.hasItems && !this.loaded);
+  }
+
+  get showEmptyNotice() {
+    return this.loaded && !this.hasItems;
   }
 
   get hasItems() {
