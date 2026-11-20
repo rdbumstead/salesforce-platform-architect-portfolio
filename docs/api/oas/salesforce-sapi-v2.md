@@ -17,7 +17,7 @@ System API exposing core Salesforce objects for the Portfolio. This is **version
 - **Traceability**: Each API resource maps 1:1 to an Apex `@RestResource` class (`SAPI<Resource>`), and every class runs through the shared `ApiRequestContext`.
 
 ### Non-Functional Requirements (NFRs)
-- **Observability**: `X-Request-Id` **mandatory** in Request/Response for distributed tracing. A missing or non-UUID value returns `400 BAD_REQUEST` (`ApiRequestContext.applyRequestRules`). The platform echoes a caller-supplied value on every response; Apex sets the header only when it generated the value (ADR-026).
+- **Observability**: `X-Request-Id` **mandatory** in Request/Response for distributed tracing. A missing or non-UUID value returns `400 BAD_REQUEST` (`ApiRequestContext.applyRequestRules`). The platform echoes a caller-supplied value on every response. Apex sets the header only when it generated the value (ADR-026).
 - **Latency**: Target < 500ms for internal processing.
 - **Resilience**: 120 requests per minute per caller key, enforced by `RateWindowLimiter` (ADR-025), with `429` responses and `Retry-After` headers. Every vended evaluator token is the same session, so all evaluators share one key and one limit of 120 per minute (ADR-028).
 - **Caching Strategy**: 
@@ -442,17 +442,17 @@ Shallow check: runtime availability, the current transaction's governor-limit sn
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|Cache-Control|string||No-cache for health checks.|
-|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
-|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |405|Allow|string||The methods the route takes.|
-|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|Retry-After|integer||Seconds to wait before the same request can succeed.|
-|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -502,8 +502,8 @@ Retrieves the primary contact details for the portfolio owner. Returns only the 
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated. Any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI. Missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |contactName|query|string|false|Filter by Contact Name.|
 |limit|query|integer|false|Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.|
 |offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
@@ -580,20 +580,20 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|X-Total-Count|integer||Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directive to prevent caching of sensitive/dynamic data.|
-|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
-|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |405|Allow|string||The methods the route takes.|
-|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|Retry-After|integer||Seconds to wait before the same request can succeed.|
-|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -639,8 +639,8 @@ Retrieves professional experience history.
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated. Any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI. Missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |contactName|query|string|false|Filter by Contact Name.|
 |employerName|query|string|false|Filter by Employer Name.|
 |currentlyEmployed|query|boolean|false|Filter by active employment status.|
@@ -727,20 +727,20 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|X-Total-Count|integer||Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directive to prevent caching of sensitive/dynamic data.|
-|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
-|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |405|Allow|string||The methods the route takes.|
-|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|Retry-After|integer||Seconds to wait before the same request can succeed.|
-|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -786,8 +786,8 @@ Fetches resume bullets. Supports Persona filtering for PAPI optimization. An unk
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated. Any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI. Missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |experienceKey|query|string|false|Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `experienceId` returns 400.|
 |persona|query|string|false|Filters records where the target field (Multi-Select Picklist) includes the specified persona(s).|
 |limit|query|integer|false|Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.|
@@ -874,20 +874,20 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|X-Total-Count|integer||Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directive to prevent caching of sensitive/dynamic data.|
-|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
-|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |405|Allow|string||The methods the route takes.|
-|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|Retry-After|integer||Seconds to wait before the same request can succeed.|
-|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -942,8 +942,8 @@ a Salesforce Id.
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated. Any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI. Missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |status|query|[ProjectStatus](#schemaprojectstatus)|false|Filter by Project Status.|
 |limit|query|integer|false|Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.|
 |offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
@@ -1056,20 +1056,20 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|X-Total-Count|integer||Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
-|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
-|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |405|Allow|string||The methods the route takes.|
-|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|Retry-After|integer||Seconds to wait before the same request can succeed.|
-|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1115,8 +1115,8 @@ Retrieves assets (images, links) associated with a project. A filter that is not
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated. Any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI. Missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |projectKey|query|string|false|Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `projectId` returns 400.|
 |limit|query|integer|false|Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.|
 |offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
@@ -1204,20 +1204,20 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|X-Total-Count|integer||Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
-|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
-|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |405|Allow|string||The methods the route takes.|
-|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|Retry-After|integer||Seconds to wait before the same request can succeed.|
-|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1263,8 +1263,8 @@ Retrieves received testimonials. Returns only records where Approved__c = true, 
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated. Any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI. Missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |limit|query|integer|false|Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.|
 |offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 
@@ -1354,20 +1354,20 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|X-Total-Count|integer||Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directive to prevent caching of sensitive/dynamic data.|
-|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
-|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |405|Allow|string||The methods the route takes.|
-|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|Retry-After|integer||Seconds to wait before the same request can succeed.|
-|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1413,8 +1413,8 @@ Retrieves related account/employer records.
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated. Any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI. Missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |accountName|query|string|false|Filter by Account Name.|
 |limit|query|integer|false|Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.|
 |offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
@@ -1485,20 +1485,20 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|X-Total-Count|integer||Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
-|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
-|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |405|Allow|string||The methods the route takes.|
-|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|Retry-After|integer||Seconds to wait before the same request can succeed.|
-|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1544,8 +1544,8 @@ Retrieves technical skills and proficiency scores.
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated. Any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI. Missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |category|query|string|false|Filter skills by Category, one of the Skill Category picklist values, for example 'Backend', 'Frontend' or 'Integration'.|
 |limit|query|integer|false|Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.|
 |offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
@@ -1626,20 +1626,20 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|X-Total-Count|integer||Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
-|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
-|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |405|Allow|string||The methods the route takes.|
-|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|Retry-After|integer||Seconds to wait before the same request can succeed.|
-|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1685,8 +1685,8 @@ Retrieves professional certifications.
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated. Any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI. Missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |contactName|query|string|false|Filter by Contact Name.|
 |issuerName|query|string|false|Filter by Issuer Name.|
 |certificationName|query|string|false|Filter by Certification Name.|
@@ -1765,20 +1765,20 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|X-Total-Count|integer||Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
-|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
-|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |405|Allow|string||The methods the route takes.|
-|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|Retry-After|integer||Seconds to wait before the same request can succeed.|
-|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1824,8 +1824,8 @@ Retrieves educational background.
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated. Any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI. Missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |contactName|query|string|false|Filter by Contact Name.|
 |issuerName|query|string|false|Filter by Issuer Name.|
 |limit|query|integer|false|Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.|
@@ -1907,20 +1907,20 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|X-Total-Count|integer||Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
-|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
-|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |405|Allow|string||The methods the route takes.|
-|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|Retry-After|integer||Seconds to wait before the same request can succeed.|
-|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1970,8 +1970,8 @@ Retrieves junction records linking Projects to Skills. A filter that is not a kn
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated. Any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI. Missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |projectKey|query|string|false|Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `projectId` returns 400.|
 |limit|query|integer|false|Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.|
 |offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
@@ -2048,20 +2048,20 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|X-Total-Count|integer||Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
-|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
-|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |405|Allow|string||The methods the route takes.|
-|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|Retry-After|integer||Seconds to wait before the same request can succeed.|
-|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -2107,8 +2107,8 @@ Retrieves junction records linking Experiences to Skills. A filter that is not a
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated. Any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI. Missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |experienceKey|query|string|false|Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `experienceId` returns 400.|
 |limit|query|integer|false|Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.|
 |offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
@@ -2185,20 +2185,20 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|X-Total-Count|integer||Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
-|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
-|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |405|Allow|string||The methods the route takes.|
-|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|Retry-After|integer||Seconds to wait before the same request can succeed.|
-|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -2244,8 +2244,8 @@ Retrieves junction records linking Certifications to Skills. A filter that is no
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated. Any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI. Missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |certificationKey|query|string|false|Filter by Certification public key, for example `crt_6q2v8d4nhz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `certificationId` returns 400.|
 |limit|query|integer|false|Maximum number of records to return. A response is one page of at most this many rows, 50 when you send no limit. X-Total-Count gives the full count.|
 |offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
@@ -2322,20 +2322,20 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|X-Total-Count|integer||Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
-|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
-|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |405|Allow|string||The methods the route takes.|
-|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|Retry-After|integer||Seconds to wait before the same request can succeed.|
-|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -2385,8 +2385,8 @@ Returns the singleton Global Configuration object (Metadata-driven). Not pageabl
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated. Any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI. Missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 
 #### Enumerated Values
 
@@ -2446,18 +2446,18 @@ Returns the singleton Global Configuration object (Metadata-driven). Not pageabl
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|200|Cache-Control|string||Private configuration data; shared caches must not store it.|
-|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|200|Cache-Control|string||Private configuration data. Shared caches must not store it.|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
-|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |405|Allow|string||The methods the route takes.|
-|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|Retry-After|integer||Seconds to wait before the same request can succeed.|
-|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:

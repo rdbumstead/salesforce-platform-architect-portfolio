@@ -10,14 +10,14 @@ info:
     reads them in process, not through SAPI over HTTP (section 3).
 
     ### 1. Authentication Strategy
-    - **Callers → PAPI**: OAuth 2.0 **Client Credentials** issued by the Portfolio API External Client App; `Authorization: Bearer <token>` on every request (ADR-027). The platform rejects unauthenticated calls before Apex executes.
-    - **Site (API Lab)**: `c-api-tester` calls an Apex proxy that obtains its token through the `Portfolio_API` Named Credential; no secret reaches the browser.
+    - **Callers → PAPI**: OAuth 2.0 **Client Credentials** issued by the Portfolio API External Client App, with `Authorization: Bearer <token>` on every request (ADR-027). The platform rejects unauthenticated calls before Apex executes.
+    - **Site (API Lab)**: `c-api-tester` calls an Apex proxy that obtains its token through the `Portfolio_API` Named Credential, so no secret reaches the browser.
     - **External evaluators**: `POST /auth/token` vends a short-lived token (ADR-028). It is the only unauthenticated path, and the only path served on the Experience Cloud site domain (see its `servers` entry). Every other path is called on My Domain with the Bearer token.
     - **PAPI → SAPI**: in-process Apex in the same transaction, not HTTP. See section 3 and ADR-025 for why fan out callouts were rejected.
 
     ### 2. Versioning Strategy
     - **Pattern**: Header-based versioning takes precedence.
-    - **Header**: `X-API-Version: v2`. A missing header resolves to `v1`, which is deprecated; any other value returns `400 BAD_REQUEST` that says to send v1 or v2 (ADR-026). The URL has no version segment. The old URLs with `/v1/` (for example `/papi/v1/projects`) are aliases of the same calls and answer the same way, with `Deprecation`, `Sunset` and a `Link` header with `rel="canonical"` once their retirement dates are set (ADR-040). Use the URLs in this document.
+    - **Header**: `X-API-Version: v2`. A missing header resolves to `v1`, which is deprecated. Any other value returns `400 BAD_REQUEST` that says to send v1 or v2 (ADR-026). The URL has no version segment. The old URLs with `/v1/` (for example `/papi/v1/projects`) are aliases of the same calls and answer the same way, with `Deprecation`, `Sunset` and a `Link` header with `rel="canonical"` once their retirement dates are set (ADR-040). Use the URLs in this document.
     - **Version 1 sunset**: every version 1 response carries `Deprecation` and `Link` headers, and `Sunset` once the sunset date is set, 30 days after version 2 reaches production. After the sunset date version 1 answers `410 Gone` with a message that gives the retirement date and says to send `X-API-Version: v2`, and the `help` field links to the entry in the Errors section.
     - **Correlation**: a missing `X-Request-Id` is replaced by a generated UUID, and a present but non-UUID value returns `400 BAD_REQUEST`. On My Domain the platform injects its own 32-character hex id when the caller sends none, and PAPI treats that value as missing. Both headers are on every response (`ApiRequestContext.applyRequestRules`): the platform echoes whatever `X-Request-Id` the request carries, its own included, and Apex sets the header only when it generated the value and the request carried none, so the header appears once (ADR-026). When the platform injected its id, the header carries that id and an error body's `correlationId` carries the generated UUID. Send your own UUID to get one predictable id.
     - **URL**: Version segments removed from base path to align with SAPI ADR.
@@ -186,7 +186,7 @@ components:
       name: X-API-Version
       in: header
       required: false
-      description: API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).
+      description: API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated. Any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).
       schema:
         type: string
         enum: [v1, v2]
@@ -195,7 +195,7 @@ components:
 
   headers:
     RequestIdHeader:
-      description: Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.
+      description: Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.
       schema:
         type: string
         format: uuid
@@ -633,7 +633,7 @@ components:
             jira:
               type: string
               enum: [CONFIGURED, MISSING, UNKNOWN]
-              description: "Presence of the Jira_API Named Credential; UNKNOWN when NamedCredential cannot be read."
+              description: "Presence of the Jira_API Named Credential. UNKNOWN when NamedCredential cannot be read."
             github:
               type: string
               enum: [CONFIGURED, MISSING, UNKNOWN]
@@ -1183,8 +1183,8 @@ paths:
         (SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token
         endpoint reports no expiry, and the session's end depends on use.
 
-        - **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254
-          characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule
+        - **400 BAD_REQUEST**: the body is not a JSON object of strings, `email` is blank, longer than 254
+          characters or not an address, `purpose` is blank or longer than 280 characters, or a header rule
           from `ApiRequestContext` fails.
         - **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller
           key), or 15 requests per minute per email and source IP
@@ -1598,7 +1598,7 @@ paths:
                 type: string
                 enum: [complete, partial]
             X-Integrity-Note:
-              description: 'Present only when partial; names the failed sub-queries in a sentence, for example "Some sections could not be read this time: project-skills. Everything else is complete. Try again in a minute for the full result."'
+              description: 'Present only when partial. Names the failed sub-queries in a sentence, for example "Some sections could not be read this time: project-skills. Everything else is complete. Try again in a minute for the full result."'
               schema:
                 type: string
             Cache-Control:
@@ -1644,8 +1644,8 @@ paths:
 
         **Use Case**: About page testimonials section
 
-        `mode` is matched case-insensitively (the VibeMode values `Professional` and `Casual` are accepted);
-        any other value returns 400 BAD_REQUEST. Ordered by sort order, then newest first; at most 200.
+        `mode` is matched case-insensitively (the VibeMode values `Professional` and `Casual` are accepted).
+        Any other value returns 400 BAD_REQUEST. Ordered by sort order, then newest first. At most 200 are returned.
       operationId: getTestimonialFeed
       parameters:
         - $ref: "#/components/parameters/RequestIdParam"
@@ -1733,7 +1733,7 @@ paths:
         refuses or fails, CoverLetter falls back to the local template and the other types answer
         503 `ALL_PROVIDERS_UNAVAILABLE`.
 
-        **Validation**: `type` and `tone` must be enum values, `provider` only `Agentforce`, `maxLength` an integer 100 to 1000;
+        **Validation**: `type` and `tone` must be enum values, `provider` only `Agentforce`, `maxLength` an integer 100 to 1000.
         CoverLetter requires `context.companyName` and `context.role`. Content longer than `maxLength` is cut.
       operationId: generateAiContent
       parameters:
