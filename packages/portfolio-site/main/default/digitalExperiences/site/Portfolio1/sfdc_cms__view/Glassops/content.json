@@ -1,0 +1,97 @@
+{
+  "type": "sfdc_cms__view",
+  "title": "GlassOps",
+  "contentBody": {
+    "component": {
+      "children": [
+        {
+          "children": [
+            {
+              "attributes": {
+                "backgroundImageConfig": "",
+                "backgroundImageOverlay": "rgba(0,0,0,0)",
+                "componentSpacerSize": "",
+                "layoutDirectionDesktop": "row",
+                "layoutDirectionMobile": "column",
+                "layoutDirectionTablet": "column",
+                "maxContentWidth": "",
+                "sectionColumnGutterWidth": "",
+                "sectionConfig": "{\"UUID\":\"74c0154c-6504-495a-82f8-1367d08bdf6b\",\"columns\":[{\"UUID\":\"aa218650-42a4-466e-9311-cb9f4e1178d3\",\"columnName\":\"Column 1\",\"columnKey\":\"col1\",\"columnWidth\":\"12\",\"seedComponents\":null}]}",
+                "sectionMinHeight": "",
+                "sectionVerticalAlign": "flex-start"
+              },
+              "children": [
+                {
+                  "children": [
+                    {
+                      "attributes": {
+                        "designLabel": "",
+                        "designUrl": "",
+                        "eyebrow": "",
+                        "heading": "GlassOps",
+                        "lead": "How I built GlassOps, an open source release pipeline for Salesforce. It checks a change, records why it may ship, deploys only under that record and then reads the org back to confirm the result."
+                      },
+                      "definition": "c:pageIntro",
+                      "id": "fd322878-bde7-41ab-8cd3-11622a3a0ef8",
+                      "type": "component"
+                    },
+                    {
+                      "definition": "c:glassopsStory",
+                      "id": "c77e3318-e1c0-4a06-81bb-74bad36fa4d2",
+                      "type": "component"
+                    },
+                    {
+                      "attributes": {
+                        "storyKey": "glassops"
+                      },
+                      "definition": "c:storyDecisions",
+                      "id": "90df8723-18e4-4161-b237-4d6b83bb906a",
+                      "type": "component"
+                    }
+                  ],
+                  "id": "aa218650-42a4-466e-9311-cb9f4e1178d3",
+                  "name": "col1",
+                  "title": "Column 1",
+                  "type": "region"
+                }
+              ],
+              "definition": "community_layout:section",
+              "id": "74c0154c-6504-495a-82f8-1367d08bdf6b",
+              "type": "component"
+            }
+          ],
+          "id": "71047bcb-cbca-4f37-8420-fc0862f061bd",
+          "name": "content",
+          "title": "Content",
+          "type": "region"
+        },
+        {
+          "children": [
+            {
+              "attributes": {
+                "customHeadTags": "<link rel=\"canonical\" href=\"https://ryanbumstead.com/glassops\" />\n<meta property=\"og:title\" content=\"GlassOps | Ryan Bumstead\" />\n<meta property=\"og:description\" content=\"How I built GlassOps, an open source release pipeline for Salesforce that checks a change, records a signed decision and verifies the deploy.\" />\n<meta property=\"og:url\" content=\"https://ryanbumstead.com/glassops\" />\n<meta name=\"twitter:title\" content=\"GlassOps | Ryan Bumstead\" />\n<meta name=\"twitter:description\" content=\"How I built GlassOps, an open source release pipeline for Salesforce that checks a change, records a signed decision and verifies the deploy.\" />",
+                "description": "How I built GlassOps, an open source release pipeline for Salesforce that checks a change, records a signed decision and verifies the deploy.",
+                "pageTitle": "GlassOps | Ryan Bumstead",
+                "recordId": "{!recordId}"
+              },
+              "definition": "community_builder:seoAssistant",
+              "id": "2175a0ee-3ed0-4d4d-9197-3ec48806ce6b",
+              "type": "component"
+            }
+          ],
+          "id": "6d252094-cd7c-498f-9b98-7aba716d428f",
+          "name": "sfdcHiddenRegion",
+          "title": "sfdcHiddenRegion",
+          "type": "region"
+        }
+      ],
+      "definition": "community_layout:sldsFlexibleLayout",
+      "id": "9bd54868-2b12-4fb2-a4ba-e777a0cd764b",
+      "type": "component"
+    },
+    "dataProviders": [],
+    "themeLayoutType": "MTKkiMoYojf79mPK59EBOir53DGAQ9",
+    "viewType": "custom-glassops"
+  },
+  "urlName": "glassops"
+}
