@@ -612,7 +612,7 @@ flowchart LR
     class Browser client;
 ```
 
-- **Build time.** `site.yml` signs in as the build user, makes 82 reads for 15 pages (12 routes plus the 404, 429 and 503 pages), compiles one bundle per route, runs the leak scan and deploys. A pull request deploys a preview under `pr-<number>` and runs the live smoke test against it. Without the build user secret the build uses sample fixtures and says so.
+- **Build time.** `site.yml` signs in as the build user, makes 87 reads for 15 pages (12 routes plus the 404, 429 and 503 pages), compiles one bundle per route, runs the leak scan and deploys. A pull request deploys a preview under `pr-<number>` and runs the live smoke test against it. Without the build user secret the build uses sample fixtures and says so.
 - **Request time.** Seven actions, each behind a feature switch that is `live` or `recorded`: `contact`, `testimonial`, `cover-letter`, `lab-invoke`, `lab-token`, `glass-box` and `pipeline-status`. A preview deploy is always `recorded`. [Technical Guide §2.25](./04-Technical-Guide.md#225-the-static-build-and-the-shims) describes the build and the shims.
 - **What each host shows.** Only a section that calls Salesforce at view time says "Live from Salesforce". A section read at build time says when it was built.
 - **Live since the cutover on 2026-11-09.** The Functions call Salesforce through the edge user, with the Turnstile keys and the zone rate limit set up by hand ([cutover runbook](./cutover-runbook.md)). All five switches read `live` on `ryanbumstead.com`. Every other host, `ryanbumstead.pages.dev` and the previews included, stays `recorded`.
@@ -716,7 +716,7 @@ Ensuring the system fails gracefully during outage events ([ADR-022 amendment of
 
 On the static site the footer first shows its loading state and then a live reading through the `glass-box` function, cached at the edge for 60 seconds, and the build does not export the snapshot because the snapshot measures its own call. The paragraph below describes the Salesforce site.
 
-The footer (`c-footer`) shows its telemetry under one caption in labelled groups, CI, Platform, Integrations, Daily quotas and Request limits, with a Storage group between the last two once a snapshot is stored, to demonstrate "Glass Box Telemetry". Rules separate the groups on wide screens, and they stack on phones. It loads after the first paint ([ADR-014](../adr/014-deferred-telemetry-loading-performance.md)) from `FooterController.getSystemSnapshot()`, which is not cacheable, so the values are current.
+The footer (`c-footer`) shows its telemetry under one caption in labelled groups, CI, Platform, Integrations, Daily quotas and Request limits, with a Storage group between the last two once a snapshot is stored, to demonstrate "Glass Box Telemetry". Each group is a toggle in the tooling row, and only one group's readings show at a time, in a panel under the row, with thin bars between the metrics inside a group. It loads after the first paint ([ADR-014](../adr/014-deferred-telemetry-loading-performance.md)) from `FooterController.getSystemSnapshot()`, which is not cacheable, so the values are current.
 
 - **Limits:** CPU time, heap size and SOQL queries used against their governor limits, read from `Limits` in that transaction.
 - **Org quotas:** daily API requests and daily async Apex executions against their limits, from `OrgLimits`. A quota the org does not report is left out, never guessed.
