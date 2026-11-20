@@ -3,8 +3,8 @@
  *                      PortfolioStatsController.getStats once through the wire service and
  *                      shows each count as text: production deploys recorded, the newest
  *                      deploy's Apex and Jest tests each with one plain line on what they
- *                      prove, the Apex and Jest line coverage of that deploy as two tiles of
- *                      their own (a tile with no figure is left out), evaluator tokens issued since the month the first was issued,
+ *                      prove with the line coverage of that deploy folded into each detail line (a missing
+ *                      figure leaves its part of the line out), evaluator tokens issued since the month the first was issued,
  *                      cover letters written and API Lab requests sent since the month
  *                      counting began, a closed "What the tests
  *                      cover" disclosure, and a table of approved testimonials by vibe once
@@ -125,15 +125,30 @@ export function formatDay(isoDate) {
 }
 
 /**
- * The detail under the Apex count: how many ran in the newest deploy.
+ * The detail under a test count: how many ran in the newest deploy, and the share of lines
+ * covered when that figure exists. A missing or zero figure leaves its part out, never 0%.
+ * @param {number} run how many tests ran
+ * @param {number} coverage the line coverage from 0 to 100
+ * @returns {string} the text, empty when there is no result
+ */
+export function testDetail(run, coverage) {
+  if (!Number.isFinite(run)) {
+    return "";
+  }
+  const base = `of ${formatCount(run)} run in the newest deploy`;
+  if (!Number.isFinite(coverage) || coverage <= 0) {
+    return `${base}.`;
+  }
+  return `${base}, ${formatPercent(coverage)} of lines covered.`;
+}
+
+/**
+ * The detail under the Apex count.
  * @param {object} stats the server's counts
  * @returns {string} the text, empty when there is no result
  */
 export function apexDetail(stats) {
-  if (!stats || !Number.isFinite(stats.latestTestsRun)) {
-    return "";
-  }
-  return `of ${formatCount(stats.latestTestsRun)} run in the newest deploy.`;
+  return stats ? testDetail(stats.latestTestsRun, stats.latestCoverage) : "";
 }
 
 /**
@@ -282,23 +297,9 @@ export default class ByTheNumbers extends LightningElement {
         stats.latestJestRun,
         stats.latestJestPassed,
         "Jest tests passed",
-        Number.isFinite(stats.latestJestRun)
-          ? `of ${formatCount(stats.latestJestRun)} run in the newest deploy.`
-          : "",
+        testDetail(stats.latestJestRun, stats.latestJestCoverage),
         "No deploy has a Jest result yet.",
         JEST_LINE
-      ),
-      this.coverageTile(
-        "apex-coverage",
-        stats.latestCoverage,
-        "Apex coverage",
-        "of Apex lines, run in production after the newest deploy."
-      ),
-      this.coverageTile(
-        "jest-coverage",
-        stats.latestJestCoverage,
-        "Jest coverage",
-        "of site component lines, from the Jest run on the newest deploy."
       ),
       // Cover letters come before the two API Lab counts, so those two sit side by side.
       this.tile(
@@ -335,28 +336,6 @@ export default class ByTheNumbers extends LightningElement {
       line,
       hasDetail: !!detail,
       hasLine: !!line
-    };
-  }
-
-  /**
-   * A coverage tile. Its big number is the percentage. With no figure, or a figure of zero
-   * that no real run produces, it has no tile at all, so it is never drawn as 0%.
-   */
-  coverageTile(key, value, label, detail) {
-    if (!Number.isFinite(value) || value <= 0) {
-      return null;
-    }
-    const text = formatPercent(value);
-    return {
-      key,
-      hasValue: true,
-      valueText: text,
-      liveText: text,
-      label,
-      detail,
-      line: "",
-      hasDetail: true,
-      hasLine: false
     };
   }
 
