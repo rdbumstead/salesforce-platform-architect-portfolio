@@ -38,7 +38,11 @@ export const COMPONENT_LABELS = Object.freeze({
   roadmapViewer: "Roadmap viewer",
   footer: "Footer",
   coverLetterGenerator: "Cover letter generator",
-  siteAnalytics: "Site analytics"
+  siteAnalytics: "Site analytics",
+  heroBanner: "Home hero",
+  caseStudyGrid: "Case studies",
+  careerLine: "Work timeline",
+  credentialsBand: "Education and certifications"
 });
 
 /** Technical Guide section ids, one per source key. A key not listed gets no guide link. */
@@ -51,7 +55,11 @@ export const GUIDE_SECTIONS = Object.freeze({
   decisionMatrix: "2-10-project-asset-gallery-and-decision-matrix",
   apiTester: "2-15-api-lab-and-api-reference",
   roadmapViewer: "1-2-jira-integration-roadmap",
-  coverLetterGenerator: "2-22-the-cover-letter-page-and-pdf"
+  coverLetterGenerator: "2-22-the-cover-letter-page-and-pdf",
+  heroBanner: "2-12-home-page",
+  caseStudyGrid: "2-12-home-page",
+  careerLine: "2-12-home-page",
+  credentialsBand: "2-12-home-page"
 });
 
 const LWC_PATH = /\/lwc\/([^/]+)\/([^/]+)$/;

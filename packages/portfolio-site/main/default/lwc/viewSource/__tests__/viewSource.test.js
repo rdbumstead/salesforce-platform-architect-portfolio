@@ -576,7 +576,21 @@ describe("c-view-source", () => {
         expect(link.hasAttribute("target")).toBe(false);
         document.body.removeChild(element);
       }
-      expect(Object.keys(GUIDE_SECTIONS)).toHaveLength(9);
+      expect(Object.keys(GUIDE_SECTIONS)).toHaveLength(13);
+    });
+
+    it("labels the four home sections and links them to the home page guide section", () => {
+      const home = [
+        "heroBanner",
+        "caseStudyGrid",
+        "careerLine",
+        "credentialsBand"
+      ];
+      home.forEach((key) => {
+        expect(COMPONENT_LABELS[key]).toBeTruthy();
+
+        expect(GUIDE_SECTIONS[key]).toBe("2-12-home-page");
+      });
     });
 
     it("shows no guide link for a key not in the map", async () => {

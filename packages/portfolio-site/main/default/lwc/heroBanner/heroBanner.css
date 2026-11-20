@@ -133,6 +133,18 @@
   gap: var(--pf-space-3);
 }
 
+/* View source sits under the profile links, at the start of the line, so it never sits
+   beside the two buttons above. */
+.hero-source {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: var(--pf-space-1);
+}
+
+.hero-source c-view-source {
+  margin-inline-start: 0;
+}
+
 .profile-links {
   min-height: 44px;
   display: flex;

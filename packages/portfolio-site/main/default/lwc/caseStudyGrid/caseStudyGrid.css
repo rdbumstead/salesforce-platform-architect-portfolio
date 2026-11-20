@@ -152,3 +152,9 @@
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* View source takes the free space at the end of the heading row, and the data source chip
+   sits right after it. Two auto margins would split the space between them. */
+.heading-row .heading-badge-end {
+  margin-inline-start: 0;
+}
