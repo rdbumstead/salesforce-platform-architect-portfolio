@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Card_Figure__c</fullName>
+    <description
+  >The key of the picture on a home page featured case study card. Read by ProjectCardController.getHomeCaseStudies and passed to c-case-study-figure. An unknown or blank key draws no picture.</description>
+    <externalId>false</externalId>
+    <inlineHelpText
+  >One of: literacy-platform, employer-hub, site-org, glassops. Blank draws no picture.</inlineHelpText>
+    <label>Card Figure</label>
+    <length>40</length>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

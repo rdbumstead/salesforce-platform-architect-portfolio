@@ -4,7 +4,7 @@
 .home {
   max-width: var(--portfolio-content-width, 1024px);
   margin: 0 auto;
-  padding: 64px 0 0;
+  padding: 40px 0 0;
   color: var(--pf-text);
   font-family: var(--pf-font-sans);
   font-size: 16px;
@@ -20,7 +20,7 @@
   grid-template-columns: 132px minmax(0, 1fr);
   gap: 28px;
   align-items: center;
-  padding-bottom: 32px;
+  padding-bottom: 24px;
   border-bottom: 1px solid var(--pf-border);
 }
 
@@ -252,6 +252,14 @@
 
   .hero-value {
     font-size: 16px;
+  }
+}
+
+/* Phones: the proof panel's opening line is hidden, because on a phone it takes about five
+   rows of text and pushes the first project down. The test line and both buttons stay. */
+@media (max-width: 559.98px) {
+  .proof-intro {
+    display: none;
   }
 }
 

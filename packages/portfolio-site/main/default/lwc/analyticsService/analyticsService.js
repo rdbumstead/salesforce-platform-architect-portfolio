@@ -56,7 +56,7 @@ export const EVENTS = Object.freeze({
   MOTION_TOGGLED: "motion_toggled", // motion: reduce or full
   DOCS_OPENED: "docs_opened", // doc_key
   API_LAB_SECTION_TOGGLED: "api_lab_section_toggled", // section, expanded
-  CASE_STUDY_LINK_FOLLOWED: "case_study_link_followed", // name
+  CASE_STUDY_LINK_FOLLOWED: "case_study_link_followed", // name, position (1 based), total, tier: featured or more
   GRAPH_LAYOUT_CHANGED: "graph_layout_changed", // action: drag, fit or reset_layout
   CAREER_ROLE_OPENED: "career_role_opened", // position: 1 is the newest stop on the career line
   CAREER_TIMELINE_TOGGLED: "career_timeline_toggled", // expanded
@@ -73,7 +73,8 @@ export const EVENTS = Object.freeze({
   CURL_COPIED: "curl_copied", // example: token, health or data
   STORAGE_PANEL_OPENED: "storage_panel_opened", // none
   ANALYTICS_EVENTS_OPENED: "analytics_events_opened", // count: events listed when it opened
-  REDIRECT_ARRIVED: "redirect_arrived" // source: sf, a visitor the Salesforce site sent here
+  REDIRECT_ARRIVED: "redirect_arrived", // source: sf, a visitor the Salesforce site sent here
+  CASE_STUDIES_SEEN: "case_studies_seen" // total: the projects shown, featured: how many are in the featured tier
 });
 
 /** The document event the site's head script listens for and passes to gtag. */

@@ -12,15 +12,19 @@
       "Is_Featured__c": false,
       "Home_Title__c": "Choosing the right platform for a literacy nonprofit",
       "Client_Line__c": "Adult literacy nonprofit · freelance",
-      "Headline_Metric__c": "$0",
-      "Headline_Metric_Label__c": "software licence cost for 10 staff users",
       "Challenge__c": "A small staff with no full time admin needed one system for students, volunteers and training partners, inside a tight grant budget.",
       "Solution__c": "Advised against Education Cloud, which is built and priced for large institutions. Chose donated Sales and Service licences with free NPSP and Program Management over Nonprofit Cloud, for a cheaper path past ten seats. Left donations where they already ran.",
       "Business_Value__c": "Ten staff users on donated licences, with staff testing the build in user acceptance before production.",
       "Case_Tags__c": "NPSP, Platform selection, Cost",
       "Live_URL__c": "/nonprofit-solutions",
-      "Home_Sort__c": 2,
-      "Is_Verified__c": true
+      "Home_Sort__c": 1,
+      "Is_Verified__c": true,
+      "Case_Metric__c": "$0",
+      "Case_Metric_Label__c": "software licence cost for 10 staff users",
+      "My_Part__c": "Test text for my part on the literacy platform card.",
+      "Context_Line__c": "Test text for the context line of the literacy platform card.",
+      "Decision_Line__c": "Test text for the decision line of the literacy platform card.",
+      "Card_Figure__c": "literacy-platform"
     },
     {
       "attributes": {
@@ -34,16 +38,20 @@
       "Is_Featured__c": false,
       "Home_Title__c": "Designing an employer hub for an education provider",
       "Client_Line__c": "Education provider · design demo",
-      "Headline_Metric__c": "9 objects",
-      "Headline_Metric_Label__c": "in the Employer Hub data model, read from the org's schema at each build",
-      "Headline_Metric_Source__c": "Employer Hub objects",
       "Challenge__c": "Several departments at an education provider worked with the same employer partners, each from its own inbox and spreadsheet. Partners repeated themselves, and nobody could see the whole relationship. Leadership had no shared numbers for engagement, investment or hiring.",
       "Solution__c": "A working Employer Hub demo built on Salesforce. Every inquiry is captured once from a web form, matched to the partner's account and routed by the employer's industry. Service requests are fulfilled from the case, and monetary requests run through an opportunity to a contract. Operations and executive dashboards report from the same records.",
       "Business_Value__c": "Designed so that employer partners get one front door and a faster answer, departments stop duplicating outreach and see each other's work with a partner, and leadership can report on the employer relationship as a whole.",
       "Case_Tags__c": "Data model, Case routing, Dashboards",
       "Live_URL__c": "/business-architecture",
-      "Home_Sort__c": 1,
-      "Is_Verified__c": true
+      "Home_Sort__c": 2,
+      "Is_Verified__c": true,
+      "Case_Metric__c": "9 objects",
+      "Case_Metric_Label__c": "in the Employer Hub data model, read from the org's schema at each build",
+      "My_Part__c": "Test text for my part on the employer hub card.",
+      "Context_Line__c": "Test text for the context line of the employer hub card.",
+      "Decision_Line__c": "Test text for the decision line of the employer hub card.",
+      "Card_Figure__c": "employer-hub",
+      "Case_Metric_Source__c": "Employer Hub objects"
     },
     {
       "attributes": {
@@ -57,16 +65,89 @@
       "Is_Featured__c": false,
       "Home_Title__c": "Building this site as a production org",
       "Client_Line__c": "Personal project · open source",
-      "Headline_Metric__c": "646 Apex tests",
-      "Headline_Metric_Label__c": "passing at the last successful deploy, with {coverage}% org-wide coverage",
-      "Headline_Metric_Source__c": "Apex tests",
       "Challenge__c": "A resume can say someone practises DevOps, but it gives a reviewer nothing to check.",
       "Solution__c": "This site is its own delivery evidence. Every pull request is validated in a fresh scratch org with the local Apex tests and static analysis, and every merge that changes the app deploys to production through GitHub Actions and runs the local tests. Each run publishes a governance event that is stored as a pipeline run record. The Delivery page shows the latest run per workflow, the Jira roadmap and the recent commits, read from caches that scheduled jobs refresh.",
       "Business_Value__c": "The test count on this card and the checklist on the Delivery page come from those stored runs, so they change when the pipeline does. A reviewer sees the roadmap, the commits and the latest pipeline results on one page.",
       "Case_Tags__c": "Experience Cloud, Apex REST, CI/CD",
       "Live_URL__c": "/delivery",
       "Home_Sort__c": 3,
-      "Is_Verified__c": true
+      "Is_Verified__c": true,
+      "Case_Metric__c": "646 Apex tests",
+      "Case_Metric_Label__c": "passing at the last successful deploy, with {coverage}% org-wide coverage",
+      "My_Part__c": "Test text for my part on the site card.",
+      "Context_Line__c": "Test text for the context line of the site card.",
+      "Decision_Line__c": "Test text for the decision line of the site card.",
+      "Card_Figure__c": "site-org",
+      "Case_Metric_Source__c": "Apex tests"
+    },
+    {
+      "attributes": {
+        "type": "Project__c",
+        "referenceId": "HomeCaseG"
+      },
+      "Name": "Home case study G",
+      "Public_Key__c": "home-case-g",
+      "Status__c": "Live – Demo / Reference",
+      "Sort_Order__c": 90,
+      "Is_Featured__c": false,
+      "Home_Title__c": "Shipping Salesforce changes through a gated pipeline",
+      "Client_Line__c": "Open source toolkit · personal project",
+      "Live_URL__c": "/glassops",
+      "Is_Verified__c": true,
+      "Challenge__c": "Test text for the challenge.",
+      "Solution__c": "Test text for the solution.",
+      "Business_Value__c": "Test text for the value.",
+      "Home_Sort__c": 4,
+      "Case_Metric__c": "5 stages",
+      "Case_Metric_Label__c": "from plan to verified deploy",
+      "My_Part__c": "Test text for my part on the pipeline card.",
+      "Context_Line__c": "Test text for the context line of the pipeline card.",
+      "Decision_Line__c": "Test text for the decision line of the pipeline card.",
+      "Card_Figure__c": "glassops"
+    },
+    {
+      "attributes": {
+        "type": "Project__c",
+        "referenceId": "HomeCaseH"
+      },
+      "Name": "Home case study H",
+      "Public_Key__c": "home-case-h",
+      "Status__c": "Live – Demo / Reference",
+      "Sort_Order__c": 90,
+      "Is_Featured__c": false,
+      "Home_Title__c": "Cover Letter Generator",
+      "Client_Line__c": "Personal project · AI lab",
+      "Live_URL__c": "/ai-lab",
+      "Is_Verified__c": true,
+      "Challenge__c": "Test text for the challenge.",
+      "Solution__c": "Test text for the solution.",
+      "Business_Value__c": "Test text for the value.",
+      "Home_Sort__c": 5,
+      "Case_Metric__c": "4 providers",
+      "Case_Metric_Label__c": "in the fallback chain",
+      "My_Part__c": "Test text for my part on the cover letter row."
+    },
+    {
+      "attributes": {
+        "type": "Project__c",
+        "referenceId": "HomeCaseI"
+      },
+      "Name": "Home case study I",
+      "Public_Key__c": "home-case-i",
+      "Status__c": "Live – Demo / Reference",
+      "Sort_Order__c": 90,
+      "Is_Featured__c": false,
+      "Home_Title__c": "Work Experience API",
+      "Client_Line__c": "Personal project · REST API",
+      "Live_URL__c": "/api-lab/reference",
+      "Is_Verified__c": true,
+      "Challenge__c": "Test text for the challenge.",
+      "Solution__c": "Test text for the solution.",
+      "Business_Value__c": "Test text for the value.",
+      "Home_Sort__c": 6,
+      "Case_Metric__c": "2 APIs",
+      "Case_Metric_Label__c": "one for the site, one for partners",
+      "My_Part__c": "Test text for my part on the API row."
     }
   ]
 }

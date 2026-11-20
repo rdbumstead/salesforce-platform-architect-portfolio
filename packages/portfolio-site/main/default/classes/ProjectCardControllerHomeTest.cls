@@ -92,24 +92,95 @@ private class ProjectCardControllerHomeTest {
     );
   }
 
-  @IsTest
-  static void shouldReturnAtMostThreeCards() {
-    insert new List<Project__c>{
-      homeProject('One', 1, false),
-      homeProject('Two', 2, false),
-      homeProject('Three', 3, false),
-      homeProject('Four', 4, false)
-    };
+  private static List<Project__c> numberedProjects(Integer count) {
+    List<Project__c> rows = new List<Project__c>();
+    for (Integer i = 1; i <= count; i++) {
+      rows.add(homeProject('Project ' + i, i, false));
+    }
+    return rows;
+  }
+
+  private static void assertCardCount(Integer inserted, Integer expected) {
+    insert numberedProjects(inserted);
 
     Test.startTest();
     List<ProjectCardController.CaseStudy> cards = ProjectCardController.getHomeCaseStudies();
     Test.stopTest();
 
     Assert.areEqual(
-      new List<String>{ 'One', 'Two', 'Three' },
-      titlesOf(cards),
-      'The fourth project is not a card'
+      expected,
+      cards.size(),
+      inserted + ' projects with a home sort give ' + expected + ' cards'
     );
+    if (expected > 0) {
+      Assert.areEqual('Project 1', cards[0].title, 'Lowest sort first');
+      Assert.areEqual(
+        'Project ' + expected,
+        cards[expected - 1].title,
+        'The cards are the first rows in order'
+      );
+    }
+  }
+
+  @IsTest
+  static void shouldReturnNoCardsForNoRows() {
+    assertCardCount(0, 0);
+  }
+
+  @IsTest
+  static void shouldReturnThreeCardsForThreeRows() {
+    assertCardCount(3, 3);
+  }
+
+  @IsTest
+  static void shouldReturnFourCardsForFourRows() {
+    assertCardCount(4, 4);
+  }
+
+  @IsTest
+  static void shouldReturnFiveCardsForFiveRows() {
+    assertCardCount(5, 5);
+  }
+
+  @IsTest
+  static void shouldReturnEightCardsForEightRows() {
+    assertCardCount(8, 8);
+  }
+
+  @IsTest
+  static void shouldReturnAtMostEightCardsForNineRows() {
+    assertCardCount(9, 8);
+  }
+
+  @IsTest
+  static void shouldReturnTheCardLineFieldsTrimmedAndNullWhenBlank() {
+    Project__c full = homeProject('Full', 1, false);
+    full.My_Part__c = '  Test text for my part  ';
+    full.Context_Line__c = 'Test text for context';
+    full.Decision_Line__c = 'Test text for decision';
+    full.Card_Figure__c = ' test-figure ';
+    insert new List<Project__c>{ full, homeProject('Empty', 2, false) };
+
+    Test.startTest();
+    List<ProjectCardController.CaseStudy> cards = ProjectCardController.getHomeCaseStudies();
+    Test.stopTest();
+
+    Assert.areEqual(
+      'Test text for my part',
+      cards[0].myPart,
+      'My part trimmed'
+    );
+    Assert.areEqual('Test text for context', cards[0].contextLine, 'Context');
+    Assert.areEqual(
+      'Test text for decision',
+      cards[0].decisionLine,
+      'Decision'
+    );
+    Assert.areEqual('test-figure', cards[0].figureKey, 'Figure key trimmed');
+    Assert.isNull(cards[1].myPart, 'Blank my part');
+    Assert.isNull(cards[1].contextLine, 'Blank context');
+    Assert.isNull(cards[1].decisionLine, 'Blank decision');
+    Assert.isNull(cards[1].figureKey, 'Blank figure key');
   }
 
   @IsTest
@@ -715,6 +786,81 @@ private class ProjectCardControllerHomeTest {
         .queryDefaults()
         .containsKey('ProjectCardController_ProductionDeploys'),
       'The deploy count has a code default'
+    );
+  }
+
+  @IsTest
+  static void shouldCapTheCardsAtEightWhenGivenMoreRows() {
+    List<Project__c> rows = new List<Project__c>();
+    for (Integer i = 1; i <= 9; i++) {
+      rows.add(homeProject('Project ' + i, i, false));
+    }
+
+    List<ProjectCardController.CaseStudy> cards = ProjectCardController.toCaseStudies(
+      rows
+    );
+
+    Assert.areEqual(8, cards.size(), 'The ninth row is never a card');
+    Assert.areEqual(
+      'Project 8',
+      cards[7].title,
+      'The first eight stay in order'
+    );
+  }
+
+  @IsTest
+  static void shouldComputeNothingForAnUnknownSource() {
+    Assert.isNull(
+      ProjectCardController.compute('Not a source'),
+      'A source the code does not know gives no number'
+    );
+  }
+
+  @IsTest
+  static void shouldTurnAFailedReadIntoAMessageOnEachRead() {
+    ProjectCardController.failReads = true;
+    Map<String, String> messages = new Map<String, String>();
+
+    try {
+      ProjectCardController.getPillarCards();
+    } catch (AuraHandledException e) {
+      messages.put('pillar', 'thrown');
+    }
+    try {
+      ProjectCardController.getHomeCaseStudies();
+    } catch (AuraHandledException e) {
+      messages.put('case', 'thrown');
+    }
+    try {
+      ProjectCardController.getBuildCounts();
+    } catch (AuraHandledException e) {
+      messages.put('counts', 'thrown');
+    }
+
+    Assert.areEqual(3, messages.size(), 'Every read reports its failure');
+  }
+
+  @IsTest
+  static void shouldCountNothingForAMissingOrEmptySpec() {
+    String withPaths = 'paths:\n  /a:\n    get: {}\n';
+    String secondPaths = 'paths:\n  /b:\n    get: {}\n';
+
+    Assert.isNull(
+      ProjectCardController.countSpecPaths(new List<String>{ withPaths }),
+      'One spec of two gives no count'
+    );
+    Assert.isNull(
+      ProjectCardController.countSpecPaths(
+        new List<String>{ withPaths, 'paths:\n' }
+      ),
+      'A spec with no paths gives no count'
+    );
+    Assert.areEqual(
+      2,
+      ProjectCardController.countSpecPaths(
+        new List<String>{ withPaths, secondPaths }
+      ),
+      'Both specs count'
     );
   }
 }
