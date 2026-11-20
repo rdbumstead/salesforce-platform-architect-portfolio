@@ -17,21 +17,29 @@
   color: var(--viewer-text);
 }
 
-/* A phone in the View source dialog: no card, no padding, a smaller font and wrapped lines.
-   The viewer has no line numbers, so a wrapped line keeps no second number. */
+/* The View source dialog: no card, a smaller font and lines that keep their shape. A long line
+   scrolls sideways instead of wrapping into ragged fragments, and a soft edge on the side that
+   has more code is the cue. */
 .viewer-flat .code-container {
+  --viewer-cue: color-mix(in srgb, var(--pf-muted) 55%, transparent);
+
   padding: var(--pf-space-2, 0.5rem);
-  border-left: 0;
-  border-right: 0;
-  border-radius: 0;
   font-size: 12px;
   line-height: 1.5;
+  background:
+    linear-gradient(to right, var(--pf-code) 30%, transparent) left center /
+      2rem 100% no-repeat local,
+    linear-gradient(to left, var(--pf-code) 30%, transparent) right center /
+      2rem 100% no-repeat local,
+    linear-gradient(to right, var(--viewer-cue), transparent) left center /
+      0.75rem 100% no-repeat scroll,
+    linear-gradient(to left, var(--viewer-cue), transparent) right center /
+      0.75rem 100% no-repeat scroll;
+  background-color: var(--pf-code);
 }
 
 .viewer-flat .code-container pre,
 .viewer-flat .code-container code {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
   font-size: inherit;
 }
 
@@ -45,7 +53,8 @@
   padding: 1rem;
   border: 1px solid var(--pf-border);
   border-radius: var(--pf-radius-sm);
-  max-height: 500px;
+  /* A host sets --viewer-max-height to keep the block and its Copy button inside a short window. */
+  max-height: var(--viewer-max-height, 500px);
   overflow: auto;
   font-family: var(--pf-font-mono);
 }
