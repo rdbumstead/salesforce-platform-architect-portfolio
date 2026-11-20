@@ -170,4 +170,22 @@ private class SAPITestimonialTest {
       Sort_Order__c = sortOrder
     );
   }
+
+  @IsTest
+  static void shouldStopWhenTheVersionIsNotSupported() {
+    RestTestUtil.initGetRaw(
+      '/services/apexrest/sapi/testimonials/',
+      new Map<String, String>{
+        'X-Request-Id' => UUID.randomUUID().toString(),
+        'X-API-Version' => 'v3'
+      },
+      null
+    );
+
+    Test.startTest();
+    SAPITestimonial.getTestimonials();
+    Test.stopTest();
+
+    SapiTestData.assertError(400, 'BAD_REQUEST');
+  }
 }

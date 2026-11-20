@@ -477,4 +477,35 @@ private class PAPIAiGenerateTest {
       prompt
     );
   }
+
+  @IsTest
+  static void shouldStopWhenTheVersionIsNotSupported() {
+    RestTestUtil.initGetRaw(
+      URI,
+      new Map<String, String>{
+        'X-Request-Id' => UUID.randomUUID().toString(),
+        'X-API-Version' => 'v3'
+      },
+      null
+    );
+    RestContext.request.httpMethod = 'POST';
+    RestContext.request.requestBody = Blob.valueOf(
+      JSON.serialize(coverLetter())
+    );
+
+    Test.startTest();
+    PAPIAiGenerate.generate();
+    Test.stopTest();
+
+    Assert.areEqual(
+      400,
+      RestContext.response.statusCode,
+      'The request rules refuse the version before any provider is called'
+    );
+    Assert.areEqual(
+      'BAD_REQUEST',
+      RestTestUtil.getBodyAsMap().get('errorCode'),
+      'Error code'
+    );
+  }
 }

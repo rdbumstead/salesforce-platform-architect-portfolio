@@ -390,4 +390,38 @@ private class RateWindowLimiterTest {
     Assert.isTrue(key.length() <= 255, 'Fits Key__c');
     Assert.areEqual(255, shortKey.length(), 'Longest unhashed key fits');
   }
+
+  @IsTest
+  static void shouldTreatAStoredWindowWithNoCountAsZero() {
+    RateWindowLimiter.nowOverride = FIXED_NOW;
+    insertWindow(CALLER_KEY, null);
+
+    Test.startTest();
+    ApiRequestContext.RateDecision decision = new RateWindowLimiter()
+      .checkKey(CALLER_KEY, 15);
+    Test.stopTest();
+
+    Assert.isTrue(decision.allowed, 'A blank count is zero, so the call fits');
+    Assert.areEqual(14, decision.remaining, 'One call counted against 15');
+  }
+
+  @IsTest
+  static void shouldStillAnswerWhenTheCountCannotBeSaved() {
+    RateWindowLimiter.nowOverride = FIXED_NOW;
+    insertWindow(CALLER_KEY, 1);
+    new RateWindowLimiter().checkKey(CALLER_KEY, 15);
+    delete storedWindow(CALLER_KEY);
+    RestTestUtil.initGet(PAPI_URI);
+
+    Test.startTest();
+    ApiRequestContext ctx = ApiRequestContext.begin();
+    ctx.error(400, 'BAD_REQUEST', 'refused');
+    Test.stopTest();
+
+    Assert.areEqual(
+      400,
+      RestContext.response.statusCode,
+      'The count failing to save does not change the answer'
+    );
+  }
 }

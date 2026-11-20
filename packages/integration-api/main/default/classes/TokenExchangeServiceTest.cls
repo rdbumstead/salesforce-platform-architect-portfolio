@@ -579,4 +579,19 @@ private class TokenExchangeServiceTest {
     Assert.areEqual(503, result.statusCode, 'The set cap is reached');
     Assert.areEqual(0, mock.requests.size(), 'No callout at the cap');
   }
+
+  @IsTest
+  static void shouldReject503FailedWhenTheTimeoutHasNoMessage() {
+    installLimiter();
+    installMock().throwing('');
+
+    Test.startTest();
+    TokenExchangeService.Result result = TokenExchangeService.requestToken(
+      attempt(EMAIL, PURPOSE)
+    );
+    Test.stopTest();
+
+    Assert.areEqual(503, result.statusCode, 'Unavailable, not misconfigured');
+    assertOneRow('Failed');
+  }
 }

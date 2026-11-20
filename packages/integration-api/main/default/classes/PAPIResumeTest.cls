@@ -823,4 +823,51 @@ private class PAPIResumeTest {
       'The standard Error payload'
     );
   }
+
+  @IsTest
+  static void aRoleWithNoEmployerHighlightsOrSkillCategoryStillPrints() {
+    Contact owner = [SELECT Id FROM Contact WHERE Is_Portfolio_Owner__c = TRUE];
+    Experience__c bare = new Experience__c(
+      Name = 'Bare Role',
+      Start_Date__c = Date.today().addYears(-3),
+      End_Date__c = Date.today().addYears(-2),
+      Sort_Order__c = 2,
+      Contact__c = owner.Id
+    );
+    insert bare;
+    Skill__c plain = new Skill__c(
+      Is_Verified__c = true,
+      Name = 'Plain Skill',
+      Proficiency__c = 2
+    );
+    insert plain;
+    insert new Experience_Skill__c(
+      Experience__c = bare.Id,
+      Skill__c = plain.Id
+    );
+    insert new Education__c(
+      Contact__c = owner.Id,
+      Name = 'Self Taught',
+      Graduation_Date__c = Date.today().addYears(-8)
+    );
+
+    RestTestUtil.initGet(GENERATE_URI);
+    Test.startTest();
+    PAPIResume.getResume();
+    Test.stopTest();
+
+    String text = (String) RestTestUtil.getBodyAsMap().get('generatedText');
+    Assert.isTrue(
+      text.contains('Unknown | Bare Role'),
+      'A role with no employer shows Unknown: ' + text
+    );
+    Assert.isTrue(
+      text.contains('Other'),
+      'A skill with no category falls under Other: ' + text
+    );
+    Assert.isTrue(
+      text.contains('Unknown\nSelf Taught'),
+      'A degree with no school shows Unknown: ' + text
+    );
+  }
 }

@@ -501,4 +501,19 @@ private class ApiLabControllerAgentforceTest {
       return true;
     }
   }
+
+  @IsTest
+  static void aUnreadable503IsAnOrdinaryFailedAttempt() {
+    mockApi(503, 'The service is down <html>');
+
+    ApiLabController.CoverLetterResult result = letterAsGuest(null);
+
+    Assert.areEqual('Gemini', result.provider, 'Gemini served');
+    Assert.areEqual(
+      'failed',
+      result.attempts[0].outcome,
+      'A body that is not JSON is not a budget answer'
+    );
+    Assert.areEqual('HTTP 503', result.attempts[0].detail, 'Detail');
+  }
 }

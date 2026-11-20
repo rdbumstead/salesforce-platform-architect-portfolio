@@ -252,4 +252,22 @@ private class SAPIExperienceHighlightTest {
       'Status. Body: ' + SapiTestData.bodyText()
     );
   }
+
+  @IsTest
+  static void shouldStopWhenTheVersionIsNotSupported() {
+    RestTestUtil.initGetRaw(
+      '/services/apexrest/sapi/experience-highlights/',
+      new Map<String, String>{
+        'X-Request-Id' => UUID.randomUUID().toString(),
+        'X-API-Version' => 'v3'
+      },
+      null
+    );
+
+    Test.startTest();
+    SAPIExperienceHighlight.getExperienceHighlights();
+    Test.stopTest();
+
+    SapiTestData.assertError(400, 'BAD_REQUEST');
+  }
 }

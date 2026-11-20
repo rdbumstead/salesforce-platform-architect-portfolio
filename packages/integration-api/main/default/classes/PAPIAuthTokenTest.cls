@@ -16,6 +16,7 @@ private class PAPIAuthTokenTest {
   private class FakeLimiter implements ApiRateLimiter {
     Boolean allowTier = true;
     Boolean allowKey = true;
+    Boolean busyKey = false;
 
     public ApiRequestContext.RateDecision check(
       String tierKey,
@@ -33,12 +34,14 @@ private class PAPIAuthTokenTest {
       String callerKey,
       Integer limitPerMinute
     ) {
-      return new ApiRequestContext.RateDecision(
+      ApiRequestContext.RateDecision decision = new ApiRequestContext.RateDecision(
         allowKey,
         limitPerMinute,
         allowKey ? limitPerMinute - 1 : 0,
         allowKey ? 0 : 42
       );
+      decision.busy = busyKey;
+      return decision;
     }
   }
 
@@ -341,6 +344,25 @@ private class PAPIAuthTokenTest {
       String.valueOf(ApiRequestContext.DEFAULT_RETRY_AFTER_SECONDS),
       RestContext.response.headers.get('Retry-After'),
       'A 503 that can recover carries Retry-After'
+    );
+  }
+
+  @IsTest
+  static void shouldTellTheCallerToRetryWhenTheCounterRowIsBusy() {
+    FakeLimiter limiter = installLimiter();
+    limiter.allowKey = false;
+    limiter.busyKey = true;
+    initPost(VALID_BODY);
+
+    Test.startTest();
+    PAPIAuthToken.requestToken();
+    Test.stopTest();
+
+    Assert.areEqual(429, RestContext.response.statusCode, 'Refused');
+    Assert.areEqual(
+      ApiMessages.LOCK_BUSY,
+      responseBody().get('message'),
+      'A busy counter is not described as a used up limit'
     );
   }
 }

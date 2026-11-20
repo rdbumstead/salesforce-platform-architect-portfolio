@@ -251,4 +251,22 @@ private class ApiLegacyLogicTest {
       'The old line, with the raw path and no legacyPath'
     );
   }
+
+  @IsTest
+  static void shouldFindNoSegmentOrExemptionWhenTheRequestHasNoUri() {
+    switchOff();
+    RestTestUtil.initGetRaw(
+      null,
+      new Map<String, String>{ 'X-Request-Id' => VALID_ID },
+      null
+    );
+
+    Test.startTest();
+    ApiRequestContext ctx = ApiRequestContext.begin();
+    String segment = ctx.endpointSegment();
+    Test.stopTest();
+
+    Assert.isNull(segment, 'No URI has no endpoint segment');
+    Assert.isNotNull(ctx, 'The context is built without a URI');
+  }
 }
