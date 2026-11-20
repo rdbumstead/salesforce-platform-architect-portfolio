@@ -764,3 +764,19 @@ describe("c-career-line", () => {
     );
   });
 });
+
+describe("c-career-line view source", () => {
+  afterEach(() => {
+    while (document.body.firstChild) {
+      document.body.removeChild(document.body.firstChild);
+    }
+  });
+
+  it("renders one View source control with the careerLine key in the heading row", async () => {
+    const element = await mount();
+    const row = element.shadowRoot.querySelector(".heading-row");
+    const controls = row.querySelectorAll("c-view-source");
+    expect(controls).toHaveLength(1);
+    expect(controls[0].sourceKey).toBe("careerLine");
+  });
+});

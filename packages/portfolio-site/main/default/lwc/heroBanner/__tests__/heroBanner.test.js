@@ -527,3 +527,24 @@ describe("c-hero-banner", () => {
     });
   });
 });
+
+describe("c-hero-banner view source", () => {
+  afterEach(() => {
+    while (document.body.firstChild) {
+      document.body.removeChild(document.body.firstChild);
+    }
+  });
+
+  it("renders one View source control with the heroBanner key, after the profile links", () => {
+    const element = render();
+    const controls = element.shadowRoot.querySelectorAll("c-view-source");
+    expect(controls).toHaveLength(1);
+    expect(controls[0].sourceKey).toBe("heroBanner");
+    const nav = element.shadowRoot.querySelector(".profile-links");
+    expect(
+      nav.compareDocumentPosition(controls[0]) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(controls[0].closest(".proof-panel")).toBeNull();
+  });
+});

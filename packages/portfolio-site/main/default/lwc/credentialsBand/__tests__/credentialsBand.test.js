@@ -317,3 +317,19 @@ describe("c-credentials-band source chip", () => {
     expect(element.shadowRoot.querySelector("c-data-source")).toBeNull();
   });
 });
+
+describe("c-credentials-band view source", () => {
+  afterEach(() => {
+    while (document.body.firstChild) {
+      document.body.removeChild(document.body.firstChild);
+    }
+  });
+
+  it("renders one View source control with the credentialsBand key in the Education heading row", async () => {
+    const element = await renderWith();
+    const controls = element.shadowRoot.querySelectorAll("c-view-source");
+    expect(controls).toHaveLength(1);
+    expect(controls[0].sourceKey).toBe("credentialsBand");
+    expect(controls[0].closest("[data-id=education-column]")).not.toBeNull();
+  });
+});

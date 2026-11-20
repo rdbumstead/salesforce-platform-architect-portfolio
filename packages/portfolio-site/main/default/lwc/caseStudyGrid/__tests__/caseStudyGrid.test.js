@@ -406,3 +406,25 @@ describe("c-case-study-grid live data marker", () => {
     expect(marker[1]).not.toMatch(/hide-counts/);
   });
 });
+
+describe("c-case-study-grid view source", () => {
+  afterEach(() => {
+    while (document.body.firstChild) {
+      document.body.removeChild(document.body.firstChild);
+    }
+  });
+
+  it("renders one View source control with the caseStudyGrid key in the heading row, before the chip", async () => {
+    const element = render();
+    getHomeCaseStudies.emit(CARDS);
+    await flush();
+    const row = element.shadowRoot.querySelector(".heading-row");
+    const controls = row.querySelectorAll("c-view-source");
+    expect(controls).toHaveLength(1);
+    expect(controls[0].sourceKey).toBe("caseStudyGrid");
+    expect(
+      controls[0].compareDocumentPosition(row.querySelector("c-data-source")) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+});
