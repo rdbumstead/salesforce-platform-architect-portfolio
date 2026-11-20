@@ -23,6 +23,21 @@
   margin-inline-start: auto;
 }
 
+/*
+ * The footer draws this button as a small text link. It sets these hooks on the row, and with no
+ * hook set the button is the quiet button, unchanged.
+ */
+.view-source-button {
+  min-height: var(--tool-height, 44px);
+  border-color: var(--tool-border, var(--pf-border));
+  color: var(--tool-color, var(--pf-text));
+}
+
+.view-source-button:hover:not(:disabled) {
+  border-color: var(--tool-border-hover, var(--pf-accent));
+  color: var(--tool-color-hover, var(--pf-text));
+}
+
 .github-link:focus-visible,
 .guide-link:focus-visible,
 .dialog-heading:focus-visible {
@@ -127,13 +142,13 @@
   text-decoration: underline;
 }
 
-/* Under 768 px the code takes the dialog's full width: the viewer draws no card (flat), and
-   this margin takes back the dialog body's side padding. */
-@media (max-width: 767px) {
-  c-code-viewer {
-    display: block;
-    margin-inline: calc(-1 * var(--pf-space-4));
-  }
+/* The code block and its Copy button sit in the dialog body's own padding, on the same left edge
+   as the heading and the tabs. */
+c-code-viewer {
+  display: block;
+  /* The rest of the dialog takes about 28 rem, so the block gives way on a short window and the
+     Copy button stays inside the dialog. */
+  --viewer-max-height: max(12rem, min(500px, calc(100vh - 28rem)));
 }
 
 @media (max-width: 600px) {

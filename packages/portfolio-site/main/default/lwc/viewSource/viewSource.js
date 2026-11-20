@@ -26,6 +26,7 @@
 import { LightningElement, api, wire } from "lwc";
 import getSourceFiles from "@salesforce/apex/SourceController.getSourceFiles";
 import { trackEvent, EVENTS } from "c/analyticsService";
+import { localLabel, utcLabel } from "c/siteHost";
 
 /** Dialog headings for the fixed keys. Any other key shows the key itself. */
 export const COMPONENT_LABELS = Object.freeze({
@@ -51,15 +52,6 @@ export const GUIDE_SECTIONS = Object.freeze({
   apiTester: "2-15-api-lab-and-api-reference",
   roadmapViewer: "1-2-jira-integration-roadmap",
   coverLetterGenerator: "2-22-the-cover-letter-page-and-pdf"
-});
-
-/** Intl.DateTimeFormat instead of lightning-formatted-date-time, which pulls the i18n library into every page. */
-const FETCHED_FORMAT = new Intl.DateTimeFormat(undefined, {
-  year: "numeric",
-  month: "short",
-  day: "numeric",
-  hour: "2-digit",
-  minute: "2-digit"
 });
 
 const LWC_PATH = /\/lwc\/([^/]+)\/([^/]+)$/;
@@ -220,10 +212,12 @@ export default class ViewSource extends LightningElement {
     return this.fetchedDate ? this.fetchedDate.toISOString() : "";
   }
 
-  /** Short month, day, year and time in the visitor's locale and time zone. */
+  /** The site's one stamp format, in the visitor's own zone with the zone shown. */
   get fetchedText() {
     const date = this.fetchedDate;
-    return date ? FETCHED_FORMAT.format(date) : "";
+    return date
+      ? localLabel(date.toISOString()) || utcLabel(date.toISOString())
+      : "";
   }
 
   get hasGithubLink() {

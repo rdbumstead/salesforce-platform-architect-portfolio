@@ -20,6 +20,7 @@ import PortfolioThemeLayout, {
   HERO_LOOKUP_MS,
   HERO_SELECTOR,
   PHONE_MENU_WIDTH,
+  TESTIMONIALS_MENU_MIN,
   THEME_FADE_MS,
   TOUR_HEADING_POLL_MS,
   TOUR_HEADING_WAIT_MS,
@@ -32,6 +33,17 @@ import PortfolioThemeLayout, {
 import { PILLARS, reset, setComingLetters } from "c/pillarData";
 import { trackEvent } from "c/analyticsService";
 import { CurrentPageReference } from "lightning/navigation";
+import getApprovedTestimonials from "@salesforce/apex/TestimonialController.getApprovedTestimonials";
+
+// The approved testimonials the menu counts, the same call the Testimonials page reads.
+jest.mock(
+  "@salesforce/apex/TestimonialController.getApprovedTestimonials",
+  () => {
+    const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
+    return { default: createApexTestWireAdapter(jest.fn()) };
+  },
+  { virtual: true }
+);
 
 // The page reference wire stands in for the site router's route changes.
 jest.mock(
@@ -227,6 +239,16 @@ function render(content = []) {
   return element;
 }
 
+/** Renders the layout once the testimonials call has answered with this many approved rows. */
+async function renderApproved(count, content = []) {
+  const element = render(content);
+  getApprovedTestimonials.emit(
+    Array.from({ length: count }, (_, i) => ({ key: `t${i}` }))
+  );
+  await Promise.resolve();
+  return element;
+}
+
 function flush() {
   return Promise.resolve();
 }
@@ -328,8 +350,8 @@ describe("c-portfolio-theme-layout", () => {
   });
 
   describe("navigation", () => {
-    it("links every site route from the brand, the pages and the Pillars menu", () => {
-      const element = render();
+    it("links every site route from the brand, the pages and the Pillars menu", async () => {
+      const element = await renderApproved(3);
       const brand = element.shadowRoot.querySelector(".site-brand");
       const nav = element.shadowRoot.querySelector('nav[aria-label="Primary"]');
       expect(nav).not.toBeNull();
@@ -343,8 +365,8 @@ describe("c-portfolio-theme-layout", () => {
       expect(hrefs).toEqual(EXPECTED_HREFS);
     });
 
-    it("lists Home, Resume, Skills, How it's built, Testimonials and Contact, with the name as the home link", () => {
-      const element = render();
+    it("lists Home, Resume, Skills, How it's built, Testimonials and Contact, with the name as the home link", async () => {
+      const element = await renderApproved(3);
       const brand = element.shadowRoot.querySelector(".site-brand");
       expect(brand.textContent).toBe("Ryan Bumstead");
       expect(brand.getAttribute("href")).toBe("/portfolio/");
@@ -356,8 +378,8 @@ describe("c-portfolio-theme-layout", () => {
       expect(home.getAttribute("aria-current")).toBeNull();
     });
 
-    it("has no Work link, and links Skills and Testimonials to their pages", () => {
-      const element = render();
+    it("has no Work link, and links Skills and Testimonials to their pages", async () => {
+      const element = await renderApproved(3);
       expect(element.shadowRoot.querySelector('[data-key="work"]')).toBeNull();
       expect(
         element.shadowRoot
@@ -371,9 +393,9 @@ describe("c-portfolio-theme-layout", () => {
       ).toBe("/portfolio/testimonials");
     });
 
-    it("links Home to the home page and marks it as the current page, and only it, on the home page", () => {
+    it("links Home to the home page and marks it as the current page, and only it, on the home page", async () => {
       goTo("/portfolio/");
-      const element = render();
+      const element = await renderApproved(3);
       expect(navLabels(element)).toEqual(NAV_LABELS);
       const home = element.shadowRoot.querySelector(
         '.nav-link[data-key="home"]'
@@ -401,7 +423,7 @@ describe("c-portfolio-theme-layout", () => {
 
     it("shows the same links in the phone menu on the home page", async () => {
       goTo("/portfolio/");
-      const element = render();
+      const element = await renderApproved(3);
       element.shadowRoot.querySelector(".menu-toggle").click();
       await flush();
       const nav = element.shadowRoot.querySelector("nav");
@@ -466,8 +488,8 @@ describe("c-portfolio-theme-layout", () => {
       expect(current[0].classList.contains("docs-link")).toBe(true);
     });
 
-    it("puts Testimonials then Contact after the How it's built menu, Contact last, linking /contact", () => {
-      const element = render();
+    it("puts Testimonials then Contact after the How it's built menu, Contact last, linking /contact", async () => {
+      const element = await renderApproved(3);
       const items = Array.from(
         element.shadowRoot.querySelectorAll(".nav-list > .nav-item")
       );
@@ -478,6 +500,47 @@ describe("c-portfolio-theme-layout", () => {
         "Testimonials"
       );
       expect(items[items.length - 3].classList.contains("pillars")).toBe(true);
+    });
+
+    it("keeps Testimonials out of the main menu with none approved and with two", async () => {
+      const none = await renderApproved(0);
+      expect(navLabels(none)).toEqual(
+        NAV_LABELS.filter((l) => l !== "Testimonials")
+      );
+      expect(
+        none.shadowRoot.querySelector('[data-key="testimonials"]')
+      ).toBeNull();
+      const two = await renderApproved(2);
+      expect(navLabels(two)).not.toContain("Testimonials");
+    });
+
+    it("puts Testimonials in the main menu once three are approved", async () => {
+      const element = await renderApproved(3);
+      expect(navLabels(element)).toEqual(NAV_LABELS);
+      const more = await renderApproved(5);
+      expect(navLabels(more)).toContain("Testimonials");
+      expect(TESTIMONIALS_MENU_MIN).toBe(3);
+    });
+
+    it("keeps Testimonials out while the testimonials call has not answered or fails", async () => {
+      const element = render();
+      expect(navLabels(element)).not.toContain("Testimonials");
+      getApprovedTestimonials.error();
+      await flush();
+      expect(navLabels(element)).not.toContain("Testimonials");
+    });
+
+    it("draws the sticky header on the opaque page background, with no blur behind it", () => {
+      const css = require("fs")
+        .readFileSync(
+          require("path").join(__dirname, "..", "portfolioThemeLayout.css"),
+          "utf8"
+        )
+        .replace(/\r\n/g, "\n");
+      const start = css.indexOf(".site-header {");
+      const rule = css.slice(start, css.indexOf("}", start));
+      expect(rule).toContain("background: var(--pf-bg);");
+      expect(rule).not.toMatch(/backdrop-filter|--pf-glass/);
     });
 
     it("stops listening for history changes when removed", () => {

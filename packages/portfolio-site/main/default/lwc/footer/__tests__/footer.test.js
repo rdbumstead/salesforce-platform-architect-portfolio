@@ -77,6 +77,9 @@ jest.mock(
   { virtual: true }
 );
 
+let mockEvents = [];
+let mockListeners = [];
+
 jest.mock(
   "c/analyticsService",
   () => ({
@@ -91,8 +94,11 @@ jest.mock(
       GTAG: "gtag",
       NOT_SENT: "not_sent"
     },
-    recentEvents: () => [],
-    onAnalyticsEvent: () => () => {},
+    recentEvents: () => mockEvents,
+    onAnalyticsEvent: (listener) => {
+      mockListeners.push(listener);
+      return () => {};
+    },
     trackEvent: jest.fn()
   }),
   { virtual: true }
@@ -225,6 +231,8 @@ function all(element, selector) {
 
 describe("c-footer", () => {
   beforeEach(() => {
+    mockEvents = [];
+    mockListeners = [];
     idleCallbacks = [];
     window.requestIdleCallback = jest.fn((callback) => {
       idleCallbacks.push(callback);
@@ -1049,7 +1057,9 @@ describe("c-footer", () => {
     const readings = q(element, '[data-id="metrics"]');
     expect(q(element, '[data-id="ci-row"]')).toBeNull();
     expect(readings.firstElementChild.dataset.id).toBe("chips");
-    expect(readings.firstElementChild.firstElementChild.dataset.key).toBe("ci");
+    expect(readings.firstElementChild.querySelector("button").dataset.key).toBe(
+      "ci"
+    );
     expect(
       q(element, '[data-id="metrics-caption"]').compareDocumentPosition(
         readings
@@ -1072,28 +1082,54 @@ describe("c-footer", () => {
     expect(readings.querySelectorAll('[data-id="panel"]')).toHaveLength(1);
   });
 
-  it("offers View source for the footer beside the caption", () => {
+  it("offers View source for the footer first on the one tooling row", () => {
     const element = createComponent();
+    const row = q(element, '[data-id="chips"]');
     const viewSource = q(element, "c-view-source");
     expect(viewSource).not.toBeNull();
-    expect(viewSource.parentElement).toBe(
-      q(element, '[data-id="metrics-caption"]').parentElement
-    );
+    expect(viewSource.parentElement).toBe(row);
+    expect(row.firstElementChild).toBe(viewSource);
   });
 
-  it("offers the analytics events list and its source beside the caption", () => {
+  it("hides the analytics events link while the count is zero", () => {
+    mockEvents = [];
     const element = createComponent();
-    const caption = q(element, '[data-id="metrics-caption"]').parentElement;
-    const events = q(element, "c-analytics-events");
-    expect(events.parentElement).toBe(caption);
-    const keys = Array.from(caption.querySelectorAll("c-view-source")).map(
-      (el) => el.sourceKey
-    );
+    expect(q(element, "c-analytics-events")).toBeNull();
+    const keys = Array.from(
+      element.shadowRoot.querySelectorAll("c-view-source")
+    ).map((el) => el.sourceKey);
     expect(keys).toEqual(["footer", "siteAnalytics"]);
-    const labels = Array.from(caption.querySelectorAll("c-view-source")).map(
-      (el) => el.label
-    );
+  });
+
+  it("shows the analytics events link on the tooling row from the first event", async () => {
+    mockEvents = [];
+    const element = createComponent();
+    expect(q(element, "c-analytics-events")).toBeNull();
+    mockEvents = [{ id: 1, name: "page_view", params: {}, outcome: "gtag" }];
+    mockListeners.forEach((listener) => listener());
+    await Promise.resolve();
+    const events = q(element, "c-analytics-events");
+    expect(events).not.toBeNull();
+    expect(events.parentElement).toBe(q(element, '[data-id="chips"]'));
+    const labels = Array.from(
+      element.shadowRoot.querySelectorAll("c-view-source")
+    ).map((el) => el.label);
     expect(labels).toEqual([undefined, "View analytics source"]);
+  });
+
+  it("keeps Request limits on the tooling row with its count beside its label", async () => {
+    getSystemSnapshot.mockResolvedValue(snapshot({ orgQuotas: ORG_QUOTAS }));
+    const element = createComponent();
+    await runIdle();
+    const chip = q(element, '[data-id="chip-limits"]');
+    expect(chip.parentElement).toBe(q(element, '[data-id="chips"]'));
+    expect(chip.classList.contains("chip--limits")).toBe(true);
+    expect(chip.querySelector(".group-label").textContent).toBe(
+      "Request limits"
+    );
+    expect(chip.querySelector(".group-status").textContent).toMatch(
+      /^\d+ readings?$/
+    );
   });
 
   it("declares c-view-source with the footer key in the template", () => {
@@ -1200,13 +1236,18 @@ describe("c-footer", () => {
     expect(trackEvent).toHaveBeenCalledWith("finops_quota_visibility");
   });
 
-  it("leaves Skills and Testimonials to the header and opens its links with Contact", () => {
+  it("leaves Skills to the header, keeps Testimonials in the footer and opens its links with Contact", () => {
     const element = createComponent();
     expect(q(element, '[data-id="skills"]')).toBeNull();
-    expect(q(element, '[data-id="testimonials"]')).toBeNull();
+    const testimonials = q(element, '[data-id="testimonials"]');
+    expect(testimonials.textContent).toBe("Testimonials");
+    expect(testimonials.getAttribute("href")).toBe("/portfolio/testimonials");
     const contact = q(element, '[data-id="contact"]');
     expect(contact.parentElement.firstElementChild).toBe(contact);
     expect(contact.nextElementSibling).toBe(q(element, '[data-id="docs"]'));
+    expect(q(element, '[data-id="docs"]').nextElementSibling).toBe(
+      testimonials
+    );
   });
 
   it("sits in the same 1024 px column as the header", () => {
@@ -1439,8 +1480,9 @@ describe("c-footer", () => {
       expect(q(element, '[data-id="metrics-caption"]').textContent).toBe(
         "Readings from Salesforce and its integrations"
       );
-      expect(q(element, '[data-id="recorded-label"]').textContent).toBe(
-        "From Salesforce · captured 1 Nov 2026, 12:00 UTC"
+      // The site's one stamp format, in the visitor's zone with the zone shown.
+      expect(q(element, '[data-id="recorded-label"]').textContent).toMatch(
+        /^From Salesforce · captured Nov \d{1,2}, 2026, \d{1,2}:\d{2} [AP]M [A-Z+\-0-9:]{2,}$/
       );
       await openGroup(element, "integrations");
       expect(all(element, '[data-id="provider"]').length).toBe(3);

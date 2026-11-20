@@ -19,6 +19,21 @@
   align-items: center;
 }
 
+/*
+ * The footer draws this button as a small text link. It sets these hooks on the row, and with no
+ * hook set the button is the quiet button, unchanged.
+ */
+.open-button {
+  min-height: var(--tool-height, 44px);
+  border-color: var(--tool-border, var(--pf-border));
+  color: var(--tool-color, var(--pf-text));
+}
+
+.open-button:hover:not(:disabled) {
+  border-color: var(--tool-border-hover, var(--pf-accent));
+  color: var(--tool-color-hover, var(--pf-text));
+}
+
 .dialog-heading:focus-visible,
 .event-list:focus-visible {
   outline: 2px solid var(--pf-focus);

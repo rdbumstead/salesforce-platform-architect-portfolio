@@ -51,11 +51,11 @@ export const APEX_GROUPS = [
 export const JEST_GROUPS = [
   {
     name: "Page shell, home and navigation",
-    tests: 540
+    tests: 548
   },
   {
     name: "Delivery, docs and pillar pages",
-    tests: 426
+    tests: 427
   },
   {
     name: "API Lab, API reference and AI Lab",
