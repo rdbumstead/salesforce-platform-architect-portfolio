@@ -1,0 +1,182 @@
+<template>
+  <template lwc:if={isLiteracy}>
+    <svg
+      class="fig"
+      viewBox="0 0 320 240"
+      role="img"
+      aria-label={label}
+      focusable="false"
+    >
+      <rect class="bg" width="320" height="240" />
+      <text class="title" x="12" y="24">Platform decision matrix</text>
+      <text class="txt" x="108" y="46">10 criteria, weighted</text>
+      <text class="txt" x="238" y="46">Total</text>
+      <rect class="pick" x="6" y="54" width="308" height="40" rx="6" />
+      <text class="txt-b" x="12" y="78">NPSP + PMM</text>
+      <rect class="cell" x="108" y="65" width="10" height="18" rx="2" />
+      <rect class="cell" x="120" y="65" width="10" height="18" rx="2" />
+      <rect class="cell" x="132" y="65" width="10" height="18" rx="2" />
+      <rect class="cell" x="144" y="65" width="10" height="18" rx="2" />
+      <rect class="cell" x="156" y="65" width="10" height="18" rx="2" />
+      <rect class="cell" x="168" y="65" width="10" height="18" rx="2" />
+      <rect class="cell" x="180" y="65" width="10" height="18" rx="2" />
+      <rect class="cell" x="192" y="65" width="10" height="18" rx="2" />
+      <rect class="cell" x="204" y="65" width="10" height="18" rx="2" />
+      <rect class="cell" x="216" y="65" width="10" height="18" rx="2" />
+      <rect class="bar" x="238" y="67" width="64" height="14" rx="3" />
+      <text class="txt" x="12" y="122">Education Cloud</text>
+      <rect class="cell" x="108" y="109" width="10" height="18" rx="2" />
+      <rect class="cell" x="120" y="109" width="10" height="18" rx="2" />
+      <rect class="cell" x="132" y="109" width="10" height="18" rx="2" />
+      <rect class="cell" x="144" y="109" width="10" height="18" rx="2" />
+      <rect class="cell" x="156" y="109" width="10" height="18" rx="2" />
+      <rect class="cell" x="168" y="109" width="10" height="18" rx="2" />
+      <rect class="cell" x="180" y="109" width="10" height="18" rx="2" />
+      <rect class="cell" x="192" y="109" width="10" height="18" rx="2" />
+      <rect class="cell" x="204" y="109" width="10" height="18" rx="2" />
+      <rect class="cell" x="216" y="109" width="10" height="18" rx="2" />
+      <rect class="bar" x="238" y="111" width="56" height="14" rx="3" />
+      <text class="txt" x="12" y="166">Nonprofit Cloud</text>
+      <rect class="cell" x="108" y="153" width="10" height="18" rx="2" />
+      <rect class="cell" x="120" y="153" width="10" height="18" rx="2" />
+      <rect class="cell" x="132" y="153" width="10" height="18" rx="2" />
+      <rect class="cell" x="144" y="153" width="10" height="18" rx="2" />
+      <rect class="cell" x="156" y="153" width="10" height="18" rx="2" />
+      <rect class="cell" x="168" y="153" width="10" height="18" rx="2" />
+      <rect class="cell" x="180" y="153" width="10" height="18" rx="2" />
+      <rect class="cell" x="192" y="153" width="10" height="18" rx="2" />
+      <rect class="cell" x="204" y="153" width="10" height="18" rx="2" />
+      <rect class="cell" x="216" y="153" width="10" height="18" rx="2" />
+      <rect class="bar" x="238" y="155" width="56" height="14" rx="3" />
+      <text class="txt" x="12" y="192">Outlined row: the option chosen</text>
+      <template lwc:if={tag}>
+        <rect class="tag-box" x="160" y="206" width="152" height="22" rx="11" />
+        <text class="tag-txt" x="171" y="221">{tag}</text>
+      </template>
+    </svg>
+  </template>
+  <template lwc:elseif={isEmployerHub}>
+    <svg
+      class="fig"
+      viewBox="0 0 320 240"
+      role="img"
+      aria-label={label}
+      focusable="false"
+    >
+      <rect class="bg" width="320" height="240" />
+      <text class="title" x="12" y="24">One inquiry, eight steps</text>
+      <circle class="on" cx="40" cy="76" r="14" />
+      <text class="num" x="40" y="81" text-anchor="middle">1</text>
+      <text class="txt" x="40" y="109" text-anchor="middle">Form</text>
+      <circle class="on" cx="120" cy="76" r="14" />
+      <text class="num" x="120" y="81" text-anchor="middle">2</text>
+      <text class="txt" x="120" y="109" text-anchor="middle">Match</text>
+      <path class="line" d="M54 76H99" />
+      <polygon class="head" points="106,76 99,72 99,80" />
+      <circle class="on" cx="200" cy="76" r="14" />
+      <text class="num" x="200" y="81" text-anchor="middle">3</text>
+      <text class="txt" x="200" y="109" text-anchor="middle">Case</text>
+      <path class="line" d="M134 76H179" />
+      <polygon class="head" points="186,76 179,72 179,80" />
+      <circle class="on" cx="280" cy="76" r="14" />
+      <text class="num" x="280" y="81" text-anchor="middle">4</text>
+      <text class="txt" x="280" y="109" text-anchor="middle">Route</text>
+      <path class="line" d="M214 76H259" />
+      <polygon class="head" points="266,76 259,72 259,80" />
+      <circle class="on" cx="40" cy="156" r="14" />
+      <text class="num" x="40" y="161" text-anchor="middle">5</text>
+      <text class="txt" x="40" y="189" text-anchor="middle">Review</text>
+      <circle class="on" cx="120" cy="156" r="14" />
+      <text class="num" x="120" y="161" text-anchor="middle">6</text>
+      <text class="txt" x="120" y="189" text-anchor="middle">Convert</text>
+      <path class="line" d="M54 156H99" />
+      <polygon class="head" points="106,156 99,152 99,160" />
+      <circle class="on" cx="200" cy="156" r="14" />
+      <text class="num" x="200" y="161" text-anchor="middle">7</text>
+      <text class="txt" x="200" y="189" text-anchor="middle">Contract</text>
+      <path class="line" d="M134 156H179" />
+      <polygon class="head" points="186,156 179,152 179,160" />
+      <circle class="on" cx="280" cy="156" r="14" />
+      <text class="num" x="280" y="161" text-anchor="middle">8</text>
+      <text class="txt" x="280" y="189" text-anchor="middle">Report</text>
+      <path class="line" d="M214 156H259" />
+      <polygon class="head" points="266,156 259,152 259,160" />
+      <path class="line" d="M294 76H308V120H8V156H19" />
+      <polygon class="head" points="26,156 19,152 19,160" />
+      <template lwc:if={tag}>
+        <rect class="tag-box" x="160" y="206" width="152" height="22" rx="11" />
+        <text class="tag-txt" x="171" y="221">{tag}</text>
+      </template>
+    </svg>
+  </template>
+  <template lwc:elseif={isSiteOrg}>
+    <svg
+      class="fig"
+      viewBox="0 0 320 240"
+      role="img"
+      aria-label={label}
+      focusable="false"
+    >
+      <rect class="bg" width="320" height="240" />
+      <text class="title" x="12" y="24">From org records to the page</text>
+      <rect class="node" x="18" y="84" width="44" height="11" rx="5.5" />
+      <rect class="node" x="18" y="98" width="44" height="11" rx="5.5" />
+      <rect class="node" x="18" y="112" width="44" height="11" rx="5.5" />
+      <rect class="node" x="98" y="84" width="44" height="40" rx="4" />
+      <path class="line" d="M106 96H134M106 104H130M106 112H134" />
+      <rect class="on" x="178" y="84" width="44" height="40" rx="4" />
+      <polygon class="num-fill" points="194,94 194,114 210,104" />
+      <rect class="node" x="258" y="84" width="44" height="40" rx="4" />
+      <path class="line" d="M258 94H302M266 104H294M266 112H290" />
+      <text class="txt-b" x="40" y="152" text-anchor="middle">Org records</text>
+      <text class="txt-b" x="120" y="152" text-anchor="middle">
+        Export read
+      </text>
+      <text class="txt-b" x="200" y="152" text-anchor="middle">
+        Static build
+      </text>
+      <text class="txt-b" x="280" y="152" text-anchor="middle">Live page</text>
+      <path class="line" d="M66 104H87" />
+      <polygon class="head" points="94,104 87,100 87,108" />
+      <path class="line" d="M146 104H167" />
+      <polygon class="head" points="174,104 167,100 167,108" />
+      <path class="line" d="M226 104H247" />
+      <polygon class="head" points="254,104 247,100 247,108" />
+    </svg>
+  </template>
+  <template lwc:elseif={isGlassops}>
+    <svg
+      class="fig"
+      viewBox="0 0 320 240"
+      role="img"
+      aria-label={label}
+      focusable="false"
+    >
+      <rect class="bg" width="320" height="240" />
+      <text class="title" x="12" y="24">The deploy chain</text>
+      <rect class="node" x="12" y="60" width="84" height="36" rx="6" />
+      <text class="txt-b" x="54" y="83" text-anchor="middle">Plan</text>
+      <rect class="node" x="118" y="60" width="84" height="36" rx="6" />
+      <text class="txt-b" x="160" y="83" text-anchor="middle">Validate</text>
+      <rect class="node" x="224" y="60" width="84" height="36" rx="6" />
+      <text class="txt-b" x="266" y="83" text-anchor="middle">Gate</text>
+      <path class="line" d="M96 78H111" />
+      <polygon class="head" points="118,78 111,74 111,82" />
+      <path class="line" d="M202 78H217" />
+      <polygon class="head" points="224,78 217,74 217,82" />
+      <path class="line" d="M266 96V132H54V161" />
+      <polygon class="head" points="54,168 49,161 59,161" />
+      <rect class="on" x="12" y="168" width="84" height="36" rx="6" />
+      <text class="on-txt" x="54" y="183" text-anchor="middle">Signed</text>
+      <text class="on-txt" x="54" y="198" text-anchor="middle">permit</text>
+      <rect class="node" x="118" y="168" width="84" height="36" rx="6" />
+      <text class="txt-b" x="160" y="191" text-anchor="middle">Deploy</text>
+      <rect class="node" x="224" y="168" width="84" height="36" rx="6" />
+      <text class="txt-b" x="266" y="191" text-anchor="middle">Verify</text>
+      <path class="line" d="M96 186H111" />
+      <polygon class="head" points="118,186 111,182 111,190" />
+      <path class="line" d="M202 186H217" />
+      <polygon class="head" points="224,186 217,182 217,190" />
+    </svg>
+  </template>
+</template>

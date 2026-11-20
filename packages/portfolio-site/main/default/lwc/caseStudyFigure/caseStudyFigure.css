@@ -1,0 +1,122 @@
+/*
+ * The host fills its parent. It also holds a 4 to 3 box of its own, so the picture takes its
+ * space before it draws and the page does not shift. An unknown or blank key hides the host.
+ * Every colour is a site token. Strokes and fills that carry meaning use --pf-muted, --pf-btn
+ * or --pf-text, each at least 3 to 1 against --pf-subtle in light and dark.
+ */
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 4 / 3;
+  container-type: inline-size;
+}
+
+:host(.is-empty) {
+  display: none;
+}
+
+svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  font-family: var(--pf-font-sans, system-ui, sans-serif);
+  font-size: 12px;
+}
+
+.bg {
+  fill: var(--pf-subtle);
+}
+
+.title {
+  fill: var(--pf-text);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.txt {
+  fill: var(--pf-body);
+  font-size: 12px;
+}
+
+.txt-b {
+  fill: var(--pf-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.node {
+  fill: var(--pf-surface);
+  stroke: var(--pf-muted);
+  stroke-width: 1.5;
+}
+
+.cell {
+  fill: var(--pf-chip);
+  stroke: var(--pf-muted);
+  stroke-width: 1;
+}
+
+.line {
+  fill: none;
+  stroke: var(--pf-muted);
+  stroke-width: 2;
+}
+
+.head {
+  fill: var(--pf-muted);
+}
+
+.on {
+  fill: var(--pf-btn);
+  stroke: var(--pf-btn);
+  stroke-width: 1.5;
+}
+
+.on-txt {
+  fill: var(--pf-btn-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.num {
+  fill: var(--pf-btn-text);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.bar {
+  fill: var(--pf-muted);
+}
+
+.pick {
+  fill: none;
+  stroke: var(--pf-btn);
+  stroke-width: 2;
+}
+
+.tag-box {
+  fill: var(--pf-chip);
+  stroke: var(--pf-muted);
+  stroke-width: 1;
+}
+
+.tag-txt {
+  fill: var(--pf-chip-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.num-fill {
+  fill: var(--pf-btn-text);
+}
+
+/*
+ * A picture narrower than 320 px would draw its text under 12 px. It keeps the shapes and
+ * drops the words, and the label still says what the picture shows.
+ */
+@container (max-width: 319px) {
+  text {
+    display: none;
+  }
+}
