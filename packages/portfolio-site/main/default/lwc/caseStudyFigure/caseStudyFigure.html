@@ -1,7 +1,7 @@
 <template>
   <template lwc:if={isLiteracy}>
     <svg
-      class="fig"
+      class="full"
       viewBox="0 0 320 240"
       role="img"
       aria-label={label}
@@ -49,15 +49,49 @@
       <rect class="cell" x="216" y="153" width="10" height="18" rx="2" />
       <rect class="bar" x="238" y="155" width="56" height="14" rx="3" />
       <text class="txt" x="12" y="192">Outlined row: the option chosen</text>
-      <template lwc:if={tag}>
-        <rect class="tag-box" x="160" y="206" width="152" height="22" rx="11" />
-        <text class="tag-txt" x="171" y="221">{tag}</text>
-      </template>
     </svg>
+    <svg
+      class="thumb"
+      viewBox="0 0 160 120"
+      role="img"
+      aria-label={label}
+      focusable="false"
+    >
+      <rect class="bg" width="160" height="120" />
+      <rect class="pick" x="4" y="10" width="152" height="34" rx="5" />
+      <rect class="cell" x="14" y="19" width="9" height="16" rx="2" />
+      <rect class="cell" x="26" y="19" width="9" height="16" rx="2" />
+      <rect class="cell" x="38" y="19" width="9" height="16" rx="2" />
+      <rect class="cell" x="50" y="19" width="9" height="16" rx="2" />
+      <rect class="cell" x="62" y="19" width="9" height="16" rx="2" />
+      <rect class="cell" x="74" y="19" width="9" height="16" rx="2" />
+      <rect class="cell" x="86" y="19" width="9" height="16" rx="2" />
+      <rect class="cell" x="98" y="19" width="9" height="16" rx="2" />
+      <rect class="bar" x="118" y="24" width="34" height="8" rx="2" />
+      <rect class="cell" x="14" y="57" width="9" height="16" rx="2" />
+      <rect class="cell" x="26" y="57" width="9" height="16" rx="2" />
+      <rect class="cell" x="38" y="57" width="9" height="16" rx="2" />
+      <rect class="cell" x="50" y="57" width="9" height="16" rx="2" />
+      <rect class="cell" x="62" y="57" width="9" height="16" rx="2" />
+      <rect class="cell" x="74" y="57" width="9" height="16" rx="2" />
+      <rect class="cell" x="86" y="57" width="9" height="16" rx="2" />
+      <rect class="cell" x="98" y="57" width="9" height="16" rx="2" />
+      <rect class="bar" x="118" y="62" width="28" height="8" rx="2" />
+      <rect class="cell" x="14" y="95" width="9" height="16" rx="2" />
+      <rect class="cell" x="26" y="95" width="9" height="16" rx="2" />
+      <rect class="cell" x="38" y="95" width="9" height="16" rx="2" />
+      <rect class="cell" x="50" y="95" width="9" height="16" rx="2" />
+      <rect class="cell" x="62" y="95" width="9" height="16" rx="2" />
+      <rect class="cell" x="74" y="95" width="9" height="16" rx="2" />
+      <rect class="cell" x="86" y="95" width="9" height="16" rx="2" />
+      <rect class="cell" x="98" y="95" width="9" height="16" rx="2" />
+      <rect class="bar" x="118" y="100" width="28" height="8" rx="2" />
+    </svg>
+    <span class="tag" lwc:if={tag}>{tag}</span>
   </template>
   <template lwc:elseif={isEmployerHub}>
     <svg
-      class="fig"
+      class="full"
       viewBox="0 0 320 240"
       role="img"
       aria-label={label}
@@ -103,15 +137,37 @@
       <polygon class="head" points="266,156 259,152 259,160" />
       <path class="line" d="M294 76H308V120H8V156H19" />
       <polygon class="head" points="26,156 19,152 19,160" />
-      <template lwc:if={tag}>
-        <rect class="tag-box" x="160" y="206" width="152" height="22" rx="11" />
-        <text class="tag-txt" x="171" y="221">{tag}</text>
-      </template>
     </svg>
+    <svg
+      class="thumb"
+      viewBox="0 0 160 120"
+      role="img"
+      aria-label={label}
+      focusable="false"
+    >
+      <rect class="bg" width="160" height="120" />
+      <circle class="on" cx="24" cy="32" r="12" />
+      <circle class="on" cx="61" cy="32" r="12" />
+      <path class="line" d="M36 32H49" />
+      <circle class="on" cx="98" cy="32" r="12" />
+      <path class="line" d="M73 32H86" />
+      <circle class="on" cx="135" cy="32" r="12" />
+      <path class="line" d="M110 32H123" />
+      <circle class="on" cx="24" cy="88" r="12" />
+      <circle class="on" cx="61" cy="88" r="12" />
+      <path class="line" d="M36 88H49" />
+      <circle class="on" cx="98" cy="88" r="12" />
+      <path class="line" d="M73 88H86" />
+      <circle class="on" cx="135" cy="88" r="12" />
+      <path class="line" d="M110 88H123" />
+      <path class="line" d="M147 32H156V60H4V88H11" />
+      <polygon class="head" points="12,88 6,84 6,92" />
+    </svg>
+    <span class="tag" lwc:if={tag}>{tag}</span>
   </template>
   <template lwc:elseif={isSiteOrg}>
     <svg
-      class="fig"
+      class="full"
       viewBox="0 0 320 240"
       role="img"
       aria-label={label}
@@ -143,10 +199,35 @@
       <path class="line" d="M226 104H247" />
       <polygon class="head" points="254,104 247,100 247,108" />
     </svg>
+    <svg
+      class="thumb"
+      viewBox="0 0 160 120"
+      role="img"
+      aria-label={label}
+      focusable="false"
+    >
+      <rect class="bg" width="160" height="120" />
+      <rect class="node" x="6" y="44" width="28" height="8" rx="4" />
+      <rect class="node" x="6" y="56" width="28" height="8" rx="4" />
+      <rect class="node" x="6" y="68" width="28" height="8" rx="4" />
+      <rect class="node" x="46" y="44" width="28" height="32" rx="3" />
+      <path class="line" d="M52 54H68M52 60H66M52 66H68" />
+      <rect class="on" x="86" y="44" width="28" height="32" rx="3" />
+      <polygon class="num-fill" points="95,52 95,68 106,60" />
+      <rect class="node" x="126" y="44" width="28" height="32" rx="3" />
+      <path class="line" d="M126 52H154M132 60H148M132 67H146" />
+      <path class="line" d="M36 60H40" />
+      <polygon class="head" points="45,60 40,57 40,63" />
+      <path class="line" d="M76 60H80" />
+      <polygon class="head" points="85,60 80,57 80,63" />
+      <path class="line" d="M116 60H120" />
+      <polygon class="head" points="125,60 120,57 120,63" />
+    </svg>
+    <span class="tag" lwc:if={tag}>{tag}</span>
   </template>
   <template lwc:elseif={isGlassops}>
     <svg
-      class="fig"
+      class="full"
       viewBox="0 0 320 240"
       role="img"
       aria-label={label}
@@ -178,5 +259,31 @@
       <path class="line" d="M202 186H217" />
       <polygon class="head" points="224,186 217,182 217,190" />
     </svg>
+    <svg
+      class="thumb"
+      viewBox="0 0 160 120"
+      role="img"
+      aria-label={label}
+      focusable="false"
+    >
+      <rect class="bg" width="160" height="120" />
+      <rect class="node" x="6" y="14" width="40" height="26" rx="4" />
+      <rect class="node" x="60" y="14" width="40" height="26" rx="4" />
+      <rect class="node" x="114" y="14" width="40" height="26" rx="4" />
+      <path class="line" d="M46 27H55" />
+      <polygon class="head" points="60,27 55,24 55,30" />
+      <path class="line" d="M100 27H109" />
+      <polygon class="head" points="114,27 109,24 109,30" />
+      <path class="line" d="M134 40V59H26V73" />
+      <polygon class="head" points="26,78 22,72 30,72" />
+      <rect class="on" x="6" y="78" width="40" height="26" rx="4" />
+      <rect class="node" x="60" y="78" width="40" height="26" rx="4" />
+      <rect class="node" x="114" y="78" width="40" height="26" rx="4" />
+      <path class="line" d="M46 91H55" />
+      <polygon class="head" points="60,91 55,88 55,94" />
+      <path class="line" d="M100 91H109" />
+      <polygon class="head" points="114,91 109,88 109,94" />
+    </svg>
+    <span class="tag" lwc:if={tag}>{tag}</span>
   </template>
 </template>

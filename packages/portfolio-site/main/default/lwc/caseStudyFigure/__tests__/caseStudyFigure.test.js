@@ -20,9 +20,13 @@ const mount = (key) => {
   document.body.appendChild(el);
   return el;
 };
-const svg = (el) => el.shadowRoot.querySelector("svg");
+const svg = (el) => el.shadowRoot.querySelector("svg.full");
+const thumb = (el) => el.shadowRoot.querySelector("svg.thumb");
+const tagEl = (el) => el.shadowRoot.querySelector("span.tag");
 const texts = (el) =>
-  Array.from(el.shadowRoot.querySelectorAll("text")).map((t) => t.textContent);
+  Array.from(el.shadowRoot.querySelectorAll("svg.full text")).map(
+    (t) => t.textContent
+  );
 
 afterEach(() => {
   while (document.body.firstChild)
@@ -41,17 +45,44 @@ describe("c-case-study-figure", () => {
   });
 
   it.each(["literacy-platform", "employer-hub"])(
-    "%s carries the private tag as text",
+    "%s carries the private tag as HTML text outside both drawings",
     (key) => {
       const el = mount(key);
-      expect(texts(el)).toContain("Client work, private");
+      const tag = tagEl(el);
+      expect(tag.textContent).toBe("Client work, private");
+      expect(tag.closest("svg")).toBeNull();
+      expect(texts(el)).not.toContain("Client work, private");
       expect(FIGURES[key].label).toMatch(/client work, private/i);
     }
   );
 
   it.each(["site-org", "glassops"])("%s carries no private tag", (key) => {
     const el = mount(key);
-    expect(texts(el)).not.toContain("Client work, private");
+    expect(tagEl(el)).toBeNull();
+  });
+
+  it.each(Object.keys(FIGURES))(
+    "%s also draws a shapes only thumbnail with the same label and no text",
+    (key) => {
+      const el = mount(key);
+      const t = thumb(el);
+      expect(t).not.toBeNull();
+      expect(t.getAttribute("viewBox")).toBe("0 0 160 120");
+      expect(t.getAttribute("role")).toBe("img");
+      expect(t.getAttribute("aria-label")).toBe(FIGURES[key].label);
+      expect(t.querySelectorAll("text")).toHaveLength(0);
+    }
+  );
+
+  it("switches to the thumbnail under 320 px by container query and keeps the tag in the flow", () => {
+    const css = readFileSync(
+      join(__dirname, "..", "caseStudyFigure.css"),
+      "utf8"
+    );
+    const q = css.slice(css.indexOf("@container (max-width: 319px)"));
+    expect(q).toMatch(/\.full \{\s*display: none/);
+    expect(q).toMatch(/\.thumb \{\s*display: block/);
+    expect(q).toMatch(/\.tag \{[^}]*position: static/);
   });
 
   it("draws the eight numbered steps of the Employer Hub", () => {
@@ -80,7 +111,9 @@ describe("c-case-study-figure", () => {
 
   it("draws three options against ten criteria for the matrix", () => {
     const el = mount("literacy-platform");
-    expect(el.shadowRoot.querySelectorAll("rect.cell")).toHaveLength(30);
+    expect(el.shadowRoot.querySelectorAll("svg.full rect.cell")).toHaveLength(
+      30
+    );
     expect(texts(el)).toEqual(
       expect.arrayContaining([
         "NPSP + PMM",
