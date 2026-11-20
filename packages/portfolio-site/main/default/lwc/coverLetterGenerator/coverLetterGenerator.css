@@ -56,6 +56,17 @@
   margin-top: var(--pf-space-2);
 }
 
+/* Why Generate is off, in the body text colour, just under the button. Empty when it is on. */
+.generate-hint {
+  margin: var(--pf-space-2) 0 0;
+  color: var(--pf-body);
+  font-size: var(--pf-font-caption, 14px);
+}
+
+.generate-hint:empty {
+  display: none;
+}
+
 .fallback-note {
   background-color: var(--pf-warn);
   color: var(--pf-warn-text);
@@ -294,13 +305,6 @@
 @media (max-width: 767.98px) {
   .letter-sheet {
     padding: var(--pf-space-4);
-  }
-}
-
-/* Below 1025 px: no card box and no side padding, so the form sits on the page gutter. */
-@media (max-width: 1024.98px) {
-  .generator {
-    padding-inline: 0;
   }
 }
 

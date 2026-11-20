@@ -12,7 +12,8 @@
 //   3. deploy       the whole packages folder
 //   4. admin        assigns Portfolio_Admin to the org's admin, which the seed import needs
 //   5. guest        assigns Portfolio_Guest to the Portfolio1 site's guest user
-//   6. seed         imports the plans in data/, then the docs cache rows built from docs/
+//   6. seed         imports the plans in data/, then the source cache rows built from docs/
+//                   and the component files
 //   7. mermaid      draws the docs diagrams and deploys them (skipped, with a warning, when
 //                   the drawing tools or a Chrome are missing)
 //   8. publish      publishes the site, then prints its URL and the org Id
@@ -187,8 +188,11 @@ function splitContent(text) {
   return parts;
 }
 
-/** The paths of every docs record in the Source_File custom metadata. */
-function docPaths(root = ROOT) {
+/**
+ * The paths of the Source_File custom metadata records whose file name passes the test.
+ * A docs record is named Source_File.docs_*, and every other record is a component file.
+ */
+function sourcePaths(root, wantsName) {
   const dir = path.join(
     root,
     "packages/portfolio-site/main/default/customMetadata"
@@ -198,7 +202,7 @@ function docPaths(root = ROOT) {
     return found;
   }
   for (const name of fs.readdirSync(dir)) {
-    if (!/^Source_File\.docs_.*\.md-meta\.xml$/.test(name)) {
+    if (!/^Source_File\..*\.md-meta\.xml$/.test(name) || !wantsName(name)) {
       continue;
     }
     const xml = fs.readFileSync(path.join(dir, name), "utf8");
@@ -212,10 +216,23 @@ function docPaths(root = ROOT) {
   return found.sort();
 }
 
-/** The tree import plan and data file for the docs cache. Returns null when no doc exists. */
+/** The paths of every docs record in the Source_File custom metadata. */
+function docPaths(root = ROOT) {
+  return sourcePaths(root, (name) => name.startsWith("Source_File.docs_"));
+}
+
+/** The paths of every component file record, the ones the View source dialog shows. */
+function codePaths(root = ROOT) {
+  return sourcePaths(root, (name) => !name.startsWith("Source_File.docs_"));
+}
+
+/**
+ * The tree import plan and data file for the source cache: the docs and the component files
+ * the View source dialog shows, so a clean export has both. Returns null when none exists.
+ */
 function buildDocsPlan(outDir, root = ROOT, now = new Date()) {
   const records = [];
-  for (const docPath of docPaths(root)) {
+  for (const docPath of [...docPaths(root), ...codePaths(root)]) {
     const file = path.join(root, docPath);
     if (!fs.existsSync(file)) {
       continue;
@@ -523,9 +540,13 @@ function main(argv, deps = realDeps(), log = console.log) {
       "--target-org",
       alias
     ]);
-    log(`seed: ${SEED_PLANS.length} plans and ${docs.count} docs cache rows`);
+    log(
+      `seed: ${SEED_PLANS.length} plans and ${docs.count} source cache rows (docs and component files)`
+    );
   } else {
-    log(`seed: ${SEED_PLANS.length} plans, no docs found to cache`);
+    log(
+      `seed: ${SEED_PLANS.length} plans, no docs or component files found to cache`
+    );
   }
   mark("seed");
 
@@ -580,6 +601,7 @@ module.exports = {
   preflight,
   buildDocsPlan,
   docPaths,
+  codePaths,
   splitContent,
   siteBase,
   quote,

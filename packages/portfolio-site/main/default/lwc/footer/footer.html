@@ -12,15 +12,17 @@
             {recordedLabel}
           </p>
         </template>
-        <c-view-source source-key="footer"></c-view-source>
-        <c-analytics-events></c-analytics-events>
-        <c-view-source
-          source-key="siteAnalytics"
-          label="View analytics source"
-        ></c-view-source>
       </div>
       <div class="metrics" data-id="metrics" onkeydown={handleKeydown}>
         <div class={chipsClass} data-id="chips">
+          <c-view-source source-key="footer"></c-view-source>
+          <template lwc:if={hasAnalyticsEvents}>
+            <c-analytics-events></c-analytics-events>
+          </template>
+          <c-view-source
+            source-key="siteAnalytics"
+            label="View analytics source"
+          ></c-view-source>
           <button
             type="button"
             class={ciChipClass}
@@ -332,6 +334,9 @@
       <span class="links">
         <a class="target" data-id="contact" href={contactUrl}>Contact</a>
         <a class="target" data-id="docs" href={docsUrl}>Docs</a>
+        <a class="target" data-id="testimonials" href={testimonialsUrl}
+          >Testimonials</a
+        >
         <template lwc:if={gitHubUrl}>
           <a
             class="target"

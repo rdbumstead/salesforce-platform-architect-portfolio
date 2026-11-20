@@ -121,7 +121,7 @@
               "raw": "{\n  \"email\": \"{{evaluatorEmail}}\",\n  \"purpose\": \"Evaluate the Portfolio API from Postman\"\n}"
             },
             "description": {
-              "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254\n  characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE**: the daily cap is reached (retryable, and `Retry-After` is the seconds to\n  the next midnight in the running user's time zone. The cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50). The\n  credential is missing or not granted (not retryable, with no `Retry-After`, because waiting cannot\n  fix a setup problem). Or the token endpoint fails (retryable, `Retry-After: 60`).\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.\n",
+              "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings, `email` is blank, longer than 254\n  characters or not an address, `purpose` is blank or longer than 280 characters, or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE**: the daily cap is reached (retryable, and `Retry-After` is the seconds to\n  the next midnight in the running user's time zone. The cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50). The\n  credential is missing or not granted (not retryable, with no `Retry-After`, because waiting cannot\n  fix a setup problem). Or the token endpoint fails (retryable, `Retry-After: 60`).\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.\n",
               "type": "text/plain"
             },
             "header": [
@@ -132,7 +132,7 @@
                 "value": "{{$guid}}"
               },
               {
-                "description": "API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).",
+                "description": "API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated. Any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).",
                 "disabled": true,
                 "key": "X-API-Version",
                 "value": "v2"
@@ -176,7 +176,7 @@
               "cookie": [],
               "header": [
                 {
-                  "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                  "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                   "disabled": true,
                   "key": "X-Request-Id",
                   "value": "00000000-0000-4000-8000-000000000000"
@@ -205,7 +205,7 @@
                   "raw": "{\n  \"email\": \"{{evaluatorEmail}}\",\n  \"purpose\": \"Evaluate the Portfolio API from Postman\"\n}"
                 },
                 "description": {
-                  "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254\n  characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE**: the daily cap is reached (retryable, and `Retry-After` is the seconds to\n  the next midnight in the running user's time zone. The cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50). The\n  credential is missing or not granted (not retryable, with no `Retry-After`, because waiting cannot\n  fix a setup problem). Or the token endpoint fails (retryable, `Retry-After: 60`).\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.\n",
+                  "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings, `email` is blank, longer than 254\n  characters or not an address, `purpose` is blank or longer than 280 characters, or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE**: the daily cap is reached (retryable, and `Retry-After` is the seconds to\n  the next midnight in the running user's time zone. The cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50). The\n  credential is missing or not granted (not retryable, with no `Retry-After`, because waiting cannot\n  fix a setup problem). Or the token endpoint fails (retryable, `Retry-After: 60`).\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.\n",
                   "type": "text/plain"
                 },
                 "header": [
@@ -216,7 +216,7 @@
                     "value": "{{$guid}}"
                   },
                   {
-                    "description": "API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).",
+                    "description": "API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated. Any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).",
                     "disabled": true,
                     "key": "X-API-Version",
                     "value": "v2"
@@ -261,7 +261,7 @@
               "cookie": [],
               "header": [
                 {
-                  "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                  "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                   "disabled": true,
                   "key": "X-Request-Id",
                   "value": "00000000-0000-4000-8000-000000000000"
@@ -284,7 +284,7 @@
                   "raw": "{\n  \"email\": \"{{evaluatorEmail}}\",\n  \"purpose\": \"Evaluate the Portfolio API from Postman\"\n}"
                 },
                 "description": {
-                  "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254\n  characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE**: the daily cap is reached (retryable, and `Retry-After` is the seconds to\n  the next midnight in the running user's time zone. The cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50). The\n  credential is missing or not granted (not retryable, with no `Retry-After`, because waiting cannot\n  fix a setup problem). Or the token endpoint fails (retryable, `Retry-After: 60`).\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.\n",
+                  "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings, `email` is blank, longer than 254\n  characters or not an address, `purpose` is blank or longer than 280 characters, or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE**: the daily cap is reached (retryable, and `Retry-After` is the seconds to\n  the next midnight in the running user's time zone. The cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50). The\n  credential is missing or not granted (not retryable, with no `Retry-After`, because waiting cannot\n  fix a setup problem). Or the token endpoint fails (retryable, `Retry-After: 60`).\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.\n",
                   "type": "text/plain"
                 },
                 "header": [
@@ -295,7 +295,7 @@
                     "value": "{{$guid}}"
                   },
                   {
-                    "description": "API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).",
+                    "description": "API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated. Any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).",
                     "disabled": true,
                     "key": "X-API-Version",
                     "value": "v2"
@@ -340,7 +340,7 @@
               "cookie": [],
               "header": [
                 {
-                  "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                  "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                   "disabled": true,
                   "key": "X-Request-Id",
                   "value": "00000000-0000-4000-8000-000000000000"
@@ -363,7 +363,7 @@
                   "raw": "{\n  \"email\": \"{{evaluatorEmail}}\",\n  \"purpose\": \"Evaluate the Portfolio API from Postman\"\n}"
                 },
                 "description": {
-                  "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254\n  characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE**: the daily cap is reached (retryable, and `Retry-After` is the seconds to\n  the next midnight in the running user's time zone. The cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50). The\n  credential is missing or not granted (not retryable, with no `Retry-After`, because waiting cannot\n  fix a setup problem). Or the token endpoint fails (retryable, `Retry-After: 60`).\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.\n",
+                  "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings, `email` is blank, longer than 254\n  characters or not an address, `purpose` is blank or longer than 280 characters, or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE**: the daily cap is reached (retryable, and `Retry-After` is the seconds to\n  the next midnight in the running user's time zone. The cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50). The\n  credential is missing or not granted (not retryable, with no `Retry-After`, because waiting cannot\n  fix a setup problem). Or the token endpoint fails (retryable, `Retry-After: 60`).\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.\n",
                   "type": "text/plain"
                 },
                 "header": [
@@ -374,7 +374,7 @@
                     "value": "{{$guid}}"
                   },
                   {
-                    "description": "API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).",
+                    "description": "API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated. Any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).",
                     "disabled": true,
                     "key": "X-API-Version",
                     "value": "v2"
@@ -419,7 +419,7 @@
               "cookie": [],
               "header": [
                 {
-                  "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                  "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                   "disabled": true,
                   "key": "X-Request-Id",
                   "value": "00000000-0000-4000-8000-000000000000"
@@ -442,7 +442,7 @@
                   "raw": "{\n  \"email\": \"{{evaluatorEmail}}\",\n  \"purpose\": \"Evaluate the Portfolio API from Postman\"\n}"
                 },
                 "description": {
-                  "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254\n  characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE**: the daily cap is reached (retryable, and `Retry-After` is the seconds to\n  the next midnight in the running user's time zone. The cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50). The\n  credential is missing or not granted (not retryable, with no `Retry-After`, because waiting cannot\n  fix a setup problem). Or the token endpoint fails (retryable, `Retry-After: 60`).\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.\n",
+                  "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings, `email` is blank, longer than 254\n  characters or not an address, `purpose` is blank or longer than 280 characters, or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE**: the daily cap is reached (retryable, and `Retry-After` is the seconds to\n  the next midnight in the running user's time zone. The cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50). The\n  credential is missing or not granted (not retryable, with no `Retry-After`, because waiting cannot\n  fix a setup problem). Or the token endpoint fails (retryable, `Retry-After: 60`).\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.\n",
                   "type": "text/plain"
                 },
                 "header": [
@@ -453,7 +453,7 @@
                     "value": "{{$guid}}"
                   },
                   {
-                    "description": "API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).",
+                    "description": "API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated. Any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).",
                     "disabled": true,
                     "key": "X-API-Version",
                     "value": "v2"
@@ -498,7 +498,7 @@
               "cookie": [],
               "header": [
                 {
-                  "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                  "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                   "disabled": true,
                   "key": "X-Request-Id",
                   "value": "00000000-0000-4000-8000-000000000000"
@@ -527,7 +527,7 @@
                   "raw": "{\n  \"email\": \"{{evaluatorEmail}}\",\n  \"purpose\": \"Evaluate the Portfolio API from Postman\"\n}"
                 },
                 "description": {
-                  "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254\n  characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE**: the daily cap is reached (retryable, and `Retry-After` is the seconds to\n  the next midnight in the running user's time zone. The cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50). The\n  credential is missing or not granted (not retryable, with no `Retry-After`, because waiting cannot\n  fix a setup problem). Or the token endpoint fails (retryable, `Retry-After: 60`).\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.\n",
+                  "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings, `email` is blank, longer than 254\n  characters or not an address, `purpose` is blank or longer than 280 characters, or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE**: the daily cap is reached (retryable, and `Retry-After` is the seconds to\n  the next midnight in the running user's time zone. The cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50). The\n  credential is missing or not granted (not retryable, with no `Retry-After`, because waiting cannot\n  fix a setup problem). Or the token endpoint fails (retryable, `Retry-After: 60`).\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.\n",
                   "type": "text/plain"
                 },
                 "header": [
@@ -538,7 +538,7 @@
                     "value": "{{$guid}}"
                   },
                   {
-                    "description": "API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).",
+                    "description": "API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated. Any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).",
                     "disabled": true,
                     "key": "X-API-Version",
                     "value": "v2"
@@ -583,7 +583,7 @@
               "cookie": [],
               "header": [
                 {
-                  "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                  "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                   "disabled": true,
                   "key": "X-Request-Id",
                   "value": "00000000-0000-4000-8000-000000000000"
@@ -612,7 +612,7 @@
                   "raw": "{\n  \"email\": \"{{evaluatorEmail}}\",\n  \"purpose\": \"Evaluate the Portfolio API from Postman\"\n}"
                 },
                 "description": {
-                  "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254\n  characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE**: the daily cap is reached (retryable, and `Retry-After` is the seconds to\n  the next midnight in the running user's time zone. The cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50). The\n  credential is missing or not granted (not retryable, with no `Retry-After`, because waiting cannot\n  fix a setup problem). Or the token endpoint fails (retryable, `Retry-After: 60`).\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.\n",
+                  "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings, `email` is blank, longer than 254\n  characters or not an address, `purpose` is blank or longer than 280 characters, or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE**: the daily cap is reached (retryable, and `Retry-After` is the seconds to\n  the next midnight in the running user's time zone. The cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50). The\n  credential is missing or not granted (not retryable, with no `Retry-After`, because waiting cannot\n  fix a setup problem). Or the token endpoint fails (retryable, `Retry-After: 60`).\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.\n",
                   "type": "text/plain"
                 },
                 "header": [
@@ -623,7 +623,7 @@
                     "value": "{{$guid}}"
                   },
                   {
-                    "description": "API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).",
+                    "description": "API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated. Any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).",
                     "disabled": true,
                     "key": "X-API-Version",
                     "value": "v2"
@@ -668,7 +668,7 @@
               "cookie": [],
               "header": [
                 {
-                  "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                  "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                   "disabled": true,
                   "key": "X-Request-Id",
                   "value": "00000000-0000-4000-8000-000000000000"
@@ -691,7 +691,7 @@
                   "raw": "{\n  \"email\": \"{{evaluatorEmail}}\",\n  \"purpose\": \"Evaluate the Portfolio API from Postman\"\n}"
                 },
                 "description": {
-                  "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254\n  characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE**: the daily cap is reached (retryable, and `Retry-After` is the seconds to\n  the next midnight in the running user's time zone. The cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50). The\n  credential is missing or not granted (not retryable, with no `Retry-After`, because waiting cannot\n  fix a setup problem). Or the token endpoint fails (retryable, `Retry-After: 60`).\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.\n",
+                  "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings, `email` is blank, longer than 254\n  characters or not an address, `purpose` is blank or longer than 280 characters, or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE**: the daily cap is reached (retryable, and `Retry-After` is the seconds to\n  the next midnight in the running user's time zone. The cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50). The\n  credential is missing or not granted (not retryable, with no `Retry-After`, because waiting cannot\n  fix a setup problem). Or the token endpoint fails (retryable, `Retry-After: 60`).\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.\n",
                   "type": "text/plain"
                 },
                 "header": [
@@ -702,7 +702,7 @@
                     "value": "{{$guid}}"
                   },
                   {
-                    "description": "API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).",
+                    "description": "API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated. Any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).",
                     "disabled": true,
                     "key": "X-API-Version",
                     "value": "v2"
@@ -747,7 +747,7 @@
               "cookie": [],
               "header": [
                 {
-                  "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                  "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                   "disabled": true,
                   "key": "X-Request-Id",
                   "value": "00000000-0000-4000-8000-000000000000"
@@ -776,7 +776,7 @@
                   "raw": "{\n  \"email\": \"{{evaluatorEmail}}\",\n  \"purpose\": \"Evaluate the Portfolio API from Postman\"\n}"
                 },
                 "description": {
-                  "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254\n  characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE**: the daily cap is reached (retryable, and `Retry-After` is the seconds to\n  the next midnight in the running user's time zone. The cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50). The\n  credential is missing or not granted (not retryable, with no `Retry-After`, because waiting cannot\n  fix a setup problem). Or the token endpoint fails (retryable, `Retry-After: 60`).\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.\n",
+                  "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings, `email` is blank, longer than 254\n  characters or not an address, `purpose` is blank or longer than 280 characters, or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE**: the daily cap is reached (retryable, and `Retry-After` is the seconds to\n  the next midnight in the running user's time zone. The cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50). The\n  credential is missing or not granted (not retryable, with no `Retry-After`, because waiting cannot\n  fix a setup problem). Or the token endpoint fails (retryable, `Retry-After: 60`).\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.\n",
                   "type": "text/plain"
                 },
                 "header": [
@@ -787,7 +787,7 @@
                     "value": "{{$guid}}"
                   },
                   {
-                    "description": "API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).",
+                    "description": "API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated. Any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).",
                     "disabled": true,
                     "key": "X-API-Version",
                     "value": "v2"
@@ -894,7 +894,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -969,7 +969,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -1032,7 +1032,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -1101,7 +1101,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -1164,7 +1164,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -1227,7 +1227,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -1296,7 +1296,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -1359,7 +1359,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -1428,7 +1428,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -1539,7 +1539,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -1614,7 +1614,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -1677,7 +1677,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -1746,7 +1746,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -1809,7 +1809,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -1872,7 +1872,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -1941,7 +1941,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -2004,7 +2004,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -2073,7 +2073,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -2184,7 +2184,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -2202,7 +2202,7 @@
                       "value": "partial"
                     },
                     {
-                      "description": "Present only when partial; names the failed sub-queries in a sentence, for example \"Some sections could not be read this time: project-skills. Everything else is complete. Try again in a minute for the full result.\"",
+                      "description": "Present only when partial. Names the failed sub-queries in a sentence, for example \"Some sections could not be read this time: project-skills. Everything else is complete. Try again in a minute for the full result.\"",
                       "disabled": true,
                       "key": "X-Integrity-Note",
                       "value": "string"
@@ -2271,7 +2271,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -2334,7 +2334,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -2403,7 +2403,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -2466,7 +2466,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -2529,7 +2529,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -2598,7 +2598,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -2661,7 +2661,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -2730,7 +2730,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -2859,7 +2859,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -2939,7 +2939,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -3007,7 +3007,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -3081,7 +3081,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -3149,7 +3149,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -3217,7 +3217,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -3291,7 +3291,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -3359,7 +3359,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -3433,7 +3433,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -3516,7 +3516,7 @@
               },
               "request": {
                 "description": {
-                  "content": "Retrieves testimonials with \"Vibe Control\" logic applied.\n\n**Reads**, in process: approved testimonials only (`Approved__c = true`), at most 200. The list is empty until a testimonial is approved.\n\n**Filtering Logic**:\n- `professional`: Filters result set to only include records where `relationship` IN ('Manager', 'Client', 'Peer') AND `vibe` = 'Professional'.\n- `casual`: Returns all approved testimonials, regardless of relationship type or vibe (includes 'Casual' vibe and 'Fan' relationships).\n\n**Use Case**: About page testimonials section\n\n`mode` is matched case-insensitively (the VibeMode values `Professional` and `Casual` are accepted);\nany other value returns 400 BAD_REQUEST. Ordered by sort order, then newest first; at most 200.\n",
+                  "content": "Retrieves testimonials with \"Vibe Control\" logic applied.\n\n**Reads**, in process: approved testimonials only (`Approved__c = true`), at most 200. The list is empty until a testimonial is approved.\n\n**Filtering Logic**:\n- `professional`: Filters result set to only include records where `relationship` IN ('Manager', 'Client', 'Peer') AND `vibe` = 'Professional'.\n- `casual`: Returns all approved testimonials, regardless of relationship type or vibe (includes 'Casual' vibe and 'Fan' relationships).\n\n**Use Case**: About page testimonials section\n\n`mode` is matched case-insensitively (the VibeMode values `Professional` and `Casual` are accepted).\nAny other value returns 400 BAD_REQUEST. Ordered by sort order, then newest first. At most 200 are returned.\n",
                   "type": "text/plain"
                 },
                 "header": [
@@ -3567,7 +3567,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -3647,7 +3647,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -3715,7 +3715,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -3789,7 +3789,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -3857,7 +3857,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -3925,7 +3925,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -3999,7 +3999,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -4067,7 +4067,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -4141,7 +4141,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -4222,7 +4222,7 @@
                   "raw": "{\n  \"type\": \"CoverLetter\",\n  \"context\": {\n    \"jobDescription\": \"We are seeking a Senior Salesforce Architect with 5+ years experience in multi-cloud integrations, DevOps, and API design.\",\n    \"companyName\": \"Acme Financial\",\n    \"role\": \"Senior Technical Architect\",\n    \"skills\": [\n      \"Apex\",\n      \"LWC\",\n      \"MuleSoft\",\n      \"AWS Lambda\"\n    ],\n    \"experienceSummary\": \"Salesforce Platform Architect with nearly a decade on the platform, focused on higher education\"\n  },\n  \"tone\": \"Professional\",\n  \"maxLength\": 500\n}"
                 },
                 "description": {
-                  "content": "Generates content through `PAPIAiGenerate.generate`, which calls the one provider chain,\n`ContentGenerationController.dispatch`.\n\n**Provider chain**:\n1. Agentforce, only when its switch (`AI_Provider_Config__mdt` record `Agentforce`) is on.\n   It ships on and runs a Prompt Builder template as the caller. It has a 20 second\n   timeout and an hourly budget (`Hourly_Budget__c`, 120 calls per UTC hour). Past the\n   budget its attempt is `budget_exhausted` and the chain moves on.\n2. Gemini 2.5 Flash (`gemini-2.5-flash`, the model set on the `Gemini` record) through the Gemini API (`Gemini_API` Named Credential),\n   with a 60 second timeout. The code default model is `gemma-4-31b-it`, used only when the\n   record names none.\n3. Local template (`Local`), CoverLetter only.\n\nA CoverLetter prompt also carries facts from featured projects and experience highlights,\nchosen by keywords from `role` and `jobDescription`. No email address, phone number or\nowner field is ever included. The site's cover letter page calls this endpoint with\n`provider` set to `Agentforce` through the `Portfolio_API` Named Credential, and runs\nGemini and the template in process when it gets no letter, because a request that arrives\nas a callout from the same org may not call out again (ADR-015). Outside callers use it\nwith a Bearer token.\n\n**Asking for Agentforce only**: send `provider` set to `Agentforce`. Only Agentforce is\ntried, with no Gemini and no template. A failure is 503 `ALL_PROVIDERS_UNAVAILABLE` with\na message that says Agentforce did not answer, or that its hourly budget is used. Both say to leave\n`provider` out to let another provider answer. A CoverLetter asked of Agentforce uses the site's cover letter prompt\nand comes back whole unless `maxLength` is sent.\n\n**Rate limit**: 10 requests per minute (ai tier). Upstream, the Gemini API key allowed Gemini 2.5 Flash\n5 requests per minute and 20 requests per day when it was read on 2026-10-20, a recorded reading and not a live one. When the Gemini API\nrefuses or fails, CoverLetter falls back to the local template and the other types answer\n503 `ALL_PROVIDERS_UNAVAILABLE`.\n\n**Validation**: `type` and `tone` must be enum values, `provider` only `Agentforce`, `maxLength` an integer 100 to 1000;\nCoverLetter requires `context.companyName` and `context.role`. Content longer than `maxLength` is cut.\n",
+                  "content": "Generates content through `PAPIAiGenerate.generate`, which calls the one provider chain,\n`ContentGenerationController.dispatch`.\n\n**Provider chain**:\n1. Agentforce, only when its switch (`AI_Provider_Config__mdt` record `Agentforce`) is on.\n   It ships on and runs a Prompt Builder template as the caller. It has a 20 second\n   timeout and an hourly budget (`Hourly_Budget__c`, 120 calls per UTC hour). Past the\n   budget its attempt is `budget_exhausted` and the chain moves on.\n2. Gemini 2.5 Flash (`gemini-2.5-flash`, the model set on the `Gemini` record) through the Gemini API (`Gemini_API` Named Credential),\n   with a 60 second timeout. The code default model is `gemma-4-31b-it`, used only when the\n   record names none.\n3. Local template (`Local`), CoverLetter only.\n\nA CoverLetter prompt also carries facts from featured projects and experience highlights,\nchosen by keywords from `role` and `jobDescription`. No email address, phone number or\nowner field is ever included. The site's cover letter page calls this endpoint with\n`provider` set to `Agentforce` through the `Portfolio_API` Named Credential, and runs\nGemini and the template in process when it gets no letter, because a request that arrives\nas a callout from the same org may not call out again (ADR-015). Outside callers use it\nwith a Bearer token.\n\n**Asking for Agentforce only**: send `provider` set to `Agentforce`. Only Agentforce is\ntried, with no Gemini and no template. A failure is 503 `ALL_PROVIDERS_UNAVAILABLE` with\na message that says Agentforce did not answer, or that its hourly budget is used. Both say to leave\n`provider` out to let another provider answer. A CoverLetter asked of Agentforce uses the site's cover letter prompt\nand comes back whole unless `maxLength` is sent.\n\n**Rate limit**: 10 requests per minute (ai tier). Upstream, the Gemini API key allowed Gemini 2.5 Flash\n5 requests per minute and 20 requests per day when it was read on 2026-10-20, a recorded reading and not a live one. When the Gemini API\nrefuses or fails, CoverLetter falls back to the local template and the other types answer\n503 `ALL_PROVIDERS_UNAVAILABLE`.\n\n**Validation**: `type` and `tone` must be enum values, `provider` only `Agentforce`, `maxLength` an integer 100 to 1000.\nCoverLetter requires `context.companyName` and `context.role`. Content longer than `maxLength` is cut.\n",
                   "type": "text/plain"
                 },
                 "header": [
@@ -4270,7 +4270,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -4359,7 +4359,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -4430,7 +4430,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -4507,7 +4507,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -4578,7 +4578,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -4649,7 +4649,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -4726,7 +4726,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -4797,7 +4797,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -4874,7 +4874,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -4945,7 +4945,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -5074,7 +5074,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -5136,7 +5136,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -5192,7 +5192,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -5254,7 +5254,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -5310,7 +5310,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -5366,7 +5366,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -5428,7 +5428,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -5490,7 +5490,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+                      "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -5608,7 +5608,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -5674,7 +5674,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -5734,7 +5734,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -5800,7 +5800,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -5860,7 +5860,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -5980,7 +5980,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -6046,7 +6046,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -6181,7 +6181,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -6272,7 +6272,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -6345,7 +6345,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -6424,7 +6424,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -6497,7 +6497,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -6643,7 +6643,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -6716,7 +6716,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -6795,7 +6795,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -6944,7 +6944,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -7043,7 +7043,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -7124,7 +7124,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -7211,7 +7211,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -7292,7 +7292,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -7454,7 +7454,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -7535,7 +7535,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -7622,7 +7622,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -7773,7 +7773,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -7868,7 +7868,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -7945,7 +7945,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -8028,7 +8028,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -8105,7 +8105,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -8259,7 +8259,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -8336,7 +8336,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -8419,7 +8419,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -8589,7 +8589,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -8692,7 +8692,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -8777,7 +8777,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -8868,7 +8868,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -8953,7 +8953,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -9123,7 +9123,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -9208,7 +9208,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -9299,7 +9299,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -9448,7 +9448,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -9539,7 +9539,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -9612,7 +9612,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -9691,7 +9691,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -9764,7 +9764,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -9910,7 +9910,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -9983,7 +9983,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -10062,7 +10062,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -10193,7 +10193,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -10280,7 +10280,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -10349,7 +10349,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -10424,7 +10424,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -10493,7 +10493,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -10631,7 +10631,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -10700,7 +10700,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -10775,7 +10775,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -10908,7 +10908,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -10999,7 +10999,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -11072,7 +11072,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -11151,7 +11151,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -11224,7 +11224,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -11370,7 +11370,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -11443,7 +11443,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -11522,7 +11522,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -11659,7 +11659,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -11750,7 +11750,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -11823,7 +11823,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -11902,7 +11902,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -11975,7 +11975,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -12121,7 +12121,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -12194,7 +12194,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -12273,7 +12273,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -12422,7 +12422,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -12521,7 +12521,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -12602,7 +12602,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -12689,7 +12689,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -12770,7 +12770,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -12932,7 +12932,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -13013,7 +13013,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -13100,7 +13100,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -13251,7 +13251,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -13346,7 +13346,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -13423,7 +13423,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -13506,7 +13506,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -13583,7 +13583,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -13737,7 +13737,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -13814,7 +13814,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -13897,7 +13897,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -14049,7 +14049,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -14140,7 +14140,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -14213,7 +14213,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -14292,7 +14292,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -14365,7 +14365,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -14511,7 +14511,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -14584,7 +14584,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -14663,7 +14663,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -14800,7 +14800,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -14891,7 +14891,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -14964,7 +14964,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -15043,7 +15043,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -15116,7 +15116,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -15262,7 +15262,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -15335,7 +15335,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -15414,7 +15414,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -15551,7 +15551,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -15642,7 +15642,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -15715,7 +15715,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -15794,7 +15794,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -15867,7 +15867,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -16013,7 +16013,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -16086,7 +16086,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -16165,7 +16165,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -16294,13 +16294,13 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
                     },
                     {
-                      "description": "Private configuration data; shared caches must not store it.",
+                      "description": "Private configuration data. Shared caches must not store it.",
                       "disabled": true,
                       "key": "Cache-Control",
                       "value": "max-age=300, private"
@@ -16360,7 +16360,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -16420,7 +16420,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -16486,7 +16486,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -16546,7 +16546,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -16666,7 +16666,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -16726,7 +16726,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"
@@ -16792,7 +16792,7 @@
                   "cookie": [],
                   "header": [
                     {
-                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).",
+                      "description": "Correlation ID. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value (missing or non-UUID request header).",
                       "disabled": true,
                       "key": "X-Request-Id",
                       "value": "00000000-0000-4000-8000-000000000000"

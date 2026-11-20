@@ -9,6 +9,7 @@ const {
   main,
   buildDocsPlan,
   docPaths,
+  codePaths,
   splitContent,
   siteBase,
   quote,
@@ -284,7 +285,7 @@ test("splitContent cuts long text without whitespace at the cut and joins back",
   }
 });
 
-test("buildDocsPlan writes one cache row per doc, with parts for a long one", () => {
+test("buildDocsPlan writes one cache row per doc and per component file, with parts for a long one", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "sr-docs-"));
   const meta = path.join(
     root,
@@ -300,7 +301,13 @@ test("buildDocsPlan writes one cache row per doc, with parts for a long one", ()
   record("docs_short", "docs/short.md");
   record("docs_long", "docs/long.md");
   record("docs_missing", "docs/missing.md");
-  record("other_thing", "docs/other.md");
+  record("footer_js", "packages/x/footer.js");
+  record("footer_missing", "packages/x/gone.js");
+  fs.mkdirSync(path.join(root, "packages/x"), { recursive: true });
+  fs.writeFileSync(
+    path.join(root, "packages/x/footer.js"),
+    "export default class Footer {}\r\n"
+  );
   fs.writeFileSync(path.join(root, "docs/short.md"), "# Short\n\nBody\n");
   fs.writeFileSync(
     path.join(root, "docs/long.md"),
@@ -311,15 +318,22 @@ test("buildDocsPlan writes one cache row per doc, with parts for a long one", ()
     "docs/missing.md",
     "docs/short.md"
   ]);
+  assert.deepStrictEqual(codePaths(root), [
+    "packages/x/footer.js",
+    "packages/x/gone.js"
+  ]);
   const out = path.join(root, "out");
   const built = buildDocsPlan(out, root, new Date("2026-11-11T00:00:00Z"));
-  assert.ok(built.count >= 3);
+  assert.ok(built.count >= 4);
   const rows = JSON.parse(
     fs.readFileSync(path.join(out, "Source_Cache__c.json"), "utf8")
   ).records;
   assert.ok(rows.some((r) => r.Path__c === "docs/short.md"));
   assert.ok(rows.some((r) => r.Path__c === "docs/long.md#part-2"));
+  const footer = rows.find((r) => r.Path__c === "packages/x/footer.js");
+  assert.strictEqual(footer.Content__c, "export default class Footer {}\n");
   assert.ok(!rows.some((r) => r.Path__c.includes("missing")));
+  assert.ok(!rows.some((r) => r.Path__c.includes("gone")));
   assert.ok(rows.every((r) => r.Last_Status__c === "200"));
   assert.strictEqual(buildDocsPlan(path.join(root, "o2"), os.tmpdir()), null);
 });

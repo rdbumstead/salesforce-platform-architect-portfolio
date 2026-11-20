@@ -296,7 +296,7 @@ describe("c-smart-checklist", () => {
     expect(link.getAttribute("href")).toBe(RUN_URL);
     expect(link.getAttribute("title")).toBe(SHA);
     expect(link.getAttribute("rel")).toBe("noopener noreferrer");
-    expect(deploy.textContent).toContain("Oct 21, 4:00 AM EDT");
+    expect(deploy.textContent).toContain("Oct 21, 2026, 4:00 AM EDT");
   });
 
   it("shows the visitor's own time first and keeps the UTC time in the title", async () => {
@@ -311,7 +311,7 @@ describe("c-smart-checklist", () => {
     await flushPromises();
 
     const time = row(element, "deploy").querySelector("time.time");
-    expect(time.textContent).toBe("Oct 21, 4:00 AM EDT");
+    expect(time.textContent).toBe("Oct 21, 2026, 4:00 AM EDT");
     expect(time.getAttribute("title")).toBe("2026-10-21 08:00 UTC");
     expect(time.getAttribute("datetime")).toBe("2026-10-21T08:00:00.000Z");
   });
@@ -391,8 +391,8 @@ describe("c-smart-checklist", () => {
       row(element, "caches").querySelectorAll("p.cache")
     ).map((line) => line.textContent.replace(/\s+/g, " ").trim());
     expect(lines).toEqual([
-      "GitHub cache Oct 21, 7:50 AM EDT",
-      "Jira cache Oct 21, 7:45 AM EDT"
+      "GitHub cache Oct 21, 2026, 7:50 AM EDT",
+      "Jira cache Oct 21, 2026, 7:45 AM EDT"
     ]);
     const times = Array.from(row(element, "caches").querySelectorAll("time"));
     expect(times.map((time) => time.getAttribute("datetime"))).toEqual([
@@ -531,15 +531,27 @@ describe("c-smart-checklist", () => {
 
     it("gives the local date and time with the zone", () => {
       expect(localDateTime("2026-10-24T12:06:00.000Z")).toBe(
-        "Oct 24, 8:06 AM EDT"
+        "Oct 24, 2026, 8:06 AM EDT"
       );
       expect(localDateTime(null)).toBe("");
       expect(localDateTime("not a date")).toBe("");
     });
 
+    it("writes the stamp as month, day, year, time and zone in the visitor zone (R27-D15)", () => {
+      jest.restoreAllMocks();
+      pinZone("UTC");
+      expect(localDateTime("2026-11-19T01:33:00.000Z")).toBe(
+        "Nov 19, 2026, 1:33 AM UTC"
+      );
+      pinZone("America/Toronto");
+      expect(localDateTime("2026-11-19T01:33:00.000Z")).toBe(
+        "Nov 18, 2026, 8:33 PM EST"
+      );
+    });
+
     it("builds the local text, the UTC title and the ISO value", () => {
       expect(timeView("2026-10-24T12:06:00.000Z")).toEqual({
-        text: "Oct 24, 8:06 AM EDT",
+        text: "Oct 24, 2026, 8:06 AM EDT",
         title: "2026-10-24 12:06 UTC",
         iso: "2026-10-24T12:06:00.000Z"
       });

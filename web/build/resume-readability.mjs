@@ -363,21 +363,24 @@ export function tally(fields) {
 }
 
 /**
- * The landmarks a reader should meet in this order: section headings, role titles, certification
- * names. Same order in the plain text and in the PDF, so one list serves both.
+ * The landmarks a reader should meet in this order: the summary, certification names, then the
+ * section headings and role titles. Same order in the plain text and in the PDF, so one list
+ * serves both.
  */
 export function landmarksOf(expected) {
   const certName = (text) =>
     text.replace(/\s*\(\d{4}\)\s*$/, "").replace(/,\s*[A-Za-z]{3} \d{4}$/, "");
+  // The order the PDF and the text page print: summary, certifications, experience, skills,
+  // education (R27-23).
   return [
     "summary",
+    ...expected.certifications.map(certName),
     "experience",
     ...expected.roles.flatMap((role) => [
       role.title,
       ...(role.highlights || [])
     ]),
     "skills",
-    ...expected.certifications.map(certName),
     "education"
   ];
 }

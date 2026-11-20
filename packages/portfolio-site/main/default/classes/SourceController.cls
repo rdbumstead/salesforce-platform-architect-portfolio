@@ -23,6 +23,14 @@ public with sharing class SourceController implements QueryDefinitions.Provider 
   public static final String DOCS_KEY = 'docs';
   /** A docs record's DeveloperName starts with this, for example docs_adr_027. */
   private static final String DOCS_NAME_PREFIX = 'docs_';
+  /** A decision record's doc key starts with this, for example adr-027. */
+  private static final String ADR_KEY_PREFIX = 'adr-';
+  private static final Pattern DECISION_LINE = Pattern.compile(
+    '(?m)^- \\*\\*Decision:\\*\\*\\s*(.+)$'
+  );
+  private static final Pattern ISO_DATE = Pattern.compile(
+    '\\d{4}-\\d{2}-\\d{2}'
+  );
 
   /** Mirrors languageForPath in c/prismHighlighter. */
   private static final Map<String, String> LANGUAGE_BY_EXTENSION = new Map<String, String>{
@@ -59,7 +67,8 @@ public with sharing class SourceController implements QueryDefinitions.Provider 
 
   /**
    * @description One document in the docs list. The key is what the page's doc query
-   *              string names, for example sas or adr-027.
+   *              string names, for example sas or adr-027. Status and decisionDate are read from an
+   *              ADR's Status section and are blank for a guide or an ADR that gives none.
    */
   public class DocSummary {
     @AuraEnabled
@@ -68,6 +77,10 @@ public with sharing class SourceController implements QueryDefinitions.Provider 
     public String title;
     @AuraEnabled
     public String path;
+    @AuraEnabled
+    public String status;
+    @AuraEnabled
+    public String decisionDate;
   }
 
   /**
@@ -130,7 +143,8 @@ public with sharing class SourceController implements QueryDefinitions.Provider 
 
   /**
    * @description The documents the docs page lists, in Sort_Order__c order, without their
-   *              text. A document with no good fetch yet is left out.
+   *              text. A document with no good fetch yet is left out. An ADR also carries
+   *              its status and date, read from its Status section.
    * @return List<DocSummary> Empty when nothing is cached, never null.
    * @example
    * List<SourceController.DocSummary> docs = SourceController.getDocs();
@@ -142,18 +156,25 @@ public with sharing class SourceController implements QueryDefinitions.Provider 
     if (files.isEmpty()) {
       return result;
     }
-    Set<String> fetched = new Set<String>();
+    Map<String, String> textByPath = new Map<String, String>();
     for (
       Source_Cache__c row : new CacheSelector().fetchedPaths(pathsOf(files))
     ) {
-      fetched.add(row.Path__c);
+      textByPath.put(row.Path__c, row.Content__c ?? '');
     }
     for (Source_File__mdt file : files) {
-      if (fetched.contains(file.Path__c)) {
+      if (textByPath.containsKey(file.Path__c)) {
         DocSummary summary = new DocSummary();
         summary.key = docKeyFor(file);
         summary.title = titleOf(file);
         summary.path = file.Path__c;
+        summary.status = '';
+        summary.decisionDate = '';
+        if (summary.key.startsWith(ADR_KEY_PREFIX)) {
+          String text = textByPath.get(file.Path__c);
+          summary.status = statusOf(text);
+          summary.decisionDate = statusDateOf(text);
+        }
         result.add(summary);
       }
     }
@@ -214,6 +235,71 @@ public with sharing class SourceController implements QueryDefinitions.Provider 
     return name.removeStartIgnoreCase(DOCS_NAME_PREFIX)
       .replace('_', '-')
       .toLowerCase();
+  }
+
+  /**
+   * @description An ADR's status: the first word of the Decision line in its Status section,
+   *              for example Accepted, Superseded or Deferred.
+   * @param content The ADR's text, or at least its first part.
+   * @return String Blank when the text has no Decision line.
+   */
+  @TestVisible
+  private static String statusOf(String content) {
+    String decision = decisionLine(content);
+    if (String.isBlank(decision)) {
+      return '';
+    }
+    return decision.split('[\\s.,;(]')[0];
+  }
+
+  /**
+   * @description The date an ADR was decided, as yyyy-MM-dd. It is the first date in the
+   *              first sentence of the Decision line, else of the first line of prose under
+   *              Status. A date that follows the word amended is skipped, because it dates
+   *              a change and not the decision.
+   * @param content The ADR's text, or at least its first part.
+   * @return String Blank when the Status section gives no decision date.
+   */
+  @TestVisible
+  private static String statusDateOf(String content) {
+    String fromDecision = firstDateIn(decisionLine(content));
+    if (String.isNotBlank(fromDecision)) {
+      return fromDecision;
+    }
+    return firstDateIn(statusProse(content));
+  }
+
+  private static String statusSection(String content) {
+    if (String.isBlank(content) || !content.contains('## Status')) {
+      return '';
+    }
+    String section = content.substringAfter('## Status');
+    return section.substringBefore('\n## ');
+  }
+
+  private static String decisionLine(String content) {
+    Matcher found = DECISION_LINE.matcher(statusSection(content));
+    return found.find() ? found.group(1).trim() : '';
+  }
+
+  private static String statusProse(String content) {
+    for (String line : statusSection(content).split('\n')) {
+      String trimmed = line.trim();
+      if (String.isNotBlank(trimmed) && !trimmed.startsWith('- ')) {
+        return trimmed;
+      }
+    }
+    return '';
+  }
+
+  private static String firstDateIn(String text) {
+    if (String.isBlank(text)) {
+      return '';
+    }
+    String sentence = text.split('\\.\\s')[0]
+      .replaceAll('(?i)amended\\s+(on\\s+)?\\d{4}-\\d{2}-\\d{2}', '');
+    Matcher found = ISO_DATE.matcher(sentence);
+    return found.find() ? found.group() : '';
   }
 
   /**
@@ -389,13 +475,14 @@ public with sharing class SourceController implements QueryDefinitions.Provider 
   }
 
   /**
-   * @description The fetched paths read as code, in system mode.
+   * @description The fetched first parts of the docs paths read as code, in system mode.
+   *              The docs list reads each ADR's Status section from the text.
    *              Query_Definition.SourceController_FetchedPaths ships equal to it.
    * @return QueryDefinitions.QueryDefault The default.
    */
   @TestVisible
   private static QueryDefinitions.QueryDefault pathsDefault() {
-    return fetchedDefault('Path__c');
+    return fetchedDefault('Path__c, Content__c');
   }
 
   private static QueryDefinitions.QueryDefault fetchedDefault(

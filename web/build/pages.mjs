@@ -136,6 +136,8 @@ function page({ route, routes, person, head, styles, scripts, data, analytics, a
   if (route.description) lines.push(`<meta name="description" content="${escapeHtml(route.description)}">`);
   if (route.headTags) lines.push(route.headTags.trim());
   if (route.errorCode) lines.push('<meta name="robots" content="noindex">');
+  // An error page is short, so the content region does not hold a full screen above its footer (F-60).
+  if (route.errorCode) lines.push('<style>#site-root{--pf-region-min-height:0}</style>');
   lines.push(`<script type="application/ld+json">${scriptJson(person)}</script>`);
   lines.push(...head);
   if (route.path) lines.push(`<style>${summaryCss()}</style>`);

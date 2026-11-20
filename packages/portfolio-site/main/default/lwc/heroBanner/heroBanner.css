@@ -69,8 +69,8 @@
 }
 
 /* The title line and the value sentence arrive with the header read. Their slots hold the
-   height they take once filled (measured at 1400 and 390 wide), so the proof strip, the
-   buttons and the sections below do not move when the text lands. A floor, never a cap. */
+   height they take once filled (measured at 1400 and 390 wide), so the profile
+   links and the sections below do not move when the text lands. A floor, never a cap. */
 .hero-line-slot {
   min-height: 27px;
 }
@@ -84,24 +84,6 @@
   max-width: 58ch;
   font-size: 17px;
   color: var(--pf-body);
-}
-
-.proof {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--pf-space-2);
-  margin: 4px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.proof-item {
-  padding: 4px 12px;
-  border-radius: var(--pf-radius-pill, 999px);
-  background: var(--pf-chip);
-  color: var(--pf-chip-text);
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
 }
 
 /* The button look, link colours included, comes from c/nativeControls (a.nc-button matches
@@ -151,13 +133,25 @@
   gap: var(--pf-space-3);
 }
 
+/* View source sits under the profile links, at the start of the line, so it never sits
+   beside the two buttons above. */
+.hero-source {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: var(--pf-space-1);
+}
+
+.hero-source c-view-source {
+  margin-inline-start: 0;
+}
+
 .profile-links {
-  min-height: 32px;
+  min-height: 44px;
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 12px;
+  gap: 0 16px;
   margin-top: 4px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 /* Each icon is drawn so its lowest ink sits on the bottom edge of its viewBox, and the box is
@@ -167,8 +161,8 @@
   align-items: baseline;
   gap: 6px;
   box-sizing: border-box;
-  min-height: 32px;
-  padding-block: 5px;
+  min-height: 44px;
+  padding-block: 11px;
   color: var(--pf-muted);
   text-decoration: none;
 }
@@ -193,7 +187,7 @@
 }
 
 /* From 900px the text sits on the left and the proof box on the right. The box spans the
-   rows beside the text, so the name, line, sentence, chips and links keep the left edge. */
+   rows beside the text, so the name, line, sentence and links keep the left edge. */
 @media (min-width: 900px) {
   .hero-body {
     display: grid;
@@ -209,14 +203,14 @@
 
   .hero-body > .proof-panel {
     grid-column: 2;
-    grid-row: 1 / span 6;
+    grid-row: 1 / span 5;
     align-self: start;
     max-width: none;
     margin-top: 0;
   }
 }
 
-/* Under 900px the photo stacks above the name and the box sits under the chips. */
+/* Under 900px the photo stacks above the name and the box sits under the sentence. */
 @media (max-width: 899.98px) {
   .hero {
     grid-template-columns: minmax(0, 1fr);
@@ -224,8 +218,15 @@
   }
 }
 
-/* Phones: the photo moves above the name, smaller, so the buttons stay near the top. */
+/* Phones: the photo moves above the name, smaller, so the buttons stay near the top. The five
+   profile links sit on a three column grid, so no link is left alone on a row. */
 @media (max-width: 559.98px) {
+  .profile-links {
+    display: grid;
+    grid-template-columns: repeat(3, max-content);
+    justify-content: start;
+  }
+
   .home {
     padding-top: var(--pf-space-6);
   }
@@ -264,13 +265,8 @@
     min-height: 79px;
   }
 
-  .proof {
-    min-height: 67px;
-    align-content: flex-start;
-  }
-
   .profile-links {
-    min-height: 68px;
+    min-height: 88px;
     align-content: flex-start;
   }
 }

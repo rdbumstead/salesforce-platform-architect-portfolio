@@ -79,8 +79,13 @@ import { LightningElement, wire } from "lwc";
 import basePath from "@salesforce/community/basePath";
 import getLinks from "@salesforce/apex/FooterController.getLinks";
 import getSystemSnapshot from "@salesforce/apex/FooterController.getSystemSnapshot";
-import { EVENTS, trackEvent } from "c/analyticsService";
-import { IS_STATIC, utcLabel } from "c/siteHost";
+import {
+  EVENTS,
+  onAnalyticsEvent,
+  recentEvents,
+  trackEvent
+} from "c/analyticsService";
+import { IS_STATIC, localLabel, utcLabel } from "c/siteHost";
 
 /** What the copyright line says the site is built on, true on each host. */
 export const BUILT_ON = IS_STATIC
@@ -312,6 +317,11 @@ export default class Footer extends LightningElement {
 
   contactUrl = `${basePath || ""}/contact`;
   docsUrl = `${basePath || ""}/docs`;
+  testimonialsUrl = `${basePath || ""}/testimonials`;
+
+  /** How many analytics events the page has recorded. The Analytics events link shows from one. */
+  analyticsCount = 0;
+  _stopAnalytics;
 
   probeConstructor;
   graphqlMs;
@@ -339,6 +349,10 @@ export default class Footer extends LightningElement {
       typeof window.matchMedia === "function" &&
       window.matchMedia(PHONE_QUERY).matches;
     this.openGroup = this.phone ? null : "ci";
+    this.analyticsCount = recentEvents().length;
+    this._stopAnalytics = onAnalyticsEvent(() => {
+      this.analyticsCount = recentEvents().length;
+    });
     this._cancelDeferred = whenIdleAfterLoad(() => {
       // The static build leaves the probe out on purpose, so it could only fail there.
       if (!IS_STATIC) {
@@ -377,6 +391,15 @@ export default class Footer extends LightningElement {
 
   disconnectedCallback() {
     this._cancelDeferred?.();
+    if (this._stopAnalytics) {
+      this._stopAnalytics();
+      this._stopAnalytics = undefined;
+    }
+  }
+
+  /** A zero count is hidden: the link is drawn only once there is an event to list. */
+  get hasAnalyticsEvents() {
+    return this.analyticsCount > 0;
   }
 
   async loadSnapshot() {
@@ -422,7 +445,9 @@ export default class Footer extends LightningElement {
     if (this.snapshot.sample) {
       return "Sample readings for this preview build, not from Salesforce";
     }
-    const when = utcLabel(this.snapshot.recordedAt);
+    const when =
+      localLabel(this.snapshot.recordedAt) ||
+      utcLabel(this.snapshot.recordedAt);
     return when ? `From Salesforce · captured ${when}` : "";
   }
 
@@ -539,7 +564,7 @@ export default class Footer extends LightningElement {
   }
 
   get limitsChipClass() {
-    return chipClass(this.limitsOpen);
+    return `${chipClass(this.limitsOpen)} chip--limits`;
   }
 
   get ciStatus() {

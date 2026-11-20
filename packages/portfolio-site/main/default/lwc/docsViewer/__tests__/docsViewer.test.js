@@ -1063,6 +1063,18 @@ describe("c-docs-viewer tables, front matter, title and the end of a document", 
       "2026-10-01"
     );
   });
+  it("shows the decision date the server sends as decisionDate", async () => {
+    const el = await create({}, [
+      { ...DOCS[1], status: "Accepted", decisionDate: "2026-10-02" }
+    ]);
+    const details = shadow(el).querySelector("details.doc-group-details");
+    details.open = true;
+    details.dispatchEvent(new CustomEvent("toggle"));
+    await flush();
+    expect(shadow(el).querySelector(".doc-date").textContent).toBe(
+      "2026-10-02"
+    );
+  });
 });
 
 describe("c-docs-viewer diagram dialog", () => {

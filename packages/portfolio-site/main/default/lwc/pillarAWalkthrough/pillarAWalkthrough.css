@@ -3,7 +3,7 @@
 
 /*
  * Colours, fonts, radii and spacing come only from the --pf- design tokens, so the walkthrough
- * follows the light and dark themes. The box is c/panel and the heading is the panel size of
+ * follows the light and dark themes. The box is c/panel and the heading is the section size of
  * c/sectionHeading, the same as the gallery above it on the page. The shared
  * SLDS reset removes list markers, so the numbered list sets its own back.
  */

@@ -36,7 +36,12 @@ import { trackEvent, EVENTS } from "c/analyticsService";
 import { onShowMe, revealAnchor } from "c/tourShowMe";
 import { createPdfLoader, previewStyle } from "c/documentPdf";
 import { limitState } from "c/fieldLimit";
-import { LETTER_LAYOUT, letterFileName, writeLetterPdf } from "./letterFormat";
+import {
+  LETTER_LAYOUT,
+  letterFileName,
+  letterTitle,
+  writeLetterPdf
+} from "./letterFormat";
 import { watchMedia } from "c/mediaWatch";
 
 const ACTIONS_IN_BODY_QUERY = "(max-width: 767px)";
@@ -234,6 +239,28 @@ export default class CoverLetterGenerator extends LightningElement {
     );
   }
 
+  /** Why Generate cannot be pressed, in words. Empty when it can be pressed. */
+  get generateHint() {
+    if (!this.isGenerateDisabled) {
+      return "";
+    }
+    if (this.isLoading) {
+      return "Generate turns on again when the letter is ready.";
+    }
+    const missingCompany = !this.companyName?.trim();
+    const missingTitle = !this.jobTitle?.trim();
+    if (missingCompany && missingTitle) {
+      return "Enter a company name and a job title to turn on Generate.";
+    }
+    if (missingCompany) {
+      return "Enter a company name to turn on Generate.";
+    }
+    if (missingTitle) {
+      return "Enter a job title to turn on Generate.";
+    }
+    return "";
+  }
+
   // At 767 px and narrower the card title row has no room for View source and the marker,
   // so they move to the top of the card body.
   actionsInBody = false;
@@ -344,7 +371,11 @@ export default class CoverLetterGenerator extends LightningElement {
       writeLetterPdf(
         doc,
         { header: this.pdfHeader, content: this.result.content },
-        { family }
+        {
+          family,
+          tagged: true,
+          title: letterTitle(this.letterHeader?.name, this.letterCompany)
+        }
       );
       doc.save(letterFileName(this.letterHeader?.name, this.letterCompany));
       this.exportMessage = "PDF downloaded.";

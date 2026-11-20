@@ -99,10 +99,12 @@ jobs:
           PUPPETEER_SKIP_DOWNLOAD=1 npm install --prefix "$RUNNER_TEMP/mmd" --no-save --no-audit --no-fund @mermaid-js/mermaid-cli@12.0.0 puppeteer@25.16.0
           MERMAID_CLI_DIR="$RUNNER_TEMP/mmd" PUPPETEER_EXECUTABLE_PATH="$(command -v google-chrome)" node scripts/render-mermaid.js
 
+      # The overflow browser tests use the runner's own Chrome through CHROME_PATH, so nothing
+      # is downloaded and no package comes from the Ubuntu mirror.
       - name: Unit tests and export coverage
         working-directory: web
         run: |
-          npm test
+          CHROME_PATH="$(command -v google-chrome)" npm test
           node build/check-export-coverage.mjs
 
       # A pull request preview reads production only when it changes the export, the build or
@@ -164,6 +166,14 @@ jobs:
           # users), and the docs viewer serves those docs as page data. Any other address fails.
           SITE_ALLOWED_EMAILS: "@ryanbumstead.com"
         run: node build/leak-scan.mjs dist
+
+      # Fails when a table, diagram or code block on any route scrolls sideways with no cue, at
+      # 390 and 1280 in both schemes. It blocks a pull request. On main and the scheduled build
+      # it only warns, so a layout cue never stops fresh data from publishing.
+      - name: Overflow check
+        working-directory: web
+        continue-on-error: ${{ github.event_name != 'pull_request' }}
+        run: CHROME_PATH="$(command -v google-chrome)" npm run check:overflow
 
       # The project is made once by hand (see the runbook). Until it exists, or while the token
       # cannot see it, the deploy is skipped with a notice instead of failing every run.

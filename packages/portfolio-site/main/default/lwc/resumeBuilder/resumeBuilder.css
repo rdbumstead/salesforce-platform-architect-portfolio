@@ -112,6 +112,15 @@ a.text-version:visited:hover {
   outline-offset: 2px;
 }
 
+/* A link in the paper is at least 24 px tall, so it is easy to tap. The paper is a picture
+   of the PDF, so the extra line height is the most it adds. */
+.preview-paper .resume-link a,
+.preview-paper .verify-link {
+  display: inline-block;
+  min-height: 24px;
+  line-height: 24px;
+}
+
 .preview-paper .paper-error,
 .preview-paper .paper-error p {
   color: var(--resume-error);

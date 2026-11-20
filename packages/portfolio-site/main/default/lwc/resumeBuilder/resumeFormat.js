@@ -19,7 +19,10 @@
  *                      and certifications by their full names. A past role with no highlights for
  *                      the persona folds into one "Earlier roles" line at the end of Experience,
  *                      whatever its employer. A current role with no highlights prints as it is,
- *                      and the model names it in bareCurrentRoles.
+ *                      and the model names it in bareCurrentRoles. Skills print the first four
+ *                      skills of the first six categories (RESUME_LAYOUT.skills), the same in
+ *                      the preview, the PDF and the ATS text, so each focus fits on two pages.
+ *                      The download is tagged for PDF/UA through the writer's tagged option.
  *                      Roles are ordered newest first the way the home timeline orders them:
  *                      latest end year (a current role last in time, so first on the page),
  *                      then latest start year, then full time before part time, then the exact
@@ -373,6 +376,27 @@ function earlierRolesText(roles) {
     .join(" · ");
 }
 
+/**
+ * The skill groups the resume prints, the same for the preview, the PDF and the ATS text. The
+ * read already holds the skills for the focus, with the categories in the owner's category
+ * order and each category's skills by proficiency. So the cut keeps the first
+ * RESUME_LAYOUT.skills.categories categories and the first RESUME_LAYOUT.skills.perCategory
+ * skills of each, which drops the least proficient skills and the last categories.
+ * A group left with no skills is dropped.
+ */
+function shownSkillGroups(groups) {
+  const { categories, perCategory } = RESUME_LAYOUT.skills;
+  return (groups || [])
+    .map((group) => ({
+      category: group.category,
+      skills: (group.skills || [])
+        .filter((skill) => clean(skill))
+        .slice(0, perCategory)
+    }))
+    .filter((group) => group.skills.length > 0)
+    .slice(0, categories);
+}
+
 function sectionList(model) {
   const has = {
     experience: model.hasRoles,
@@ -431,12 +455,12 @@ export function buildViewModel(resume, options) {
     .map((role) => role.heading);
 
   const skillGroups = options.includeSkills
-    ? (resume.skillGroups || []).map((group, index) => ({
+    ? shownSkillGroups(resume.skillGroups).map((group, index) => ({
         key: `skills-${index}`,
         category: clean(group.category),
         labelText: clean(group.category) ? `${clean(group.category)}: ` : "",
-        skillsText: (group.skills || []).map(clean).join(", "),
-        count: (group.skills || []).length
+        skillsText: group.skills.map(clean).join(", "),
+        count: group.skills.length
       }))
     : [];
 
@@ -612,9 +636,10 @@ export function toAtsText(lines) {
  * drawing order.
  * @param {object} doc a jsPDF document in points
  * @param {object} model the view model from buildViewModel
- * @param {object} options { family, trace, title }: the registered font family (the spec's
- *                 fallback when not given), an optional trace array and the document title.
- *                 The title and the language "en" are written to the document properties
+ * @param {object} options { family, trace, title, tagged }: the registered font family (the
+ *                 spec's fallback when not given), an optional trace array, the document title
+ *                 and whether to tag the document for PDF/UA. The title and the language "en"
+ *                 are written to the document properties
  * @returns {object} the document
  */
 export function writePdf(doc, model, options = {}) {
@@ -622,7 +647,10 @@ export function writePdf(doc, model, options = {}) {
   const writer = createPdfWriter(doc, {
     family: options.family,
     trace: options.trace,
-    layout
+    layout,
+    tagged: options.tagged,
+    title: options.title || "Resume",
+    language: PDF_LANGUAGE
   });
   const { type, space, marks } = layout;
   if (options.title && typeof doc.setProperties === "function") {

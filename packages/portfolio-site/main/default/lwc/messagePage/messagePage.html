@@ -7,9 +7,21 @@
     <template lwc:if={bodyText}>
       <p class="message-body">{bodyText}</p>
     </template>
-    <template lwc:if={hasHome}>
+    <template lwc:if={hasActions}>
       <p class="message-actions">
-        <a class="message-home" href={homeHref}>{homeText}</a>
+        <template lwc:if={hasRetry}>
+          <button
+            type="button"
+            class="message-retry"
+            data-id="retry"
+            onclick={handleRetry}
+          >
+            {retryText}
+          </button>
+        </template>
+        <template lwc:if={hasHome}>
+          <a class="message-home" href={homeHref}>{homeText}</a>
+        </template>
       </p>
     </template>
   </div>

@@ -11,6 +11,7 @@
           >
             Case studies
           </h2>
+          <c-view-source source-key="caseStudyGrid"></c-view-source>
           <c-data-source
             source-keys="ProjectCardController_HomeCaseStudies"
             class="card-source heading-badge-end"
@@ -30,7 +31,7 @@
                     <span class="metric-label">{card.headlineLabel}</span>
                   </p>
                 </template>
-                <template lwc:else>
+                <template lwc:elseif={card.showSpacer}>
                   <p
                     class="metric metric-spacer"
                     data-id="metric-spacer"
@@ -43,7 +44,7 @@
                 </template>
                 <div class="card-action">
                   <a
-                    class={card.buttonClass}
+                    class="card-link"
                     href={card.href}
                     aria-label={card.buttonLabel}
                     data-id="card-button"

@@ -1,5 +1,4 @@
 @import "c/sectionHeading";
-@import "c/nativeControls";
 /*
  * Home page case studies, on the --pf- site tokens only, in the hero's column and type
  * scale. Every element that sets a background also sets its text colour.
@@ -24,13 +23,13 @@
 
 /* Every home section has the same top and bottom padding. */
 .section {
-  padding: 32px 0;
+  padding: 24px 0 32px;
 }
 
 /* A one or two sentence intro runs to the section's width, like the page leads, at the body
    size in the muted colour. */
 .section-intro {
-  margin: var(--pf-space-2) 0 var(--pf-space-6);
+  margin: var(--pf-space-2) 0 var(--pf-space-4);
   max-width: 60rem;
   color: var(--pf-muted);
   font-size: var(--pf-font-body, 16px);
@@ -43,17 +42,18 @@
   padding: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--pf-space-4);
+  gap: var(--pf-space-3);
 }
 
-@media (min-width: 980px) {
+@media (min-width: 720px) {
   .cards {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--pf-space-4);
   }
 }
 
+/* A compact stat card: the number, its label, the title, then the link at the foot. */
 .card {
-  position: relative;
   min-width: 0;
   border: 1px solid var(--pf-border);
   border-radius: var(--pf-radius-lg);
@@ -64,78 +64,42 @@
 .card-body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
   height: 100%;
-  padding: 18px;
+  padding: 14px 16px 6px;
   box-sizing: border-box;
 }
 
 .metric {
   margin: 0;
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 8px;
 }
 
-/* Where the cards sit side by side, each card shares four row tracks with the cards beside it
-   (metric, title, client, button). Titles then start level whether or not a card has a metric,
-   and whatever height a wrapped label takes. A card with no metric keeps its empty slot. */
+/* A card with no metric keeps the slot's height where the cards sit side by side, so the
+   titles start level. It is hidden from everyone. */
 .metric-spacer {
   display: none;
 }
 
-@media (min-width: 980px) {
-  .cards {
-    row-gap: 0;
-  }
-
-  .card {
-    display: grid;
-    grid-row: span 4;
-    grid-template-rows: subgrid;
-    margin-bottom: var(--pf-space-4);
-  }
-
-  .card-body {
-    display: grid;
-    grid-row: 1 / -1;
-    grid-template-rows: subgrid;
-    gap: 0;
-  }
-
-  .card-body > .metric {
-    grid-row: 1;
-    margin-bottom: 8px;
-  }
-
-  .card-body > .card-title {
-    grid-row: 2;
-    margin-bottom: 8px;
-  }
-
-  .card-body > .client {
-    grid-row: 3;
-    margin-bottom: 8px;
-  }
-
-  .card-body > .card-action {
-    grid-row: 4;
-    align-self: end;
+@media (min-width: 720px) {
+  .metric {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .metric-spacer {
     display: block;
     visibility: hidden;
+    min-height: 3.4rem;
   }
 }
 
-.card-action {
-  margin-top: auto;
-  padding-top: 4px;
-}
-
 .metric-number {
-  font-size: 24px;
-  line-height: 1.2;
+  font-size: 30px;
+  line-height: 1.15;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--pf-text);
@@ -143,11 +107,12 @@
 }
 
 .metric-label {
-  font-size: var(--pf-font-meta, 12px);
+  font-size: 13px;
+  line-height: 1.3;
   color: var(--pf-muted);
 }
 
-/* The title of one card in the grid, from the card tokens. */
+/* The title of one card in the row, from the card tokens. */
 .card-title {
   margin: 0;
   font-size: var(--pf-font-card, 17px);
@@ -160,4 +125,36 @@
   margin: 0;
   font-size: var(--pf-font-meta, 12px);
   color: var(--pf-muted);
+}
+
+.card-action {
+  margin-top: auto;
+}
+
+/* A plain text link, 44px tall so it is easy to hit. The colour is the accent. */
+.card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pf-space-2);
+  min-height: 44px;
+  color: var(--pf-accent);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.card-link:hover {
+  text-decoration: underline;
+}
+
+.card-link:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* View source takes the free space at the end of the heading row, and the data source chip
+   sits right after it. Two auto margins would split the space between them. */
+.heading-row .heading-badge-end {
+  margin-inline-start: 0;
 }

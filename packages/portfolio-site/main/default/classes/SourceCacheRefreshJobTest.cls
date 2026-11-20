@@ -735,4 +735,54 @@ private class SourceCacheRefreshJobTest {
       'No part past the last'
     );
   }
+
+  @IsTest
+  static void shouldCutAtTheLimitWhenTheWindowHasNoBreakPoint() {
+    Test.startTest();
+    List<String> parts = SourceCacheRefreshJob.splitContent(' '.repeat(6), 3);
+    Test.stopTest();
+
+    Assert.areEqual(3, parts[0].length(), 'Cut at the limit');
+    Assert.areEqual(' '.repeat(6), String.join(parts, ''), 'Nothing lost');
+  }
+
+  @IsTest
+  static void shouldNotSplitAPairWhenTheWindowEndsOnAHighSurrogateWithNoBreak() {
+    String pair = String.fromCharArray(new List<Integer>{ 55357, 56832 });
+    String text = '  ' + pair + 'x';
+
+    Test.startTest();
+    List<String> parts = SourceCacheRefreshJob.splitContent(text, 3);
+    Test.stopTest();
+
+    Assert.areEqual('  ', parts[0], 'Cut before the pair');
+    Assert.areEqual(text, String.join(parts, ''), 'Nothing lost');
+    for (String part : parts) {
+      Integer last = part.length() > 0 ? part.charAt(part.length() - 1) : 0;
+      Assert.isFalse(
+        last >= 55296 && last <= 56319,
+        'No part ends on a high surrogate'
+      );
+    }
+  }
+
+  @IsTest
+  static void shouldHaveNothingDueWhenNoPathIsConfigured() {
+    SourceController.filesOverride = new List<Source_File__mdt>();
+    SourceCacheRefreshJob.configOverridden = true;
+    SourceCacheRefreshJob.configOverride = new Portfolio_Config__mdt(
+      GitHub_Repo_Path__c = 'o/r'
+    );
+    ContentsMock mock = new ContentsMock(200);
+    Test.setMock(HttpCalloutMock.class, mock);
+
+    Test.startTest();
+    Boolean due = SourceCacheRefreshJob.isDue();
+    String outcome = SourceCacheRefreshJob.refresh();
+    Test.stopTest();
+
+    Assert.isFalse(due, 'Nothing configured, nothing due');
+    Assert.areEqual(SourceCacheRefreshJob.OUTCOME_NOT_DUE, outcome, 'Outcome');
+    Assert.areEqual(0, mock.calls, 'No callout');
+  }
 }

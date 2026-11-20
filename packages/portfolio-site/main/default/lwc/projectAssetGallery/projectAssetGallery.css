@@ -4,7 +4,7 @@
  * targets. The tracks are auto-fit, so a short row stretches to fill the width and leaves no
  * empty column. Screenshots are mostly white, so an overlay multiplies the page background
  * over each image: it does nothing in the light theme and dims the image a little in the dark.
- * The gallery sits in a c/panel box with the panel size heading of c/sectionHeading, as the
+ * The gallery sits in a c/panel box with the section size heading of c/sectionHeading, as the
  * walkthrough under it on the Business Architecture page does, and the file kind tag is c/pill.
  */
 @import "c/panel";
@@ -42,9 +42,15 @@
   overflow-wrap: anywhere;
 }
 
+/* The pictures are drawn on a white sheet. The frame gives that sheet an edge, a border and a
+   mat in the page's own surface colours, so on the dark page it reads as a document held in a
+   frame and not as a light grey slab. The overlay below dims the sheet a little in the dark
+   theme and does nothing in the light one. */
 .image-link {
   position: relative;
   display: block;
+  padding: var(--pf-space-2);
+  border: 1px solid var(--pf-border);
   border-radius: var(--pf-radius-sm);
   overflow: hidden;
   background-color: var(--pf-subtle);
@@ -73,6 +79,28 @@
   color: var(--pf-text);
   font-weight: 600;
   margin: var(--pf-space-2) 0 0;
+}
+
+/* The thumbnails are too small to read on a phone, so each one has a plain link to the full
+   size picture there. From 768 px the picture itself is large enough and the link goes. */
+.full-size-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: var(--pf-space-1);
+  color: var(--pf-accent);
+  text-decoration: underline;
+}
+
+.full-size-link:focus-visible {
+  outline: 2px solid var(--pf-accent);
+  outline-offset: 2px;
+}
+
+@media (min-width: 768px) {
+  .full-size-link {
+    display: none;
+  }
 }
 
 .asset-link {

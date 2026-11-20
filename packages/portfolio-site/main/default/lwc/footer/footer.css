@@ -21,28 +21,13 @@
   padding: var(--pf-space-5) var(--pf-space-4) var(--pf-space-6);
 }
 
-/* The caption and View source share one row over the readings, View source right after the
-   caption so it reads as the code behind them. */
-/* Baseline, so the caption and the button text sit on one line when they share a row. */
+/* The captions sit over the tooling row. Baseline, so two captions share a line when they fit. */
 .metrics-head {
   display: flex;
   flex: 1 1 100%;
   flex-wrap: wrap;
-  gap: var(--pf-space-3);
+  gap: 0 var(--pf-space-3);
   align-items: baseline;
-}
-
-/* The buttons are the shared quiet button (nc-button_ghost in c/nativeControls), drawn by
-   their own components. The footer picks their text size and side padding through the two
-   ghost hooks, which reach the buttons through the shadow boundary, and sets nothing else on
-   them but where they start. The tap target stays 44 px. */
-.metrics-head {
-  --nc-ghost-size: 1rem;
-  --nc-ghost-padding: var(--pf-space-4);
-}
-
-.metrics-head c-view-source {
-  margin-inline-start: 0;
 }
 
 .metrics-caption {
@@ -66,29 +51,49 @@
   font-size: 12px;
 }
 
+/*
+ * The tooling is one compact row of small text links in the footer's own link style: View source,
+ * Analytics events (only once there is an event), View analytics source and the reading toggles.
+ * The two quiet buttons draw themselves, so the row sets the hooks they read: no edge, the muted
+ * link colour and a 24 px target. Where the row has room (900 px and up) the target is 44 px.
+ */
 .chips {
+  --view-source-size: 13px;
+  --view-source-padding: var(--pf-space-2);
+  --tool-height: 24px;
+  --tool-border: transparent;
+  --tool-border-hover: transparent;
+  --tool-color: var(--pf-muted);
+  --tool-color-hover: var(--pf-accent);
+
   display: flex;
   flex-wrap: wrap;
-  gap: var(--pf-space-2);
+  gap: 0 var(--pf-space-2);
   align-items: center;
+  font-family: var(--pf-font-sans);
+  margin-inline-start: calc(-1 * var(--pf-space-2));
 }
 
-/* A chip is a button: label, a short status and a chevron. It is never text to select. Like
-   every control on the site it is at least 44 px high (--pf-control-height). */
+.chips c-view-source,
+.chips c-analytics-events {
+  margin-inline-start: 0;
+}
+
+/* A reading toggle is a button drawn as a link: label, a short status and a chevron. */
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: var(--pf-space-2);
+  gap: var(--pf-space-1);
   box-sizing: border-box;
-  min-height: var(--pf-control-height, 44px);
-  padding: 0 var(--pf-space-3);
-  border: 1px solid var(--pf-border);
+  min-height: 24px;
+  padding: 0 var(--pf-space-2);
+  border: 0;
   border-radius: var(--pf-radius-sm);
   background: transparent;
-  color: var(--pf-text);
+  color: var(--pf-muted);
   font: inherit;
   font-family: var(--pf-font-sans);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
   white-space: nowrap;
   cursor: pointer;
@@ -99,12 +104,41 @@
 
 .chip:hover,
 .chip--open {
-  border-color: var(--pf-accent);
+  color: var(--pf-accent);
 }
 
 .chip:focus-visible {
   outline: 2px solid var(--pf-focus, var(--pf-accent));
   outline-offset: 2px;
+}
+
+@media (min-width: 900px) {
+  .chips {
+    --tool-height: var(--pf-control-height, 44px);
+  }
+
+  .chip {
+    min-height: var(--pf-control-height, 44px);
+  }
+}
+
+/* On a phone the toggles show their label and the status text drops, so the whole row takes
+   two lines. The one exception is Request limits, which keeps its count beside its label. */
+@media (max-width: 899.98px) {
+  .chips {
+    --view-source-padding: var(--pf-space-1);
+
+    gap: 0 var(--pf-space-1);
+    margin-inline-start: calc(-1 * var(--pf-space-1));
+  }
+
+  .chip {
+    padding: 0 var(--pf-space-1);
+  }
+
+  .chip:not(.chip--limits) .group-status {
+    display: none;
+  }
 }
 
 .chip-chevron {
@@ -143,129 +177,14 @@
 }
 
 .group-label {
-  color: var(--pf-body);
   font-family: var(--pf-font-sans);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 13px;
   letter-spacing: 0.02em;
 }
 
 .group-status {
-  color: var(--pf-muted);
   font-family: var(--pf-font-sans);
-  font-size: 12px;
-}
-
-/*
- * Narrow widths. The three buttons share equal columns: three across from 660 px up to 899 px,
- * two with the last one on a row of its own from 481 px, and one column on a phone. The host is
- * a grid so its button fills the column. The chips share equal columns from 899 px down, and a
- * last chip that would stand alone on its row takes the room of the empty cells beside it.
- */
-/*
- * From 900 to 1279 px the captions each take a row of their own and the three buttons share the
- * row under them at their own widths. Beside the captions the buttons wrapped two and one, and
- * equal columns this wide would stretch them, so they keep their natural size.
- */
-/*
- * Six chips across 900 to 1065 px do not fit one row, and a plain wrap leaves the sixth alone.
- * They share three equal columns instead, so the rows are three and three. The static site never
- * has six chips, so its single row is untouched.
- */
-@media (min-width: 900px) and (max-width: 1065.98px) {
-  .chips--six {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .chips--six .chip {
-    justify-content: space-between;
-    min-width: 0;
-  }
-}
-
-@media (min-width: 900px) and (max-width: 1279.98px) {
-  .metrics-head {
-    display: grid;
-    grid-template-columns: repeat(3, max-content);
-    justify-content: start;
-    gap: var(--pf-space-3);
-    align-items: center;
-  }
-
-  .metrics-head > .metrics-caption {
-    grid-column: 1 / -1;
-  }
-}
-
-@media (max-width: 899.98px) {
-  .metrics-head {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--pf-space-3);
-    align-items: center;
-  }
-
-  .metrics-head > .metrics-caption {
-    grid-column: 1 / -1;
-  }
-
-  .metrics-head > c-view-source,
-  .metrics-head > c-analytics-events {
-    display: grid;
-    margin-inline-start: 0;
-  }
-}
-
-@media (min-width: 481px) and (max-width: 659.98px) {
-  .metrics-head {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .metrics-head > :last-child {
-    grid-column: 1 / -1;
-  }
-}
-
-@media (max-width: 480.98px) {
-  .metrics-head {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-@media (max-width: 899.98px) {
-  .chips {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .chip {
-    justify-content: space-between;
-    min-width: 0;
-  }
-
-  .chip:last-child:nth-child(3n + 1) {
-    grid-column: 1 / -1;
-  }
-
-  .chip:last-child:nth-child(3n + 2) {
-    grid-column: span 2;
-  }
-}
-
-@media (max-width: 599.98px) {
-  .chips {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .chip:last-child:nth-child(3n + 1),
-  .chip:last-child:nth-child(3n + 2) {
-    grid-column: auto;
-  }
-
-  .chip:last-child:nth-child(odd) {
-    grid-column: 1 / -1;
-  }
+  font-size: 13px;
 }
 
 @media (prefers-reduced-motion: reduce) {

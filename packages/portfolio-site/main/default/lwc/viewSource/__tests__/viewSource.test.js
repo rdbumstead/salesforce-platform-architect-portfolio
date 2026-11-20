@@ -105,18 +105,34 @@ describe("c-view-source", () => {
 
     const time = $(element, ".fetched-at time");
     expect(time.getAttribute("datetime")).toBe("2026-10-23T06:00:00.000Z");
-    const expected = new Intl.DateTimeFormat(undefined, {
-      year: "numeric",
+    // The site's one stamp format, in the visitor's zone with the zone shown.
+    const expected = new Intl.DateTimeFormat("en-US", {
       month: "short",
       day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    }).format(new Date("2026-10-23T06:00:00.000Z"));
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZoneName: "short"
+    })
+      .format(new Date("2026-10-23T06:00:00.000Z"))
+      .replace(/[\u202f\u00a0]/g, " ");
     expect(time.textContent).toBe(expected);
+    expect(time.textContent).toMatch(/ [A-Z]{3,5}([+-]d+)?$/);
     expect($(element, ".fetched-at").textContent).toContain(
       "Read from GitHub on"
     );
     expect($(element, "lightning-formatted-date-time")).toBeNull();
+  });
+
+  it("keeps the code block inside the dialog's padding and bounds its height", () => {
+    const css = require("fs")
+      .readFileSync(
+        require("path").join(__dirname, "..", "viewSource.css"),
+        "utf8"
+      )
+      .replace(/\r\n/g, "\n");
+    expect(css).not.toMatch(/margin-inline:\s*calc\(-1/);
+    expect(css).toContain("--viewer-max-height:");
   });
 
   it("passes its key to the wire and renders nothing before data", async () => {
@@ -560,7 +576,21 @@ describe("c-view-source", () => {
         expect(link.hasAttribute("target")).toBe(false);
         document.body.removeChild(element);
       }
-      expect(Object.keys(GUIDE_SECTIONS)).toHaveLength(9);
+      expect(Object.keys(GUIDE_SECTIONS)).toHaveLength(13);
+    });
+
+    it("labels the four home sections and links them to the home page guide section", () => {
+      const home = [
+        "heroBanner",
+        "caseStudyGrid",
+        "careerLine",
+        "credentialsBand"
+      ];
+      home.forEach((key) => {
+        expect(COMPONENT_LABELS[key]).toBeTruthy();
+
+        expect(GUIDE_SECTIONS[key]).toBe("2-12-home-page");
+      });
     });
 
     it("shows no guide link for a key not in the map", async () => {

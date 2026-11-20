@@ -594,7 +594,7 @@ describe("formatting helpers", () => {
     expect(formatMonth("2027-01-02")).toBe("January 2027");
     expect(formatMonth(null)).toBe("");
     expect(formatMonth("2026-13-01")).toBe("");
-    expect(formatDay("2026-10-26")).toBe("26 October 2026");
+    expect(formatDay("2026-10-26")).toBe("Oct 26, 2026");
     expect(formatDay("2026-13-26")).toBe("");
     expect(formatDay("")).toBe("");
   });

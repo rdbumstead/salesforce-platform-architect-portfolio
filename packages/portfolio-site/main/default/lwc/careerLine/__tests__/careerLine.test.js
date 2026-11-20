@@ -550,6 +550,25 @@ describe("c-career-line", () => {
     expect(bullets).toEqual(["One", "Two", "Three", "Taught evening classes"]);
   });
 
+  it("does not repeat the title and years of a single role employer in its opened panel", async () => {
+    const element = await mount();
+    const northwind = rowFor(element, "Northwind Digital");
+    expect(text(within(northwind, "stop-path"))).toBe("Lead Consultant");
+    expect(northwind.querySelectorAll('[data-id="role-title"]')).toHaveLength(
+      0
+    );
+    expect(northwind.querySelectorAll('[data-id="role-years"]')).toHaveLength(
+      0
+    );
+    const lakeside = rowFor(element, "Lakeside College");
+    expect(lakeside.querySelectorAll('[data-id="role-title"]')).toHaveLength(3);
+  });
+
+  it("draws no From Salesforce chip, because the home page shows it once, with the case studies", async () => {
+    const element = await mount();
+    expect(element.shadowRoot.querySelector("c-data-source")).toBeNull();
+  });
+
   it("lists each earlier role in the Earlier roles panel", async () => {
     const element = await mount();
     const early = rowFor(element, "Earlier roles");
@@ -743,5 +762,21 @@ describe("c-career-line", () => {
     expect(buildStops(TIMELINE, TODAY).map((stop) => stop.key)).toEqual(
       buildTimeline(TIMELINE, TODAY).stops.map((stop) => stop.key)
     );
+  });
+});
+
+describe("c-career-line view source", () => {
+  afterEach(() => {
+    while (document.body.firstChild) {
+      document.body.removeChild(document.body.firstChild);
+    }
+  });
+
+  it("renders one View source control with the careerLine key in the heading row", async () => {
+    const element = await mount();
+    const row = element.shadowRoot.querySelector(".heading-row");
+    const controls = row.querySelectorAll("c-view-source");
+    expect(controls).toHaveLength(1);
+    expect(controls[0].sourceKey).toBe("careerLine");
   });
 });

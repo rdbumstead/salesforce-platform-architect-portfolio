@@ -41,6 +41,7 @@
               aria-describedby="firstName-error"
               value={form.firstName}
               oninput={handleInput}
+              onblur={handleBlur}
             />
             <template lwc:if={firstNameError}>
               <p
@@ -67,6 +68,7 @@
               aria-describedby="lastName-error"
               value={form.lastName}
               oninput={handleInput}
+              onblur={handleBlur}
             />
             <template lwc:if={lastNameError}>
               <p id="lastName-error" class="nc-error" data-id="lastName-error">
@@ -91,6 +93,7 @@
             maxlength={maxEmail}
             value={form.email}
             oninput={handleInput}
+            onblur={handleBlur}
           />
           <p id="email-hint" class="nc-hint">Ryan replies to this address.</p>
           <template lwc:if={emailError}>
@@ -114,6 +117,7 @@
             aria-describedby="company-error"
             value={form.company}
             oninput={handleInput}
+            onblur={handleBlur}
           />
           <template lwc:if={companyError}>
             <p id="company-error" class="nc-error" data-id="company-error">
@@ -135,6 +139,7 @@
             aria-invalid={messageInvalid}
             aria-describedby="message-count message-error"
             oninput={handleInput}
+            onblur={handleBlur}
           ></textarea>
           <p id="message-count" class="nc-hint">{messageCount}</p>
           <template lwc:if={messageError}>

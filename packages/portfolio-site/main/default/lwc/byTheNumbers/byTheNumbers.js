@@ -111,14 +111,15 @@ export function formatMonth(isoDate) {
 }
 
 /**
- * A date such as "2026-10-26" as "26 October 2026". Empty when it is not a date.
+ * A date such as "2026-10-26" as a date only stamp, "Oct 26, 2026" A calendar date has no
+ * time, so it has no zone. Empty when it is not a date.
  * @param {string} isoDate the date as year, month and day
  * @returns {string} the text
  */
 export function formatDay(isoDate) {
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(isoDate || "");
   const month = match ? MONTHS[Number(match[2]) - 1] : null;
-  return month ? `${Number(match[3])} ${month} ${match[1]}` : "";
+  return month ? `${month.slice(0, 3)} ${Number(match[3])}, ${match[1]}` : "";
 }
 
 /**

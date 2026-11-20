@@ -133,14 +133,14 @@ export const PAGE_OPTIONS = Object.freeze({ includeHeader: true, includeSkills: 
  * createPdfLoader's registerFonts and writePdf, with the creation date and file id fixed.
  * @returns {Promise<{bytes: Uint8Array, trace: object[], pages: number, family: string}>}
  */
-export async function renderModel(model, { title } = {}) {
+export async function renderModel(model, { title, tagged = true } = {}) {
   const { format, layout, documentPdf, jsPDF, fonts } = await loadShipped();
   const doc = new jsPDF({ unit: layout.page.unit, format: layout.page.format, compress: true });
   const family = documentPdf.createPdfLoader(null, layout).registerFonts(doc, fonts);
   doc.setCreationDate(FIXED_CREATION_DATE);
   doc.setFileId(FIXED_FILE_ID);
   const trace = [];
-  format.writePdf(doc, model, { family, trace, title });
+  format.writePdf(doc, model, { family, trace, title, tagged });
   const bytes = new Uint8Array(doc.output('arraybuffer'));
   return { bytes, trace, pages: doc.getNumberOfPages(), family };
 }

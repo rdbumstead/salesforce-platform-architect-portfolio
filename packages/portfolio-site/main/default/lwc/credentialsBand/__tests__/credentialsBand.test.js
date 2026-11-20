@@ -269,12 +269,6 @@ describe("c-credentials-band", () => {
   });
 
   describe("rendering", () => {
-    it("puts the source badge at the end of the certifications row", async () => {
-      const element = await renderWith();
-      const badge = element.shadowRoot.querySelector(".card-source");
-      expect(badge.classList.contains("heading-badge-end")).toBe(true);
-    });
-
     it("keeps both headings in the band", async () => {
       const element = await renderWith();
       expect(text(one(element, "education-heading"))).toBe("Education");
@@ -311,17 +305,31 @@ describe("c-credentials-band", () => {
   });
 });
 
-describe("c-credentials-band source badge", () => {
+describe("c-credentials-band source chip", () => {
   afterEach(() => {
     while (document.body.firstChild) {
       document.body.removeChild(document.body.firstChild);
     }
   });
 
-  it("hides row counts, because the certification count includes retired certs", async () => {
+  it("draws no From Salesforce chip, because the home page shows it once, with the case studies", async () => {
     const element = await renderWith();
-    const source = element.shadowRoot.querySelector("c-data-source");
-    expect(source).not.toBeNull();
-    expect(source.hideCounts).toBe(true);
+    expect(element.shadowRoot.querySelector("c-data-source")).toBeNull();
+  });
+});
+
+describe("c-credentials-band view source", () => {
+  afterEach(() => {
+    while (document.body.firstChild) {
+      document.body.removeChild(document.body.firstChild);
+    }
+  });
+
+  it("renders one View source control with the credentialsBand key in the Education heading row", async () => {
+    const element = await renderWith();
+    const controls = element.shadowRoot.querySelectorAll("c-view-source");
+    expect(controls).toHaveLength(1);
+    expect(controls[0].sourceKey).toBe("credentialsBand");
+    expect(controls[0].closest("[data-id=education-column]")).not.toBeNull();
   });
 });

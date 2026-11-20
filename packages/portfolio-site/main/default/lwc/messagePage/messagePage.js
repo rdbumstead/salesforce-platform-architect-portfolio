@@ -1,9 +1,11 @@
 /**
  * @description       : A short full width message for a page the site cannot show as it is: a page that
  *                      does not exist, a busy site or an unavailable one. It draws an eyebrow, the page's
- *                      one h1, a plain sentence and, when asked, a link back to the home page. Every value
- *                      is a builder property, so the words live in the page's view. The home link is put
- *                      under the site's base path.
+ *                      one h1, a plain sentence and, when asked, a Try again button and a link back to the
+ *                      home page. Every value is a builder property, so the words live in the page's view.
+ *                      The home link is put under the site's base path. The Try again button reloads the
+ *                      page, so a busy site never reloads itself on a timer, which a screen reader user
+ *                      cannot stop.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -25,6 +27,7 @@ export default class MessagePage extends LightningElement {
   @api body;
   @api homeLabel;
   @api showHome = false;
+  @api retryLabel;
 
   get eyebrowText() {
     return clean(this.eyebrow);
@@ -48,5 +51,21 @@ export default class MessagePage extends LightningElement {
 
   get hasHome() {
     return this.showHome === true || this.showHome === "true";
+  }
+
+  get retryText() {
+    return clean(this.retryLabel);
+  }
+
+  get hasRetry() {
+    return this.retryText !== "";
+  }
+
+  get hasActions() {
+    return this.hasHome || this.hasRetry;
+  }
+
+  handleRetry() {
+    window.location.reload();
   }
 }

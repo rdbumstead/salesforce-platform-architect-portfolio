@@ -16,6 +16,7 @@ import ContactForm, {
   MAX_EMAIL,
   MAX_COMPANY,
   MAX_MESSAGE,
+  FIELD_ERRORS,
   RATE_LIMITED_TEXT,
   errorMessage,
   refusedOutcome
@@ -175,6 +176,69 @@ describe("c-contact-form", () => {
     await submit(element);
     expect(text("company")).toBe("Use 255 characters or fewer.");
     expect(submitContact).not.toHaveBeenCalled();
+  });
+
+  it("names a bad email and an empty required field when each is left", async () => {
+    const element = createComponent();
+    await flushPromises();
+    const blur = async (name) => {
+      q(element, `[name="${name}"]`).dispatchEvent(new CustomEvent("blur"));
+      await flushPromises();
+    };
+    await setField(element, "email", "not-an-email");
+    await blur("email");
+    const email = q(element, '[name="email"]');
+    expect(email.getAttribute("aria-invalid")).toBe("true");
+    expect(q(element, '[data-id="email-error"]').textContent).toBe(
+      FIELD_ERRORS.email
+    );
+    expect(email.getAttribute("aria-describedby")).toContain("email-error");
+    await blur("firstName");
+    expect(q(element, '[name="firstName"]').getAttribute("aria-invalid")).toBe(
+      "true"
+    );
+    expect(q(element, '[data-id="firstName-error"]').textContent).toBe(
+      FIELD_ERRORS.firstName
+    );
+    // A field not yet visited stays quiet, and the optional company stays quiet empty.
+    expect(q(element, '[data-id="lastName-error"]')).toBeNull();
+    await blur("company");
+    expect(q(element, '[data-id="company-error"]')).toBeNull();
+    expect(submitContact).not.toHaveBeenCalled();
+  });
+
+  it("clears the message once the value is valid, on typing and on the next blur", async () => {
+    const element = createComponent();
+    await flushPromises();
+    const email = q(element, '[name="email"]');
+    await setField(element, "email", "bad");
+    email.dispatchEvent(new CustomEvent("blur"));
+    await flushPromises();
+    expect(q(element, '[data-id="email-error"]')).not.toBeNull();
+    await setField(element, "email", "ada@example.com");
+    expect(q(element, '[data-id="email-error"]')).toBeNull();
+    expect(email.getAttribute("aria-invalid")).toBeNull();
+    await setField(element, "email", "bad");
+    email.dispatchEvent(new CustomEvent("blur"));
+    await flushPromises();
+    await setField(element, "email", "ada@example.com");
+    email.dispatchEvent(new CustomEvent("blur"));
+    await flushPromises();
+    expect(q(element, '[data-id="email-error"]')).toBeNull();
+  });
+
+  it("skips the blur caused by a press on Send, which reports every field itself", async () => {
+    const element = createComponent();
+    await flushPromises();
+    q(element, '[name="firstName"]').dispatchEvent(
+      new FocusEvent("blur", {
+        relatedTarget: q(element, '[data-id="submit"]')
+      })
+    );
+    await flushPromises();
+    expect(q(element, '[data-id="firstName-error"]')).toBeNull();
+    await submit(element);
+    expect(q(element, '[data-id="firstName-error"]')).not.toBeNull();
   });
 
   it("fades the thank you panel in and stops that under reduce motion", () => {

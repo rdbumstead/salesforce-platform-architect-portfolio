@@ -1,8 +1,7 @@
 /**
- * @description       : Unit tests for heroBanner LWC: the static hero (photo, name, meta line,
- *                      proof strip), the title line and the value sentence from the
- *                      ResumeController header wire, the start year from the timeline wire, the
- *                      proof panel and its buttons, the profile links, the tour link that starts
+ * @description       : Unit tests for heroBanner LWC: the static hero (photo, name, meta line),
+ *                      the title line and the outcome sentence from the ResumeController
+ *                      header wire, the proof panel and its two buttons, no chips, the profile links, the tour link that starts
  *                      the tour at its first stop, and that the pillars, Start here, the tour
  *                      list and a case studies button are not in the hero.
  * @author            : Ryan Bumstead
@@ -13,7 +12,6 @@
 import { createElement } from "@lwc/engine-dom";
 import HeroBanner from "c/heroBanner";
 import getHeader from "@salesforce/apex/ResumeController.getHeader";
-import getTimeline from "@salesforce/apex/ResumeController.getTimeline";
 import getBuildCounts from "@salesforce/apex/ProjectCardController.getBuildCounts";
 import { trackEvent } from "c/analyticsService";
 
@@ -25,15 +23,6 @@ jest.mock(
 
 jest.mock(
   "@salesforce/apex/ResumeController.getHeader",
-  () => {
-    const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
-    return { default: createApexTestWireAdapter(jest.fn()) };
-  },
-  { virtual: true }
-);
-
-jest.mock(
-  "@salesforce/apex/ResumeController.getTimeline",
   () => {
     const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
     return { default: createApexTestWireAdapter(jest.fn()) };
@@ -72,7 +61,7 @@ const HEADER = {
 };
 
 const FALLBACK =
-  "If you're hiring a Salesforce architect for education or nonprofit work, start with the three case studies below. Each shows the problem, the call I made and how it turned out.";
+  "Salesforce for schools and nonprofits should cost less, change safely and show its work. The three case studies below show how I do each.";
 
 function render() {
   const element = createElement("c-hero-banner", { is: HeroBanner });
@@ -114,39 +103,6 @@ describe("c-hero-banner", () => {
       expect(photo.getAttribute("src")).toContain("Portfolio_Headshot");
       expect(photo.getAttribute("width")).toBe("132");
       expect(photo.getAttribute("height")).toBe("132");
-    });
-
-    it("shows the two proof points from the shared constant before any wire returns", () => {
-      const element = render();
-      const strip = byId(element, "proof-strip");
-      expect(strip.tagName).toBe("UL");
-      expect(strip.getAttribute("aria-label")).toBe("At a glance");
-      expect(
-        Array.from(strip.querySelectorAll("li")).map((item) => text(item))
-      ).toEqual([
-        "On Salesforce since 2017",
-        "7 active Salesforce certifications"
-      ]);
-    });
-
-    it("takes the start year from the timeline read, and keeps the fallback on an error", async () => {
-      const element = render();
-      getTimeline.emit({ work: [], salesforceStartYear: 2018 });
-      await flush();
-      const items = () =>
-        Array.from(byId(element, "proof-strip").querySelectorAll("li")).map(
-          (item) => text(item)
-        );
-      expect(items()).toEqual([
-        "On Salesforce since 2018",
-        "7 active Salesforce certifications"
-      ]);
-      getTimeline.error();
-      await flush();
-      expect(items()[0]).toBe("On Salesforce since 2017");
-      getTimeline.emit({ work: [] });
-      await flush();
-      expect(items()[0]).toBe("On Salesforce since 2017");
     });
 
     it("never says Multi-Cloud Strategist or Technical Architect", async () => {
@@ -195,7 +151,7 @@ describe("c-hero-banner", () => {
       expect(name.nextElementSibling).toBe(line.parentElement);
       expect(line.parentElement.nextElementSibling).toBe(value.parentElement);
       expect(value.parentElement.nextElementSibling).toBe(
-        byId(element, "proof-strip")
+        byId(element, "proof-panel")
       );
     });
 
@@ -232,7 +188,7 @@ describe("c-hero-banner", () => {
       expect(text(element.shadowRoot.querySelector("h1"))).toBe(
         "Ryan Bumstead"
       );
-      expect(byId(element, "proof-strip")).not.toBeNull();
+      expect(byId(element, "proof-panel")).not.toBeNull();
     });
 
     it("shows the value sentence alone when the title line is blank", async () => {
@@ -258,16 +214,16 @@ describe("c-hero-banner", () => {
   });
 
   describe("buttons and profile links", () => {
-    it("holds every button in the proof panel, the tour first, with no case studies button, and leaves the resume to the profile links", () => {
+    it("holds two buttons in the proof panel, the tour first, with no case studies button, and leaves the resume to the profile links", () => {
       const element = render();
       const panel = byId(element, "proof-panel");
       const buttons = panel.querySelectorAll(".nc-button");
       expect(Array.from(buttons).map((a) => a.dataset.id)).toEqual([
         "tour-link",
-        "docs-link",
-        "guest-access-link"
+        "docs-link"
       ]);
-      expect(element.shadowRoot.querySelectorAll(".nc-button")).toHaveLength(3);
+      expect(element.shadowRoot.querySelectorAll(".nc-button")).toHaveLength(2);
+      expect(byId(element, "guest-access-link")).toBeNull();
       expect(element.shadowRoot.querySelector(".hero-actions")).toBeNull();
       expect(byId(element, "case-studies-button")).toBeNull();
       expect(text(element.shadowRoot.querySelector(".hero"))).not.toContain(
@@ -486,46 +442,6 @@ describe("c-hero-banner", () => {
     });
   });
 
-  describe("cert count chip", () => {
-    const certs = (n) =>
-      Array.from({ length: n }, (_, i) => ({ id: `c${i}`, name: `Cert ${i}` }));
-
-    it("shows the constant before the timeline read returns", () => {
-      const element = render();
-      expect(text(byId(element, "proof-strip"))).toContain(
-        "7 active Salesforce certifications"
-      );
-    });
-
-    it("counts the certifications in the read: 7 active from a fixture of 7", async () => {
-      const element = render();
-      getTimeline.emit({ salesforceStartYear: 2017, certifications: certs(7) });
-      await flush();
-      expect(text(byId(element, "proof-strip"))).toContain(
-        "7 active Salesforce certifications"
-      );
-    });
-
-    it("follows the count when it changes, and keeps the constant on zero or an error", async () => {
-      const element = render();
-      getTimeline.emit({ certifications: certs(9) });
-      await flush();
-      expect(text(byId(element, "proof-strip"))).toContain(
-        "9 active Salesforce certifications"
-      );
-      getTimeline.emit({ certifications: [] });
-      await flush();
-      expect(text(byId(element, "proof-strip"))).toContain(
-        "7 active Salesforce certifications"
-      );
-      getTimeline.error();
-      await flush();
-      expect(text(byId(element, "proof-strip"))).toContain(
-        "7 active Salesforce certifications"
-      );
-    });
-  });
-
   describe("why line and proof panel", () => {
     it("shows the record's value sentence as the one why line, and the fallback when it is blank", async () => {
       const element = render();
@@ -586,19 +502,19 @@ describe("c-hero-banner", () => {
       expect(byId(element, "proof-stats")).toBeNull();
     });
 
-    it("holds the two architecture buttons, both secondary", () => {
+    it("holds the architecture button as the one secondary button", () => {
       const element = render();
       const docs = byId(element, "docs-link");
-      const guest = byId(element, "guest-access-link");
       expect(text(docs)).toBe("Architecture and decisions →");
       expect(docs.getAttribute("href")).toBe("/portfolio/docs");
-      // The arrow is a flex item spaced by the button gap, so no space sits in the text.
-      expect(text(guest)).toMatch(/^How a request flows\s?→$/);
-      expect(guest.getAttribute("href")).toBe(
-        "/portfolio/docs?doc=sas#3-2-how-a-guest-reaches-apex"
-      );
       expect(docs.classList.contains("nc-button_secondary")).toBe(true);
-      expect(guest.classList.contains("nc-button_secondary")).toBe(true);
+    });
+
+    it("draws no chips and no proof strip", () => {
+      const element = render();
+      expect(byId(element, "proof-strip")).toBeNull();
+      expect(element.shadowRoot.querySelector(".proof-item")).toBeNull();
+      expect(text(element.shadowRoot)).not.toMatch(/On Salesforce since/);
     });
 
     it("has one primary button only", () => {
@@ -609,5 +525,26 @@ describe("c-hero-banner", () => {
         )
       ).toHaveLength(1);
     });
+  });
+});
+
+describe("c-hero-banner view source", () => {
+  afterEach(() => {
+    while (document.body.firstChild) {
+      document.body.removeChild(document.body.firstChild);
+    }
+  });
+
+  it("renders one View source control with the heroBanner key, after the profile links", () => {
+    const element = render();
+    const controls = element.shadowRoot.querySelectorAll("c-view-source");
+    expect(controls).toHaveLength(1);
+    expect(controls[0].sourceKey).toBe("heroBanner");
+    const nav = element.shadowRoot.querySelector(".profile-links");
+    expect(
+      nav.compareDocumentPosition(controls[0]) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(controls[0].closest(".proof-panel")).toBeNull();
   });
 });

@@ -400,10 +400,10 @@ export default class DocsViewer extends LightningElement {
       title: d.title,
       badge: badgeFor(d.key),
       href: docHref(d.key),
-      // Shown when the list read carries them. Today it carries neither.
+      // Shown when the list read carries them. An ADR carries status and decisionDate.
       status: d.status || "",
-      date: d.date || "",
-      hasMeta: Boolean(d.status || d.date)
+      date: d.date || d.decisionDate || "",
+      hasMeta: Boolean(d.status || d.date || d.decisionDate)
     }));
   }
 

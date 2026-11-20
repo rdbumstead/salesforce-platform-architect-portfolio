@@ -44,28 +44,42 @@ function create(props = {}) {
 const button = (el) => el.shadowRoot.querySelector(".marker-button");
 const label = (el) => el.shadowRoot.querySelector(".marker-label");
 
+/** Puts the visitor in one zone for a test, whatever zone the machine is in. */
+function visitorIn(timeZone) {
+  jest.restoreAllMocks();
+  const Real = Intl.DateTimeFormat;
+  jest
+    .spyOn(Intl, "DateTimeFormat")
+    .mockImplementation(
+      (locale, options) => new Real(locale, { timeZone, ...options })
+    );
+}
+
 describe("c-data-source label on the static site", () => {
   afterEach(() => {
+    jest.restoreAllMocks();
     while (document.body.firstChild) {
       document.body.removeChild(document.body.firstChild);
     }
   });
 
   it("shows the build date, with the full label as the title and spoken name", async () => {
-    builtAt.mockReturnValue("2026-11-03T14:05:09.000Z");
+    visitorIn("America/New_York");
+    builtAt.mockReturnValue("2026-11-19T01:33:09.000Z");
     const el = create();
     await Promise.resolve();
-    expect(label(el).textContent).toBe("From Salesforce · built 3 Nov 2026");
-    expect(button(el).getAttribute("title")).toBe(
-      "From Salesforce · built 3 Nov 2026, 14:05 UTC"
+    expect(label(el).textContent).toBe(
+      "From Salesforce · built Nov 18, 2026, 8:33 PM EST"
     );
+    expect(button(el).getAttribute("title")).toBeNull();
     expect(button(el).getAttribute("aria-label")).toBe(
-      "From Salesforce · built 3 Nov 2026, 14:05 UTC"
+      "From Salesforce · built Nov 18, 2026, 8:33 PM EST"
     );
   });
 
   it("starts the spoken name with the shown words, counts included, and puts the time last", async () => {
-    builtAt.mockReturnValue("2026-11-03T14:05:09.000Z");
+    visitorIn("America/New_York");
+    builtAt.mockReturnValue("2026-11-19T01:33:09.000Z");
     const el = create({ sourceKeys: "ResumeController_Roles" });
     getSources.emit([
       {
@@ -79,14 +93,17 @@ describe("c-data-source label on the static site", () => {
     await Promise.resolve();
     const shown = button(el).textContent.replace(/\s+/g, " ").trim();
     const name = button(el).getAttribute("aria-label");
-    expect(shown).toBe("From Salesforce · built 3 Nov 2026 10 roles");
+    expect(shown).toBe(
+      "From Salesforce · built Nov 18, 2026, 8:33 PM EST 10 roles"
+    );
     expect(name.replace(/,/g, "").startsWith(shown.replace(/,/g, ""))).toBe(
       true
     );
     expect(
-      name.startsWith("From Salesforce · built 3 Nov 2026, 10 roles")
+      name.startsWith(
+        "From Salesforce · built Nov 18, 2026, 8:33 PM EST, 10 roles"
+      )
     ).toBe(true);
-    expect(name.endsWith(", 14:05 UTC")).toBe(true);
   });
 
   it("keeps the live label and no title on the Salesforce site", async () => {

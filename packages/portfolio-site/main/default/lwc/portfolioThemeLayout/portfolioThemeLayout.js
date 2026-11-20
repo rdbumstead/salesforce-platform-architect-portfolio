@@ -2,8 +2,8 @@
  * @description       : Site theme layout. Renders the slim sticky header for every portfolio page,
  *                      the page content in the unnamed slot, and the footer region.
  *                      The header holds the name (a home link everywhere) at the left, and at the
- *                      right Home, Resume, Skills, a "How it's built" menu, Testimonials and
- *                      Contact, a thin divider
+ *                      right Home, Resume, Skills, a "How it's built" menu, Testimonials
+ *                      (only once three are approved) and Contact, a thin divider
  *                      drawn in CSS (aria-hidden), then the Back to top arrow, the theme toggle
  *                      and the phone menu button. While the arrow is hidden the links and the
  *                      divider slide over its place, so the divider always sits beside the next
@@ -20,7 +20,7 @@
  *                      when none shows within TOUR_HEADING_WAIT_MS. Ending the tour moves focus
  *                      to the page content. On a phone the bar is pinned to the bottom and the
  *                      layout pads the page by its height. The link to the page on screen
- *                      carries aria-current="page". Skills and Testimonials are in the footer too.
+ *                      carries aria-current="page". Testimonials is in the footer at any count.
  *                      Owns the theme: the stylesheet follows the system setting, and the toggle
  *                      writes data-theme and the portfolio-theme storage key, with a 200 ms
  *                      crossfade where the browser supports view transitions.
@@ -44,6 +44,7 @@ import { LightningElement, wire } from "lwc";
 import { CurrentPageReference } from "lightning/navigation";
 import basePath from "@salesforce/community/basePath";
 import getRedirect from "@salesforce/apex/SiteRedirectController.getRedirect";
+import getApprovedTestimonials from "@salesforce/apex/TestimonialController.getApprovedTestimonials";
 import { IS_STATIC } from "c/siteHost";
 import { PILLARS } from "c/pillarData";
 import { trackEvent, EVENTS } from "c/analyticsService";
@@ -57,7 +58,7 @@ import {
 } from "c/motionPreference";
 import { startTour, firstStopHref, TOUR_LABEL } from "c/tourBar";
 
-// The header links in order, with the "How it's built" menu between Skills and Testimonials. All
+// The header links in order, with the "How it's built" menu between Skills and Contact. All
 // are plain route links. URLs match the urlPrefix of each route in the Portfolio1 site bundle.
 // Home is the route with an empty URL, so it carries aria-current="page" on the home page only.
 const PAGES = [
@@ -68,10 +69,15 @@ const PAGES = [
     key: "testimonials",
     label: "Testimonials",
     url: "testimonials",
-    afterMenu: true
+    afterMenu: true,
+    needsReviews: true
   },
   { key: "contact", label: "Contact", url: "contact", afterMenu: true }
 ];
+
+// Testimonials stays out of the main menu until this many are approved. The page and
+// the footer link keep it reachable at any count.
+export const TESTIMONIALS_MENU_MIN = 3;
 
 // The label of the menu that holds the pillars, Docs and the API reference.
 export const BUILT_MENU_LABEL = "How it's built";
@@ -526,6 +532,14 @@ export default class PortfolioThemeLayout extends LightningElement {
   // position it saw.
   _menuGuard = null;
   _touchY = null;
+
+  // How many testimonials are approved, read from the call the Testimonials page reads.
+  approvedCount = 0;
+
+  @wire(getApprovedTestimonials)
+  wiredApproved({ data }) {
+    this.approvedCount = Array.isArray(data) ? data.length : 0;
+  }
 
   @wire(CurrentPageReference)
   wiredPageReference() {
@@ -1024,7 +1038,10 @@ export default class PortfolioThemeLayout extends LightningElement {
   }
 
   get pages() {
-    return PAGES.map((page) => {
+    return PAGES.filter(
+      (page) =>
+        !page.needsReviews || this.approvedCount >= TESTIMONIALS_MENU_MIN
+    ).map((page) => {
       const href = toHref(page.url);
       return { ...page, href, current: this.currentFor(href) };
     });

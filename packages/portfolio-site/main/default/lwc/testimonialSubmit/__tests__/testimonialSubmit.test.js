@@ -144,6 +144,19 @@ describe("c-testimonial-submit", () => {
     jest.clearAllMocks();
   });
 
+  it("names an empty name when the box is left, and clears it once filled", async () => {
+    const element = await ready();
+    const name = q(element, '[name="authorName"]');
+    name.dispatchEvent(new CustomEvent("blur"));
+    await flushPromises();
+    expect(name.getAttribute("aria-invalid")).toBe("true");
+    expect(q(element, '[data-id="authorName-error"]')).not.toBeNull();
+    await setField(element, "authorName", "Ada");
+    expect(name.getAttribute("aria-invalid")).toBeNull();
+    expect(q(element, '[data-id="authorName-error"]')).toBeNull();
+    expect(submitTestimonial).not.toHaveBeenCalled();
+  });
+
   it("draws its box, heading, fields and mode buttons from the shared styles", async () => {
     const element = await ready();
     expect(q(element, "section").classList.contains("pf-panel")).toBe(true);

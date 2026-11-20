@@ -12,14 +12,14 @@ reads them in process, not through SAPI over HTTP (section 3).
 - **After the sunset date**: every version 1 call returns `410 Gone` in the standard error envelope with `errorCode` `GONE`, a short message and the link to the version 2 reference. No data is returned.
 
 ### 1. Authentication Strategy
-- **Callers → PAPI**: OAuth 2.0 **Client Credentials** issued by the Portfolio API External Client App; `Authorization: Bearer <token>` on every request (ADR-027). The platform rejects unauthenticated calls before Apex executes.
-- **Site (API Lab)**: `c-api-tester` calls an Apex proxy that obtains its token through the `Portfolio_API` Named Credential; no secret reaches the browser.
+- **Callers → PAPI**: OAuth 2.0 **Client Credentials** issued by the Portfolio API External Client App, with `Authorization: Bearer <token>` on every request (ADR-027). The platform rejects unauthenticated calls before Apex executes.
+- **Site (API Lab)**: `c-api-tester` calls an Apex proxy that obtains its token through the `Portfolio_API` Named Credential, so no secret reaches the browser.
 - **External evaluators**: `POST /auth/token` vends a short-lived token (ADR-028). It is the only unauthenticated path, and the only path served on the Experience Cloud site domain (see its `servers` entry). Every other path is called on My Domain with the Bearer token.
 - **PAPI → SAPI**: in-process Apex in the same transaction, not HTTP. See section 3 and ADR-025 for why fan out callouts were rejected.
 
 ### 2. Versioning Strategy
 - **Pattern**: Header-based versioning takes precedence.
-- **Header**: `X-API-Version: v1`. A missing header resolves to `v1`; any other value returns `400 BAD_REQUEST` with message `Unsupported X-API-Version` (ADR-026).
+- **Header**: `X-API-Version: v1`. A missing header resolves to `v1`. Any other value returns `400 BAD_REQUEST` with message `Unsupported X-API-Version` (ADR-026).
 - **Correlation**: a missing `X-Request-Id` is replaced by a generated UUID, and a present but non-UUID value returns `400 BAD_REQUEST`. On My Domain the platform injects its own 32-character hex id when the caller sends none, and PAPI treats that value as missing. Both headers are on every response (`ApiRequestContext.applyRequestRules`): the platform echoes whatever `X-Request-Id` the request carries, its own included, and Apex sets the header only when it generated the value and the request carried none, so the header appears once (ADR-026). When the platform injected its id, the header carries that id and an error body's `correlationId` carries the generated UUID. Send your own UUID to get one predictable id.
 - **URL**: Version segments removed from base path to align with SAPI ADR.
 
@@ -163,7 +163,7 @@ The "Hydration" endpoint. Returns the entire portfolio state in a single call.
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
 |X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, or when it is the platform's own 32-character hex id, a generated UUID is used as the correlation id. A present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
-|X-API-Version|header|string|false|API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Version. Missing resolves to v1. Any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 
 > Example responses
 
@@ -354,13 +354,13 @@ The "Hydration" endpoint. Returns the entire portfolio state in a single call.
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
 |200|Cache-Control|string||The strictest policy of the sections read. The contact section makes it no-store.|
 |200|X-Data-Integrity|string||Indicates if the payload is complete or has partial missing data.|
-|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|401|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|500|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
+|401|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
+|500|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
+|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
 |503|Retry-After|integer||Seconds until service may be available|
 
 <aside class="warning">
@@ -416,7 +416,7 @@ strictest-policy-wins.
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
 |X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, or when it is the platform's own 32-character hex id, a generated UUID is used as the correlation id. A present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
-|X-API-Version|header|string|false|API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Version. Missing resolves to v1. Any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 
 > Example responses
 
@@ -563,13 +563,13 @@ strictest-policy-wins.
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
 |200|X-Data-Integrity|string||none|
 |200|Cache-Control|string||none|
-|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|401|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|500|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
+|401|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
+|500|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
+|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
 |503|Retry-After|integer||Seconds until service may be available|
 
 <aside class="warning">
@@ -622,7 +622,7 @@ and their assets, each in one query for every project at once.
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
 |X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, or when it is the platform's own 32-character hex id, a generated UUID is used as the correlation id. A present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
-|X-API-Version|header|string|false|API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Version. Missing resolves to v1. Any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 
 > Example responses
 
@@ -761,15 +761,15 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
 |200|X-Total-Count|integer||none|
 |200|X-Data-Integrity|string||none|
-|200|X-Integrity-Note|string||Present only when partial; names the failed sub-queries, e.g. "partial: project-skills unavailable".|
+|200|X-Integrity-Note|string||Present only when partial. Names the failed sub-queries, e.g. "partial: project-skills unavailable".|
 |200|Cache-Control|string||none|
-|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|401|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|500|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
+|401|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
+|500|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
+|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
 |503|Retry-After|integer||Seconds until service may be available|
 
 <aside class="warning">
@@ -851,7 +851,7 @@ curl -H "Authorization: Bearer $TOKEN" -H "Accept: text/plain" "$INSTANCE_URL/se
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
 |X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, or when it is the platform's own 32-character hex id, a generated UUID is used as the correlation id. A present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
-|X-API-Version|header|string|false|API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Version. Missing resolves to v1. Any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 |persona|query|string|false|Target audience for the resume. Omit for all highlights and all skills. With a persona, skills tagged for it and every untagged skill are kept.|
 
 #### Detailed descriptions
@@ -957,13 +957,13 @@ curl -H "Authorization: Bearer $TOKEN" -H "Accept: text/plain" "$INSTANCE_URL/se
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
 |200|X-Data-Integrity|string||none|
 |200|Cache-Control|string||none|
-|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|401|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|500|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
+|401|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
+|500|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
+|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
 |503|Retry-After|integer||Seconds until service may be available|
 
 <aside class="warning">
@@ -1018,15 +1018,15 @@ Retrieves testimonials with "Vibe Control" logic applied.
 
 **Use Case**: About page testimonials section
 
-`mode` is matched case-insensitively (the VibeMode values `Professional` and `Casual` are accepted);
-any other value returns 400 BAD_REQUEST. Ordered by sort order, then newest first; at most 200.
+`mode` is matched case-insensitively (the VibeMode values `Professional` and `Casual` are accepted).
+Any other value returns 400 BAD_REQUEST. Ordered by sort order, then newest first. At most 200 are returned.
 
 <h3 id="gettestimonialfeed-parameters">Parameters</h3>
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
 |X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, or when it is the platform's own 32-character hex id, a generated UUID is used as the correlation id. A present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
-|X-API-Version|header|string|false|API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Version. Missing resolves to v1. Any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 |mode|query|string|false|Filter testimonials by vibe|
 
 #### Enumerated Values
@@ -1153,13 +1153,13 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
 |200|X-Total-Count|integer||none|
 |200|Cache-Control|string||none|
-|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|401|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|500|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
+|401|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
+|500|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
+|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
 |503|Retry-After|integer||Seconds until service may be available|
 
 <aside class="warning">
@@ -1249,7 +1249,7 @@ and comes back whole unless `maxLength` is sent.
 refuses or fails, CoverLetter falls back to the local template and the other types answer
 503 `ALL_PROVIDERS_UNAVAILABLE`.
 
-**Validation**: `type` and `tone` must be enum values, `provider` only `Agentforce`, `maxLength` an integer 100 to 1000;
+**Validation**: `type` and `tone` must be enum values, `provider` only `Agentforce`, `maxLength` an integer 100 to 1000.
 CoverLetter requires `context.companyName` and `context.role`. Content longer than `maxLength` is cut.
 
 > Body parameter
@@ -1279,7 +1279,7 @@ CoverLetter requires `context.companyName` and `context.role`. Content longer th
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
 |X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, or when it is the platform's own 32-character hex id, a generated UUID is used as the correlation id. A present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
-|X-API-Version|header|string|false|API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Version. Missing resolves to v1. Any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 |body|body|object|true|none|
 |» type|body|string|true|The type of content to generate|
 |» context|body|object|true|Contextual data for generation|
@@ -1459,15 +1459,15 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
 |200|X-AI-Provider|string||Which provider served the request|
 |200|X-Generation-Time-Ms|integer||Time taken to generate content in milliseconds|
 |200|Cache-Control|string||none|
-|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|401|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|429|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
+|401|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
+|429|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
 |429|Retry-After|integer||none|
-|500|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|500|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1548,7 +1548,7 @@ down or any Named Credential is not CONFIGURED, otherwise UP. Always returns 200
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
 |200|Cache-Control|string||none|
 
 <aside class="warning">
@@ -1606,17 +1606,17 @@ exchange returns the same token, so all evaluators share one token and one rate 
 (SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token
 endpoint reports no expiry, and the session's end depends on use.
 
-- **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254
-  characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule
+- **400 BAD_REQUEST**: the body is not a JSON object of strings, `email` is blank, longer than 254
+  characters or not an address, `purpose` is blank or longer than 280 characters, or a header rule
   from `ApiRequestContext` fails.
 - **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller
   key), or 15 requests per minute per email and source IP
   (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,
   `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.
 - **503 SERVICE_UNAVAILABLE** (retryable): the daily cap is reached (`Retry-After` is the seconds to
-  the next midnight in the running user's time zone; the cap counts audit rows with outcome
-  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50); the
-  credential is missing or not granted ("Token issuance is not configured."); or the token endpoint
+  the next midnight in the running user's time zone. The cap counts audit rows with outcome
+  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50), the
+  credential is missing or not granted ("Token issuance is not configured."), or the token endpoint
   fails ("Token issuance is temporarily unavailable.").
 - Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.
 
@@ -1637,7 +1637,7 @@ This is the only path served on the Experience Cloud site domain, not on My Doma
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
 |X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, or when it is the platform's own 32-character hex id, a generated UUID is used as the correlation id. A present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
-|X-API-Version|header|string|false|API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Version. Missing resolves to v1. Any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 |body|body|[TokenRequest](#schematokenrequest)|true|none|
 
 > Example responses
@@ -1702,12 +1702,12 @@ This is the only path served on the Experience Cloud site domain, not on My Doma
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
 |200|Cache-Control|string||none|
-|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|429|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
+|429|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
 |429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait.|
-|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform. Apex sets the header only when it generated the value.|
 |503|Retry-After|integer||Seconds until service may be available|
 
 <aside class="success">
@@ -1783,7 +1783,7 @@ This operation does not require authentication
 |dependencies|object|false|none|none|
 |» sapi|string|false|none|none|
 |» credential|string|false|none|UP only when a GET through the Portfolio_API Named Credential to /sapi/v1/health returns HTTP 200.|
-|» jira|string|false|none|Presence of the Jira_API Named Credential; UNKNOWN when NamedCredential cannot be read.|
+|» jira|string|false|none|Presence of the Jira_API Named Credential. UNKNOWN when NamedCredential cannot be read.|
 |» github|string|false|none|Presence of the GitHub_API Named Credential.|
 |» gemini|string|false|none|Presence of the Gemini_API Named Credential.|
 |details|object|false|none|Diagnostic per dependency, e.g. credential: "HTTP 401" or an exception type name.|
