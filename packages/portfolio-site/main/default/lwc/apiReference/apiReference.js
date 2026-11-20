@@ -610,6 +610,8 @@ export const REDOC_STYLE_OVERRIDES = [
   // opportunity. It never breaks inside a word. A segment wider than the box still scrolls.
   ".redoc-target [data-pf-server-url] { overflow-x: auto; border: 1px solid var(--pf-border); background-color: var(--pf-surface); }",
   ".redoc-target [data-pf-server-url] > div { min-width: 0; border: 0; background: transparent; white-space: normal; word-break: normal; overflow-wrap: normal; }",
+  // A wrapped heading or response row is balanced, so no line holds one word alone.
+  ".redoc-target h2, .redoc-target h3, .redoc-target button { text-wrap: balance; }",
   // The chevron that opens the authorization details sits beside its label. Redoc let it wrap
   // to a line of its own when the scheme name beside it took the width.
   ".redoc-target div:has(> h5 + svg:last-child) { flex: none; white-space: nowrap; }",

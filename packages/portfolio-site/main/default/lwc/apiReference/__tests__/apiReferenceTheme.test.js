@@ -431,3 +431,11 @@ describe("helpers for the markup Redoc draws", () => {
     makeScrollersFocusable(null);
   });
 });
+
+describe("balanced wrapping in the reference", () => {
+  it("balances Redoc headings and response rows so no line holds one word alone", () => {
+    expect(REDOC_STYLE_OVERRIDES).toMatch(
+      /\.redoc-target h3, \.redoc-target button \{ text-wrap: balance; \}/
+    );
+  });
+});
