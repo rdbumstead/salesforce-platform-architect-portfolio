@@ -433,4 +433,15 @@ private class SiteExportResourceTest {
     Test.stopTest();
     Assert.areEqual(500, status, 'A failure answers 500 with no data');
   }
+
+  @isTest
+  static void shouldRefuseANameListThatIsNotAList() {
+    Test.startTest();
+    Integer status = statusAsBuildUser(
+      'DataSourceController.getSources',
+      '{"names":"ResumeController_Roles"}'
+    );
+    Test.stopTest();
+    Assert.areEqual(400, status, 'A single text is not a list of names');
+  }
 }

@@ -248,4 +248,18 @@ private class StorageSnapshotJobTest {
       'The last good snapshot stays'
     );
   }
+
+  @IsTest
+  static void shouldCountAnObjectTheOrgDoesNotHaveAsNone() {
+    StorageSnapshotJob.AREA_DEFINITIONS.add(
+      new List<String>{ 'Missing area', 'Not_In_This_Org__c' }
+    );
+
+    List<StorageSnapshot.Area> areas = StorageSnapshotJob.dataAreas();
+
+    StorageSnapshot.Area missing = areaNamed(areas, 'Missing area');
+    Assert.isNotNull(missing, 'The area is still listed');
+    Assert.areEqual(0, missing.records, 'An unknown object counts as none');
+    Assert.areEqual(0, missing.kb, 'And so takes no space');
+  }
 }

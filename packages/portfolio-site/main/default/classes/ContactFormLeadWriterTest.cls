@@ -200,4 +200,17 @@ private class ContactFormLeadWriterTest {
       : portfolioAdmins();
     Assert.areEqual(expected, targets, 'The owner, or the admins when none');
   }
+
+  @isTest
+  static void noOwnerEmailIsBuiltWhenThereAreNoLeads() {
+    Test.startTest();
+    ContactFormLeadWriter.emailOwners(new List<Lead>());
+    Test.stopTest();
+
+    Assert.areEqual(
+      0,
+      ContactFormLeadWriter.lastOwnerEmails.size(),
+      'No Lead, no email'
+    );
+  }
 }

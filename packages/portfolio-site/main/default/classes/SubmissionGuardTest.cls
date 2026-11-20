@@ -448,4 +448,24 @@ private class SubmissionGuardTest {
     Assert.isTrue(decision.rateLimited, 'Capped');
     Assert.isFalse(decision.hashRateLimited, 'Not the per visitor limit');
   }
+
+  @isTest
+  static void normalizeLeavesTheKeyBlankWhenTheTypeOrTheValueIsMissing() {
+    List<Submission_Block__c> blocks = new List<Submission_Block__c>{
+      new Submission_Block__c(Type__c = 'hash'),
+      new Submission_Block__c(Value__c = '  Some Value  '),
+      new Submission_Block__c(Type__c = 'hash', Value__c = '  Some Value  ')
+    };
+
+    SubmissionGuard.normalize(blocks);
+
+    Assert.isNull(blocks[0].Unique_Key__c, 'No value, no key');
+    Assert.isNull(blocks[1].Unique_Key__c, 'No type, no key');
+    Assert.areEqual('some value', blocks[1].Value__c, 'The value is trimmed');
+    Assert.areEqual(
+      'hash:some value',
+      blocks[2].Unique_Key__c,
+      'A typed value makes the key'
+    );
+  }
 }

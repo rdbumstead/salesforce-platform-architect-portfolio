@@ -279,4 +279,23 @@ private class CircuitBreakerTest {
       'Open for the set minutes'
     );
   }
+
+  @IsTest
+  static void shouldReportZeroFailuresWhenTheStoredCountIsBlank() {
+    insert new Circuit_Breaker_State__c(
+      Name = 'blank-count',
+      Consecutive_Failures__c = null
+    );
+
+    CircuitBreaker.BreakerState found;
+    for (CircuitBreaker.BreakerState state : CircuitBreaker.snapshot()) {
+      if (state.key == 'blank-count') {
+        found = state;
+      }
+    }
+
+    Assert.isNotNull(found, 'The stored key is reported');
+    Assert.areEqual(0, found.failures, 'A blank count reads as zero');
+    Assert.isFalse(found.open, 'No open time means the circuit is closed');
+  }
 }

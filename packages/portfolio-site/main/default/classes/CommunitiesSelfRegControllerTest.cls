@@ -58,4 +58,44 @@ public with sharing class CommunitiesSelfRegControllerTest {
     CommunitiesSelfRegController controller = new CommunitiesSelfRegController();
     System.assertNotEquals(null, controller);
   }
+
+  @IsTest
+  public static void testCommunitiesSelfRegControllerWithNoPassword() {
+    CommunitiesSelfRegController controller = new CommunitiesSelfRegController();
+    controller.firstName = 'FirstName';
+    controller.lastName = 'LastName';
+    controller.email = 'test@force.com';
+    controller.communityNickname = 'test';
+    controller.password = null;
+    controller.confirmPassword = null;
+    CommunitiesSelfRegController.testMockUserId = '005fakeuseridxx';
+
+    PageReference next = controller.registerUser();
+
+    System.assertNotEquals(
+      null,
+      next,
+      'A user created with no password is sent to the confirmation page'
+    );
+    System.assert(
+      next.getRedirect(),
+      'The confirmation page is a redirect, not a render'
+    );
+  }
+
+  @IsTest
+  public static void testCommunitiesSelfRegControllerWhenTheUserIsNotCreated() {
+    CommunitiesSelfRegController controller = new CommunitiesSelfRegController();
+    controller.firstName = 'FirstName';
+    controller.lastName = 'LastName';
+    controller.email = 'test@force.com';
+    controller.communityNickname = 'test';
+    controller.password = 'abcd1234';
+    controller.confirmPassword = 'abcd1234';
+    CommunitiesSelfRegController.testMockUserId = null;
+
+    PageReference next = controller.registerUser();
+
+    System.assertEquals(null, next, 'No user, no page');
+  }
 }
