@@ -35,80 +35,71 @@ export function siteOrigin() {
     : "";
 }
 
-const MONTHS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec"
-];
-
 function readDate(value) {
   const date = new Date(value);
   return value && !Number.isNaN(date.getTime()) ? date : null;
 }
 
 /**
- * A build time in UTC, such as "3 Nov 2026, 14:00 UTC".
- * @param {string} value ISO 8601 date time
- * @returns {string} the label, or "" for a missing or unreadable value
+ * One format for every build stamp on the site: "Nov 18, 2026, 8:33 PM EST". The zone
+ * is always written out, never a bare date. Pass "UTC" for the fixed form, or leave the zone out
+ * for the visitor's own.
+ * @param {Date} date the moment
+ * @param {string} [timeZone] an IANA zone, or nothing for the visitor's zone
+ * @returns {string} the stamp, or "" where Intl cannot make one
  */
-export function utcLabel(value) {
-  const date = readDate(value);
-  if (!date) {
-    return "";
-  }
-  const hours = String(date.getUTCHours()).padStart(2, "0");
-  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
-  return `${date.getUTCDate()} ${MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}, ${hours}:${minutes} UTC`;
-}
-
-/**
- * A build time in the visitor's own zone, such as "3 Nov 2026, 9:00 am EST".
- * @param {string} value ISO 8601 date time
- * @returns {string} the label, or "" where the browser cannot make one
- */
-export function localLabel(value) {
-  const date = readDate(value);
-  if (!date) {
-    return "";
-  }
+function stamp(date, timeZone) {
   try {
-    return new Intl.DateTimeFormat("en-GB", {
-      day: "numeric",
+    return new Intl.DateTimeFormat("en-US", {
       month: "short",
+      day: "numeric",
       year: "numeric",
       hour: "numeric",
       minute: "2-digit",
-      hour12: true,
-      timeZoneName: "short"
-    }).format(date);
+      timeZoneName: "short",
+      ...(timeZone ? { timeZone } : {})
+    })
+      .format(date)
+      .replace(/[\u202f\u00a0]/g, " ");
   } catch {
     return "";
   }
 }
 
 /**
- * The live data marker's words for a section read when the site was built.
+ * A build time in UTC with "UTC" written out, such as "Nov 18, 2026, 1:33 AM UTC".
+ * @param {string} value ISO 8601 date time
+ * @returns {string} the label, or "" for a missing or unreadable value
+ */
+export function utcLabel(value) {
+  const date = readDate(value);
+  return date ? stamp(date, "UTC") : "";
+}
+
+/**
+ * A build time in the visitor's own zone with the zone shown, such as
+ * "Nov 17, 2026, 8:33 PM EST".
+ * @param {string} value ISO 8601 date time
+ * @returns {string} the label, or "" where the browser cannot make one
+ */
+export function localLabel(value) {
+  const date = readDate(value);
+  return date ? stamp(date) : "";
+}
+
+/**
+ * The live data marker's words for a section read when the site was built. The marker shows the
+ * visitor's own zone, and the UTC form wherever a local one cannot be made.
  * @param {string} value the build time, ISO 8601
- * markerShort is the same words without the time, for the button on a narrow screen. The full
- * label stays in the button's title and spoken name.
- * @returns {{markerLabel: string, markerShort: string, panelHeading: string, explanation: string}}
+ * @returns {{markerLabel: string, panelHeading: string, explanation: string}}
  */
 export function buildWording(value) {
   const utc = utcLabel(value);
-  const local = localLabel(value);
-  const when = local ? `${utc} (${local} your time)` : utc;
+  const local = localLabel(value) || utc;
+  const when = utc && local !== utc ? `${local} (${utc})` : local;
   return {
-    markerLabel: `From Salesforce · built ${utc}`,
-    markerShort: `From Salesforce · built ${utc.split(", ")[0]}`,
+    markerLabel: `From Salesforce · built ${local}`,
+    markerShort: "",
     panelHeading: "Salesforce data",
     explanation: `This section was read from my Salesforce records when the site was built, on ${when}. Each build reads them through an allowlisted API, after every change and every 6 hours.`
   };
