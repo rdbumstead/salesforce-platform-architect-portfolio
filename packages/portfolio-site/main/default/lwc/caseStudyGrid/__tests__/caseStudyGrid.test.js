@@ -1,9 +1,12 @@
 /**
- * @description       : Unit tests for caseStudyGrid: the framing line, three compact cards in
- *                      order, each with the number only with its label, the title, the engagement
- *                      line, no status pill and one button (the first primary, the rest secondary), a card with no safe link hidden, the
- *                      case_study_link_followed event, nothing at all on an empty or failed
- *                      read, and the case-studies anchor with its scroll and focus.
+ * @description       : Unit tests for caseStudyGrid: the heading and intro, four featured cards and
+ *                      the More work rows in order, the labelled lines (Outcome, My part,
+ *                      Context, Decision) each left out when blank, the picture slot only on a
+ *                      featured card with a figure key, no status pill, a card with no safe
+ *                      link hidden, at most eight cards, the case_study_link_followed event
+ *                      with position, total and tier, the case_studies_seen event once, nothing
+ *                      at all on an empty or failed read, and the case-studies anchor with its
+ *                      scroll and focus.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -34,7 +37,10 @@ jest.mock(
   () => ({
     __esModule: true,
     trackEvent: jest.fn(),
-    EVENTS: { CASE_STUDY_LINK_FOLLOWED: "case_study_link_followed" }
+    EVENTS: {
+      CASE_STUDY_LINK_FOLLOWED: "case_study_link_followed",
+      CASE_STUDIES_SEEN: "case_studies_seen"
+    }
   }),
   { virtual: true }
 );
@@ -50,7 +56,11 @@ const CARDS = [
     solution: "Chose donated licences.",
     businessValue: "Ten staff users on donated licences.",
     liveUrl: "https://ryanbumstead.com/nonprofit-solutions",
-    tags: ["NPSP", " Platform selection ", "", "Cost"]
+    tags: ["NPSP", " Platform selection ", "", "Cost"],
+    myPart: "  Test my part  ",
+    contextLine: "Test context",
+    decisionLine: "Test decision",
+    figureKey: "literacy-platform"
   },
   {
     key: "a",
@@ -85,6 +95,14 @@ const UNSAFE = {
   // eslint-disable-next-line no-script-url
   liveUrl: "javascript:alert(1)"
 };
+
+function projects(count) {
+  return Array.from({ length: count }, (_, i) => ({
+    key: `k${i}`,
+    title: `Project ${i + 1}`,
+    liveUrl: "/delivery"
+  }));
+}
 
 function render() {
   const element = createElement("c-case-study-grid", { is: CaseStudyGrid });
@@ -148,17 +166,17 @@ describe("c-case-study-grid", () => {
     expect(empty()).toBe(true);
   });
 
-  it("shows the heading and framing line once, then three cards in the order sent", async () => {
+  it("shows the heading and intro once, then the cards in the order sent", async () => {
     const element = render();
     getHomeCaseStudies.emit(CARDS);
     await flush();
     const root = element.shadowRoot;
     expect(text(root.querySelector("h2"))).toBe("Case studies");
     expect(text(root.querySelector(".section-intro"))).toBe(
-      "A selection of my work: two client engagements and the build behind this site. Client names are left out."
+      "Client work, personal builds and this site."
     );
     expect(
-      cards(element).map((card) => text(card.querySelector("h3")))
+      cards(element).map((card) => text(card.querySelector("h3, h4")))
     ).toEqual([
       "Choosing the right platform for a literacy nonprofit",
       "An employer hub for an education provider",
@@ -166,21 +184,129 @@ describe("c-case-study-grid", () => {
     ]);
   });
 
-  it("shows at most three cards and drops a row with no title", async () => {
+  it("shows at most eight cards, four featured and the rest as More work rows, and drops a row with no title", async () => {
     const element = render();
-    getHomeCaseStudies.emit([
-      { key: "x", title: "  " },
-      ...CARDS,
-      { key: "z", title: "A fourth", liveUrl: "/delivery" }
-    ]);
+    getHomeCaseStudies.emit([{ key: "x", title: "  " }, ...projects(10)]);
     await flush();
-    expect(cards(element)).toHaveLength(3);
-    expect(text(cards(element)[0].querySelector("h3"))).toBe(
-      "Choosing the right platform for a literacy nonprofit"
+    expect(cards(element)).toHaveLength(8);
+    const root = element.shadowRoot;
+    expect(root.querySelectorAll('[data-tier="featured"]')).toHaveLength(4);
+    expect(root.querySelectorAll('[data-tier="more"]')).toHaveLength(4);
+    expect(text(root.querySelector('[data-id="more-heading"]'))).toBe(
+      "More work"
     );
+    expect(text(cards(element)[0].querySelector("h3"))).toBe("Project 1");
+    expect(text(cards(element)[7].querySelector("h4"))).toBe("Project 8");
   });
 
-  it("shows no blocks, no topic chips, no status pill and one button on a card", async () => {
+  it("splits 3, 4, 5 and 8 projects into the right tiers", async () => {
+    const element = render();
+    for (const [count, featured, more] of [
+      [3, 3, 0],
+      [4, 4, 0],
+      [5, 4, 1],
+      [8, 4, 4]
+    ]) {
+      getHomeCaseStudies.emit(projects(count));
+      await flush();
+      const root = element.shadowRoot;
+      expect(root.querySelectorAll('[data-tier="featured"]')).toHaveLength(
+        featured
+      );
+      expect(root.querySelectorAll('[data-tier="more"]')).toHaveLength(more);
+      expect(root.querySelector('[data-id="more-heading"]') !== null).toBe(
+        more > 0
+      );
+    }
+  });
+
+  it("labels the outcome and shows the number only with its label, and the client line only when set", async () => {
+    const element = render();
+    getHomeCaseStudies.emit(CARDS);
+    await flush();
+    const [first, second, third] = cards(element);
+    expect(text(first.querySelector('[data-id="metric"]'))).toBe(
+      "Outcome $0 software licence cost for 10 staff users"
+    );
+    expect(second.querySelector('[data-id="metric"]')).toBeNull();
+    expect(text(third.querySelector('[data-id="metric"]'))).toBe(
+      "Outcome 1000 Apex tests passing at the last successful deploy"
+    );
+    expect(text(first.querySelector('[data-id="client"]'))).toBe(
+      "Adult literacy nonprofit · freelance"
+    );
+    expect(second.querySelector('[data-id="client"]')).toBeNull();
+  });
+
+  it("shows My part, Context and Decision with their labels, trimmed, and leaves a blank line out", async () => {
+    const element = render();
+    getHomeCaseStudies.emit(CARDS);
+    await flush();
+    const [first, second] = cards(element);
+    expect(text(first.querySelector('[data-id="my-part"]'))).toBe(
+      "My part Test my part"
+    );
+    expect(text(first.querySelector('[data-id="context"]'))).toBe(
+      "Context Test context"
+    );
+    expect(text(first.querySelector('[data-id="decision"]'))).toBe(
+      "Decision Test decision"
+    );
+    ["my-part", "context", "decision"].forEach((id) => {
+      expect(second.querySelector(`[data-id="${id}"]`)).toBeNull();
+    });
+    expect(text(second)).not.toMatch(/null|undefined|My part|Context/);
+  });
+
+  it("draws the empty picture slot only on a featured card with a figure key", async () => {
+    const element = render();
+    getHomeCaseStudies.emit(
+      projects(5).map((row, i) => ({
+        ...row,
+        figureKey: i === 1 ? null : "site-org"
+      }))
+    );
+    await flush();
+    const slots = element.shadowRoot.querySelectorAll('[data-id="figure"]');
+    expect(slots).toHaveLength(3);
+    slots.forEach((slot) => {
+      expect(slot.classList.contains("card-figure")).toBe(true);
+      expect(slot.dataset.figureKey).toBe("site-org");
+      expect(slot.children).toHaveLength(0);
+    });
+    const more = element.shadowRoot.querySelector('[data-tier="more"]');
+    expect(more.querySelector('[data-id="figure"]')).toBeNull();
+  });
+
+  it("shows the number, title, My part and link on a More work row, with no Context, Decision or picture", async () => {
+    const element = render();
+    getHomeCaseStudies.emit(
+      projects(5).map((row) => ({
+        ...row,
+        headlineMetric: "4 providers",
+        headlineLabel: "in the chain",
+        myPart: "Test my part",
+        contextLine: "Test context",
+        decisionLine: "Test decision",
+        figureKey: "glassops"
+      }))
+    );
+    await flush();
+    const row = element.shadowRoot.querySelector('[data-tier="more"]');
+    expect(text(row.querySelector('[data-id="metric"]'))).toBe(
+      "4 providers in the chain"
+    );
+    expect(text(row.querySelector("h4"))).toBe("Project 5");
+    expect(text(row.querySelector('[data-id="my-part"]'))).toBe(
+      "My part Test my part"
+    );
+    expect(row.querySelector('[data-id="context"]')).toBeNull();
+    expect(row.querySelector('[data-id="decision"]')).toBeNull();
+    expect(row.querySelector('[data-id="figure"]')).toBeNull();
+    expect(row.querySelectorAll("a")).toHaveLength(1);
+  });
+
+  it("shows no blocks, no topic chips, no status pill and one link on a card", async () => {
     const element = render();
     getHomeCaseStudies.emit(CARDS);
     await flush();
@@ -216,54 +342,7 @@ describe("c-case-study-grid", () => {
     expect(isShownCase(null)).toBe(false);
   });
 
-  it("shows the number only with its label, and the client line only when set", async () => {
-    const element = render();
-    getHomeCaseStudies.emit(CARDS);
-    await flush();
-    const [first, second, third] = cards(element);
-    expect(text(first.querySelector('[data-id="metric"]'))).toBe(
-      "$0 software licence cost for 10 staff users"
-    );
-    expect(second.querySelector('[data-id="metric"]')).toBeNull();
-    expect(text(third.querySelector('[data-id="metric"]'))).toBe(
-      "1000 Apex tests passing at the last successful deploy"
-    );
-    expect(text(first.querySelector('[data-id="client"]'))).toBe(
-      "Adult literacy nonprofit · freelance"
-    );
-    expect(second.querySelector('[data-id="client"]')).toBeNull();
-  });
-
-  it("keeps the metric slot on a card with no metric, hidden from everyone", async () => {
-    const element = render();
-    getHomeCaseStudies.emit(CARDS);
-    await flush();
-    const [first, second] = cards(element);
-    expect(first.querySelector('[data-id="metric-spacer"]')).toBeNull();
-    const spacer = second.querySelector('[data-id="metric-spacer"]');
-    expect(spacer).not.toBeNull();
-    expect(spacer.getAttribute("aria-hidden")).toBe("true");
-  });
-
-  it("leaves out the metric slot when no card has a number", async () => {
-    const element = render();
-    getHomeCaseStudies.emit(
-      CARDS.map((row) => ({
-        ...row,
-        headlineMetric: null,
-        headlineLabel: null
-      }))
-    );
-    await flush();
-    expect(
-      element.shadowRoot.querySelectorAll('[data-id="metric-spacer"]')
-    ).toHaveLength(0);
-    expect(
-      element.shadowRoot.querySelectorAll('[data-id="metric"]')
-    ).toHaveLength(0);
-  });
-
-  it("gives each card one Read the case study button, to an https address or a site path", async () => {
+  it("gives each card one Read the case study link, to an https address or a site path", async () => {
     const element = render();
     getHomeCaseStudies.emit(CARDS);
     await flush();
@@ -299,20 +378,7 @@ describe("c-case-study-grid", () => {
     expect(element.shadowRoot.querySelectorAll(".nc-button")).toHaveLength(0);
   });
 
-  it("lays the cards out as one list of three stat cards, each a number, its label and a link", async () => {
-    const element = render();
-    getHomeCaseStudies.emit(CARDS);
-    await flush();
-    const list = element.shadowRoot.querySelector('[data-id="cards"]');
-    expect(list.tagName).toBe("UL");
-    expect(cards(element)).toHaveLength(3);
-    const first = cards(element)[0];
-    expect(first.querySelector(".metric-number")).not.toBeNull();
-    expect(first.querySelector(".metric-label")).not.toBeNull();
-    expect(first.querySelectorAll("a")).toHaveLength(1);
-  });
-
-  it("sends case_study_link_followed with the card title when a link is used", async () => {
+  it("sends case_study_link_followed with the title, position, total and featured tier", async () => {
     const element = render();
     getHomeCaseStudies.emit(CARDS);
     await flush();
@@ -321,7 +387,25 @@ describe("c-case-study-grid", () => {
     link.click();
     expect(trackEvent).toHaveBeenCalledTimes(1);
     expect(trackEvent).toHaveBeenCalledWith("case_study_link_followed", {
-      name: "An employer hub for an education provider"
+      name: "An employer hub for an education provider",
+      position: 2,
+      total: 3,
+      tier: "featured"
+    });
+  });
+
+  it("sends the more tier for a row after the fourth", async () => {
+    const element = render();
+    getHomeCaseStudies.emit(projects(6));
+    await flush();
+    const link = cards(element)[4].querySelector('[data-id="card-button"]');
+    link.addEventListener("click", (event) => event.preventDefault());
+    link.click();
+    expect(trackEvent).toHaveBeenCalledWith("case_study_link_followed", {
+      name: "Project 5",
+      position: 5,
+      total: 6,
+      tier: "more"
     });
   });
 
@@ -389,6 +473,85 @@ describe("c-case-study-grid", () => {
   });
 });
 
+describe("c-case-study-grid case_studies_seen", () => {
+  const OriginalObserver = window.IntersectionObserver;
+  let observers;
+
+  beforeEach(() => {
+    observers = [];
+    window.IntersectionObserver = jest.fn((callback) => {
+      const observer = {
+        callback,
+        observe: jest.fn(),
+        disconnect: jest.fn()
+      };
+      observers.push(observer);
+      return observer;
+    });
+  });
+
+  afterEach(() => {
+    while (document.body.firstChild) {
+      document.body.removeChild(document.body.firstChild);
+    }
+    window.IntersectionObserver = OriginalObserver;
+    jest.clearAllMocks();
+  });
+
+  function entry(ratio, shownHeight, windowHeight) {
+    return {
+      isIntersecting: ratio > 0 || shownHeight > 0,
+      intersectionRatio: ratio,
+      intersectionRect: { height: shownHeight },
+      rootBounds: { height: windowHeight }
+    };
+  }
+
+  it("sends nothing until half the section is on screen, then once", async () => {
+    const element = render();
+    getHomeCaseStudies.emit(CARDS);
+    await flush();
+    expect(observers).toHaveLength(1);
+    expect(observers[0].observe).toHaveBeenCalledWith(
+      element.shadowRoot.querySelector("section")
+    );
+    observers[0].callback([entry(0.2, 100, 800)]);
+    expect(trackEvent).not.toHaveBeenCalled();
+    observers[0].callback([entry(0.5, 400, 800)]);
+    observers[0].callback([entry(0.9, 700, 800)]);
+    expect(trackEvent).toHaveBeenCalledTimes(1);
+    expect(trackEvent).toHaveBeenCalledWith("case_studies_seen", {
+      total: 3,
+      featured: 3
+    });
+    expect(observers[0].disconnect).toHaveBeenCalled();
+  });
+
+  it("counts half the window as half a section that is taller than the window", async () => {
+    render();
+    getHomeCaseStudies.emit(CARDS);
+    await flush();
+    observers[0].callback([entry(0.3, 450, 844)]);
+    expect(trackEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it("sends nothing without IntersectionObserver", async () => {
+    window.IntersectionObserver = undefined;
+    const element = render();
+    getHomeCaseStudies.emit(CARDS);
+    await flush();
+    expect(trackEvent).not.toHaveBeenCalled();
+    expect(element.shadowRoot.querySelector("section")).not.toBeNull();
+  });
+
+  it("does not watch an empty read", async () => {
+    render();
+    getHomeCaseStudies.emit([]);
+    await flush();
+    expect(window.IntersectionObserver).not.toHaveBeenCalled();
+  });
+});
+
 describe("c-case-study-grid live data marker", () => {
   it("places the live data marker with the sources the section reads", () => {
     const { readFileSync } = require("fs");
@@ -414,11 +577,11 @@ describe("c-case-study-grid view source", () => {
     }
   });
 
-  it("renders one View source control with the caseStudyGrid key in the heading row, before the chip", async () => {
+  it("renders one View source control with the caseStudyGrid key in the tools row, before the chip", async () => {
     const element = render();
     getHomeCaseStudies.emit(CARDS);
     await flush();
-    const row = element.shadowRoot.querySelector(".heading-row");
+    const row = element.shadowRoot.querySelector(".tools");
     const controls = row.querySelectorAll("c-view-source");
     expect(controls).toHaveLength(1);
     expect(controls[0].sourceKey).toBe("caseStudyGrid");
@@ -426,5 +589,17 @@ describe("c-case-study-grid view source", () => {
       controls[0].compareDocumentPosition(row.querySelector("c-data-source")) &
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
+  });
+
+  it("puts the tools row after the projects in the page order, for a phone", async () => {
+    const element = render();
+    getHomeCaseStudies.emit(CARDS);
+    await flush();
+    const css = require("fs").readFileSync(
+      require("path").join(__dirname, "..", "caseStudyGrid.css"),
+      "utf8"
+    );
+    expect(css).toMatch(/\.tools\s*\{[^}]*order:\s*99/);
+    expect(element.shadowRoot.querySelector(".tools")).not.toBeNull();
   });
 });

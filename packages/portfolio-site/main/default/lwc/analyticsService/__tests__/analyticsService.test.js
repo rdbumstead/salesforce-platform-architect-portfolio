@@ -104,6 +104,9 @@ const ANALYTICS_LIST_NAMES = ["analytics_events_opened"];
 // Appended for the Salesforce site's returning visitor redirect.
 const REDIRECT_NAMES = ["redirect_arrived"];
 
+// Appended for the home showcase.
+const SHOWCASE_NAMES = ["case_studies_seen"];
+
 describe("c/analyticsService", () => {
   afterEach(() => {
     delete window.gtag;
@@ -123,7 +126,8 @@ describe("c/analyticsService", () => {
         ...TIMELINE_TOUR_NAMES,
         ...PRE_LAUNCH_NAMES,
         ...ANALYTICS_LIST_NAMES,
-        ...REDIRECT_NAMES
+        ...REDIRECT_NAMES,
+        ...SHOWCASE_NAMES
       ].sort()
     );
   });
@@ -137,7 +141,8 @@ describe("c/analyticsService", () => {
       ...TIMELINE_TOUR_NAMES,
       ...PRE_LAUNCH_NAMES,
       ...ANALYTICS_LIST_NAMES,
-      ...REDIRECT_NAMES
+      ...REDIRECT_NAMES,
+      ...SHOWCASE_NAMES
     ];
     expect(Object.values(EVENTS).slice(-newest.length)).toEqual(newest);
   });
