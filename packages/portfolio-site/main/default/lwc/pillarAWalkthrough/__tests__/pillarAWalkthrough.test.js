@@ -49,4 +49,11 @@ describe("c-pillar-a-walkthrough", () => {
     expect(WALKTHROUGH_STEPS[0]).toContain("Employer Form");
     expect(WALKTHROUGH_STEPS[7]).toContain("partner's account");
   });
+
+  it("labels the walkthrough as the Decision, before its heading", () => {
+    const element = build();
+    const label = element.shadowRoot.querySelector("p.story-label");
+    expect(label.textContent.trim()).toBe("Decision");
+    expect(label.nextElementSibling.tagName).toBe("H2");
+  });
 });

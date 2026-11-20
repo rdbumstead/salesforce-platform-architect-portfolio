@@ -140,7 +140,7 @@ describe("c-pillar-b-story", () => {
   it("opens section 2 with the two parts: pre-sales, then the paid build I led", () => {
     const element = createComponent();
     const discovery = q(element, '[data-section="discovery"]');
-    const first = discovery.querySelector("p");
+    const first = discovery.querySelector("p:not(.story-label)");
     expect(first.dataset.id).toBe("framing");
     expect(text(first)).toBe(
       "I ran this in two parts. First a pre-sales cycle: discovery, a demo and the decision matrix below, before the nonprofit chose a platform. Then a paid engagement, in which I led the build."
@@ -200,7 +200,9 @@ describe("c-pillar-b-story", () => {
     const element = createComponent();
     const all = text(q(element, "article"));
     expect(all.match(/fundraising is out of scope/gi)).toHaveLength(1);
-    const outcome = text(q(element, '[data-section="outcome"] p'));
+    const outcome = text(
+      q(element, '[data-section="outcome"] p:not(.story-label)')
+    );
     expect(outcome.match(/\./g)).toHaveLength(2);
     expect(outcome).toContain("user acceptance testing");
     expect(outcome).toContain("I led the build");
@@ -286,5 +288,28 @@ describe("c-pillar-b-story", () => {
         /table, scrolls sideways$/
       );
     });
+  });
+
+  it("labels each section with the part of the story it tells", () => {
+    const element = createComponent();
+    const labelOf = (section) =>
+      text(q(element, `[data-section="${section}"] .story-label`));
+    expect(labelOf("client")).toBe("Context");
+    expect(labelOf("discovery")).toBe("Context");
+    expect(labelOf("matrix")).toBe("Decision");
+    expect(labelOf("roi")).toBe("Decision");
+    expect(labelOf("design")).toBe("Decision");
+    expect(labelOf("outcome")).toBe("Outcome");
+    expect(q(element, '[data-section="revisit"] .story-label')).toBeNull();
+  });
+
+  it("draws each label as a plain line before its heading, not as a heading", () => {
+    const element = createComponent();
+    qa(element, ".story-label").forEach((label) => {
+      expect(label.tagName).toBe("P");
+      const next = label.nextElementSibling;
+      expect(next.tagName).toBe("H2");
+    });
+    expect(qa(element, "h2")).toHaveLength(7);
   });
 });
