@@ -258,7 +258,7 @@ describe("c-case-study-grid", () => {
     expect(text(second)).not.toMatch(/null|undefined|My part|Context/);
   });
 
-  it("draws the empty picture slot only on a featured card with a figure key", async () => {
+  it("draws the picture only on a featured card with a figure key", async () => {
     const element = render();
     getHomeCaseStudies.emit(
       projects(5).map((row, i) => ({
@@ -272,7 +272,9 @@ describe("c-case-study-grid", () => {
     slots.forEach((slot) => {
       expect(slot.classList.contains("card-figure")).toBe(true);
       expect(slot.dataset.figureKey).toBe("site-org");
-      expect(slot.children).toHaveLength(0);
+      const figure = slot.querySelector("c-case-study-figure");
+      expect(figure).not.toBeNull();
+      expect(figure.figureKey).toBe("site-org");
     });
     const more = element.shadowRoot.querySelector('[data-tier="more"]');
     expect(more.querySelector('[data-id="figure"]')).toBeNull();
