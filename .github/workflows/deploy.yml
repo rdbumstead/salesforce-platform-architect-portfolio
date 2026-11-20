@@ -575,12 +575,91 @@ jobs:
              exit 1
           fi
 
-  # The static site reads the org after the deploy, the smoke and the docs cache refresh, so
-  # its export runs against the Apex and documents that just went live. Static Site
+  # View source shows code read from GitHub and kept in Source_Cache__c. The nightly refresh
+  # can leave it up to a day behind a merge, so a push that changes packages/ forces a fresh
+  # read of every configured code path, the same way docs-cache does for the docs. Several
+  # source keys can name one file, so the expected count is the number of distinct paths.
+  code-cache:
+    needs: [deploy]
+    if: always() && !cancelled() && github.event_name == 'push' && needs.deploy.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for code changes
+        id: code
+        run: |
+          FROM_SHA="${{ github.event.before }}"
+          if [ -z "$FROM_SHA" ] || [ "$FROM_SHA" = "0000000000000000000000000000000000000000" ]; then
+             FROM_SHA="HEAD~1"
+          fi
+          if git diff --quiet "$FROM_SHA" "${{ github.sha }}" -- packages/; then
+             echo "No code changes, nothing to refresh."
+             echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+             echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Salesforce & Tools
+        if: steps.code.outputs.changed == 'true'
+        uses: rdbumstead/setup-salesforce-action@v2
+        with:
+          node_version: "26"
+          jwt_key: ${{ secrets.SFDX_JWT_KEY }}
+          client_id: ${{ secrets.SFDX_CLIENT_ID }}
+          username: ${{ secrets.SFDX_USERNAME }}
+          alias: "portfolio"
+
+      # The GitHub contents API answers with Cache-Control max-age=60, so the wait covers a
+      # read in the first minute after the push.
+      - name: Refresh the code cache
+        if: steps.code.outputs.changed == 'true'
+        run: |
+          sleep 60
+          STARTED=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          sf apex run --target-org portfolio --file scripts/refresh-code-cache.apex --json > refresh.json || true
+          if [ "$(jq -r '.result.success' refresh.json)" != "true" ]; then
+             echo "::error::The refresh script failed."
+             jq -r '.result.exceptionMessage // .message // empty' refresh.json
+             exit 1
+          fi
+          JOB_ID=$(jq -r '.result.logs' refresh.json | grep -oE 'USER_DEBUG\|\[[0-9]+\]\|ERROR\|REFRESH_JOB_ID=[A-Za-z0-9]{15,18}' | sed 's/.*=//' | head -1)
+          if [ -z "$JOB_ID" ]; then
+             echo "::error::The refresh script printed no job Id."
+             exit 1
+          fi
+          echo "Queued job $JOB_ID"
+
+          STATUS=""
+          for i in $(seq 1 30); do
+             sleep 10
+             STATUS=$(sf data query --target-org portfolio --query "SELECT Status FROM AsyncApexJob WHERE Id = '$JOB_ID'" --json | jq -r '.result.records[0].Status // empty')
+             case "$STATUS" in Completed|Failed|Aborted) break ;; esac
+          done
+          echo "Job status: ${STATUS:-unknown}"
+          if [ "$STATUS" != "Completed" ]; then
+             echo "::error::The refresh job did not complete."
+             exit 1
+          fi
+
+          EXPECTED=$(sf data query --target-org portfolio --query "SELECT Path__c FROM Source_File__mdt WHERE Source_Key__c != 'docs'" --json | jq -r '[.result.records[].Path__c | ltrimstr(" ") | rtrimstr(" ")] | unique | length')
+          FRESH=$(sf data query --target-org portfolio --query "SELECT COUNT() FROM Source_Cache__c WHERE (NOT Path__c LIKE 'docs/%') AND (NOT Path__c LIKE '%#part-%') AND Last_Status__c = '200' AND Checked_At__c >= $STARTED" --json | jq -r '.result.totalSize')
+          echo "Code files read with status 200 since $STARTED: $FRESH of $EXPECTED"
+          if [ "$FRESH" != "$EXPECTED" ]; then
+             echo "::error::Not every code file was refreshed. The circuit breaker may be open or GitHub may have failed. The cache keeps its last good content."
+             exit 1
+          fi
+
+  # The static site reads the org after the deploy, the smoke and both cache refreshes, so
+  # its export runs against the Apex, documents and code that just went live. Static Site
   # (Cloudflare Pages) builds a fixture site until its own secrets are set.
   site:
-    needs: [deploy, smoke, docs-cache]
-    if: always() && github.event_name == 'push' && needs.deploy.result == 'success' && needs.smoke.result != 'failure' && needs.docs-cache.result != 'failure'
+    needs: [deploy, smoke, docs-cache, code-cache]
+    if: always() && github.event_name == 'push' && needs.deploy.result == 'success' && needs.smoke.result != 'failure' && needs.docs-cache.result != 'failure' && needs.code-cache.result != 'failure'
     uses: ./.github/workflows/site.yml
     secrets: inherit
 
