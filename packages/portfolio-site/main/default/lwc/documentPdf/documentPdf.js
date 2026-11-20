@@ -6,7 +6,8 @@
  *                      the two Inter files from Portfolio_Fonts (createPdfLoader), and a block
  *                      writer (createPdfWriter) that lays out rows, keeps a block on one page,
  *                      draws real selectable text and clickable links, and can trace every piece
- *                      it draws. The owner's header (centred name, title, then the links side by
+ *                      it draws. With the tagged option it also writes the PDF/UA structure
+ *                      (pdfTagger.js). The owner's header (centred name, title, then the links side by
  *                      side) is written once here, so both documents carry the same header.
  *                      jsPDF and the fonts load only on the first download. When the fonts cannot
  *                      be fetched the PDF is still written, in the fallback font.
@@ -19,6 +20,7 @@
 import { loadScript } from "lightning/platformResourceLoader";
 import JSPDF_LIBRARY from "@salesforce/resourceUrl/jsPDF_Library";
 import PORTFOLIO_FONTS from "@salesforce/resourceUrl/Portfolio_Fonts";
+import { createPdfTagger } from "./pdfTagger";
 
 /** Preview pixels per PDF point. 10 pt body text shows at 16 px. */
 export const PREVIEW_PX_PER_PT = 1.6;
@@ -284,15 +286,21 @@ export function wrapText(doc, text, firstWidth, restWidth) {
  * splits across pages unless it is taller than a page, and keepWithNext keeps it with the next
  * block), then calls draw. Text is real text in reading order, links are clickable. When
  * options.trace is an array, every drawn piece is pushed onto it as
- * { section, kind, text, page, y } in drawing order.
+ * { section, kind, text, page, y } in drawing order. With options.tagged the document is tagged
+ * for PDF/UA (see pdfTagger.js): a structure tree in reading order, marked content, artifacts
+ * for the rules, the document title and the language. The text and its positions are the same
+ * tagged or not.
  * @param {object} doc a jsPDF document in points
- * @param {object} options { family, trace, layout }
+ * @param {object} options { family, trace, layout, tagged, title, language }
  * @returns {object} the writer
  */
 export function createPdfWriter(doc, options = {}) {
   const layout = options.layout || DOCUMENT_LAYOUT;
   const family = options.family || layout.font.fallback;
   const trace = Array.isArray(options.trace) ? options.trace : null;
+  const tagger = options.tagged
+    ? createPdfTagger(doc, { title: options.title, lang: options.language })
+    : null;
   const { type, space, colors, marks } = layout;
   const margin = layout.page.margin;
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -323,6 +331,10 @@ export function createPdfWriter(doc, options = {}) {
   // With no keep the whole block stays together, as before. A section title block is flagged, so
   // a page break inside its section can repeat the heading with "(continued)".
   const block = (rows, after, keepWithNext = false, flags = {}) => {
+    // The tagger groups the pieces of a block into one paragraph, list or role.
+    rows.forEach((row) => {
+      row.blockId = blocks.length;
+    });
     blocks.push({
       rows,
       after,
@@ -433,12 +445,33 @@ export function createPdfWriter(doc, options = {}) {
         const style = piece.style;
         setType(style);
         const baseline = top + lineOf(style) / 2 + style.size * 0.35;
-        if (piece.url) {
-          doc.setTextColor(colors.link);
-          doc.textWithLink(piece.text, piece.x, baseline, { url: piece.url });
+        const paint = () => {
+          if (piece.url && !tagger) {
+            doc.setTextColor(colors.link);
+            doc.textWithLink(piece.text, piece.x, baseline, { url: piece.url });
+          } else {
+            doc.setTextColor(piece.url ? colors.link : colors.ink);
+            doc.text(piece.text, piece.x, baseline);
+          }
+        };
+        if (tagger) {
+          tagger.piece({ kind: piece.kind, blockId: row.blockId }, paint);
+          if (piece.url) {
+            // The link is its own annotation under the tagged link element.
+            const reach = doc.getTextWidth(piece.text);
+            tagger.link({
+              rect: [
+                piece.x,
+                baseline - style.size * 0.8,
+                piece.x + reach,
+                baseline + style.size * 0.25
+              ],
+              url: piece.url,
+              alt: piece.text
+            });
+          }
         } else {
-          doc.setTextColor(colors.ink);
-          doc.text(piece.text, piece.x, baseline);
+          paint();
         }
         if (trace) {
           trace.push({
@@ -452,9 +485,16 @@ export function createPdfWriter(doc, options = {}) {
       });
       if (row.rule) {
         const ruleY = top + row.height - space.ruleWidth / 2;
-        doc.setDrawColor(colors.rule);
-        doc.setLineWidth(space.ruleWidth);
-        doc.line(margin, ruleY, margin + width, ruleY);
+        const rule = () => {
+          doc.setDrawColor(colors.rule);
+          doc.setLineWidth(space.ruleWidth);
+          doc.line(margin, ruleY, margin + width, ruleY);
+        };
+        if (tagger) {
+          tagger.artifact(rule);
+        } else {
+          rule();
+        }
       }
       y += row.height;
       onPage = true;

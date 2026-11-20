@@ -257,6 +257,7 @@ export default class ResumeBuilder extends LightningElement {
       const { doc, family } = await this.pdfLoader.createDocument();
       writePdf(doc, this.model, {
         family,
+        tagged: true,
         title: pdfTitle(this.model, this.selectedPersonaLabel)
       });
       doc.save(pdfFileName(this.model, this.selectedPersona));

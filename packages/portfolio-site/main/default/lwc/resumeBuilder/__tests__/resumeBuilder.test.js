@@ -196,9 +196,35 @@ function button(element, cssClass) {
  */
 function fakeDoc() {
   const state = { size: 10, font: "", style: "" };
+  const handlers = {};
+  const annots = [];
   const doc = {
+    // Enough of jsPDF's internal API for the PDF tagger, which the download turns on.
     internal: {
-      pageSize: { getWidth: () => 612, getHeight: () => 792 }
+      pageSize: { getWidth: () => 612, getHeight: () => 792 },
+      events: {
+        subscribe: (name, handler) => {
+          handlers[name] = handler;
+        }
+      },
+      write: jest.fn(),
+      getCurrentPageInfo: () => ({ pageNumber: doc.pages }),
+      newAdditionalObject: () => {
+        const added = { objId: 100 + annots.length, content: "" };
+        annots.push(added);
+        return added;
+      }
+    },
+    getNumberOfPages: () => doc.pages,
+    // The link annotations the tagger writes, as [text, url] in page order.
+    linkAnnotations: () => {
+      for (let page = 1; page <= doc.pages; page += 1) {
+        handlers.putPage({ objId: page, pageNumber: page });
+      }
+      return annots.map((added) => [
+        /\/Contents \(([^)]*)\)/.exec(added.content)[1],
+        /\/URI \(([^)]*)\)/.exec(added.content)[1]
+      ]);
     },
     drawn: [],
     pages: 1,
@@ -666,6 +692,87 @@ describe("c-resume-builder", () => {
     expect(jsPdfInstance.addFont).toHaveBeenCalledTimes(2);
   });
 
+  describe("the skills cap", () => {
+    const names = (count, prefix) =>
+      Array.from({ length: count }, (_, index) => prefix + (index + 1));
+    const LONG = {
+      ...RESUME,
+      skillGroups: [
+        { category: "A", skills: names(9, "a") },
+        { category: "B", skills: ["b1"] },
+        { category: "C", skills: names(6, "c") },
+        { category: "D", skills: names(2, "d") },
+        { category: "E", skills: names(5, "e") },
+        { category: "F", skills: names(5, "f") },
+        { category: "G", skills: names(5, "g") },
+        { category: "H", skills: names(5, "h") }
+      ]
+    };
+
+    it("prints the first four skills of the first six categories, in the read's order", () => {
+      expect(RESUME_LAYOUT.skills).toEqual({ categories: 6, perCategory: 4 });
+      const model = buildViewModel(LONG, {
+        includeHeader: true,
+        includeSkills: true
+      });
+      expect(model.skillGroups.map((group) => group.category)).toEqual([
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F"
+      ]);
+      expect(model.skillGroups[0].skillsText).toBe("a1, a2, a3, a4");
+      expect(model.skillGroups[1].skillsText).toBe("b1");
+      expect(model.skillCount).toBe(4 + 1 + 4 + 2 + 4 + 4);
+    });
+
+    it("gives the preview, the ATS text and the PDF the same skills", async () => {
+      const model = buildViewModel(LONG, {
+        includeHeader: true,
+        includeSkills: true
+      });
+      const ats = toAtsText(buildLines(model));
+      expect(ats).toContain("A: a1, a2, a3, a4");
+      expect(ats).not.toContain("a5");
+      expect(ats).not.toContain("G:");
+      const trace = [];
+      writePdf(fakeDoc(), model, { family: "Inter", trace });
+      const pdf = trace.filter((piece) => piece.kind === "skill");
+      expect(pdf.map((piece) => piece.text).join(" ")).toContain("a1, a2");
+      expect(pdf.map((piece) => piece.text).join(" ")).not.toContain("a5");
+    });
+
+    it("drops a group left with no skills and keeps a short group whole", () => {
+      const model = buildViewModel(
+        {
+          ...RESUME,
+          skillGroups: [
+            { category: "Empty", skills: [] },
+            { category: "One", skills: ["Apex"] }
+          ]
+        },
+        { includeHeader: true, includeSkills: true }
+      );
+      expect(model.skillGroups.map((group) => group.category)).toEqual(["One"]);
+    });
+  });
+
+  it("tags the downloaded PDF and gives it its title", async () => {
+    const element = createComponent();
+    getResume.emit(RESUME);
+    await flushPromises();
+    button(element, "download-pdf").click();
+    await flushPromises();
+    await flushPromises();
+    // The tagger writes marked content into the page stream and a link annotation per link.
+    expect(jsPdfInstance.internal.write).toHaveBeenCalledWith(
+      expect.stringContaining("BDC")
+    );
+    expect(jsPdfInstance.linkAnnotations().length).toBeGreaterThan(0);
+  });
+
   it("leaves the skills out of the PDF when the toggle is off", async () => {
     const element = createComponent();
     getResume.emit(RESUME);
@@ -1017,8 +1124,7 @@ describe("c-resume-builder", () => {
       button(element, "download-pdf").click();
       await flushPromises();
       await flushPromises();
-      const links = jsPdfInstance.drawn.filter((piece) => piece.url);
-      expect(links.map((piece) => [piece.text, piece.url])).toEqual([
+      expect(jsPdfInstance.linkAnnotations()).toEqual([
         ["LinkedIn", "https://www.linkedin.com/in/example"],
         ["GitHub", "https://github.com/rdbumstead"],
         ["Portfolio", "https://ryanbumstead.com"],
@@ -1026,7 +1132,13 @@ describe("c-resume-builder", () => {
         ["Verify on Trailhead", VERIFY_URL]
       ]);
       // Side by side on one centred row.
-      const ys = new Set(links.slice(0, 4).map((piece) => piece.y));
+      const ys = new Set(
+        jsPdfInstance.drawn
+          .filter((piece) =>
+            ["LinkedIn", "GitHub", "Portfolio", "Contact"].includes(piece.text)
+          )
+          .map((piece) => piece.y)
+      );
       expect(ys.size).toBe(1);
     });
   });
@@ -1400,6 +1512,22 @@ describe("c-resume-builder", () => {
     );
     expect(query(element, "a.text-version").getAttribute("aria-label")).toBe(
       "Text version of the resume for Solution Consultant"
+    );
+  });
+
+  it("keeps the links in the preview at least 24 px tall and the toggles at 24 px or more", () => {
+    const css = require("fs").readFileSync(
+      require("path").join(__dirname, "..", "resumeBuilder.css"),
+      "utf8"
+    );
+    const links = css.match(
+      /\.preview-paper \.resume-link a,\s*\.preview-paper \.verify-link \{[^}]*\}/
+    )[0];
+    expect(links).toContain("display: inline-block");
+    expect(links).toContain("min-height: 24px");
+    expect(css.match(/\.toggle-input \{[^}]*\}/)[0]).toContain("width: 24px");
+    expect(css.match(/\.toggle \{[^}]*\}/)[0]).toContain(
+      "min-height: var(--pf-control-height, 44px)"
     );
   });
 
