@@ -213,7 +213,9 @@ function sourcePaths(root, wantsName) {
       found.push(match[1].trim());
     }
   }
-  return found.sort();
+  // Several keys can show the same file, such as one controller behind three home sections, and
+  // the cache keeps one row per path, so each path is listed once.
+  return [...new Set(found)].sort();
 }
 
 /** The paths of every docs record in the Source_File custom metadata. */
