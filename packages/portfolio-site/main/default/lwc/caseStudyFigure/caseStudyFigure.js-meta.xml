@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>62.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description
+  >The picture on a featured case study card, an inline SVG chosen by a key, drawn from the site's colour tokens.</description>
+</LightningComponentBundle>
