@@ -1,0 +1,54 @@
+<template>
+  <div class="extras">
+    <template lwc:if={hasAlternatives}>
+      <section
+        class="extra pf-panel"
+        data-id="alternatives"
+        aria-labelledby="alternatives-heading"
+      >
+        <h2 id="alternatives-heading" class="extra-heading section-heading">
+          Alternatives considered
+        </h2>
+        <ul class="alternatives">
+          <template for:each={alternatives} for:item="item">
+            <li key={item.key} class="alternative" data-id="alternative">
+              <p class="option">{item.option}</p>
+              <p class="why">{item.why}</p>
+            </li>
+          </template>
+        </ul>
+      </section>
+    </template>
+    <template lwc:if={hasRelated}>
+      <section
+        class="extra pf-panel"
+        data-id="related"
+        aria-labelledby="related-heading"
+      >
+        <h2 id="related-heading" class="extra-heading section-heading">
+          Related decisions
+        </h2>
+        <ul class="related">
+          <template for:each={related} for:item="item">
+            <li key={item.key} class="related-item" data-id="related-item">
+              <a
+                class="adr-link"
+                href={item.href}
+                target={item.target}
+                rel={item.rel}
+                data-id="adr-link"
+                data-adr={item.adr}
+                >ADR-{item.adr}: {item.title}<template lwc:if={item.external}
+                  >,&#32;on GitHub<span class="assistive"
+                    >, opens in a new tab</span
+                  ></template
+                ></a
+              >
+              <p class="note">{item.note}</p>
+            </li>
+          </template>
+        </ul>
+      </section>
+    </template>
+  </div>
+</template>

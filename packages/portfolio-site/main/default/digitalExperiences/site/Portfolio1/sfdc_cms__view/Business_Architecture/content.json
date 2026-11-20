@@ -57,6 +57,14 @@
                       "definition": "c:schemaVisualizer",
                       "id": "e6bbf6c3-8053-4e55-af59-19de6891ee7d",
                       "type": "component"
+                    },
+                    {
+                      "attributes": {
+                        "storyKey": "business-architecture"
+                      },
+                      "definition": "c:storyDecisions",
+                      "id": "3fb33694-b2ee-447a-983e-8347e2177ffe",
+                      "type": "component"
                     }
                   ],
                   "id": "bd80bc1c-946a-4ad8-93ac-ee31e4918833",

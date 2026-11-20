@@ -1,0 +1,92 @@
+@import "c/panel";
+@import "c/sectionHeading";
+
+/*
+ * Colours, fonts, radii and spacing come only from the --pf- design tokens, so both sections
+ * follow the light and dark themes. Each section is a c/panel box with the section size heading
+ * of c/sectionHeading. The shared SLDS reset removes list markers and paragraph margins, so the
+ * lists here set their own. The link rule outside this component sets no underline and outranks
+ * a plain class rule, so the underline is repeated on :link and :visited. Each link row is at
+ * least 24 px tall, and 44 px where the line has room.
+ */
+:host {
+  display: block;
+}
+
+.extras {
+  color: var(--pf-body);
+  font-family: var(--pf-font-sans);
+  font-size: var(--pf-font-body, 16px);
+  line-height: var(--pf-line-body, 1.6);
+}
+
+.extra {
+  margin-top: var(--pf-space-4);
+}
+
+.extra-heading {
+  text-wrap: balance;
+  margin: 0 0 var(--pf-space-3);
+}
+
+.alternatives,
+.related {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.alternative,
+.related-item {
+  margin: 0 0 var(--pf-space-3);
+  padding: 0;
+}
+
+.alternative:last-child,
+.related-item:last-child {
+  margin-bottom: 0;
+}
+
+.option {
+  margin: 0 0 var(--pf-space-1);
+  color: var(--pf-text);
+  font-weight: 700;
+}
+
+.why,
+.note {
+  margin: 0;
+  color: var(--pf-body);
+}
+
+.note {
+  font-size: var(--pf-font-caption, 14px);
+  color: var(--pf-muted);
+}
+
+.adr-link:link,
+.adr-link:visited {
+  display: inline-block;
+  min-height: 24px;
+  color: var(--pf-accent);
+  font-weight: 600;
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+
+.adr-link:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
+}
+
+.assistive {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

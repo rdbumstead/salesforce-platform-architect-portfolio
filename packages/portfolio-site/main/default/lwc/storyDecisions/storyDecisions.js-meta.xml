@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>64.0</apiVersion>
+    <isExposed>true</isExposed>
+    <masterLabel>Story Decisions</masterLabel>
+    <description
+  >The Alternatives considered and Related decisions sections at the end of a story page</description>
+    <targets>
+        <target>lightningCommunity__Page</target>
+        <target>lightningCommunity__Default</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightningCommunity__Default">
+            <property
+        name="storyKey"
+        type="String"
+        label="Story key"
+        description="Which story the sections belong to: business-architecture, nonprofit-solutions, delivery or glassops. Nothing is drawn when blank or unknown."
+      />
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>
