@@ -245,6 +245,24 @@ describe("c-case-study-grid", () => {
     expect(spacer.getAttribute("aria-hidden")).toBe("true");
   });
 
+  it("leaves out the metric slot when no card has a number", async () => {
+    const element = render();
+    getHomeCaseStudies.emit(
+      CARDS.map((row) => ({
+        ...row,
+        headlineMetric: null,
+        headlineLabel: null
+      }))
+    );
+    await flush();
+    expect(
+      element.shadowRoot.querySelectorAll('[data-id="metric-spacer"]')
+    ).toHaveLength(0);
+    expect(
+      element.shadowRoot.querySelectorAll('[data-id="metric"]')
+    ).toHaveLength(0);
+  });
+
   it("gives each card one Read the case study button, to an https address or a site path", async () => {
     const element = render();
     getHomeCaseStudies.emit(CARDS);
@@ -266,24 +284,32 @@ describe("c-case-study-grid", () => {
     ).toBe("/portfolio/delivery");
   });
 
-  it("makes the first button primary and the others secondary, one primary at most", async () => {
+  it("draws each card link as a plain text link, so the section holds no buttons", async () => {
     const element = render();
     getHomeCaseStudies.emit(CARDS);
     await flush();
-    const buttons = Array.from(
+    const links = Array.from(
       element.shadowRoot.querySelectorAll('[data-id="card-button"]')
     );
-    expect(
-      buttons.map((b) => b.classList.contains("nc-button_secondary"))
-    ).toEqual([false, true, true]);
-    expect(
-      element.shadowRoot.querySelectorAll(
-        ".nc-button:not(.nc-button_secondary)"
-      )
-    ).toHaveLength(1);
-    expect(
-      element.shadowRoot.querySelectorAll(".nc-button_secondary")
-    ).toHaveLength(2);
+    expect(links).toHaveLength(3);
+    links.forEach((link) => {
+      expect(link.classList.contains("card-link")).toBe(true);
+      expect(link.classList.contains("nc-button")).toBe(false);
+    });
+    expect(element.shadowRoot.querySelectorAll(".nc-button")).toHaveLength(0);
+  });
+
+  it("lays the cards out as one list of three stat cards, each a number, its label and a link", async () => {
+    const element = render();
+    getHomeCaseStudies.emit(CARDS);
+    await flush();
+    const list = element.shadowRoot.querySelector('[data-id="cards"]');
+    expect(list.tagName).toBe("UL");
+    expect(cards(element)).toHaveLength(3);
+    const first = cards(element)[0];
+    expect(first.querySelector(".metric-number")).not.toBeNull();
+    expect(first.querySelector(".metric-label")).not.toBeNull();
+    expect(first.querySelectorAll("a")).toHaveLength(1);
   });
 
   it("sends case_study_link_followed with the card title when a link is used", async () => {

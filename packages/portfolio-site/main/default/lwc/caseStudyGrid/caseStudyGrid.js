@@ -1,9 +1,10 @@
 /**
- * @description       : The home page case studies: a framing line, then up to three cards from
+ * @description       : The home page case studies, a compact stat row directly under the hero:
+ *                      a framing line, then up to three cards from
  *                      ProjectCardController.getHomeCaseStudies. Each card has its headline number
  *                      and label (only when both are set), the title, the engagement line
- *                      (Client_Line__c) and a "Read the case study" button. The first card's
- *                      button is the section's one primary button and the others are secondary.
+ *                      (Client_Line__c) and a "Read the case study" text link. The page holds
+ *                      one primary button in the hero, so the card links are plain links.
  *                      No status pill is shown. A card shows only with a title and a link, and a
  *                      link is an http or https address or a path on this site (isShownCase).
  *                      Following a link sends case_study_link_followed with the card's title.
@@ -104,7 +105,12 @@ export default class CaseStudyGrid extends LightningElement {
   }
 
   get cards() {
-    return this.rows.slice(0, MAX_CARDS).map((row, index) => {
+    const shown = this.rows.slice(0, MAX_CARDS);
+    // The empty slot only keeps titles level beside a card that has a number.
+    const anyHeadline = shown.some(
+      (row) => textOrNull(row.headlineMetric) && textOrNull(row.headlineLabel)
+    );
+    return shown.map((row, index) => {
       const metric = textOrNull(row.headlineMetric);
       const label = textOrNull(row.headlineLabel);
       const title = textOrNull(row.title);
@@ -114,12 +120,11 @@ export default class CaseStudyGrid extends LightningElement {
         title,
         clientLine: textOrNull(row.clientLine),
         hasHeadline: Boolean(metric && label),
+        showSpacer: anyHeadline && !(metric && label),
         headlineMetric: metric,
         // The leading space keeps "$0 software licence cost" apart when read as one line.
         headlineLabel: label ? ` ${label}` : null,
         href,
-        buttonClass:
-          index === 0 ? "nc-button" : "nc-button nc-button_secondary",
         buttonLabel: `Read the case study: ${title}`
       };
     });

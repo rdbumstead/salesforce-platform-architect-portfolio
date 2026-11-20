@@ -550,6 +550,25 @@ describe("c-career-line", () => {
     expect(bullets).toEqual(["One", "Two", "Three", "Taught evening classes"]);
   });
 
+  it("does not repeat the title and years of a single role employer in its opened panel", async () => {
+    const element = await mount();
+    const northwind = rowFor(element, "Northwind Digital");
+    expect(text(within(northwind, "stop-path"))).toBe("Lead Consultant");
+    expect(northwind.querySelectorAll('[data-id="role-title"]')).toHaveLength(
+      0
+    );
+    expect(northwind.querySelectorAll('[data-id="role-years"]')).toHaveLength(
+      0
+    );
+    const lakeside = rowFor(element, "Lakeside College");
+    expect(lakeside.querySelectorAll('[data-id="role-title"]')).toHaveLength(3);
+  });
+
+  it("draws no From Salesforce chip, because the home page shows it once, with the case studies", async () => {
+    const element = await mount();
+    expect(element.shadowRoot.querySelector("c-data-source")).toBeNull();
+  });
+
   it("lists each earlier role in the Earlier roles panel", async () => {
     const element = await mount();
     const early = rowFor(element, "Earlier roles");

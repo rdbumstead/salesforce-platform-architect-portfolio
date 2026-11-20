@@ -10,10 +10,6 @@
           >
             Work
           </h2>
-          <c-data-source
-            source-keys="ResumeController_TimelineRoles"
-            class="card-source heading-badge-end"
-          ></c-data-source>
         </div>
 
         <div class="ribbon" aria-hidden="true" data-id="ribbon">
@@ -191,14 +187,16 @@
                             class={role.roleClass}
                             data-id="role"
                           >
-                            <div class="role-top">
-                              <span class="role-title" data-id="role-title"
-                                >{role.title}</span
-                              >
-                              <span class="role-years" data-id="role-years"
-                                >{role.yearsText}</span
-                              >
-                            </div>
+                            <template lwc:if={role.showTop}>
+                              <div class="role-top">
+                                <span class="role-title" data-id="role-title"
+                                  >{role.title}</span
+                                >
+                                <span class="role-years" data-id="role-years"
+                                  >{role.yearsText}</span
+                                >
+                              </div>
+                            </template>
                             <template lwc:if={role.hasHighlights}>
                               <ul class="hl">
                                 <template

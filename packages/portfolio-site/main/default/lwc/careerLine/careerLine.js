@@ -803,6 +803,12 @@ export default class CareerLine extends LightningElement {
         showCount: stop.roleCount > 1,
         countText: `${stop.roleCount} roles`,
         rolesClass: stop.roleCount > 1 ? "roles has-many" : "roles",
+        // A single role employer already shows its title and years in the row head, so the
+        // opened panel does not repeat them.
+        roles: stop.roles.map((role) => ({
+          ...role,
+          showTop: stop.isFold || stop.roleCount > 1
+        })),
         hasAlso: stop.also !== "",
         hasSummary: stop.isFold && stop.summary !== ""
       };
