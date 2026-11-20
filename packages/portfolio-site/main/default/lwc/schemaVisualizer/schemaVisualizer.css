@@ -34,12 +34,21 @@
   gap: var(--pf-space-3);
 }
 
+/* The page heading of the box is the section size of c/sectionHeading, 26px on a phone. Its
+   h3 titles below are the panel size, so an h3 is never the size of its h2. */
 .erd-title {
   color: var(--pf-text);
-  font-size: var(--pf-font-panel, 20px);
-  font-weight: var(--pf-weight-panel, 700);
-  line-height: var(--pf-line-panel, 1.3);
+  font-size: var(--pf-font-section, 32px);
+  font-weight: var(--pf-weight-section, 700);
+  line-height: var(--pf-line-section, 1.2);
+  letter-spacing: -0.02em;
   margin: 0;
+}
+
+@media (max-width: 767.98px) {
+  .erd-title {
+    font-size: var(--pf-font-section-sm, 26px);
+  }
 }
 
 /* On phones the scope toggle starts at the left under the title row. */
@@ -68,9 +77,9 @@
   padding: var(--pf-space-3);
 }
 
+/* The caption is a plain sentence, so it is set in the body face and not the code face. */
 .caption {
   color: var(--pf-muted);
-  font-family: var(--pf-font-mono);
   font-size: var(--pf-font-caption, 14px);
   margin: 0 0 var(--pf-space-3);
 }
@@ -209,9 +218,9 @@
 
 .panel-title {
   color: var(--pf-text);
-  font-size: var(--pf-font-card, 17px);
-  font-weight: var(--pf-weight-card, 600);
-  line-height: var(--pf-line-card, 1.3);
+  font-size: var(--pf-font-panel, 20px);
+  font-weight: var(--pf-weight-panel, 700);
+  line-height: var(--pf-line-panel, 1.3);
   margin: 0;
 }
 
@@ -263,9 +272,9 @@
 
 .list-title {
   color: var(--pf-text);
-  font-size: var(--pf-font-card, 17px);
-  font-weight: var(--pf-weight-card, 600);
-  line-height: var(--pf-line-card, 1.3);
+  font-size: var(--pf-font-panel, 20px);
+  font-weight: var(--pf-weight-panel, 700);
+  line-height: var(--pf-line-panel, 1.3);
   margin: 0 0 var(--pf-space-2);
 }
 

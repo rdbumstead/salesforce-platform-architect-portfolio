@@ -8,9 +8,7 @@
   </template>
   <section lwc:if={showGallery} class="gallery pf-panel" aria-label={heading}>
     <template lwc:if={hasHeading}>
-      <h2 class="gallery-title section-heading section-heading-panel">
-        {heading}
-      </h2>
+      <h2 class="gallery-title section-heading">{heading}</h2>
     </template>
 
     <div lwc:if={isLoading} class="skeleton" aria-hidden="true"></div>
@@ -39,6 +37,17 @@
               <span class="assistive">, opens full size in a new tab</span>
             </a>
             <p class="asset-name">{asset.name}</p>
+            <a
+              class="full-size-link"
+              href={asset.url}
+              target="_blank"
+              rel="noopener"
+              data-type={asset.type}
+              onclick={handleOpen}
+              >Open full size<span class="assistive">
+                of {asset.name}, opens in a new tab</span
+              ></a
+            >
           </template>
           <template lwc:if={asset.isDocument}>
             <a

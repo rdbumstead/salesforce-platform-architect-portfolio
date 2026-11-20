@@ -217,6 +217,43 @@ describe("c-pillar-b-story", () => {
     });
   });
 
+  it("labels every lifecycle table cell so the table stacks as label and value pairs on a phone", () => {
+    const element = createComponent();
+    const table = q(element, ".lifecycle-table");
+    expect(table.classList.contains("stack-table")).toBe(true);
+    const cells = qa(element, ".lifecycle-table tbody td");
+    expect(cells).toHaveLength(30);
+    cells.forEach((cell) => {
+      expect(cell.dataset.label).toMatch(
+        /^(NPSP and PMM|Education Cloud\*|What to watch)$/
+      );
+    });
+    const css = readFileSync(join(__dirname, "..", "pillarBStory.css"), "utf8");
+    const phone = css.slice(css.indexOf("max-width: 599.98px"));
+    expect(phone).toMatch(/\.stack-table td\[data-label\]::before/);
+    expect(phone).toMatch(/\.stack-table td:empty\s*\{\s*display:\s*none/);
+  });
+
+  it("gives the section headings the section size and the sub headings the panel size", () => {
+    const element = createComponent();
+    qa(element, "h2.story-heading").forEach((heading) => {
+      expect(heading.classList.contains("section-heading")).toBe(true);
+      expect(heading.classList.contains("section-heading-panel")).toBe(false);
+    });
+    const subs = qa(element, "h3.sub-heading");
+    expect(subs.length).toBeGreaterThan(0);
+    subs.forEach((heading) => {
+      expect(heading.classList.contains("section-heading-panel")).toBe(true);
+    });
+  });
+
+  it("keeps a gap between two paragraphs in a section", () => {
+    const css = readFileSync(join(__dirname, "..", "pillarBStory.css"), "utf8");
+    expect(css).toMatch(
+      /\.story-section > p \{[^}]*margin:\s*0 0 var\(--pf-space-3\)/
+    );
+  });
+
   it("sets list markers back, because the shared reset removes them", () => {
     const css = readFileSync(join(__dirname, "..", "pillarBStory.css"), "utf8");
     expect(css).toMatch(
