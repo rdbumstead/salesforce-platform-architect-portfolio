@@ -402,17 +402,19 @@ jobs:
 
       # Runs the Jest suite on the merged commit after the Apex tests, for the numbers panel.
       # A failed test is reported here and on the run record, and does not undo the deploy.
-      # The second "--" hands the reporter options through sfdx-lwc-jest to Jest itself.
+      # The second "--" hands the reporter options through sfdx-lwc-jest to Jest itself. The
+      # json-summary reporter gives the line coverage the Delivery page shows as Jest coverage.
       - name: Run Jest Tests
         id: jest
         if: steps.execute.outputs.deployed == 'true'
         continue-on-error: true
         run: |
           npm ci
-          npm run test:unit -- -- --json --outputFile=jest-results.json --silent || true
+          npm run test:unit -- -- --json --outputFile=jest-results.json --coverage --coverageReporters=json-summary --coverageDirectory=jest-coverage --silent || true
 
           RAN=$(jq -r '.numTotalTests // empty' jest-results.json)
           PASSED=$(jq -r '.numPassedTests // empty' jest-results.json)
+          JEST_COVERAGE=$(jq -r '.total.lines.pct // empty' jest-coverage/coverage-summary.json 2>/dev/null)
 
           if ! [[ "$RAN" =~ ^[0-9]+$ && "$PASSED" =~ ^[0-9]+$ ]]; then
              echo "::warning::The Jest run returned no usable summary, so no Jest counts are published."
@@ -422,6 +424,12 @@ jobs:
           echo "Jest tests run: $RAN, passed: $PASSED"
           echo "jest_run=$RAN" >> "$GITHUB_OUTPUT"
           echo "jest_passed=$PASSED" >> "$GITHUB_OUTPUT"
+          if [[ "$JEST_COVERAGE" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+             echo "Jest line coverage: $JEST_COVERAGE%"
+             echo "jest_coverage=$JEST_COVERAGE" >> "$GITHUB_OUTPUT"
+          else
+             echo "::warning::The Jest run returned no line coverage, so the Jest coverage tile stays as it was."
+          fi
 
           if [ "$PASSED" != "$RAN" ]; then
              echo "::warning::$((RAN - PASSED)) Jest tests failed after the deploy."
@@ -466,6 +474,9 @@ jobs:
 
           if [ -n "${{ steps.jest.outputs.jest_run }}" ]; then
              VALUES="$VALUES Jest_Tests_Run__c=${{ steps.jest.outputs.jest_run }} Jest_Tests_Passed__c=${{ steps.jest.outputs.jest_passed }}"
+             if [ -n "${{ steps.jest.outputs.jest_coverage }}" ]; then
+                VALUES="$VALUES Jest_Coverage__c=${{ steps.jest.outputs.jest_coverage }}"
+             fi
           fi
 
           sf data create record \
