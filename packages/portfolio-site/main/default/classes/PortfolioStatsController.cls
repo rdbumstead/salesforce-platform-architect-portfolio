@@ -89,6 +89,7 @@ public with sharing class PortfolioStatsController implements QueryDefinitions.P
       stats.latestCoverage = latest[0].Org_Coverage__c;
       stats.latestJestRun = latest[0].Jest_Tests_Run__c?.intValue();
       stats.latestJestPassed = latest[0].Jest_Tests_Passed__c?.intValue();
+      stats.latestJestCoverage = latest[0].Jest_Coverage__c;
     }
     addUsage(stats, selector.usageCounters());
     return stats;
@@ -212,7 +213,7 @@ public with sharing class PortfolioStatsController implements QueryDefinitions.P
   private static QueryDefinitions.QueryDefault latestDeployDefault() {
     return new QueryDefinitions.QueryDefault(
         'Pipeline_Run__c',
-        'Tests_Run__c, Tests_Passed__c, Org_Coverage__c, Jest_Tests_Run__c, Jest_Tests_Passed__c'
+        'Tests_Run__c, Tests_Passed__c, Org_Coverage__c, Jest_Tests_Run__c, Jest_Tests_Passed__c, Jest_Coverage__c'
       )
       .filter('Workflow__c = :workflow AND Tests_Run__c != NULL')
       .orderBy('Completed_At__c DESC NULLS LAST, CreatedDate DESC, Id DESC')
@@ -339,6 +340,9 @@ public with sharing class PortfolioStatsController implements QueryDefinitions.P
     public Integer latestJestRun;
     @AuraEnabled
     public Integer latestJestPassed;
+    // Line coverage of the site components from the Jest run, 0 to 100. Null with no Jest run.
+    @AuraEnabled
+    public Decimal latestJestCoverage;
     @AuraEnabled
     public Integer tokensIssued;
     // The UTC day the first evaluator token was issued. Null when none has been.

@@ -126,7 +126,10 @@ public with sharing class GovernanceEventHandler {
       Tests_Passed__c = testsValid ? event.Tests_Passed__c : null,
       Org_Coverage__c = testsValid ? event.Org_Coverage__c : null,
       Jest_Tests_Run__c = jestValid ? event.Jest_Tests_Run__c : null,
-      Jest_Tests_Passed__c = jestValid ? event.Jest_Tests_Passed__c : null
+      Jest_Tests_Passed__c = jestValid ? event.Jest_Tests_Passed__c : null,
+      Jest_Coverage__c = jestValid && validCoverage(event.Jest_Coverage__c)
+        ? event.Jest_Coverage__c
+        : null
     );
   }
 
@@ -144,6 +147,12 @@ public with sharing class GovernanceEventHandler {
       testsPassed >= 0 &&
       testsPassed == testsPassed.round(System.RoundingMode.DOWN) &&
       testsPassed <= testsRun;
+  }
+
+  // The Jest coverage rides with a valid Jest pair and must be a percentage.
+  @TestVisible
+  private static Boolean validCoverage(Decimal coverage) {
+    return coverage != null && coverage >= 0 && coverage <= 100;
   }
 
   // All three values arrive together from one test run, or none of them is kept.
@@ -214,7 +223,8 @@ public with sharing class GovernanceEventHandler {
       existing.Tests_Passed__c == incoming.Tests_Passed__c &&
       existing.Org_Coverage__c == incoming.Org_Coverage__c &&
       existing.Jest_Tests_Run__c == incoming.Jest_Tests_Run__c &&
-      existing.Jest_Tests_Passed__c == incoming.Jest_Tests_Passed__c;
+      existing.Jest_Tests_Passed__c == incoming.Jest_Tests_Passed__c &&
+      existing.Jest_Coverage__c == incoming.Jest_Coverage__c;
   }
 
   // Rows arrive grouped by workflow, newest first, so everything past the 60th of a group goes.
@@ -254,7 +264,8 @@ public with sharing class GovernanceEventHandler {
           Tests_Passed__c,
           Org_Coverage__c,
           Jest_Tests_Run__c,
-          Jest_Tests_Passed__c
+          Jest_Tests_Passed__c,
+          Jest_Coverage__c
         FROM Pipeline_Run__c
         WHERE Run_Key__c IN :keys
         WITH SYSTEM_MODE
