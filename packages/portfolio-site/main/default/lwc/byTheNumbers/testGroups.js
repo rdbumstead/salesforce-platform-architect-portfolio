@@ -11,7 +11,7 @@
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 10/26/2026
  **/
-export const COUNTED_ON = "2026-11-19";
+export const COUNTED_ON = "2026-11-20";
 
 export const APEX_GROUPS = [
   {
@@ -28,7 +28,7 @@ export const APEX_GROUPS = [
   },
   {
     name: "Delivery data and the numbers panel",
-    tests: 235
+    tests: 245
   },
   {
     name: "Rate limits, tokens and request rules",
@@ -51,7 +51,7 @@ export const APEX_GROUPS = [
 export const JEST_GROUPS = [
   {
     name: "Page shell, home and navigation",
-    tests: 554
+    tests: 562
   },
   {
     name: "Delivery, docs and pillar pages",
