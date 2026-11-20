@@ -374,7 +374,11 @@ export async function runCheck(options) {
       targets.push(`${DOCS_ROUTE}?doc=${encodeURIComponent(key)}`)
     );
   }
-  const browser = await chromium.launch();
+  // CHROME_PATH points at an installed Chrome, as on a CI runner, so no Playwright browser
+  // download is needed. Without it Playwright uses its own browser.
+  const browser = await chromium.launch({
+    executablePath: process.env.CHROME_PATH || undefined
+  });
   const results = [];
   try {
     for (const width of options.widths) {

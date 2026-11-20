@@ -103,11 +103,14 @@ async function pageFor(html) {
   } catch (error) {
     return null;
   }
-  // The package can be installed while its browser is not, as on the CI step that runs these
-  // tests. That case skips like a missing package. Any other launch failure still fails.
+  // CI sets CHROME_PATH to the runner's own Chrome. Without it, the package can be installed
+  // while its browser is not, and that case skips like a missing package. Any other launch
+  // failure still fails.
   let browser;
   try {
-    browser = await chromium.launch();
+    browser = await chromium.launch({
+      executablePath: process.env.CHROME_PATH || undefined
+    });
   } catch (error) {
     if (/Executable doesn't exist/.test(String(error && error.message))) return null;
     throw error;
