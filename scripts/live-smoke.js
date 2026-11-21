@@ -165,6 +165,14 @@ const ROUTES = [
   {
     path: "/glassops",
     components: ["c-glassops-story", "c-story-decisions"]
+  },
+  {
+    path: "/governance",
+    components: [
+      "c-governance-story",
+      "c-governance-evidence",
+      "c-story-decisions"
+    ]
   }
 ];
 
@@ -264,7 +272,8 @@ const TOUR = {
     { letter: "B", path: "/nonprofit-solutions" },
     { letter: "C", path: "/api-lab" },
     { letter: "D", path: "/ai-lab" },
-    { letter: "E", path: "/delivery" }
+    { letter: "E", path: "/delivery" },
+    { letter: "F", path: "/governance" }
   ]
 };
 

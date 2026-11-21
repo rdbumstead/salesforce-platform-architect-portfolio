@@ -11,7 +11,7 @@
  *                      every page and, already on the home page, scrolls to the top and moves focus
  *                      to the page content, as the Back to top arrow does. The menu lists
  *                      "Take the 10 minute tour" first, which starts the tour and goes to its
- *                      first stop, then the five pillars from c/pillarData, then Docs, the
+ *                      first stop, then the six pillars from c/pillarData, then Docs, the
  *                      GlassOps story and each pillar's own pages (the API reference) as items of
  *                      their own. The tour
  *                      bar (c-tour-bar) sits right under the header and shows only while a
@@ -104,7 +104,7 @@ export const TOUR_HEADING_WAIT_MS = 5000;
 // How often it looks for that heading while it waits.
 export const TOUR_HEADING_POLL_MS = 100;
 // The line under the tour row in the "How it's built" menu.
-export const TOUR_MENU_NOTE = "Five stops, with one task on each";
+export const TOUR_MENU_NOTE = "Six stops, with one task on each";
 // Below this window width the navigation folds behind the menu button, as in the CSS.
 export const PHONE_MENU_WIDTH = 768;
 

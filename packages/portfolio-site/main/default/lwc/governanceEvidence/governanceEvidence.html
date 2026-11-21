@@ -1,0 +1,257 @@
+<template>
+  <section
+    class="evidence pf-panel"
+    data-section="outcome"
+    aria-labelledby="evidence-heading"
+  >
+    <p class="story-label" data-id="part-label">Outcome</p>
+    <h2 id="evidence-heading" class="evidence-heading section-heading">
+      The record from production
+    </h2>
+
+    <template lwc:if={isLoading}>
+      <p class="note" role="status" data-id="loading">
+        Loading the record of governed deploys.
+      </p>
+    </template>
+    <template lwc:elseif={hasError}>
+      <p class="note note-error" role="status" data-id="error">
+        The record could not be read. No deploy is shown, and no total is
+        claimed.
+      </p>
+    </template>
+    <template lwc:else>
+      <p class="total" data-id="total">
+        <template lwc:if={hasTotal}>
+          <span class="total-value" data-id="total-value">{totalText}</span
+          >&#32;
+          <span class="total-label">governed production deploys in total</span>
+        </template>
+        <template lwc:else>
+          <span class="total-label" data-id="total-unread"
+            >The running total could not be read just now.</span
+          >
+        </template>
+      </p>
+      <p lwc:if={isStatic} class="note" data-id="static-note">
+        This list is read when the site is built, so it is as of the last build
+        and can trail the newest deploy.
+      </p>
+
+      <h3 class="group-heading" id="deploys-heading">Governed deploys</h3>
+      <template lwc:if={hasDeploys}>
+        <ol class="runs" data-id="deploys" aria-labelledby="deploys-heading">
+          <template for:each={deploys} for:item="run">
+            <li key={run.key} class="run" data-id="deploy">
+              <div class="run-head">
+                <template lwc:if={run.hasTime}>
+                  <time
+                    class="run-time"
+                    datetime={run.iso}
+                    title={run.timeTitle}
+                    >{run.time}</time
+                  >
+                </template>
+                <template lwc:else>
+                  <span class="run-time">{run.time}</span>
+                </template>
+                <span class={run.statusClass} data-id="status"
+                  >{run.statusText}</span
+                >
+              </div>
+              <dl class="facts">
+                <div class="fact">
+                  <dt>Commit</dt>
+                  <dd>
+                    <template lwc:if={run.hasCommitLink}>
+                      <a
+                        class="mono evidence-link"
+                        href={run.commitHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={run.shaTitle}
+                        data-id="commit-link"
+                        >{run.sha}<span class="assistive"
+                          >, on GitHub, opens in a new tab</span
+                        ></a
+                      >
+                    </template>
+                    <template lwc:else>
+                      <span class="mono" data-id="commit-text">{run.sha}</span>
+                    </template>
+                  </dd>
+                </div>
+                <div class="fact">
+                  <dt>Permit</dt>
+                  <dd><span class="mono" data-id="permit">{run.id}</span></dd>
+                </div>
+                <div class="fact">
+                  <dt>Approver</dt>
+                  <dd>
+                    <template lwc:if={run.hasApproverLink}>
+                      <a
+                        class="mono evidence-link"
+                        href={run.approverHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        data-id="approver-link"
+                        >{run.approver}<span class="assistive"
+                          >, on GitHub, opens in a new tab</span
+                        ></a
+                      >
+                    </template>
+                    <template lwc:else>
+                      <span data-id="approver-text">{run.approver}</span>
+                    </template>
+                  </dd>
+                </div>
+                <div class="fact">
+                  <dt>Tests</dt>
+                  <dd data-id="tests">{run.tests}</dd>
+                </div>
+                <div class="fact">
+                  <dt>Coverage</dt>
+                  <dd data-id="coverage">{run.coverage}</dd>
+                </div>
+              </dl>
+              <template lwc:if={run.hasChecks}>
+                <ul class="checks" data-id="checks">
+                  <template for:each={run.checks} for:item="check">
+                    <li key={check.key} class="check" data-id="check">
+                      <span class="mono check-rule">{check.rule}</span>&#32;
+                      <span class={check.className}>{check.text}</span>
+                    </li>
+                  </template>
+                </ul>
+              </template>
+              <template lwc:else>
+                <p class="note" data-id="no-checks">
+                  No checks were recorded for this deploy.
+                </p>
+              </template>
+              <template lwc:if={run.hasRunLink}>
+                <p class="run-link-row">
+                  <a
+                    class="evidence-link"
+                    href={run.runHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-id="run-link"
+                    data-tour-anchor={run.tourAnchor}
+                    >{run.runLabel}</a
+                  >
+                </p>
+              </template>
+            </li>
+          </template>
+        </ol>
+      </template>
+      <template lwc:else>
+        <p
+          class="note"
+          tabindex="-1"
+          data-id="no-deploys"
+          data-tour-anchor={noDeployAnchorValue}
+        >
+          No governed deploy is on record yet.
+        </p>
+      </template>
+
+      <h3 class="group-heading" id="drills-heading">Drills the gate denied</h3>
+      <p class="lead" data-id="drills-lead">
+        A drill runs a change that should be stopped, to show the gate stops it.
+        Each one is a signed deny with nothing deployed, and a drill is never
+        counted in the total above.
+      </p>
+      <template lwc:if={hasDrills}>
+        <ol class="runs" data-id="drills" aria-labelledby="drills-heading">
+          <template for:each={drills} for:item="run">
+            <li key={run.key} class="run" data-id="drill">
+              <div class="run-head">
+                <template lwc:if={run.hasTime}>
+                  <time
+                    class="run-time"
+                    datetime={run.iso}
+                    title={run.timeTitle}
+                    >{run.time}</time
+                  >
+                </template>
+                <template lwc:else>
+                  <span class="run-time">{run.time}</span>
+                </template>
+                <span class={run.statusClass} data-id="status"
+                  >{run.statusText}</span
+                >
+              </div>
+              <dl class="facts">
+                <div class="fact">
+                  <dt>Deny</dt>
+                  <dd><span class="mono" data-id="deny">{run.id}</span></dd>
+                </div>
+                <div class="fact">
+                  <dt>Commit</dt>
+                  <dd>
+                    <template lwc:if={run.hasCommitLink}>
+                      <a
+                        class="mono evidence-link"
+                        href={run.commitHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={run.shaTitle}
+                        data-id="commit-link"
+                        >{run.sha}<span class="assistive"
+                          >, on GitHub, opens in a new tab</span
+                        ></a
+                      >
+                    </template>
+                    <template lwc:else>
+                      <span class="mono" data-id="commit-text">{run.sha}</span>
+                    </template>
+                  </dd>
+                </div>
+                <div class="fact">
+                  <dt>Failed check</dt>
+                  <dd>
+                    <template lwc:if={run.hasFailed}>
+                      <span class="mono" data-id="failed-rule"
+                        >{run.failedRules}</span
+                      >
+                    </template>
+                    <template lwc:else>
+                      <span data-id="failed-unknown">not recorded</span>
+                    </template>
+                  </dd>
+                </div>
+              </dl>
+              <template lwc:if={run.hasChecks}>
+                <ul class="checks" data-id="checks">
+                  <template for:each={run.checks} for:item="check">
+                    <li key={check.key} class="check" data-id="check">
+                      <span class="mono check-rule">{check.rule}</span>&#32;
+                      <span class={check.className}>{check.text}</span>
+                    </li>
+                  </template>
+                </ul>
+              </template>
+              <template lwc:if={run.hasRunLink}>
+                <p class="run-link-row">
+                  <a
+                    class="evidence-link"
+                    href={run.runHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-id="run-link"
+                    >{run.runLabel}</a
+                  >
+                </p>
+              </template>
+            </li>
+          </template>
+        </ol>
+      </template>
+      <template lwc:else>
+        <p class="note" data-id="no-drills">No drill is on record yet.</p>
+      </template>
+    </template>
+  </section>
+</template>

@@ -62,8 +62,8 @@ export const EVENTS = Object.freeze({
   CAREER_TIMELINE_TOGGLED: "career_timeline_toggled", // expanded
   CAREER_TIMELINE_FILTERED: "career_timeline_filtered", // kind: all, work, education or certifications
   TOUR_OPENED: "tour_opened", // source: hero or section. Kept for past data, the tour journey no longer sends it
-  TOUR_STEP_VIEWED: "tour_step_viewed", // stop: A to E, pillar: the pillar key
-  TOUR_EXITED: "tour_exited", // stop: A to E, the stop the visitor left from
+  TOUR_STEP_VIEWED: "tour_step_viewed", // stop: A to F, pillar: the pillar key
+  TOUR_EXITED: "tour_exited", // stop: A to F, the stop the visitor left from
   TOUR_FINISHED: "tour_finished", // none
   COVER_LETTER_DOWNLOADED: "cover_letter_downloaded", // provider
   COVER_LETTER_COPIED: "cover_letter_copied", // provider

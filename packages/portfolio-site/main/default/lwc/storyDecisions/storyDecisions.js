@@ -2,7 +2,7 @@
  * @description       : The sections every story page ends with: "Alternatives considered" and
  *                      "Related decisions", after an "Outcome" section for a story whose page has
  *                      no outcome of its own (the employer hub, whose decision is with the client). The view names the story with story-key, one of
- *                      business-architecture, nonprofit-solutions, delivery or glassops, and the
+ *                      business-architecture, nonprofit-solutions, delivery, glassops or governance, and the
  *                      text comes from the storyData module in this folder. Alternatives are a one
  *                      line option and a short reason. Related decisions are links to decision
  *                      records in docs/adr. A record the docs viewer lists opens in the viewer at

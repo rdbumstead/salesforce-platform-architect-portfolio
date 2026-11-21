@@ -1,0 +1,12 @@
+{
+  "type": "sfdc_cms__route",
+  "title": "Governance",
+  "contentBody": {
+    "activeViewId": "Governance",
+    "configurationTags": [],
+    "pageAccess": "UseParent",
+    "routeType": "custom-governance",
+    "urlPrefix": "governance"
+  },
+  "urlName": "governance"
+}
