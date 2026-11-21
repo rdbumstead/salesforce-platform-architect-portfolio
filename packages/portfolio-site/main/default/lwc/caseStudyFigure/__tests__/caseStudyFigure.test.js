@@ -116,7 +116,7 @@ describe("c-case-study-figure", () => {
     );
     expect(texts(el)).toEqual(
       expect.arrayContaining([
-        "NPSP + PMM",
+        "NPSP and PMM",
         "Education Cloud",
         "Nonprofit Cloud"
       ])

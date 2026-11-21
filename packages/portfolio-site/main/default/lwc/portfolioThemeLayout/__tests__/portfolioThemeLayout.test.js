@@ -17,6 +17,7 @@ import PortfolioThemeLayout, {
   BACK_TO_TOP_SCREENS,
   BUILT_MENU_LABEL,
   DOCS_URL,
+  GLASSOPS_URL,
   HERO_LOOKUP_MS,
   HERO_SELECTOR,
   PHONE_MENU_WIDTH,
@@ -199,6 +200,7 @@ const EXPECTED_HREFS = [
   "/portfolio/ai-lab",
   "/portfolio/delivery",
   "/portfolio/docs",
+  "/portfolio/glassops",
   "/portfolio/api-lab/reference",
   "/portfolio/testimonials",
   "/portfolio/contact"
@@ -1292,6 +1294,35 @@ describe("c-portfolio-theme-layout", () => {
       ).toBe("true");
     });
   });
+  describe("GlassOps in the Pillars menu", () => {
+    it("puts the GlassOps story right after Docs, linking /glassops", () => {
+      const element = render();
+      expect(GLASSOPS_URL).toBe("glassops");
+      const link = element.shadowRoot.querySelector(
+        '.pillar-menu a[data-key="glassops"]'
+      );
+      expect(link).not.toBeNull();
+      expect(link.querySelector(".pillar-label").textContent).toBe("GlassOps");
+      expect(link.querySelector(".pillar-sas").textContent).toBe(
+        "The release tool this site deploys with"
+      );
+      expect(link.getAttribute("href")).toBe("/portfolio/glassops");
+      const items = element.shadowRoot.querySelectorAll(".pillar-menu > li");
+      expect(items[7].contains(link)).toBe(true);
+      expect(link.getAttribute("aria-current")).toBeNull();
+    });
+
+    it("marks GlassOps as the current page on /glassops", () => {
+      goTo("/portfolio/glassops");
+      const element = render();
+      const current = element.shadowRoot.querySelectorAll(
+        '[aria-current="page"]'
+      );
+      expect(current).toHaveLength(1);
+      expect(current[0].dataset.key).toBe("glassops");
+    });
+  });
+
   describe("Docs in the Pillars menu", () => {
     function docsLink(element) {
       return element.shadowRoot.querySelector(
@@ -1307,7 +1338,7 @@ describe("c-portfolio-theme-layout", () => {
       expect(link.querySelector(".pillar-label").textContent).toBe("Docs");
       expect(link.getAttribute("href")).toBe("/portfolio/docs");
       const items = element.shadowRoot.querySelectorAll(".pillar-menu > li");
-      expect(items).toHaveLength(8);
+      expect(items).toHaveLength(9);
       expect(items[6].contains(link)).toBe(true);
       expect(items[6].classList.contains("built-item")).toBe(true);
       expect(link.getAttribute("aria-current")).toBeNull();

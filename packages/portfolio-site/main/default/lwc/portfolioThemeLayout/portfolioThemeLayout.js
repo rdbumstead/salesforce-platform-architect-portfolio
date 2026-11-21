@@ -11,8 +11,9 @@
  *                      every page and, already on the home page, scrolls to the top and moves focus
  *                      to the page content, as the Back to top arrow does. The menu lists
  *                      "Take the 10 minute tour" first, which starts the tour and goes to its
- *                      first stop, then the five pillars from c/pillarData, then Docs and each
- *                      pillar's own pages (the API reference) as items of their own. The tour
+ *                      first stop, then the five pillars from c/pillarData, then Docs, the
+ *                      GlassOps story and each pillar's own pages (the API reference) as items of
+ *                      their own. The tour
  *                      bar (c-tour-bar) sits right under the header and shows only while a
  *                      tour runs. When the bar moves the visitor to a stop, focus goes to the
  *                      new page's main heading (its h1, found through the open shadow trees,
@@ -87,6 +88,8 @@ const THEMES = ["light", "dark"];
 const DARK_QUERY = "(prefers-color-scheme: dark)";
 // The route of the architecture docs page, an item of its own in the menu.
 export const DOCS_URL = "docs";
+// The route of the GlassOps story, the release tool this site deploys with, an item of its own.
+export const GLASSOPS_URL = "glassops";
 // The home hero. Back to top appears once the page has scrolled past it.
 export const HERO_SELECTOR = "c-hero-banner";
 // On a page with no hero the arrow appears once the visitor has scrolled one screen height.
@@ -1059,9 +1062,11 @@ export default class PortfolioThemeLayout extends LightningElement {
     }));
   }
 
-  // Docs, then every pillar's own pages, each an item of its own after the pillars.
+  // Docs, the GlassOps story, then every pillar's own pages, each an item of its own after the
+  // pillars.
   get builtLinks() {
     const docsHref = toHref(DOCS_URL);
+    const glassopsHref = toHref(GLASSOPS_URL);
     const links = [
       {
         key: "docs",
@@ -1070,6 +1075,14 @@ export default class PortfolioThemeLayout extends LightningElement {
         href: docsHref,
         current: this.currentFor(docsHref),
         isDocs: true
+      },
+      {
+        key: "glassops",
+        label: "GlassOps",
+        description: "The release tool this site deploys with",
+        href: glassopsHref,
+        current: this.currentFor(glassopsHref),
+        isDocs: false
       }
     ];
     PILLARS.forEach((pillar) => {
