@@ -1,5 +1,18 @@
 <template>
   <div class="extras">
+    <template lwc:if={hasOutcome}>
+      <section
+        class="extra pf-panel"
+        data-id="outcome"
+        aria-labelledby="outcome-heading"
+      >
+        <p class="story-label" data-id="part-label">Outcome</p>
+        <h2 id="outcome-heading" class="extra-heading section-heading">
+          Where it stands
+        </h2>
+        <p class="outcome-text" data-id="outcome-text">{outcome}</p>
+      </section>
+    </template>
     <template lwc:if={hasAlternatives}>
       <section
         class="extra pf-panel"

@@ -71,7 +71,10 @@ describe("c-story-decisions", () => {
   it.each(KEYS)("draws both sections for %s, alternatives first", (key) => {
     const element = create(key);
     const headings = qa(element, "h2.section-heading").map(text);
-    expect(headings).toEqual(["Alternatives considered", "Related decisions"]);
+    expect(headings.slice(-2)).toEqual([
+      "Alternatives considered",
+      "Related decisions"
+    ]);
     const sections = qa(element, "section");
     sections.forEach((section) => {
       const heading = section.querySelector("h2");
@@ -92,6 +95,25 @@ describe("c-story-decisions", () => {
       });
     }
   );
+
+  it("draws an Outcome first only for a story that has one", () => {
+    const hub = create("business-architecture");
+    const outcome = hub.shadowRoot.querySelector('[data-id="outcome"]');
+    expect(outcome).not.toBeNull();
+    expect(text(outcome.querySelector('[data-id="part-label"]'))).toBe(
+      "Outcome"
+    );
+    expect(text(outcome.querySelector('[data-id="outcome-text"]'))).toBe(
+      STORIES["business-architecture"].outcome
+    );
+    expect(qa(hub, "h2.section-heading").map(text)[0]).toBe("Where it stands");
+    ["nonprofit-solutions", "delivery", "glassops"].forEach((key) => {
+      const element = create(key);
+      expect(
+        element.shadowRoot.querySelector('[data-id="outcome"]')
+      ).toBeNull();
+    });
+  });
 
   it("opens a record the docs viewer lists in the viewer, under the base path", () => {
     const element = create("nonprofit-solutions");
@@ -172,6 +194,7 @@ describe("the story data", () => {
         all.push(item.option, item.why)
       );
       STORIES[key].related.forEach((entry) => all.push(entry.note));
+      if (STORIES[key].outcome) all.push(STORIES[key].outcome);
     });
     all.forEach((line) => {
       expect(line).not.toMatch(/[–—;]/);

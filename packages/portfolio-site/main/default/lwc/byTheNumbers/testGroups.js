@@ -55,7 +55,7 @@ export const JEST_GROUPS = [
   },
   {
     name: "Delivery, docs and pillar pages",
-    tests: 500
+    tests: 501
   },
   {
     name: "API Lab, API reference and AI Lab",

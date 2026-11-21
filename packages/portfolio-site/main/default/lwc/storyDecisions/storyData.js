@@ -91,6 +91,7 @@ const STATIC_FRONT_END = {
 
 export const STORIES = Object.freeze({
   "business-architecture": {
+    outcome: "I proposed this design to the client.",
     related: [SCHEMA, MOBILE_SVG, GRAPHQL],
     alternatives: [
       {
