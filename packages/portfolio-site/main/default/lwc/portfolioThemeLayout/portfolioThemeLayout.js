@@ -1079,7 +1079,7 @@ export default class PortfolioThemeLayout extends LightningElement {
       {
         key: "glassops",
         label: "GlassOps",
-        description: "The release tool this site deploys with",
+        description: "Delivery, the release tool this site deploys with",
         href: glassopsHref,
         current: this.currentFor(glassopsHref),
         isDocs: false

@@ -1304,7 +1304,7 @@ describe("c-portfolio-theme-layout", () => {
       expect(link).not.toBeNull();
       expect(link.querySelector(".pillar-label").textContent).toBe("GlassOps");
       expect(link.querySelector(".pillar-sas").textContent).toBe(
-        "The release tool this site deploys with"
+        "Delivery, the release tool this site deploys with"
       );
       expect(link.getAttribute("href")).toBe("/portfolio/glassops");
       const items = element.shadowRoot.querySelectorAll(".pillar-menu > li");
