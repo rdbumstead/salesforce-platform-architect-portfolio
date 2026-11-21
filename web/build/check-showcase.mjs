@@ -12,6 +12,7 @@
  *   gap       at 390 wide, the heading is more than 80 px above the first card
  *   fold      at 1280 by 800, card 1 or card 2 has its number, title or "My part" below the fold
  *   lone      a card or row title ends with one word alone on its last line
+ *   heading   the section heading takes more than one line, or is squeezed to no width
  *
  * Every request that is not to the local server is refused, so the page's analytics tag never
  * loads and no event can reach a real property. CHROME_PATH points at an installed Chrome, as
@@ -103,6 +104,14 @@ export function judge(measure, context) {
       }
     });
   }
+  if (typeof measure.headingLines === "number" && measure.headingLines !== 1) {
+    add(
+      "heading",
+      measure.headingLines === 0
+        ? "the section heading has no width"
+        : `the section heading takes ${measure.headingLines} lines`
+    );
+  }
   for (const title of measure.loneWordTitles) {
     add("lone", `"${title}" ends with one word alone on its last line`);
   }
@@ -120,6 +129,7 @@ export function scanShowcase() {
     clientWidth: document.documentElement.clientWidth,
     taps: [],
     headingToCard: null,
+    headingLines: null,
     foldCards: [],
     loneWordTitles: [],
     cardCount: 0
@@ -152,6 +162,16 @@ export function scanShowcase() {
   const heading = root.querySelector('[data-id="case-heading"]');
   const headingToCard =
     heading && cards[0] ? top(cards[0]) - top(heading) : null;
+  const headingLine = heading
+    ? parseFloat(getComputedStyle(heading).lineHeight)
+    : NaN;
+  // A squeezed heading can be 0 px wide, so this measures it whether or not it shows.
+  const headingLines =
+    heading && headingLine > 0
+      ? heading.getBoundingClientRect().width > 0
+        ? Math.round(heading.getBoundingClientRect().height / headingLine)
+        : 0
+      : null;
   const foldCards = cards.slice(0, 2).map((card) => {
     const pick = (selector) => {
       const el = card.querySelector(selector);
@@ -191,6 +211,7 @@ export function scanShowcase() {
     clientWidth: document.documentElement.clientWidth,
     taps,
     headingToCard,
+    headingLines,
     foldCards,
     loneWordTitles,
     cardCount: cards.length

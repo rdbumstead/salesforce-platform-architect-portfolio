@@ -22,8 +22,9 @@
 /* The section carries no side padding. The layout sets the outer gutter. */
 
 /* Every home section has the same top and bottom padding. The heading and the tools row (View
-   source and the data chip) share the first row from 720px. On a phone the tools row comes
-   last, under the projects, so the first project sits close under the heading. */
+   source and the data chip) share the first row from 1024px, the first width where both fit.
+   Below that the tools row comes last, under the projects, so the first project sits close
+   under the heading. */
 .section {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -39,9 +40,11 @@
   margin-top: var(--pf-space-3);
 }
 
-@media (min-width: 720px) {
+/* The heading column is max-content because .case-studies breaks words anywhere, which would
+   otherwise let the tools row squeeze the heading to a few letters a line. */
+@media (min-width: 1024px) {
   .section {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: max-content minmax(0, 1fr);
   }
 
   .heading {
@@ -52,6 +55,7 @@
     order: 1;
     grid-row: 1;
     grid-column: 2;
+    min-width: 0;
     margin-top: 0;
     justify-content: flex-end;
   }

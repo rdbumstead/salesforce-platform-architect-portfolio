@@ -14,6 +14,7 @@ const clean = () => ({
   clientWidth: 390,
   taps: [{ name: "a", width: 120, height: 44 }],
   headingToCard: 60,
+  headingLines: 1,
   foldCards: [
     { number: 700, title: 740, myPart: 780 },
     { number: 700, title: 740, myPart: 790 }
@@ -66,6 +67,19 @@ test("at 1280 cards 1 and 2 need their number, title and My part above 800 px", 
     "fold"
   ]);
   assert.deepEqual(kinds(measure, { width: 768, fold: true }), []);
+});
+
+test("a section heading on more than one line is flagged at every width", () => {
+  const measure = { ...clean(), headingLines: 5 };
+  assert.deepEqual(kinds(measure, { width: 768 }), ["heading"]);
+  assert.deepEqual(kinds(measure, { width: 1280 }), ["heading"]);
+  assert.deepEqual(kinds({ ...measure, headingLines: 0 }, { width: 720 }), [
+    "heading"
+  ]);
+  assert.deepEqual(
+    kinds({ ...measure, headingLines: null }, { width: 768 }),
+    []
+  );
 });
 
 test("a title ending with one word alone is flagged", () => {
