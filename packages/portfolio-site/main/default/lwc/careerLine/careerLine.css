@@ -214,6 +214,8 @@
 }
 
 .row-head {
+  /* No line of a wrapped heading is left with one word alone. */
+  text-wrap: balance;
   display: grid;
   grid-template-columns: 112px minmax(0, 1fr) auto;
   gap: 4px 20px;

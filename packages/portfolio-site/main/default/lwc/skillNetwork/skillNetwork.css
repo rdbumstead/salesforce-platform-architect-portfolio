@@ -128,6 +128,7 @@
 /* A skill chip is a shared toggle, 44 px high, with its name and meta on one line. The chosen
    chip has the solid pressed fill, keyed on aria-pressed. */
 .chip {
+  text-wrap: balance;
   flex-wrap: wrap;
   max-width: 100%;
   justify-content: flex-start;
@@ -140,6 +141,7 @@
 }
 
 .chip-name {
+  text-wrap: balance;
   font-weight: 600;
 }
 
@@ -521,9 +523,10 @@
 }
 
 /* On a narrow screen the same pair opens the card body, from the start of the row. View source
-   keeps its size and the live data marker takes the rest of the row, so neither is alone. */
+   keeps its size and the live data marker takes the rest of the row. When the marker's build
+   stamp does not fit beside View source, the marker drops under it instead of being cut. */
 .card-actions_body {
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: stretch;
   justify-content: flex-start;
   margin-bottom: var(--pf-space-3);
@@ -534,8 +537,8 @@
 }
 
 .card-actions_body c-data-source {
-  flex: 1 1 0;
-  min-width: 0;
+  flex: 1 1 14rem;
+  min-width: min-content;
 }
 
 /* View source pushes itself to the end of a title row, which a body row does not want. */

@@ -115,6 +115,20 @@ export function guideSectionId(sourceKeys, objects) {
 
 let panelCount = 0;
 
+/**
+ * Keeps the build stamp in a label such as "From Salesforce · built Nov 18, 2026, 8:33 PM EST"
+ * whole. Its spaces become no break spaces, so a narrow screen wraps the label before the
+ * stamp and never inside it.
+ * @param {string} label the words for the button
+ * @returns {string} the label, with the stamp's spaces joined
+ */
+export function keepStampWhole(label) {
+  return String(label || "").replace(
+    /( built )(.+)$/,
+    (match, lead, stamp) => lead + stamp.replace(/ /g, " ")
+  );
+}
+
 export default class DataSource extends LightningElement {
   /** Comma separated Query_Definition__mdt developer names. */
   @api sourceKeys;
@@ -245,7 +259,7 @@ export default class DataSource extends LightningElement {
 
   /** The words shown on the button. The static site shows the date, the full label is its title. */
   get visibleLabel() {
-    return this.wording.markerShort || this.wording.markerLabel;
+    return keepStampWhole(this.wording.markerShort || this.wording.markerLabel);
   }
 
   /** The full label as a hover title, only where the shown words are the shorter form. */

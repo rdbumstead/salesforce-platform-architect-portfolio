@@ -48,15 +48,12 @@
   background-color: var(--pf-accent);
 }
 
-/* Keep the words on one line where they fit. The counts then wrap under them, never inside them. */
+/* The label takes one line where it fits. On a narrow screen it wraps before the build stamp,
+   whose spaces are no break spaces, so the stamp is never cut or split. The counts wrap under
+   the words, never inside them. */
 .marker-label {
-  white-space: nowrap;
-}
-
-@media (max-width: 340px) {
-  .marker-label {
-    white-space: normal;
-  }
+  min-width: 0;
+  white-space: normal;
 }
 
 .marker-counts {

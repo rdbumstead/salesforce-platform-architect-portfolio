@@ -290,6 +290,7 @@
 }
 
 .object-button {
+  text-wrap: balance;
   min-height: 44px;
   width: 100%;
   text-align: left;
