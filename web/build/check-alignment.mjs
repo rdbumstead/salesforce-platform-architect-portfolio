@@ -235,8 +235,8 @@ export function scanAlignment() {
   // a separator, an arrow or an empty box such as a status dot) is a lone mark. A line that
   // ends on a separator, with more lines after it, is a mark at edge. Prose dashes and commas
   // are not marks, so ordinary text is never flagged.
-  const MARK = /^[·•|›»→]$/;
-  const SEPARATOR = /^[·•|]$/;
+  const MARK = /^[·•›»→]$/;
+  const SEPARATOR = /^[·•]$/;
   for (const el of all) {
     if (SKIP_TAGS.includes(el.tagName.toUpperCase())) continue;
     if (inside(el, "svg, [data-align-ok]") || !visible(el)) continue;
