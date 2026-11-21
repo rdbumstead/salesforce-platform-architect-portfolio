@@ -19,6 +19,11 @@
  *             or clip), where the box is narrower than the text. An ellipsis the page draws on
  *             purpose (text-overflow: ellipsis) is not flagged.
  *   past edge text that reaches past the edge of the window with no scroll box around it.
+ *   lone mark a wrapped line that holds only a mark: a separator dot, a bullet, an arrow or an
+ *             empty box of icon size, such as a status dot left above its label (R29 mobile).
+ *   mark at edge
+ *             a line that ends on a separator dot or bullet with more lines after it, so the
+ *             next item starts the line below without it.
  * Text that is out of sight on purpose (visually hidden, a skip link that waits for focus) is
  * not flagged, and the error pages (/404, /429, /503) are not scanned.
  * It exits 1 when anything is flagged and prints each route, width, scheme and element.
@@ -223,6 +228,101 @@ export function scanAlignment() {
         );
       }
     }
+  }
+
+  // Lone mark and mark at edge: the pieces of a box (each word of its own text, each child
+  // box) are set out in lines by their position. A wrapped line that holds only marks (a dot,
+  // a separator, an arrow or an empty box such as a status dot) is a lone mark. A line that
+  // ends on a separator, with more lines after it, is a mark at edge. Prose dashes and commas
+  // are not marks, so ordinary text is never flagged.
+  const MARK = /^[·•|›»→]$/;
+  const SEPARATOR = /^[·•|]$/;
+  for (const el of all) {
+    if (SKIP_TAGS.includes(el.tagName.toUpperCase())) continue;
+    if (inside(el, "svg, [data-align-ok]") || !visible(el)) continue;
+    const style = getComputedStyle(el);
+    if (style.display === "inline" || style.display === "contents") continue;
+    // Only boxes whose pieces flow in lines: a wrapping flex row, or inline content.
+    const flexRow =
+      /flex/.test(style.display) &&
+      style.flexDirection.startsWith("row") &&
+      style.flexWrap !== "nowrap";
+    if (/flex|grid/.test(style.display) && !flexRow) continue;
+    const pieces = [];
+    for (const node of Array.from(el.childNodes)) {
+      if (node.nodeType === 3) {
+        const words = /\S+/g;
+        let match;
+        while ((match = words.exec(node.nodeValue))) {
+          const range = document.createRange();
+          range.setStart(node, match.index);
+          range.setEnd(node, match.index + match[0].length);
+          const rect = range.getBoundingClientRect();
+          if (rect.width > 0) pieces.push({ rect, text: match[0] });
+        }
+      } else if (node.nodeType === 1) {
+        const childStyle = getComputedStyle(node);
+        if (
+          childStyle.display === "none" ||
+          childStyle.position === "absolute" ||
+          childStyle.position === "fixed"
+        )
+          continue;
+        if (!flexRow && !childStyle.display.startsWith("inline")) continue;
+        let text = (node.textContent || "").replace(/\s+/g, " ").trim();
+        // An empty box is a mark only when it is icon sized. A picture is content.
+        const size = node.getBoundingClientRect();
+        if (!text && (size.width > 24 || size.height > 24)) text = "[content]";
+        const rects =
+          childStyle.display === "inline"
+            ? Array.from(node.getClientRects())
+            : [node.getBoundingClientRect()];
+        rects
+          .filter((rect) => rect.width > 0 && rect.height > 0)
+          .forEach((rect) => pieces.push({ rect, text, box: true }));
+      }
+    }
+    if (pieces.length < 2) continue;
+    const lines = [];
+    pieces
+      .sort((a, b) => a.rect.top - b.rect.top || a.rect.left - b.rect.left)
+      .forEach((piece) => {
+        const { top, bottom } = piece.rect;
+        const line = lines.find(
+          (l) =>
+            Math.min(l.bottom, bottom) - Math.max(l.top, top) >
+            0.5 * Math.min(bottom - top, l.bottom - l.top)
+        );
+        if (line) {
+          line.pieces.push(piece);
+          line.top = Math.min(line.top, top);
+          line.bottom = Math.max(line.bottom, bottom);
+        } else lines.push({ top, bottom, pieces: [piece] });
+      });
+    if (lines.length < 2) continue;
+    lines.sort((a, b) => a.top - b.top);
+    lines.forEach((line, index) => {
+      line.pieces.sort((a, b) => a.rect.left - b.rect.left);
+      const marks = line.pieces.every(
+        (p) => MARK.test(p.text) || (p.box && p.text === "")
+      );
+      const said = line.pieces.map((p) => p.text || "[box]").join(" ");
+      if (marks) {
+        add(
+          "lone mark",
+          el,
+          `line ${index + 1} of ${lines.length} holds only "${said}"`
+        );
+      } else if (index < lines.length - 1) {
+        const last = line.pieces[line.pieces.length - 1];
+        if (!last.box && SEPARATOR.test(last.text))
+          add(
+            "mark at edge",
+            el,
+            `line ${index + 1} of ${lines.length} ends with "${last.text}"`
+          );
+      }
+    });
   }
   return findings;
 }

@@ -158,3 +158,51 @@ test("text past the edge of the window is flagged and the same text in a scroll 
   assert.equal(past.length, 1);
   assert.ok(past[0].element.includes("div#wide"));
 });
+
+// R29 mobile findings: the data source marker left its dot alone above the label on a phone, and
+// the hero's test counts broke a line right after a separator dot.
+const MARKER = (dotInLabel) =>
+  `<button id="marker" style="display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 8px;max-width:100%;padding:4px 16px;font:16px sans-serif;text-align:left">
+    ${dotInLabel ? "" : '<span style="width:8px;height:8px;border-radius:50%;background:#36f"></span>'}
+    <span>${dotInLabel ? '<span style="display:inline-block;width:8px;height:8px;margin-right:8px;background:#36f"></span>' : ""}From Salesforce · built Nov\u00a021,\u00a02026,\u00a011:59\u00a0AM\u00a0EST</span>
+    <span>6 case studies</span>
+  </button>`;
+
+test("a status dot left alone on a line above its label is a lone mark, and the dot inside the label is not", async (t) => {
+  const findings = await scan(
+    `<body style="margin:0;width:330px">${MARKER(false)}</body>`,
+    t
+  );
+  if (!findings) return;
+  const lone = findings.filter((f) => f.kind === "lone mark");
+  assert.equal(lone.length, 1);
+  assert.ok(lone[0].element.includes("button#marker"));
+  assert.match(lone[0].detail, /line 1 of 3 holds only "\[box\]"/);
+
+  const fixed = await scan(
+    `<body style="margin:0;width:330px">${MARKER(true)}</body>`,
+    t
+  );
+  assert.equal(
+    fixed.some((f) => f.kind === "lone mark"),
+    false
+  );
+});
+
+test("a line that ends on a separator dot is a mark at edge, and a plain wrapped paragraph is not", async (t) => {
+  const findings = await scan(
+    `<body style="margin:0">
+      <p id="stats" style="width:330px;font:13px monospace">1,701 Apex tests passing · 99% coverage · 1,739 Jest tests passing</p>
+      <p id="prose" style="width:200px">${LONG}</p>
+    </body>`,
+    t
+  );
+  if (!findings) return;
+  const edge = findings.filter((f) => f.kind === "mark at edge");
+  assert.equal(edge.length, 1);
+  assert.ok(edge[0].element.includes("p#stats"));
+  assert.equal(
+    findings.some((f) => f.element.includes("p#prose")),
+    false
+  );
+});
