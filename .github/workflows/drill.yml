@@ -143,10 +143,19 @@ jobs:
           DENY_ID: ${{ steps.verdict.outputs.deny_id }}
           CHECKS: ${{ steps.verdict.outputs.checks }}
         run: |
-          # The checks are compact JSON with no spaces, so they pass as one quoted value.
-          sf data create record \
-            --sobject Governance_Event__e \
-            --values "Workflow__c=drill Status__c=Denied Run_Id__c=${{ github.run_id }} Run_Url__c=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} Commit_Sha__c=${{ github.sha }} Completed_At__c=$(date -u +%Y-%m-%dT%H:%M:%SZ) Permit_Id__c=$DENY_ID Gate_Checks__c='$CHECKS'" \
+          # The checks are JSON, and the record create command reads a JSON looking value as JSON
+          # and refuses it for a text field, so the event goes as a REST body with the checks as text.
+          BODY=$(jq -n -c \
+            --arg run "${{ github.run_id }}" \
+            --arg url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg sha "${{ github.sha }}" \
+            --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg deny "$DENY_ID" \
+            --arg checks "$CHECKS" \
+            '{Workflow__c: "drill", Status__c: "Denied", Run_Id__c: $run, Run_Url__c: $url, Commit_Sha__c: $sha, Completed_At__c: $at, Permit_Id__c: $deny, Gate_Checks__c: $checks}')
+          sf api request rest /services/data/v62.0/sobjects/Governance_Event__e \
+            --method POST \
+            --body "$BODY" \
             --target-org portfolio
 
       - name: Keep the Evidence
