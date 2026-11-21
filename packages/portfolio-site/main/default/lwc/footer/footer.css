@@ -125,6 +125,12 @@
 /* On a phone the toggles show their label and the status text drops, so the whole row takes
    two lines. From 900 px every toggle keeps its status, Request limits with its count. */
 @media (max-width: 899.98px) {
+  /* The layout already leaves 60 px under the last section on a narrow screen, so the
+     footer adds no margin of its own. With it the band above the footer was 92 px. */
+  .footer {
+    margin-top: 0;
+  }
+
   .chips {
     --view-source-padding: 2px;
 
