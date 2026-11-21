@@ -409,7 +409,7 @@ describe("c-hero-banner", () => {
       expect(link.getAttribute("href")).toBe(
         "/portfolio/business-architecture"
       );
-      expect(text(link)).toBe("Take the 10 minute tour →");
+      expect(text(link)).toBe("Take the 12 minute tour →");
       expect(link.classList.contains("nc-button")).toBe(true);
       expect(link.classList.contains("nc-button_secondary")).toBe(false);
       expect(link.querySelector('[aria-hidden="true"]').textContent).toBe("→");

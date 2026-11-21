@@ -2091,7 +2091,7 @@ describe("c-portfolio-theme-layout", () => {
         "Take the 10 minute tour"
       );
       expect(row.querySelector(".pillar-sas").textContent).toBe(
-        "Five stops, with one task on each"
+        "Six stops, with one task on each"
       );
       const items = element.shadowRoot.querySelectorAll(".pillar-menu > li");
       expect(items[0].contains(row)).toBe(true);

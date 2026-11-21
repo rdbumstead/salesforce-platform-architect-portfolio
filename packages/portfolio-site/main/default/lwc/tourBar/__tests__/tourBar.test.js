@@ -94,7 +94,7 @@ describe("c-tour-bar", () => {
 
   describe("the helpers", () => {
     it("names the tour from the stops' minutes and links its first stop", () => {
-      expect(TOUR_LABEL).toBe("Take the 10 minute tour");
+      expect(TOUR_LABEL).toBe("Take the 12 minute tour");
       expect(firstStopHref()).toBe("/portfolio/business-architecture");
       expect(minutesText(1)).toBe("1 minute");
       expect(minutesText(3)).toBe("3 minutes");
@@ -169,10 +169,10 @@ describe("c-tour-bar", () => {
       const element = render("api-lab");
       const barEl = byId(element, "tour-bar");
       expect(barEl.getAttribute("role")).toBe("region");
-      expect(barEl.getAttribute("aria-label")).toBe("The 10 minute tour");
+      expect(barEl.getAttribute("aria-label")).toBe("The 12 minute tour");
       const progress = byId(element, "tour-progress");
       expect(progress.getAttribute("aria-live")).toBe("polite");
-      expect(text(progress)).toBe("Stop 3 of 5, API Lab, 1 minute");
+      expect(text(progress)).toBe("Stop 3 of 6, API Lab, 1 minute");
       expect(text(byId(element, "tour-minutes"))).toBe("1 minute");
       const task = byId(element, "tour-task");
       expect(task.tagName).toBe("BUTTON");
@@ -205,10 +205,10 @@ describe("c-tour-bar", () => {
       const element = render("business-architecture");
       expect(byId(element, "tour-back")).toBeNull();
       expect(text(byId(element, "tour-progress"))).toContain(
-        "Stop 1 of 5, Business Architecture"
+        "Stop 1 of 6, Business Architecture"
       );
       expect(text(byId(element, "tour-minutes"))).toBe("2 minutes");
-      element.routeUrl = "delivery";
+      element.routeUrl = "governance";
       await flush();
       expect(byId(element, "tour-next")).toBeNull();
       expect(byId(element, "tour-finish").tagName).toBe("BUTTON");
@@ -262,7 +262,7 @@ describe("c-tour-bar", () => {
       await flush();
       expect(tourarrive).toHaveBeenCalledTimes(1);
       // A move the visitor makes some other way is counted but moves no focus.
-      element.routeUrl = "delivery";
+      element.routeUrl = "governance";
       await flush();
       expect(tourarrive).toHaveBeenCalledTimes(1);
     });
@@ -320,7 +320,7 @@ describe("c-tour-bar", () => {
 
     it("shows That's the tour and only Close after Finish", async () => {
       startTour();
-      const element = render("delivery");
+      const element = render("governance");
       byId(element, "tour-finish").click();
       await flush();
       expect(trackEvent).toHaveBeenLastCalledWith("tour_finished");
@@ -339,7 +339,7 @@ describe("c-tour-bar", () => {
     it("closes the ending from Close, and on the next page", async () => {
       startTour();
       const tourleave = jest.fn();
-      const element = render("delivery", { tourleave });
+      const element = render("governance", { tourleave });
       byId(element, "tour-finish").click();
       await flush();
       byId(element, "tour-close").click();
@@ -348,8 +348,8 @@ describe("c-tour-bar", () => {
       expect(tourleave).toHaveBeenCalledTimes(1);
 
       startTour();
-      element.routeUrl = "delivery";
-      const again = render("delivery");
+      element.routeUrl = "governance";
+      const again = render("governance");
       byId(again, "tour-finish").click();
       await flush();
       again.routeUrl = "resume";

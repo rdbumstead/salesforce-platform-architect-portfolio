@@ -8,6 +8,7 @@
     &quot;C&quot;, &quot;Pillar C: Work Experience Verification API&quot;,
     &quot;D&quot;, &quot;Pillar D: AI &amp; Innovation&quot;,
     &quot;E&quot;, &quot;Pillar E: Agile Delivery &amp; DevOps&quot;,
+    &quot;F&quot;, &quot;Pillar F: Governance &amp; Change Control&quot;,
     &quot;Unassigned&quot;
 )</formula>
     <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
