@@ -1,0 +1,206 @@
+@import "c/panel";
+@import "c/pill";
+@import "c/sectionHeading";
+@import "c/storyLabel";
+
+/*
+ * Colours, fonts, radii and spacing come only from the --pf- design tokens, so the list follows
+ * the light and dark themes. The section is a c/panel box with the section size heading of
+ * c/sectionHeading and the Outcome label from c/storyLabel above it. Each run is a bordered card
+ * with its facts in a definition list. An outcome is a c/pill with a word in it, so it never
+ * rests on colour alone. Long ids and hashes break anywhere, so a card never grows wider than a
+ * phone. The shared SLDS reset removes list markers and margins, so they are set here. A link is
+ * at least 24 px tall.
+ */
+:host {
+  display: block;
+}
+
+.evidence {
+  color: var(--pf-body);
+  font-family: var(--pf-font-sans);
+  font-size: var(--pf-font-body, 16px);
+  line-height: var(--pf-line-body, 1.6);
+  margin-bottom: var(--pf-space-4);
+}
+
+.evidence-heading {
+  margin: 0 0 var(--pf-space-3);
+  text-wrap: balance;
+}
+
+.total {
+  margin: 0 0 var(--pf-space-3);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--pf-space-2);
+}
+
+.total-value {
+  font-size: var(--pf-font-section, 32px);
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--pf-text);
+}
+
+.total-label {
+  color: var(--pf-body);
+}
+
+.group-heading {
+  margin: var(--pf-space-4) 0 var(--pf-space-2);
+  font-size: var(--pf-font-lead, 18px);
+  line-height: 1.3;
+  font-weight: 700;
+  color: var(--pf-text);
+}
+
+.lead {
+  margin: 0 0 var(--pf-space-3);
+}
+
+.runs {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.run {
+  margin: 0 0 var(--pf-space-3);
+  padding: var(--pf-space-3);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-sm);
+  background-color: var(--pf-bg);
+  color: var(--pf-body);
+  min-width: 0;
+}
+
+.run:last-child {
+  margin-bottom: 0;
+}
+
+.run-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pf-space-2) var(--pf-space-3);
+  margin: 0 0 var(--pf-space-2);
+}
+
+.run-time {
+  font-weight: 600;
+  color: var(--pf-text);
+}
+
+.facts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--pf-space-2) var(--pf-space-4);
+}
+
+.fact {
+  min-width: 0;
+}
+
+.fact dt {
+  margin: 0;
+  font-size: var(--pf-font-caption, 14px);
+  color: var(--pf-muted);
+}
+
+.fact dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--pf-body);
+}
+
+.mono {
+  font-family: var(--pf-font-mono);
+  font-size: 0.8125rem;
+}
+
+.checks {
+  margin: var(--pf-space-3) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pf-space-2) var(--pf-space-4);
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pf-space-2);
+}
+
+.check-rule {
+  overflow-wrap: anywhere;
+}
+
+.outcome {
+  flex: 0 0 auto;
+}
+
+.outcome-pass {
+  color: var(--pf-ok);
+}
+
+.outcome-fail {
+  background-color: var(--pf-error);
+  color: var(--pf-error-text);
+}
+
+.outcome-skipped {
+  background-color: var(--pf-warn);
+  color: var(--pf-warn-text);
+}
+
+.run-link-row {
+  margin: var(--pf-space-3) 0 0;
+}
+
+.evidence-link:link,
+.evidence-link:visited {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  color: var(--pf-accent);
+  text-decoration: underline;
+}
+
+.evidence-link:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
+}
+
+.note {
+  margin: 0 0 var(--pf-space-3);
+  font-size: var(--pf-font-caption, 14px);
+  color: var(--pf-muted);
+}
+
+.note:focus {
+  outline: none;
+}
+
+.note.note-error {
+  padding: var(--pf-space-3);
+  background-color: var(--pf-error);
+  color: var(--pf-error-text);
+  border-radius: var(--pf-radius-sm);
+}
+
+.assistive {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

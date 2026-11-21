@@ -176,6 +176,8 @@
         "pillarBStory/*",
         "storyDecisions/*",
         "glassopsStory/*",
+        "governanceStory/*",
+        "governanceEvidence/*",
         "pillarData/*",
         "smartChecklist/*",
         "projectAssetGallery/*"
