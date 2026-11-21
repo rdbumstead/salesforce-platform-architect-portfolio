@@ -115,8 +115,9 @@ svg {
  * The client tag is text outside the picture, at 12 px. From 320 px wide the full drawing
  * keeps a clear band at its foot and the tag sits over it. Narrower than that the words in
  * the drawing would fall under 12 px, so the shapes only drawing takes over and the tag drops
- * below it in the flow, where it wraps to two lines on a very narrow slot. The picture then
- * shrinks to the space left, and the 4 to 3 host box never changes.
+ * below it in the flow, where it wraps to two lines on a very narrow slot. Wrapped lines start
+ * at the left, so they read as a paragraph and not as ragged text. The picture then shrinks
+ * to the space left, and the 4 to 3 host box never changes.
  */
 .tag {
   position: absolute;
@@ -150,5 +151,6 @@ svg {
     max-width: 100%;
     margin-top: 2px;
     padding: 1px 6px;
+    text-align: left;
   }
 }

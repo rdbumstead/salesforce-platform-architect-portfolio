@@ -24,8 +24,8 @@
  *                      setting is on (c/motionPreference). The width follows
  *                      --portfolio-content-width, with 1024px as the fallback.
  *                      View source and the data chip sit in one tools row: at the heading's end
- *                      from 720px, under the projects on a phone, so a phone shows the first
- *                      project close under the heading.
+ *                      from 1024px, the first width where both fit, and under the projects
+ *                      below that, so a phone shows the first project close under the heading.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
