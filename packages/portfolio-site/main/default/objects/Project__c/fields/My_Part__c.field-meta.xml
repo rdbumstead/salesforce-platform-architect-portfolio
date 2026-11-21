@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>My_Part__c</fullName>
+    <description
+  >The one line on a home page case study card that says what I did myself. Read by ProjectCardController.getHomeCaseStudies and shown under the label "My part". Blank leaves the line out.</description>
+    <externalId>false</externalId>
+    <inlineHelpText
+  >What I did on this project, in one line, 255 characters at most. For example: I chose the platform and built the data model.</inlineHelpText>
+    <label>My Part</label>
+    <length>255</length>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

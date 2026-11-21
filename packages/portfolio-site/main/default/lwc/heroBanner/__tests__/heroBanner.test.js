@@ -61,7 +61,7 @@ const HEADER = {
 };
 
 const FALLBACK =
-  "Salesforce for schools and nonprofits should cost less, change safely and show its work. The three case studies below show how I do each.";
+  "Salesforce for schools and nonprofits should cost less, change safely and show its work. The case studies below show how I do each.";
 
 function render() {
   const element = createElement("c-hero-banner", { is: HeroBanner });
@@ -472,6 +472,20 @@ describe("c-hero-banner", () => {
         "This site runs on Salesforce. Every case study, stat and timeline entry on it is a record served through my own API."
       );
       expect(byId(element, "proof-stats")).toBeNull();
+    });
+
+    it("hides the proof panel's opening line on a phone only, and keeps the buttons", () => {
+      const css = require("fs").readFileSync(
+        require("path").join(__dirname, "..", "heroBanner.css"),
+        "utf8"
+      );
+      expect(css).toMatch(
+        /@media \(max-width: 559\.98px\) \{\s*\.proof-intro \{\s*display: none;/
+      );
+      const element = render();
+      expect(byId(element, "proof-intro")).not.toBeNull();
+      expect(byId(element, "tour-link")).not.toBeNull();
+      expect(byId(element, "docs-link")).not.toBeNull();
     });
 
     it("joins the live counts in one line", async () => {

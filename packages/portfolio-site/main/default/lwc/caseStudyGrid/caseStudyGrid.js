@@ -1,14 +1,21 @@
 /**
- * @description       : The home page case studies, a compact stat row directly under the hero:
- *                      a framing line, then up to three cards from
- *                      ProjectCardController.getHomeCaseStudies. Each card has its headline number
- *                      and label (only when both are set), the title, the engagement line
- *                      (Client_Line__c) and a "Read the case study" text link. The page holds
- *                      one primary button in the hero, so the card links are plain links.
- *                      No status pill is shown. A card shows only with a title and a link, and a
- *                      link is an http or https address or a path on this site (isShownCase).
- *                      Following a link sends case_study_link_followed with the card's title.
- *                      Renders nothing at all before the read returns, when no card can show or
+ * @description       : The home page project showcase, directly under the hero: a heading and a
+ *                      short intro, then up to eight projects from
+ *                      ProjectCardController.getHomeCaseStudies in two tiers. The first four rows
+ *                      are the featured tier: full cards with the number labelled "Outcome", the
+ *                      title, the client line, "My part", one line each labelled "Context" and
+ *                      "Decision", a slot for the picture (drawn only when figureKey is set,
+ *                      sized by the CSS at 4 to 3, the picture component is placed inside it)
+ *                      and "Read the case study". Row five on is "More work": compact rows with
+ *                      the number, the title, "My part" and the link, and no picture. A line with
+ *                      no text is left out, never a placeholder. No status pill is shown. A row
+ *                      shows only with a title and a link, and a link is an http or https address
+ *                      or a path on this site (isShownCase).
+ *                      Following a link sends case_study_link_followed with the title, position
+ *                      (1 based), total and tier (featured or more). The first time half the
+ *                      section is on screen it sends case_studies_seen once, through trackEvent
+ *                      and so through the same consent path as every event.
+ *                      Renders nothing at all before the read returns, when no row can show or
  *                      when it fails, so there is never an empty heading.
  *                      While it shows cards its host element carries the id "case-studies", so
  *                      a link can reach it. revealHeading scrolls to the heading and
@@ -16,6 +23,9 @@
  *                      on load or later. Scrolling is smooth unless the system "reduce motion"
  *                      setting is on (c/motionPreference). The width follows
  *                      --portfolio-content-width, with 1024px as the fallback.
+ *                      View source and the data chip sit in one tools row: at the heading's end
+ *                      from 1024px, the first width where both fit, and under the projects
+ *                      below that, so a phone shows the first project close under the heading.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -31,7 +41,10 @@ import { isReduced } from "c/motionPreference";
 
 export const ANCHOR_ID = "case-studies";
 const ANCHOR_HASH = `#${ANCHOR_ID}`;
-const MAX_CARDS = 3;
+const MAX_CARDS = 8;
+export const FEATURED_COUNT = 4;
+export const TIER_FEATURED = "featured";
+export const TIER_MORE = "more";
 
 /**
  * Trimmed text, or null when the value is not a non blank string.
@@ -72,6 +85,8 @@ export default class CaseStudyGrid extends LightningElement {
   rows = [];
   hashListener = () => this.revealFromHash();
   pendingHashReveal = false;
+  seenSent = false;
+  observer;
 
   connectedCallback() {
     window.addEventListener("hashchange", this.hashListener);
@@ -80,9 +95,15 @@ export default class CaseStudyGrid extends LightningElement {
 
   disconnectedCallback() {
     window.removeEventListener("hashchange", this.hashListener);
+    this.stopWatching();
   }
 
   renderedCallback() {
+    if (this.hasCards) {
+      this.watchSeen();
+    } else {
+      this.stopWatching();
+    }
     if (this.pendingHashReveal && this.hasCards) {
       this.pendingHashReveal = false;
       this.revealHeading(isReduced());
@@ -104,30 +125,53 @@ export default class CaseStudyGrid extends LightningElement {
     return this.rows.length > 0;
   }
 
+  get shownRows() {
+    return this.rows.slice(0, MAX_CARDS);
+  }
+
   get cards() {
-    const shown = this.rows.slice(0, MAX_CARDS);
-    // The empty slot only keeps titles level beside a card that has a number.
-    const anyHeadline = shown.some(
-      (row) => textOrNull(row.headlineMetric) && textOrNull(row.headlineLabel)
-    );
-    return shown.map((row, index) => {
-      const metric = textOrNull(row.headlineMetric);
-      const label = textOrNull(row.headlineLabel);
-      const title = textOrNull(row.title);
-      const href = toCaseHref(row.liveUrl);
-      return {
-        key: row.key || `case-${index}`,
-        title,
-        clientLine: textOrNull(row.clientLine),
-        hasHeadline: Boolean(metric && label),
-        showSpacer: anyHeadline && !(metric && label),
-        headlineMetric: metric,
-        // The leading space keeps "$0 software licence cost" apart when read as one line.
-        headlineLabel: label ? ` ${label}` : null,
-        href,
-        buttonLabel: `Read the case study: ${title}`
-      };
-    });
+    return this.shownRows.map((row, index) => this.toCard(row, index));
+  }
+
+  get featuredCards() {
+    return this.cards.filter((card) => card.isFeatured);
+  }
+
+  get moreCards() {
+    return this.cards.filter((card) => !card.isFeatured);
+  }
+
+  get hasMore() {
+    return this.moreCards.length > 0;
+  }
+
+  toCard(row, index) {
+    const metric = textOrNull(row.headlineMetric);
+    const label = textOrNull(row.headlineLabel);
+    const title = textOrNull(row.title);
+    const isFeatured = index < FEATURED_COUNT;
+    const myPart = textOrNull(row.myPart);
+    const contextLine = textOrNull(row.contextLine);
+    const decisionLine = textOrNull(row.decisionLine);
+    const figureKey = textOrNull(row.figureKey);
+    return {
+      key: row.key || `case-${index}`,
+      title,
+      position: index + 1,
+      isFeatured,
+      clientLine: textOrNull(row.clientLine),
+      hasHeadline: Boolean(metric && label),
+      headlineMetric: metric,
+      // The leading space keeps "$0 software licence cost" apart when read as one line.
+      headlineLabel: label ? ` ${label}` : null,
+      myPart,
+      contextLine,
+      decisionLine,
+      // The picture slot exists on a featured card with a key only. More work has no picture.
+      figureKey: isFeatured ? figureKey : null,
+      href: toCaseHref(row.liveUrl),
+      buttonLabel: `Read the case study: ${title}`
+    };
   }
 
   /**
@@ -152,9 +196,62 @@ export default class CaseStudyGrid extends LightningElement {
   }
 
   handleLinkClick(event) {
-    const name = event.currentTarget.dataset.name;
+    const { name, position } = event.currentTarget.dataset;
     if (name) {
-      trackEvent(EVENTS.CASE_STUDY_LINK_FOLLOWED, { name });
+      const place = Number(position);
+      trackEvent(EVENTS.CASE_STUDY_LINK_FOLLOWED, {
+        name,
+        position: place,
+        total: this.shownRows.length,
+        tier: place <= FEATURED_COUNT ? TIER_FEATURED : TIER_MORE
+      });
+    }
+  }
+
+  // Sends case_studies_seen once, the first time half the section, or half the window when
+  // the section is taller than the window, is on screen.
+  watchSeen() {
+    if (
+      this.seenSent ||
+      this.observer ||
+      typeof window.IntersectionObserver !== "function"
+    ) {
+      return;
+    }
+    const section = this.template.querySelector("section");
+    if (!section) {
+      return;
+    }
+    this.observer = new window.IntersectionObserver(
+      (entries) => entries.forEach((entry) => this.handleSeen(entry)),
+      { threshold: [0, 0.25, 0.5, 0.75, 1] }
+    );
+    this.observer.observe(section);
+  }
+
+  handleSeen(entry) {
+    if (this.seenSent || !entry.isIntersecting) {
+      return;
+    }
+    const windowHeight = entry.rootBounds ? entry.rootBounds.height : 0;
+    const half =
+      entry.intersectionRatio >= 0.5 ||
+      (windowHeight > 0 && entry.intersectionRect.height >= windowHeight / 2);
+    if (!half) {
+      return;
+    }
+    this.seenSent = true;
+    this.stopWatching();
+    trackEvent(EVENTS.CASE_STUDIES_SEEN, {
+      total: this.shownRows.length,
+      featured: Math.min(this.shownRows.length, FEATURED_COUNT)
+    });
+  }
+
+  stopWatching() {
+    if (this.observer) {
+      this.observer.disconnect();
+      this.observer = undefined;
     }
   }
 

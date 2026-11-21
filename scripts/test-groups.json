@@ -137,6 +137,7 @@
         "footer/*",
         "careerLine/*",
         "caseStudyGrid/*",
+        "caseStudyFigure/*",
         "homeTestimonials/*",
         "credentialsBand/*",
         "pageIntro/*",
@@ -173,6 +174,8 @@
         "outageSimulation/*",
         "pillarAWalkthrough/*",
         "pillarBStory/*",
+        "storyDecisions/*",
+        "glassopsStory/*",
         "pillarData/*",
         "smartChecklist/*",
         "projectAssetGallery/*"

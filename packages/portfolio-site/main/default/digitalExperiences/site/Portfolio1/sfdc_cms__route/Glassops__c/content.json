@@ -1,0 +1,12 @@
+{
+  "type": "sfdc_cms__route",
+  "title": "GlassOps",
+  "contentBody": {
+    "activeViewId": "Glassops",
+    "configurationTags": [],
+    "pageAccess": "UseParent",
+    "routeType": "custom-glassops",
+    "urlPrefix": "glassops"
+  },
+  "urlName": "glassops"
+}

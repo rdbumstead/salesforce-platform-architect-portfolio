@@ -2,9 +2,8 @@
  * @description       : Home page hero, written for a recruiter's first look: the photo, the
  *                      name as the page's h1, the meta line (employer title and location), the
  *                      title line, one outcome sentence, a proof panel that holds two buttons,
- *                      and the profile links, where Resume sits. There are no chips. The three
- *                      case study cards sit directly under the hero as a compact stat row
- *                      (c-case-study-grid).
+ *                      and the profile links, where Resume sits. There are no chips. The project
+ *                      showcase (c-case-study-grid) sits directly under the hero.
  *                      Name, meta line, location and photo are static so they paint without
  *                      waiting on Apex. The title line (heroLine) and the outcome sentence
  *                      (valueSentence) come from ResumeController.getHeader, which reads only
@@ -54,7 +53,7 @@ export const PROOF_STATIC =
 
 /** The outcome line shown when the owner Contact's value sentence is blank or not yet read. */
 export const WHY_FALLBACK =
-  "Salesforce for schools and nonprofits should cost less, change safely and show its work. The three case studies below show how I do each.";
+  "Salesforce for schools and nonprofits should cost less, change safely and show its work. The case studies below show how I do each.";
 
 /**
  * Trimmed text, or null when the value is not a non blank string.

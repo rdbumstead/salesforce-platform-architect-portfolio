@@ -5,7 +5,7 @@
  *                      case study (Challenge, Solution, Business Value, Live and Source links). The
  *                      static c/pillarData still drives every pillar, so c/siteBuildSection merges
  *                      these rows in by letter and a missing row changes nothing.
- *                      getHomeCaseStudies returns at most three case study cards, the projects
+ *                      getHomeCaseStudies returns at most eight case study cards, the projects
  *                      with Home_Sort__c set, lowest first. It never reads Is_Featured__c, so a
  *                      home card never changes the featured projects the API and the cover
  *                      letters use. A case study card reads the Case_Metric__c fields and a
@@ -40,7 +40,7 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
   private static final String TEST_RUN_QUERY = 'ProjectCardController_LatestTestRun';
   private static final String HOME_QUERY = 'ProjectCardController_HomeCaseStudies';
   private static final String DEPLOYS_QUERY = 'ProjectCardController_ProductionDeploys';
-  private static final Integer HOME_CARD_LIMIT = 3;
+  private static final Integer HOME_CARD_LIMIT = 8;
   public static final String SOURCE_EMPLOYER_HUB_OBJECTS = 'Employer Hub objects';
   public static final String SOURCE_API_PATHS = 'API paths';
   public static final String SOURCE_AI_PROVIDERS = 'AI providers';
@@ -70,6 +70,11 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
     'D',
     'E'
   };
+
+  // Test seam: when true each read throws the QueryException its catch turns into an
+  // AuraHandledException, so a test can prove the message.
+  @TestVisible
+  private static Boolean failReads = false;
 
   // Test seam: sources named here throw, so a test can prove the fallback.
   @TestVisible
@@ -132,6 +137,14 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
     public String liveUrl;
     @AuraEnabled
     public List<String> tags;
+    @AuraEnabled
+    public String myPart;
+    @AuraEnabled
+    public String contextLine;
+    @AuraEnabled
+    public String decisionLine;
+    @AuraEnabled
+    public String figureKey;
   }
 
   /**
@@ -151,6 +164,7 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
    * @description One computed value: the number, plus the coverage and the Jest count for
    *              Apex tests.
    */
+  @TestVisible
   private class Computed {
     private Integer n;
     private Integer coverage;
@@ -181,6 +195,7 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
   @AuraEnabled(cacheable=true)
   public static List<PillarCard> getPillarCards() {
     try {
+      throwWhenFailing();
       return toCards(new ProjectCardSelector().selectProjects());
     } catch (QueryException e) {
       throw new AuraHandledException('The pillar cards could not be loaded.');
@@ -188,7 +203,7 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
   }
 
   /**
-   * @description Returns at most three home page case study cards, the projects with
+   * @description Returns at most eight home page case study cards, the projects with
    *              Home_Sort__c set, lowest first, then by Name. A project with no Home_Sort__c
    *              is never a card. Is_Featured__c plays no part.
    * @return List<CaseStudy> The cards, never null.
@@ -198,6 +213,7 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
   @AuraEnabled(cacheable=true)
   public static List<CaseStudy> getHomeCaseStudies() {
     try {
+      throwWhenFailing();
       return toCaseStudies(new ProjectCardSelector().selectHomeCaseStudies());
     } catch (QueryException e) {
       throw new AuraHandledException('The case studies could not be loaded.');
@@ -215,9 +231,16 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
   @AuraEnabled(cacheable=true)
   public static BuildCounts getBuildCounts() {
     try {
+      throwWhenFailing();
       return toBuildCounts(latestTestRun());
     } catch (QueryException e) {
       throw new AuraHandledException('The test counts could not be loaded.');
+    }
+  }
+
+  private static void throwWhenFailing() {
+    if (failReads) {
+      throw new QueryException('Forced failure');
     }
   }
 
@@ -232,6 +255,7 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
     return counts;
   }
 
+  @TestVisible
   private static List<CaseStudy> toCaseStudies(List<Project__c> projects) {
     Map<String, Computed> computedBySource = new Map<String, Computed>();
     List<CaseStudy> cards = new List<CaseStudy>();
@@ -249,6 +273,10 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
       card.businessValue = valueOrNull(project.Business_Value__c);
       card.liveUrl = valueOrNull(project.Live_URL__c);
       card.tags = splitTags(project.Case_Tags__c);
+      card.myPart = valueOrNull(project.My_Part__c);
+      card.contextLine = valueOrNull(project.Context_Line__c);
+      card.decisionLine = valueOrNull(project.Decision_Line__c);
+      card.figureKey = valueOrNull(project.Card_Figure__c);
       // The home cards read the Case fields only. A blank Case metric shows no number.
       Headline headline = headlineOf(
         project.Case_Metric__c,
@@ -376,6 +404,7 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
    * @param source A Headline_Metric_Source__c value.
    * @return Computed The number, or null when the source fails or gives nothing above 0.
    */
+  @TestVisible
   private static Computed compute(String source) {
     try {
       if (failingSources.contains(source)) {
@@ -408,14 +437,24 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
   }
 
   private static Integer countSpecPaths() {
-    List<StaticResource> specs = new ProjectCardSelector()
-      .selectSpecs(SPEC_RESOURCES);
-    if (specs.size() != SPEC_RESOURCES.size()) {
+    List<String> bodies = new List<String>();
+    for (
+      StaticResource spec : new ProjectCardSelector()
+        .selectSpecs(SPEC_RESOURCES)
+    ) {
+      bodies.add(spec.Body.toString());
+    }
+    return countSpecPaths(bodies);
+  }
+
+  @TestVisible
+  private static Integer countSpecPaths(List<String> bodies) {
+    if (bodies.size() != SPEC_RESOURCES.size()) {
       return null;
     }
     Integer total = 0;
-    for (StaticResource spec : specs) {
-      Integer paths = countPaths(spec.Body.toString());
+    for (String body : bodies) {
+      Integer paths = countPaths(body);
       if (paths == 0) {
         return null;
       }
@@ -664,7 +703,7 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
 
   /**
    * @description The home case study read as code: the projects with Home_Sort__c set,
-   *              lowest first, at most three, in system mode. It filters on Home_Sort__c only,
+   *              lowest first, at most eight, in system mode. It filters on Home_Sort__c only,
    *              never on Is_Featured__c. Query_Definition.ProjectCardController_HomeCaseStudies
    *              ships equal to it.
    * @return QueryDefinitions.QueryDefault The default.
@@ -673,7 +712,7 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
   private static QueryDefinitions.QueryDefault homeDefault() {
     return new QueryDefinitions.QueryDefault(
         'Project__c',
-        'Name, Home_Title__c, Client_Line__c, Case_Tags__c, Case_Metric__c, Case_Metric_Label__c, Case_Metric_Source__c, Challenge__c, Solution__c, Business_Value__c, Live_URL__c'
+        'Name, Home_Title__c, Client_Line__c, Case_Tags__c, Case_Metric__c, Case_Metric_Label__c, Case_Metric_Source__c, Challenge__c, Solution__c, Business_Value__c, Live_URL__c, My_Part__c, Context_Line__c, Decision_Line__c, Card_Figure__c'
       )
       .filter('Is_Verified__c = TRUE AND Home_Sort__c != NULL')
       .orderBy('Home_Sort__c ASC, Name ASC')

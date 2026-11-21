@@ -12,7 +12,9 @@
     "test": "node --test \"test/**/*.test.mjs\"",
     "coverage:check": "node build/check-export-coverage.mjs",
     "leak:scan": "node build/leak-scan.mjs dist",
-    "check:overflow": "node build/check-overflow.mjs"
+    "check:overflow": "node build/check-overflow.mjs",
+    "check:showcase": "node build/check-showcase.mjs",
+    "check:alignment": "node build/check-alignment.mjs"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "1.3.0",

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Context_Line__c</fullName>
+    <description
+  >The one line on a home page featured case study card that sets the scene, shown under the label "Context". Read by ProjectCardController.getHomeCaseStudies. Blank leaves the line out.</description>
+    <externalId>false</externalId>
+    <inlineHelpText
+  >The situation in one line, with no client name, 255 characters at most.</inlineHelpText>
+    <label>Context Line</label>
+    <length>255</length>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

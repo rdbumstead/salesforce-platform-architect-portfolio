@@ -14,7 +14,7 @@
         <field>Fields__c</field>
         <value
       xsi:type="xsd:string"
-    >Name, Home_Title__c, Client_Line__c, Case_Tags__c, Case_Metric__c, Case_Metric_Label__c, Case_Metric_Source__c, Challenge__c, Solution__c, Business_Value__c, Live_URL__c</value>
+    >Name, Home_Title__c, Client_Line__c, Case_Tags__c, Case_Metric__c, Case_Metric_Label__c, Case_Metric_Source__c, Challenge__c, Solution__c, Business_Value__c, Live_URL__c, My_Part__c, Context_Line__c, Decision_Line__c, Card_Figure__c</value>
     </values>
     <values>
         <field>Filter__c</field>
@@ -28,7 +28,7 @@
     </values>
     <values>
         <field>Row_Limit__c</field>
-        <value xsi:type="xsd:double">3</value>
+        <value xsi:type="xsd:double">8</value>
     </values>
     <values>
         <field>Access_Mode__c</field>
