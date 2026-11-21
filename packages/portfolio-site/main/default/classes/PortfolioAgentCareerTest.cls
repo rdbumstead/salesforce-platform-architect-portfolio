@@ -184,4 +184,14 @@ private class PortfolioAgentCareerTest {
       'Two reads'
     );
   }
+
+  @IsTest
+  static void aRoleWithNoHighlightListSaysNothing() {
+    List<String> picked = PortfolioAgentCareer.pickHighlights(
+      null,
+      'Architect'
+    );
+
+    Assert.areEqual(0, picked.size(), 'No list, no highlights');
+  }
 }

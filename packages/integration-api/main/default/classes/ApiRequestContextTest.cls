@@ -908,4 +908,31 @@ private class ApiRequestContextTest {
     assertErrorShape(429, 'RATE_LIMIT_EXCEEDED', true);
     Assert.areEqual('2', responseHeader('X-RateLimit-Limit'), 'The set limit');
   }
+
+  @IsTest
+  static void limitParamAnswersNullOnceTheRequestIsRejected() {
+    Test.startTest();
+    ApiRequestContext ctx = contextWithParams(
+      new Map<String, String>{ 'limit' => '5' }
+    );
+    ctx.error(404, 'NOT_FOUND', 'missing');
+    Integer limitAfterRejection = ctx.limitParam();
+    Test.stopTest();
+
+    Assert.isNull(limitAfterRejection, 'A rejected request reads no limit');
+    assertErrorShape(404, 'NOT_FOUND', false);
+  }
+
+  @IsTest
+  static void shouldReadNoParameterOrHeaderWhenThereIsNoRequest() {
+    RestTestUtil.initGet(SAPI_URI);
+    RestContext.request = null;
+
+    Test.startTest();
+    ApiRequestContext ctx = ApiRequestContext.begin();
+    Test.stopTest();
+
+    Assert.isNull(ctx.stringParam('name'), 'No request, no parameter');
+    Assert.isNull(ctx.headerValue('X-Request-Id'), 'No request, no header');
+  }
 }

@@ -536,4 +536,59 @@ private class PublicKeyServiceTest {
       'Lead has nothing to count'
     );
   }
+
+  @IsTest
+  static void shouldRefuseClearingTheKeyOnEveryObjectThatCarriesOne() {
+    Map<SObjectType, SObject> rows = insertOneOfEach();
+
+    Test.startTest();
+    for (SObjectType objectType : PublicKeyService.OBJECT_TYPES) {
+      Id rowId = rows.get(objectType).Id;
+      SObject row = Database.query(
+        'SELECT Id, Public_Key__c FROM ' +
+          objectType.getDescribe().getName() +
+          ' WHERE Id = :rowId'
+      );
+      Assert.isNotNull(
+        row.get(PublicKeyService.FIELD_NAME),
+        objectType + ' was given a key on insert'
+      );
+      row.put(PublicKeyService.FIELD_NAME, null);
+      Database.SaveResult result = Database.update(row, false);
+      Assert.isFalse(
+        result.isSuccess(),
+        'A cleared key is refused on ' + objectType
+      );
+      Assert.isTrue(
+        result.getErrors()[0].getMessage().contains('cannot be changed'),
+        'The refusal says why on ' + objectType
+      );
+    }
+    Test.stopTest();
+  }
+
+  @IsTest
+  static void shouldDrawAgainWhenARedrawClashesWithAnAcceptedKey() {
+    PublicKeyService.forcedKeys = new List<String>{
+      'prj_cccccccccc',
+      'prj_cccccccccc',
+      'prj_cccccccccc',
+      'prj_dddddddddd'
+    };
+    List<Project__c> projects = new List<Project__c>{
+      new Project__c(Is_Verified__c = true, Name = 'One', Sort_Order__c = 1),
+      new Project__c(Is_Verified__c = true, Name = 'Two', Sort_Order__c = 1)
+    };
+
+    Test.startTest();
+    PublicKeyService.assign(projects);
+    Test.stopTest();
+
+    Assert.areEqual('prj_cccccccccc', projects[0].Public_Key__c, 'First draw');
+    Assert.areEqual(
+      'prj_dddddddddd',
+      projects[1].Public_Key__c,
+      'A redraw that clashes again is drawn once more with nothing to look up'
+    );
+  }
 }

@@ -274,4 +274,163 @@ private class PortfolioGroundingServiceTest {
     Assert.isFalse(keywords.contains('the'), 'Stop word');
     Assert.isFalse(keywords.contains('ai'), 'Too short');
   }
+
+  @IsTest
+  static void aSkillShowsItsDisplayNameWhenItHasOne() {
+    Project__c featured = project(1, 'Kafka pipeline');
+    insert featured;
+    Skill__c skill = new Skill__c(
+      Is_Verified__c = true,
+      Name = 'Kafka',
+      Display_Name__c = 'Event streaming',
+      Category__c = 'Integration',
+      Category_Order__c = 1
+    );
+    insert skill;
+    insert new Project_Skill__c(Project__c = featured.Id, Skill__c = skill.Id);
+
+    String grounding = PortfolioGroundingService.build('Engineer', 'Kafka');
+
+    List<Object> facts = (List<Object>) parse(grounding).get('projects');
+    List<Object> skills = (List<Object>) ((Map<String, Object>) facts[0])
+      .get('skills');
+    Assert.areEqual('Event streaming', skills[0], 'The display name is used');
+  }
+
+  @IsTest
+  static void keywordsStopAtTheLimit() {
+    List<String> words = new List<String>();
+    for (Integer i = 0; i < 200; i++) {
+      words.add('keyword' + String.valueOf(1000 + i));
+    }
+
+    Set<String> keywords = PortfolioGroundingService.keywords(
+      String.join(words, ' ')
+    );
+
+    Assert.areEqual(60, keywords.size(), 'No more than 60 keywords are kept');
+  }
+
+  @IsTest
+  static void aJobWithNoWordsStillGroundsOnTheFeaturedWork() {
+    Account employer = new Account(Name = 'Acme Corp');
+    insert employer;
+    Experience__c role = new Experience__c(
+      Name = 'Platform Architect',
+      Sort_Order__c = 1,
+      Employer__c = employer.Id,
+      Is_Current_Role__c = true
+    );
+    insert role;
+    insert new Experience_Highlight__c(
+      Is_Verified__c = true,
+      Name = 'Highlight',
+      Experience__c = role.Id,
+      Description__c = 'Led an API program',
+      Persona_Tag__c = 'Architect',
+      Sort_Order__c = 1,
+      Lock_Sort_Across_Personas__c = false
+    );
+    insert project(1, 'Anything');
+
+    String grounding = PortfolioGroundingService.build(null, null);
+
+    Assert.isNotNull(grounding, 'Facts return with nothing to match on');
+    Assert.areEqual(
+      1,
+      ((List<Object>) parse(grounding).get('highlights')).size(),
+      'The highlight is still listed'
+    );
+  }
+
+  @IsTest
+  static void highlightsAreDroppedFirstWhenTheFactsExceedTheCap() {
+    Account employer = new Account(Name = 'Acme Corp');
+    insert employer;
+    Experience__c role = new Experience__c(
+      Name = 'Platform Architect',
+      Sort_Order__c = 1,
+      Employer__c = employer.Id,
+      Is_Current_Role__c = true
+    );
+    insert role;
+    List<Experience_Highlight__c> highlights = new List<Experience_Highlight__c>();
+    for (Integer i = 1; i <= 8; i++) {
+      highlights.add(
+        new Experience_Highlight__c(
+          Is_Verified__c = true,
+          Name = 'Highlight ' + i,
+          Experience__c = role.Id,
+          Description__c = ('Highlight ' + i + ' ').repeat(80),
+          Persona_Tag__c = 'Architect',
+          Sort_Order__c = i,
+          Lock_Sort_Across_Personas__c = false
+        )
+      );
+    }
+    insert highlights;
+    List<Project__c> projects = new List<Project__c>();
+    for (Integer i = 1; i <= PortfolioGroundingService.MAX_PROJECTS; i++) {
+      Project__c longProject = project(i, ('Challenge ' + i + ' ').repeat(100));
+      longProject.Solution__c = ('Solution ' + i + ' ').repeat(100);
+      longProject.Business_Value__c = ('Value ' + i + ' ').repeat(100);
+      projects.add(longProject);
+    }
+    insert projects;
+
+    String grounding = PortfolioGroundingService.build('Architect', null);
+
+    Assert.isNotNull(grounding, 'Facts return');
+    Assert.isTrue(
+      grounding.length() <= PortfolioGroundingService.MAX_CHARS,
+      'Under the cap'
+    );
+    Assert.isTrue(
+      ((List<Object>) parse(grounding).get('highlights')).size() <
+      PortfolioGroundingService.MAX_HIGHLIGHTS,
+      'Highlights are dropped from the end before any project is'
+    );
+  }
+
+  @IsTest
+  static void aHighlightWithNoTextIsLeftOut() {
+    Account employer = new Account(Name = 'Acme Corp');
+    insert employer;
+    Experience__c role = new Experience__c(
+      Name = 'Platform Architect',
+      Sort_Order__c = 1,
+      Employer__c = employer.Id,
+      Is_Current_Role__c = true
+    );
+    insert role;
+    insert new List<Experience_Highlight__c>{
+      new Experience_Highlight__c(
+        Is_Verified__c = true,
+        Name = 'Empty highlight',
+        Experience__c = role.Id,
+        Persona_Tag__c = 'Architect',
+        Sort_Order__c = 1,
+        Lock_Sort_Across_Personas__c = false
+      ),
+      new Experience_Highlight__c(
+        Is_Verified__c = true,
+        Name = 'Real highlight',
+        Experience__c = role.Id,
+        Description__c = 'Led an API program',
+        Persona_Tag__c = 'Architect',
+        Sort_Order__c = 2,
+        Lock_Sort_Across_Personas__c = false
+      )
+    };
+    insert project(1, 'Anything');
+
+    String grounding = PortfolioGroundingService.build('Architect', null);
+
+    List<Object> highlights = (List<Object>) parse(grounding).get('highlights');
+    Assert.areEqual(
+      1,
+      highlights.size(),
+      'Only the highlight with text is kept'
+    );
+  }
 }

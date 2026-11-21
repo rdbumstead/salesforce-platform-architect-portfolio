@@ -1505,4 +1505,54 @@ private class ResumeControllerTest {
       'Badge_File__c never reaches it'
     );
   }
+
+  @isTest
+  static void getResumeKeepsTwoHighlightsThatShareAnOrder() {
+    Experience__c role = [
+      SELECT Id
+      FROM Experience__c
+      WHERE Name = 'Current Role'
+      LIMIT 1
+    ];
+    insert new List<Experience_Highlight__c>{
+      new Experience_Highlight__c(
+        Is_Verified__c = true,
+        Name = 'Twin one',
+        Experience__c = role.Id,
+        Description__c = 'Twin one',
+        Persona_Tag__c = 'Engineer',
+        Sort_Order__c = 90,
+        Engineer_Sort_Order__c = 90,
+        Lock_Sort_Across_Personas__c = false
+      ),
+      new Experience_Highlight__c(
+        Is_Verified__c = true,
+        Name = 'Twin two',
+        Experience__c = role.Id,
+        Description__c = 'Twin two',
+        Persona_Tag__c = 'Engineer',
+        Sort_Order__c = 90,
+        Engineer_Sort_Order__c = 90,
+        Lock_Sort_Across_Personas__c = false
+      )
+    };
+
+    Test.startTest();
+    ResumeController.ResumeData byPersona = ResumeController.getResume(
+      'Engineer'
+    );
+    ResumeController.ResumeData everyone = ResumeController.getResume(null);
+    Test.stopTest();
+
+    for (
+      ResumeController.ResumeData resume : new List<ResumeController.ResumeData>{
+        byPersona,
+        everyone
+      }
+    ) {
+      Set<String> shown = new Set<String>(resume.roles[0].highlights);
+      Assert.isTrue(shown.contains('Twin one'), 'The first twin is listed');
+      Assert.isTrue(shown.contains('Twin two'), 'The second twin is listed');
+    }
+  }
 }

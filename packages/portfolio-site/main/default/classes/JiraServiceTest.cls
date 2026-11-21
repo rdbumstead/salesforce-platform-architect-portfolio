@@ -291,4 +291,24 @@ private class JiraServiceTest {
       Assert.areEqual('Body has no issue list.', e.getMessage(), 'Message');
     }
   }
+
+  @IsTest
+  static void shouldTrimAPageThatHoldsMoreThanTheCap() {
+    Test.setMock(
+      HttpCalloutMock.class,
+      new PagedMock(new List<String>{ page(1, 150, null) })
+    );
+
+    Test.startTest();
+    List<DeliveryController.RoadmapItem> items = JiraService.fetchRoadmap(
+      'SPAP'
+    );
+    Test.stopTest();
+
+    Assert.areEqual(
+      JiraService.MAX_RESULTS,
+      items.size(),
+      'A page over the cap is cut to the cap'
+    );
+  }
 }

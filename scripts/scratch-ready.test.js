@@ -302,6 +302,7 @@ test("buildDocsPlan writes one cache row per doc and per component file, with pa
   record("docs_long", "docs/long.md");
   record("docs_missing", "docs/missing.md");
   record("footer_js", "packages/x/footer.js");
+  record("header_js", "packages/x/footer.js");
   record("footer_missing", "packages/x/gone.js");
   fs.mkdirSync(path.join(root, "packages/x"), { recursive: true });
   fs.writeFileSync(
@@ -335,6 +336,8 @@ test("buildDocsPlan writes one cache row per doc and per component file, with pa
   assert.ok(!rows.some((r) => r.Path__c.includes("missing")));
   assert.ok(!rows.some((r) => r.Path__c.includes("gone")));
   assert.ok(rows.every((r) => r.Last_Status__c === "200"));
+  const paths = rows.map((r) => r.Path__c);
+  assert.strictEqual(new Set(paths).size, paths.length);
   assert.strictEqual(buildDocsPlan(path.join(root, "o2"), os.tmpdir()), null);
 });
 

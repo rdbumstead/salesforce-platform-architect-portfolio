@@ -412,4 +412,22 @@ private class SAPIProjectTest {
       'Every listed project'
     );
   }
+
+  @IsTest
+  static void shouldStopWhenTheVersionIsNotSupported() {
+    RestTestUtil.initGetRaw(
+      '/services/apexrest/sapi/projects/',
+      new Map<String, String>{
+        'X-Request-Id' => UUID.randomUUID().toString(),
+        'X-API-Version' => 'v3'
+      },
+      null
+    );
+
+    Test.startTest();
+    SAPIProject.getProjects();
+    Test.stopTest();
+
+    SapiTestData.assertError(400, 'BAD_REQUEST');
+  }
 }

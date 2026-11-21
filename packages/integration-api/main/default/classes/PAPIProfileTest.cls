@@ -577,4 +577,45 @@ private class PAPIProfileTest {
     }
     return byName;
   }
+
+  @IsTest
+  static void undatedRecordsAndNoRolesStillAnswerWithBlankDates() {
+    delete [SELECT Id FROM Experience__c];
+    Contact owner = [SELECT Id FROM Contact WHERE Is_Portfolio_Owner__c = TRUE];
+    Account issuer = new Account(Name = 'Undated Issuer');
+    insert issuer;
+    insert new Certification__c(
+      Is_Verified__c = true,
+      Name = 'Undated Certification',
+      Issuer__c = issuer.Id,
+      Contact__c = owner.Id
+    );
+    insert new Education__c(
+      Issuer__c = issuer.Id,
+      Contact__c = owner.Id,
+      Name = 'Undated Degree'
+    );
+    RestTestUtil.initGet('/services/apexrest/papi/v1/profile/full');
+
+    Test.startTest();
+    PAPIProfile.getProfile();
+    Test.stopTest();
+
+    Assert.areEqual(200, RestContext.response.statusCode, 'Status');
+    Map<String, Object> body = RestTestUtil.getBodyAsMap();
+    Map<String, Object> cert = (Map<String, Object>) ((List<Object>) body.get(
+      'certifications'
+    ))[0];
+    Assert.areEqual('Undated Certification', cert.get('name'), 'Certification');
+    Assert.isNull(cert.get('dateEarned'), 'No earned date, no date shown');
+    Boolean sawUndatedDegree = false;
+    for (Object row : (List<Object>) body.get('education')) {
+      Map<String, Object> degree = (Map<String, Object>) row;
+      if (degree.get('degree') == 'Undated Degree') {
+        sawUndatedDegree = true;
+        Assert.isNull(degree.get('year'), 'No graduation date, no year');
+      }
+    }
+    Assert.isTrue(sawUndatedDegree, 'The undated degree is listed');
+  }
 }

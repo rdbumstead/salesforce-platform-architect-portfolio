@@ -577,4 +577,19 @@ private class GovernanceEventHandlerTest {
 
     Assert.areEqual(0, runs().size(), 'No rows');
   }
+
+  @isTest
+  static void shouldStopRetryingAndStoreNothingWhenEverySaveFails() {
+    EventBus.publish(event('deploy', 'Success', '205'));
+
+    Test.startTest();
+    // Two retries are allowed, so the third failed delivery is the one that rethrows.
+    for (Integer attempt = 0; attempt < 3; attempt++) {
+      GovernanceEventHandler.failNextSave = true;
+      Test.getEventBus().deliver();
+    }
+    Test.stopTest();
+
+    Assert.areEqual(0, runs().size(), 'A run that never saved is not stored');
+  }
 }

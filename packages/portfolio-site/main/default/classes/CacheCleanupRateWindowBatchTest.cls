@@ -136,4 +136,21 @@ private class CacheCleanupRateWindowBatchTest {
       'The scheduled orchestrator run removes expired windows'
     );
   }
+
+  @IsTest
+  static void anEmptyChunkDeletesNothingAndDoesNotFail() {
+    CacheCleanupSettings.testOverrideEnabled = true;
+    insertOldAndCurrentWindows();
+
+    Test.startTest();
+    new CacheCleanupRateWindowBatch()
+      .execute(null, new List<API_Rate_Window__c>());
+    Test.stopTest();
+
+    Assert.areEqual(
+      OLD_ROWS + CURRENT_ROWS,
+      [SELECT COUNT() FROM API_Rate_Window__c],
+      'An empty chunk removes no row'
+    );
+  }
 }

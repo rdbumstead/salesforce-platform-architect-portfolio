@@ -11,40 +11,40 @@
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 10/26/2026
  **/
-export const COUNTED_ON = "2026-11-19";
+export const COUNTED_ON = "2026-11-20";
 
 export const APEX_GROUPS = [
   {
     name: "Other site classes",
-    tests: 349
+    tests: 366
   },
   {
     name: "REST API endpoints",
-    tests: 344
+    tests: 365
   },
   {
     name: "API Lab and AI cover letters",
-    tests: 272
+    tests: 281
   },
   {
     name: "Delivery data and the numbers panel",
-    tests: 235
+    tests: 240
   },
   {
     name: "Rate limits, tokens and request rules",
-    tests: 228
+    tests: 239
   },
   {
     name: "Testimonials, contact form and leads",
-    tests: 57
+    tests: 59
   },
   {
     name: "Query definitions",
-    tests: 55
+    tests: 57
   },
   {
     name: "Guest access and form guards",
-    tests: 34
+    tests: 35
   }
 ];
 

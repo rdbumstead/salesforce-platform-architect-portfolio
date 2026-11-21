@@ -262,4 +262,30 @@ private class GitHubServiceTest {
     Assert.areEqual('', file.content, 'Empty file');
     Assert.isNull(file.size, 'No size given');
   }
+
+  @IsTest
+  static void shouldThrowWhenFileContentIsNotBase64() {
+    try {
+      GitHubService.parseFile(
+        '{"type":"file","encoding":"base64","content":"!!! not base64 !!!","path":"a.txt"}'
+      );
+      Assert.fail('Must throw');
+    } catch (GitHubService.GitHubServiceException e) {
+      Assert.areEqual(
+        'File content is not base64 text.',
+        e.getMessage(),
+        'Not base64'
+      );
+    }
+  }
+
+  @IsTest
+  static void shouldThrowWhenTheCommitBodyIsNotJson() {
+    try {
+      GitHubService.parseCommits('not json');
+      Assert.fail('Must throw');
+    } catch (GitHubService.GitHubServiceException e) {
+      Assert.areEqual('Body is not JSON.', e.getMessage(), 'Not JSON');
+    }
+  }
 }
