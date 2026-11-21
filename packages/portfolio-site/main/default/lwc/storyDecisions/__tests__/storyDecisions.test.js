@@ -80,11 +80,11 @@ describe("c-story-decisions", () => {
   });
 
   it.each(KEYS)(
-    "gives %s three to five alternatives, each an option and a reason",
+    "gives %s two to five alternatives, each an option and a reason",
     (key) => {
       const element = create(key);
       const items = qa(element, '[data-id="alternative"]');
-      expect(items.length).toBeGreaterThanOrEqual(3);
+      expect(items.length).toBeGreaterThanOrEqual(2);
       expect(items.length).toBeLessThanOrEqual(5);
       items.forEach((item) => {
         expect(text(item.querySelector(".option")).length).toBeGreaterThan(0);

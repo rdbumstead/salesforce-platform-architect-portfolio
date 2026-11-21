@@ -95,11 +95,7 @@ export const STORIES = Object.freeze({
     alternatives: [
       {
         option: "Route by the service the partner asks for.",
-        why: "It is the usual answer when each department owns a service. Here the departments offer much the same services, a job posting, a career event or training, each to the employers in its own industries. The service alone would not say which team knows the partner, so the case records the service and the industry decides the queue."
-      },
-      {
-        option: "Use the Education Cloud partnership objects.",
-        why: "They would model some of this natively. Adopting them for one hub is a licence and data model decision far larger than the problem, so I used standard objects wherever one fits and added four custom ones."
+        why: "It is the usual answer when each department owns a service. Here the departments offer much the same services, a job posting, a career event or training, each to the employers in its own industries. Each team owns every relationship with the employers in its industries, so the case records the service and the industry decides the queue."
       },
       {
         option: "Build one custom partner request object in place of Case.",
@@ -121,15 +117,6 @@ export const STORIES = Object.freeze({
       {
         option: "Choose Nonprofit Cloud.",
         why: "It has native programs, volunteers and outcome management, and it is where Salesforce is investing. Person Accounts, its setup prerequisites and a newer product leave more to keep running when nobody on staff looks after Salesforce, so it scored 260 against 268."
-      },
-      {
-        option:
-          "Keep the matrix scores in a static JSON file read by the component.",
-        why: "This is simpler and needs no class access. It would hide the custom metadata pattern this page is meant to show, so the scores deploy with the code as custom metadata."
-      },
-      {
-        option: "Make a server call for each reweighting.",
-        why: "The server would hold the one copy of the logic. It would also cost a call on every slider move for arithmetic the browser can do, so the totals are worked out in the page."
       }
     ]
   },
