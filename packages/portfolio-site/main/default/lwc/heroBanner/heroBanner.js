@@ -117,6 +117,25 @@ export default class HeroBanner extends LightningElement {
 
   /** One monospace line of live test stats. Each part drops out when its count is missing. */
   get statsText() {
+    const parts = this.statsList;
+    return parts ? parts.join(" · ") : null;
+  }
+
+  /**
+   * The same stats as parts, for the template. Every part after the first carries its " · "
+   * separator, so a part that wraps to a new line takes its separator with it, where the
+   * panel's clip hides it. A line never ends or starts with a separator.
+   */
+  get statsParts() {
+    const parts = this.statsList || [];
+    return parts.map((text, index) => ({
+      key: `stat-${index}`,
+      text,
+      sep: index > 0 ? " · " : null
+    }));
+  }
+
+  get statsList() {
     const apex = countText(this.counts && this.counts.apexPassed);
     if (!apex) {
       return null;
@@ -127,9 +146,7 @@ export default class HeroBanner extends LightningElement {
       `${apex} Apex tests passing`,
       coverage ? `${coverage}% coverage` : null,
       jest ? `${jest} Jest tests passing` : null
-    ]
-      .filter(Boolean)
-      .join(" · ");
+    ].filter(Boolean);
   }
 
   get docsHref() {

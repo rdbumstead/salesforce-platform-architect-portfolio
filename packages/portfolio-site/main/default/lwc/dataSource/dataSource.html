@@ -9,8 +9,9 @@
       title={markerTitle}
       onclick={handleToggle}
     >
-      <span class="dot" aria-hidden="true"></span>
-      <span class="marker-label" aria-hidden="true">{visibleLabel}</span>
+      <span class="marker-label" aria-hidden="true"
+        ><span class="dot"></span>{visibleLabel}</span
+      >
       <span lwc:if={hasSummary} class="marker-counts" aria-hidden="true"
         >{summaryText}</span
       >

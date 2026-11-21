@@ -28,7 +28,7 @@ import getTimeline from "@salesforce/apex/ResumeController.getTimeline";
 import CERTIFICATION_BADGES from "@salesforce/resourceUrl/Certification_Badges";
 
 const HTTP_URL = /^https?:\/\//i;
-const DOT = " · ";
+const DOT = " \u00B7\u00A0";
 
 function clean(value) {
   return typeof value === "string" ? value.trim() : "";

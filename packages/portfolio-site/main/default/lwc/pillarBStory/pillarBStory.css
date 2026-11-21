@@ -136,6 +136,7 @@
   color: var(--pf-accent);
   display: inline-block;
   min-height: 24px;
+  text-wrap: pretty;
 }
 
 .cost-table td a:not(:last-child)::after {

@@ -10,7 +10,8 @@
  *   scroll    the page scrolls sideways
  *   tap       a link or button in the showcase is under 24 by 24 px
  *   gap       at 390 wide, the heading is more than 80 px above the first card
- *   fold      at 1280 by 800, card 1 or card 2 has its number, title or "My part" below the fold
+ *   fold      at 1280 by 800, card 1 or card 2 has its title or Outcome number below the fold.
+ *             "My part" may sit just below it (owner, 2026-11-21)
  *   lone      a card or row title ends with one word alone on its last line
  *   heading   the section heading takes more than one line, or is squeezed to no width
  *
@@ -94,7 +95,7 @@ export function judge(measure, context) {
   }
   if (context.width === DESKTOP.width && context.fold) {
     measure.foldCards.slice(0, 2).forEach((card, index) => {
-      for (const part of ["number", "title", "myPart"]) {
+      for (const part of ["number", "title"]) {
         if (typeof card[part] === "number" && card[part] > DESKTOP.height) {
           add(
             "fold",

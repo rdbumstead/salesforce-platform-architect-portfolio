@@ -27,7 +27,7 @@
                 <div class="card-text">
                   <h3 class="card-title">{card.title}</h3>
                   <template lwc:if={card.clientLine}>
-                    <p class="client" data-id="client">{card.clientLine}</p>
+                    <p class="client" data-id="client">{card.clientText}</p>
                   </template>
                   <template lwc:if={card.hasHeadline}>
                     <p class="metric" data-id="metric">

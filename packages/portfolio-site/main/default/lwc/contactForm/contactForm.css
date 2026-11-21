@@ -14,10 +14,12 @@
   display: block;
 }
 
+/* No top margin: the page intro above already ends with its own margin and the layout spacer,
+   and a third gap left an empty band of 80 px over the form on a phone. */
 .contact {
   position: relative;
   max-width: 40rem;
-  margin: 2rem 0 0;
+  margin: 0;
   overflow-wrap: anywhere;
 }
 

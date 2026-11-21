@@ -125,15 +125,24 @@
 /* On a phone the toggles show their label and the status text drops, so the whole row takes
    two lines. From 900 px every toggle keeps its status, Request limits with its count. */
 @media (max-width: 899.98px) {
+  /* The layout already leaves 60 px under the last section on a narrow screen, so the
+     footer adds no margin of its own. With it the band above the footer was 92 px. */
+  .footer {
+    margin-top: 0;
+  }
+
+  /* The chevron is turned 45 degrees, so its ink reaches past its box. A 5 px gap keeps it
+     clear of its label, and a 6 px gap between toggles shows which label it belongs to. The
+     row still takes two lines from 360 px. */
   .chips {
     --view-source-padding: 2px;
 
-    gap: 0 2px;
+    gap: 0 6px;
     margin-inline-start: -2px;
   }
 
   .chip {
-    gap: 2px;
+    gap: 5px;
     padding: 0 2px;
   }
 

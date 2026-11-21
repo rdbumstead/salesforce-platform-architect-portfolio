@@ -58,14 +58,17 @@ test("the heading to first card limit applies at 390 only", () => {
   );
 });
 
-test("at 1280 cards 1 and 2 need their number, title and My part above 800 px", () => {
+test("at 1280 cards 1 and 2 need their title and number above 800 px, My part may sit below", () => {
   const measure = clean();
-  measure.foldCards[1].myPart = 801;
+  measure.foldCards[1].title = 801;
   measure.foldCards[0].number = 900;
   assert.deepEqual(kinds(measure, { width: 1280, fold: true }), [
     "fold",
     "fold"
   ]);
+  const myPartOnly = clean();
+  myPartOnly.foldCards[1].myPart = 846;
+  assert.deepEqual(kinds(myPartOnly, { width: 1280, fold: true }), []);
   assert.deepEqual(kinds(measure, { width: 768, fold: true }), []);
 });
 
