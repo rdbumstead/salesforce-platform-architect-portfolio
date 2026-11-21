@@ -31,6 +31,21 @@
   padding: 24px 0 32px;
 }
 
+/* On a phone the sections sit 56px apart: 16px of padding on each side of the 24px layout
+   spacer. */
+@media (max-width: 899px) {
+  .section {
+    padding: 16px 0;
+  }
+}
+
+/* The hero's View source is one screen up, so a phone shows one. The data source chip stays. */
+@media (max-width: 719px) {
+  .tools c-view-source {
+    display: none;
+  }
+}
+
 .heading {
   grid-column: 1;
 }

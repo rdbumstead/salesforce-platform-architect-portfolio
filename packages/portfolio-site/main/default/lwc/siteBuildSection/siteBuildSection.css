@@ -36,6 +36,17 @@
   text-wrap: pretty;
 }
 
+/* On a phone the desktop padding steps down, so the groups sit about 56px apart. */
+@media (max-width: 899px) {
+  .build {
+    padding-bottom: 16px;
+  }
+
+  .section {
+    padding: 24px 0 16px;
+  }
+}
+
 .cards {
   list-style: none;
   margin: 0;
