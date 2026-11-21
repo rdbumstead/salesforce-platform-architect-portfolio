@@ -220,6 +220,26 @@ describe("c-case-study-grid", () => {
     }
   });
 
+  it("names the project first: title, then client line, then the Outcome, then My part", async () => {
+    const element = render();
+    getHomeCaseStudies.emit(CARDS);
+    await flush();
+    const [first] = cards(element);
+    const order = [
+      ".card-title",
+      '[data-id="client"]',
+      '[data-id="metric"]',
+      '[data-id="my-part"]'
+    ].map((selector) => first.querySelector(selector));
+    order.forEach((node) => expect(node).not.toBeNull());
+    for (let i = 1; i < order.length; i++) {
+      expect(
+        order[i - 1].compareDocumentPosition(order[i]) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+    }
+  });
+
   it("labels the outcome and shows the number only with its label, and the client line only when set", async () => {
     const element = render();
     getHomeCaseStudies.emit(CARDS);

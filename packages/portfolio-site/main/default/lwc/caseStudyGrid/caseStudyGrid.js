@@ -2,8 +2,8 @@
  * @description       : The home page project showcase, directly under the hero: a heading and a
  *                      short intro, then up to eight projects from
  *                      ProjectCardController.getHomeCaseStudies in two tiers. The first four rows
- *                      are the featured tier: full cards with the number labelled "Outcome", the
- *                      title, the client line, "My part", one line each labelled "Context" and
+ *                      are the featured tier: full cards with the title and the client line
+ *                      first, then the number labelled "Outcome", "My part", one line each labelled "Context" and
  *                      "Decision", a slot for the picture (drawn only when figureKey is set,
  *                      sized by the CSS at 4 to 3, the picture component is placed inside it)
  *                      and "Read the case study". Row five on is "More work": compact rows with

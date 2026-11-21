@@ -146,6 +146,8 @@
   }
 }
 
+/* The Outcome follows the title and client line. Its "Outcome" label sets it apart, with no extra
+   margin, so the first two cards keep their number, title and "My part" on the first screen. */
 .metric {
   margin: 0;
   display: flex;
