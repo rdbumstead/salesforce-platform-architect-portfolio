@@ -10,6 +10,11 @@
  *                      (whole numbers, passed no more than run, coverage from 0 to 100), so the
  *                      Pillar E card never shows a broken number. The Jest counts follow the
  *                      same rule as a pair of their own, kept or dropped apart from the Apex ones.
+ *                      A deploy event may carry the id of the GlassOps PERMIT it ran under. The
+ *                      first time a successful deploy run is stored with a permit id, the
+ *                      handler adds one to the running total of governed deploys in
+ *                      Usage_Counter__c, which pruning never touches. A run already stored with a
+ *                      permit id is never counted again, whatever its replays carry.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -38,6 +43,9 @@ public with sharing class GovernanceEventHandler {
     'success' => STATUS_SUCCESS,
     'failure' => STATUS_FAILURE
   };
+  private static final Pattern PERMIT_ID_PATTERN = Pattern.compile(
+    '[A-Za-z0-9_.:-]{1,64}'
+  );
   private static final String RUN_URL_PREFIX = 'https://github.com/';
   private static final Pattern SHA_PATTERN = Pattern.compile(
     '[A-Za-z0-9]{1,40}'
@@ -105,6 +113,7 @@ public with sharing class GovernanceEventHandler {
     }
     String sha = event.Commit_Sha__c?.trim();
     String url = event.Run_Url__c?.trim();
+    String permitId = event.Permit_Id__c?.trim();
     Boolean testsValid = validTestResult(
       event.Tests_Run__c,
       event.Tests_Passed__c,
@@ -122,6 +131,7 @@ public with sharing class GovernanceEventHandler {
       Run_Url__c = isRunUrl(url) ? url : null,
       Commit_Sha__c = matches(SHA_PATTERN, sha) ? sha : null,
       Completed_At__c = event.Completed_At__c,
+      Permit_Id__c = matches(PERMIT_ID_PATTERN, permitId) ? permitId : null,
       Tests_Run__c = testsValid ? event.Tests_Run__c : null,
       Tests_Passed__c = testsValid ? event.Tests_Passed__c : null,
       Org_Coverage__c = testsValid ? event.Org_Coverage__c : null,
@@ -194,6 +204,7 @@ public with sharing class GovernanceEventHandler {
     Set<String> workflows = new Set<String>();
     for (Pipeline_Run__c run : runsByKey.values()) {
       Pipeline_Run__c existing = existingByKey.get(run.Run_Key__c);
+      run.Permit_Id__c = effectivePermit(run, existing);
       if (existing == null || !sameValues(existing, run)) {
         changed.add(run);
         workflows.add(run.Workflow__c);
@@ -207,8 +218,45 @@ public with sharing class GovernanceEventHandler {
       failNextSave = false;
       throw new DmlException('Forced failure for the retry test');
     }
+    countNewGovernedDeploys(changed, existingByKey);
     store.upsertRuns(changed);
     store.deleteRuns(beyondRetention(store.newestFirst(workflows)));
+  }
+
+  // Only a successful deploy run keeps a permit id. A run already stored with one keeps it, so
+  // a replay that drops it or flips the status never makes the run count a second time.
+  private static String effectivePermit(
+    Pipeline_Run__c run,
+    Pipeline_Run__c existing
+  ) {
+    if (existing != null && String.isNotBlank(existing.Permit_Id__c)) {
+      return existing.Permit_Id__c;
+    }
+    return run.Workflow__c == WORKFLOW_DEPLOY &&
+      run.Status__c == STATUS_SUCCESS
+      ? run.Permit_Id__c
+      : null;
+  }
+
+  // Adds one to the running total for each run that now has a permit id and had none before.
+  // When the counter cannot be written, the run is stored without its permit id so a replay
+  // counts it. The counter write is in the event transaction, so a retry rolls it back.
+  private static void countNewGovernedDeploys(
+    List<Pipeline_Run__c> changed,
+    Map<String, Pipeline_Run__c> existingByKey
+  ) {
+    for (Pipeline_Run__c run : changed) {
+      Pipeline_Run__c existing = existingByKey.get(run.Run_Key__c);
+      Boolean alreadyCounted =
+        existing != null && String.isNotBlank(existing.Permit_Id__c);
+      if (
+        String.isNotBlank(run.Permit_Id__c) &&
+        !alreadyCounted &&
+        !UsageCounterWriter.record(UsageCounterWriter.KIND_GLASSOPS_DEPLOY)
+      ) {
+        run.Permit_Id__c = null;
+      }
+    }
   }
 
   private static Boolean sameValues(
@@ -219,6 +267,7 @@ public with sharing class GovernanceEventHandler {
       existing.Run_Url__c == incoming.Run_Url__c &&
       existing.Commit_Sha__c == incoming.Commit_Sha__c &&
       existing.Completed_At__c == incoming.Completed_At__c &&
+      existing.Permit_Id__c == incoming.Permit_Id__c &&
       existing.Tests_Run__c == incoming.Tests_Run__c &&
       existing.Tests_Passed__c == incoming.Tests_Passed__c &&
       existing.Org_Coverage__c == incoming.Org_Coverage__c &&
@@ -260,6 +309,7 @@ public with sharing class GovernanceEventHandler {
           Run_Url__c,
           Commit_Sha__c,
           Completed_At__c,
+          Permit_Id__c,
           Tests_Run__c,
           Tests_Passed__c,
           Org_Coverage__c,

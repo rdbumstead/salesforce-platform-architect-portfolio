@@ -59,7 +59,8 @@ private class GovernanceEventHandlerTest {
         Org_Coverage__c,
         Jest_Tests_Run__c,
         Jest_Tests_Passed__c,
-        Jest_Coverage__c
+        Jest_Coverage__c,
+        Permit_Id__c
       FROM Pipeline_Run__c
       ORDER BY Run_Key__c
     ];
@@ -591,5 +592,151 @@ private class GovernanceEventHandlerTest {
     Test.stopTest();
 
     Assert.areEqual(0, runs().size(), 'A run that never saved is not stored');
+  }
+
+  private static Governance_Event__e permitEvent(
+    String status,
+    String runId,
+    String permitId
+  ) {
+    Governance_Event__e e = event('deploy', status, runId);
+    e.Permit_Id__c = permitId;
+    return e;
+  }
+
+  private static Decimal governedTotal() {
+    Decimal total = 0;
+    for (Usage_Counter__c row : [
+      SELECT Count__c
+      FROM Usage_Counter__c
+      WHERE Kind__c = :UsageCounterWriter.KIND_GLASSOPS_DEPLOY
+    ]) {
+      total += row.Count__c;
+    }
+    return total;
+  }
+
+  @isTest
+  static void shouldCopyThePermitIdAndCountTheDeployWhenASuccessCarriesOne() {
+    Test.startTest();
+    publishAndDeliver(
+      new List<Governance_Event__e>{
+        permitEvent('Success', '501', ' PERMIT-2026-11-20-A '),
+        permitEvent('Success', '502', null)
+      }
+    );
+    Test.stopTest();
+
+    Map<String, Pipeline_Run__c> byKey = new Map<String, Pipeline_Run__c>();
+    for (Pipeline_Run__c run : runs()) {
+      byKey.put(run.Run_Key__c, run);
+    }
+    Assert.areEqual(
+      'PERMIT-2026-11-20-A',
+      byKey.get('deploy:501').Permit_Id__c,
+      'Trimmed copy'
+    );
+    Assert.isNull(byKey.get('deploy:502').Permit_Id__c, 'Blank stays blank');
+    Assert.areEqual(1, governedTotal(), 'Only the governed run counts');
+  }
+
+  @isTest
+  static void shouldCountARunOnceWhenItsEventArrivesTwiceOrDropsThePermit() {
+    publishAndDeliver(
+      new List<Governance_Event__e>{ permitEvent('Success', '511', 'P-1') }
+    );
+    Test.startTest();
+    publishAndDeliver(
+      new List<Governance_Event__e>{
+        permitEvent('Success', '511', 'P-1'),
+        permitEvent('Success', '511', 'P-1')
+      }
+    );
+    publishAndDeliver(
+      new List<Governance_Event__e>{ permitEvent('Success', '511', null) }
+    );
+    publishAndDeliver(
+      new List<Governance_Event__e>{ permitEvent('Failure', '511', 'P-2') }
+    );
+    Test.stopTest();
+
+    Assert.areEqual(1, governedTotal(), 'Counted once');
+    Assert.areEqual('P-1', runs()[0].Permit_Id__c, 'The first permit stays');
+  }
+
+  @isTest
+  static void shouldNotCountWhenTheRunFailedOrIsNotADeployOrThePermitIsUnsafe() {
+    Governance_Event__e smoke = event('smoke', 'Success', '521');
+    smoke.Permit_Id__c = 'P-3';
+    Test.startTest();
+    publishAndDeliver(
+      new List<Governance_Event__e>{
+        permitEvent('Failure', '520', 'P-4'),
+        smoke,
+        permitEvent('Success', '522', 'has space')
+      }
+    );
+    Test.stopTest();
+
+    Assert.areEqual(0, governedTotal(), 'Nothing counted');
+    Assert.areEqual(3, runs().size(), 'All three runs stored');
+    for (Pipeline_Run__c run : runs()) {
+      Assert.isNull(run.Permit_Id__c, 'No permit kept on ' + run.Run_Key__c);
+    }
+  }
+
+  @isTest
+  static void shouldCountAFailedRunThatLaterSucceedsOnTheSameKey() {
+    publishAndDeliver(
+      new List<Governance_Event__e>{ permitEvent('Failure', '530', 'P-5') }
+    );
+    Test.startTest();
+    publishAndDeliver(
+      new List<Governance_Event__e>{ permitEvent('Success', '530', 'P-5') }
+    );
+    Test.stopTest();
+
+    Assert.areEqual(1, governedTotal(), 'Counted when it succeeds');
+    Assert.areEqual('P-5', runs()[0].Permit_Id__c, 'Permit stored');
+  }
+
+  @isTest
+  static void shouldKeepTheTotalWhenRetentionDeletesTheCountedRun() {
+    storedRuns('deploy', GovernanceEventHandler.KEEP_PER_WORKFLOW, 600);
+    // A governed run older than all 60 stored ones is counted and then pruned at once.
+    Governance_Event__e oldest = permitEvent('Success', '540', 'P-6');
+    oldest.Completed_At__c = COMPLETED.addDays(-30);
+
+    Test.startTest();
+    publishAndDeliver(new List<Governance_Event__e>{ oldest });
+    Test.stopTest();
+
+    Assert.areEqual(
+      0,
+      [SELECT COUNT() FROM Pipeline_Run__c WHERE Run_Id__c = '540'],
+      'The counted run was pruned'
+    );
+    Assert.areEqual(1, governedTotal(), 'Pruning never lowers the total');
+  }
+
+  @isTest
+  static void shouldStoreTheRunWithoutAPermitWhenTheCounterCannotBeWritten() {
+    UsageCounterWriter.failForTest = true;
+    Test.startTest();
+    publishAndDeliver(
+      new List<Governance_Event__e>{ permitEvent('Success', '560', 'P-8') }
+    );
+    Test.stopTest();
+
+    Assert.areEqual(0, governedTotal(), 'Nothing counted');
+    Assert.areEqual(1, runs().size(), 'The run is still stored');
+    Assert.isNull(runs()[0].Permit_Id__c, 'No permit, so a replay counts it');
+
+    UsageCounterWriter.failForTest = false;
+    publishAndDeliver(
+      new List<Governance_Event__e>{ permitEvent('Success', '560', 'P-8') }
+    );
+    Assert.areEqual(1, governedTotal(), 'The replay counts it');
+    Assert.areEqual('P-8', runs()[0].Permit_Id__c, 'Permit stored now');
   }
 }

@@ -1,6 +1,7 @@
 /**
  * @description       : Counts the site's two guest actions, cover letters written and API Lab
- *                      requests sent, in Usage_Counter__c. There is one row per UTC day and
+ *                      requests sent, and the production deploys that went through GlassOps,
+ *                      in Usage_Counter__c. There is one row per UTC day and
  *                      kind, keyed "kind:yyyy-mm-dd". record() reads the day's row with FOR
  *                      UPDATE, adds one and writes it, or inserts the row when the day has
  *                      none, so two visitors at once never lose a count.
@@ -28,10 +29,12 @@
 public without sharing class UsageCounterWriter {
   public static final String KIND_COVER_LETTER = 'Cover_Letter';
   public static final String KIND_API_LAB_REQUEST = 'Api_Lab_Request';
+  public static final String KIND_GLASSOPS_DEPLOY = 'Glassops_Deploy';
 
   private static final Set<String> KINDS = new Set<String>{
     KIND_COVER_LETTER,
-    KIND_API_LAB_REQUEST
+    KIND_API_LAB_REQUEST,
+    KIND_GLASSOPS_DEPLOY
   };
   private static final String DAY_FORMAT = 'yyyy-MM-dd';
   private static final Integer ATTEMPTS = 2;
@@ -51,7 +54,7 @@ public without sharing class UsageCounterWriter {
 
   /**
    * @description Adds one to today's row for the kind. Never throws.
-   * @param kind KIND_COVER_LETTER or KIND_API_LAB_REQUEST.
+   * @param kind KIND_COVER_LETTER, KIND_API_LAB_REQUEST or KIND_GLASSOPS_DEPLOY.
    * @return Boolean True when the count was written, false when it was skipped or failed.
    * @example
    * UsageCounterWriter.record(UsageCounterWriter.KIND_COVER_LETTER);

@@ -124,6 +124,7 @@ jobs:
       issues: read
     outputs:
       deployed: ${{ steps.glassops.outputs.deployed }}
+      permit_id: ${{ steps.glassops.outputs.permit_id }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -206,6 +207,10 @@ jobs:
           DEPLOY_STATUS=$(jq -r '.status // empty' .glassops/results/deploy.json 2>/dev/null)
           if [ "$DEPLOY_EXIT" = "0" ] && [ "$DEPLOY_STATUS" = "pass" ]; then
              echo "deployed=true" >> "$GITHUB_OUTPUT"
+             # The PERMIT this deploy ran under, for the governance event. The org counts each
+             # successful deploy run that carries one as a governed deploy.
+             PERMIT_ID=$(jq -r '.id // empty' .glassops/permit.json 2>/dev/null || true)
+             [ -n "$PERMIT_ID" ] && echo "permit_id=$PERMIT_ID" >> "$GITHUB_OUTPUT"
           fi
           if [ "$DEPLOY_EXIT" = "0" ]; then
              "${G[@]}" verify --target prod --config "$GLASSOPS_CONFIG"
@@ -471,6 +476,12 @@ jobs:
 
           if [ -n "${{ steps.tests.outputs.tests_run }}" ]; then
              VALUES="$VALUES Tests_Run__c=${{ steps.tests.outputs.tests_run }} Tests_Passed__c=${{ steps.tests.outputs.tests_passed }} Org_Coverage__c=${{ steps.tests.outputs.coverage }}"
+          fi
+
+          # Set only when GlassOps deployed this run under a PERMIT, so a full or destructive run
+          # by hand never counts as a governed deploy.
+          if [ "${{ needs.glassops.outputs.deployed }}" = "true" ] && [ -n "${{ needs.glassops.outputs.permit_id }}" ]; then
+             VALUES="$VALUES Permit_Id__c=${{ needs.glassops.outputs.permit_id }}"
           fi
 
           if [ -n "${{ steps.jest.outputs.jest_run }}" ]; then
