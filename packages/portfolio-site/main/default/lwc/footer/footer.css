@@ -131,15 +131,18 @@
     margin-top: 0;
   }
 
+  /* The chevron is turned 45 degrees, so its ink reaches past its box. A 5 px gap keeps it
+     clear of its label, and a 6 px gap between toggles shows which label it belongs to. The
+     row still takes two lines from 360 px. */
   .chips {
     --view-source-padding: 2px;
 
-    gap: 0 2px;
+    gap: 0 6px;
     margin-inline-start: -2px;
   }
 
   .chip {
-    gap: 2px;
+    gap: 5px;
     padding: 0 2px;
   }
 
