@@ -78,6 +78,16 @@ describe("c-data-source label on the static site", () => {
     );
   });
 
+  it("draws the dot inside the label, so it stays on the label's first line when the label wraps", async () => {
+    visitorIn("America/New_York");
+    builtAt.mockReturnValue("2026-11-19T01:33:09.000Z");
+    const el = create();
+    await Promise.resolve();
+    const dot = button(el).querySelector(".dot");
+    expect(dot.parentElement).toBe(label(el));
+    expect(label(el).firstChild).toBe(dot);
+  });
+
   it("starts the spoken name with the shown words, counts included, and puts the time last", async () => {
     visitorIn("America/New_York");
     builtAt.mockReturnValue("2026-11-19T01:33:09.000Z");
