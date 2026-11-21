@@ -1,0 +1,35 @@
+# Governance drill 3, no approval (drill.yml, R29-5). Only separation_of_duties is on. The drill
+# job runs without the glassops-deploy environment, so no approval exists and the rule denies.
+# The drill branch changes no code. Never merged.
+version: 1
+provider: salesforce
+targets:
+  devhub:
+    id: $SF_PORTFOLIO_ORG_ID
+    tier: devhub
+    auth:
+      method: jwt
+      username: $SFDX_USERNAME
+      client_id: $SFDX_CLIENT_ID
+      key: $SFDX_JWT_KEY
+  # A scratch org from env create, declared as a normal target with its own tier, so the rules
+  # below apply to it. gate runs with --no-connect, because a gate that logs in and sees a
+  # scratch org treats it as ephemeral and runs no rule.
+  drill:
+    tier: drill
+environments:
+  drill:
+    devhub: devhub
+    ttl_days: 1
+    prefix: glassops-drill
+    definition: config/project-scratch-def-ai.json
+salesforce:
+  test_level: { drill: RunLocalTests }
+  # A full plan with no history read. A shallow clone would otherwise fail the plan, and a drill
+  # org is new, so the whole source is what it needs.
+  delta: { enabled: false }
+policy:
+  rules:
+    separation_of_duties:
+      tiers: [drill]
+      approval: { environment: glassops-deploy }
