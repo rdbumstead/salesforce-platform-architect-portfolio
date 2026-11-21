@@ -53,7 +53,7 @@ export const PROOF_STATIC =
 
 /** The outcome line shown when the owner Contact's value sentence is blank or not yet read. */
 export const WHY_FALLBACK =
-  "Salesforce for schools and nonprofits should cost less, change safely and show its work. The projects below show how I do each.";
+  "Salesforce for schools and nonprofits should cost less, change safely and show its work. The case studies below show how I do each.";
 
 /**
  * Trimmed text, or null when the value is not a non blank string.

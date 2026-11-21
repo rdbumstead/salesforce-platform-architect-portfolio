@@ -61,7 +61,7 @@ const HEADER = {
 };
 
 const FALLBACK =
-  "Salesforce for schools and nonprofits should cost less, change safely and show its work. The projects below show how I do each.";
+  "Salesforce for schools and nonprofits should cost less, change safely and show its work. The case studies below show how I do each.";
 
 function render() {
   const element = createElement("c-hero-banner", { is: HeroBanner });

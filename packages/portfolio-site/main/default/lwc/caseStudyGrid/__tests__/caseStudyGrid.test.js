@@ -173,7 +173,7 @@ describe("c-case-study-grid", () => {
     const root = element.shadowRoot;
     expect(text(root.querySelector("h2"))).toBe("Case studies");
     expect(text(root.querySelector(".section-intro"))).toBe(
-      "Client work, personal builds and this site."
+      "Client work first, then the tools I built and run myself."
     );
     expect(
       cards(element).map((card) => text(card.querySelector("h3, h4")))
