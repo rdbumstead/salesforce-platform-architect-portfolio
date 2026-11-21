@@ -95,15 +95,39 @@ jobs:
       # A drill passes only when gate denied: exit 1 and a PERMIT with allow false. An allow (exit 0)
       # means the rule did not fire, and an error (exit 2) is not a deny, so neither may show on
       # the page as one.
+      #
+      # It must also be the right deny. The rule under test must be among the failed checks, and
+      # no check may start with "evidence.", since a missing fact (no commit, an API error) also
+      # denies, and that would put a fake drill result on the page.
       - name: Check the Gate Denied
         id: verdict
+        env:
+          DRILL: ${{ inputs.drill }}
         run: |
           . .glassops/drill-exit.txt
+          case "$DRILL" in
+            failing-test) EXPECTED=validate_passed ;;
+            low-coverage) EXPECTED=coverage_min ;;
+            no-approval) EXPECTED=separation_of_duties ;;
+          esac
           ALLOW=$(jq -r '.allow' .glassops/permit.json 2>/dev/null || echo missing)
-          echo "gate exit $GATE_EXIT, allow $ALLOW"
+          echo "create $CREATE_EXIT, plan $PLAN_EXIT, validate $VALIDATE_EXIT, gate $GATE_EXIT, env delete $DELETE_EXIT, allow $ALLOW"
           if [ "$GATE_EXIT" != "1" ] || [ "$ALLOW" != "false" ]; then
              echo "::error::The drill did not end in a signed deny (gate exit $GATE_EXIT, allow $ALLOW)."
              exit 1
+          fi
+          if ! jq -e --arg r "$EXPECTED" '[.checks[] | select(.outcome == "fail") | .rule] | index($r)' .glassops/permit.json > /dev/null; then
+             echo "::error::The deny did not fail $EXPECTED, the rule this drill tests."
+             jq -r '.checks[] | "check \(.rule): \(.outcome) \(.detail // "")"' .glassops/permit.json
+             exit 1
+          fi
+          if jq -e '[.checks[] | select(.rule | startswith("evidence."))] | length > 0' .glassops/permit.json > /dev/null; then
+             echo "::error::A check starts with evidence., so a fact was missing and the deny is not the drill's."
+             jq -r '.checks[] | "check \(.rule): \(.outcome) \(.detail // "")"' .glassops/permit.json
+             exit 1
+          fi
+          if [ "$DELETE_EXIT" != "0" ]; then
+             echo "::warning::env delete exited $DELETE_EXIT. The scratch org expires in 1 day."
           fi
           DENY_ID=$(jq -r '.id' .glassops/permit.json)
           CHECKS=$(jq -c '[.checks[] | select(.outcome == "fail") | {rule, outcome}]' .glassops/permit.json)

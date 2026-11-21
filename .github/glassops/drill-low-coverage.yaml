@@ -24,6 +24,9 @@ environments:
     definition: config/project-scratch-def-ai.json
 salesforce:
   test_level: { drill: RunLocalTests }
+  # A full plan with no history read. A shallow clone would otherwise fail the plan, and a drill
+  # org is new, so the whole source is what it needs.
+  delta: { enabled: false }
 policy:
   rules:
     coverage_min: 75
