@@ -44,8 +44,9 @@ concurrency:
   queue: max
 
 env:
-  # v1.0.1, pinned by digest and never by tag. pr.yml uses the same image.
-  GLASSOPS_IMAGE: ghcr.io/glassops-platform/glassops@sha256:c90bdfcd36cccd127a979fcf71a1e8996f3879802517b141347b1195d9a6d514
+  # v1.0.2, pinned by digest and never by tag. pr.yml uses the same image. v1.0.2 adds the
+  # validate_passed gate check, so a failed validate of the plan for prod is a signed deny.
+  GLASSOPS_IMAGE: ghcr.io/glassops-platform/glassops@sha256:c13ed90912405491d5ed86a4bd3616fc659d7e46a92c043bc2bfcfe028907393
   GLASSOPS_CONFIG: .github/glassops/prod.yaml
   # GlassOps moves this tag to the commit it deployed, only after a deploy succeeds. A failed
   # deploy leaves it where it was, so the next run deploys those changes again.

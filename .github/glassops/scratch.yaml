@@ -1,0 +1,38 @@
+# GlassOps config for the glassops-scratch-shadow job in pr.yml. It runs GlassOps 1.2.0-rc.1
+# beside scratch-org-test on pull requests labelled glassops:shadow, so the two can be compared
+# before GlassOps 1.2.0 is final. A scratch target plans the whole source, so no refs are needed.
+# It creates one scratch org from the portfolio Dev Hub, validates check only with every local
+# test, reports, and deletes the org. It never deploys to production and never blocks a PR.
+# Values are $VAR names only. GlassOps reads them from the environment of the container.
+version: 1
+provider: salesforce
+targets:
+  devhub:
+    id: $SF_PORTFOLIO_ORG_ID
+    tier: devhub
+    auth:
+      method: jwt
+      username: $SFDX_USERNAME
+      client_id: $SFDX_CLIENT_ID
+      key: $SFDX_JWT_KEY
+  ephemeral:
+    plan: { scope: full }
+environments:
+  ephemeral:
+    devhub: devhub
+    ttl_days: 1
+    prefix: glassops-shadow
+    definition: config/project-scratch-def-ai.json
+salesforce:
+  test_level: { ephemeral: RunLocalTests }
+# One container runs every step, so the scratch login file that env create writes to the
+# container's temp folder is still there for validate and env delete.
+pipelines:
+  shadow:
+    - plan --target ephemeral
+    - env create
+    - validate --target ephemeral
+    - step: report --summary .glassops/summary.md
+      when: always
+    - step: env delete
+      when: always
