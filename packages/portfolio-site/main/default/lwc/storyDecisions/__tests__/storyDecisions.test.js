@@ -124,18 +124,21 @@ describe("c-story-decisions", () => {
     expect(text(links[0])).toBe("ADR-030: Decision Matrix as Custom Metadata");
   });
 
-  it("opens any other record on GitHub in a new tab and says so", () => {
-    const element = create("glassops");
-    const link = qa(element, '[data-id="adr-link"]').find(
-      (a) => a.dataset.adr === "044"
-    );
-    expect(link.getAttribute("href")).toBe(
-      "https://github.com/rdbumstead/salesforce-platform-architect-portfolio/blob/main/docs/adr/044-glassops-makes-the-production-deploy.md"
-    );
-    expect(link.getAttribute("target")).toBe("_blank");
-    expect(link.getAttribute("rel")).toBe("noopener noreferrer");
-    expect(text(link)).toContain("on GitHub");
-    expect(text(link)).toContain("opens in a new tab");
+  it("opens every related record in the docs viewer, never on GitHub", () => {
+    [
+      "business-architecture",
+      "nonprofit-solutions",
+      "delivery",
+      "glassops"
+    ].forEach((key) => {
+      const element = create(key);
+      qa(element, '[data-id="adr-link"]').forEach((link) => {
+        expect(link.getAttribute("href")).toBe(
+          `/portfolio/docs?doc=adr-${link.dataset.adr}`
+        );
+        expect(link.getAttribute("target")).toBeNull();
+      });
+    });
   });
 
   it("links the site story to the deploy decision", () => {

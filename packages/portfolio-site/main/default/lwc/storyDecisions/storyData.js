@@ -47,8 +47,7 @@ const JIRA = {
   adr: "008",
   title: "Jira Integration vs. Agile Accelerator",
   note: "Why the roadmap on the Delivery page reads Jira directly.",
-  onDocs: false,
-  file: "008-jira-integration-vs-agile-accelerator.md"
+  onDocs: true
 };
 
 const GITHUB_CACHE = {
@@ -69,24 +68,21 @@ const JWT = {
   adr: "006",
   title: "JWT Bearer Flow for CI/CD",
   note: "How GitHub Actions signs in to the org to deploy, with no login prompt and no password to rotate.",
-  onDocs: false,
-  file: "006-jwt-bearer-flow-for-ci-cd.md"
+  onDocs: true
 };
 
 const GLASSOPS = {
   adr: "044",
   title: "GlassOps Makes the Production Deploy",
   note: "Why a merge to main waits for my approval, and how GlassOps records that the change was allowed.",
-  onDocs: false,
-  file: "044-glassops-makes-the-production-deploy.md"
+  onDocs: true
 };
 
 const STATIC_FRONT_END = {
   adr: "041",
   title: "Headless Static Front End on Cloudflare Pages",
   note: "Why the public pages moved off Experience Cloud to static pages, with Salesforce still the system of record.",
-  onDocs: false,
-  file: "041-headless-static-front-end-on-cloudflare-pages.md"
+  onDocs: true
 };
 
 export const STORIES = Object.freeze({
