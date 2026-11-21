@@ -241,4 +241,21 @@ private class UsageCounterWriterTest {
       return null;
     }
   }
+
+  @IsTest
+  static void shouldCountGlassopsDeploysAsTheirOwnKind() {
+    UsageCounterWriter.nowOverride = DAY_ONE;
+
+    Test.startTest();
+    Boolean written = UsageCounterWriter.record(
+      UsageCounterWriter.KIND_GLASSOPS_DEPLOY
+    );
+    Test.stopTest();
+
+    Assert.isTrue(written, 'The count is written');
+    List<Usage_Counter__c> stored = rows();
+    Assert.areEqual(1, stored.size(), 'One row');
+    Assert.areEqual('Glassops_Deploy:2026-10-26', stored[0].Key__c, 'Key');
+    Assert.areEqual('Glassops_Deploy', stored[0].Kind__c, 'Kind');
+  }
 }

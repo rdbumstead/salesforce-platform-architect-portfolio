@@ -863,4 +863,95 @@ private class ProjectCardControllerHomeTest {
       'Both specs count'
     );
   }
+
+  private static void insertGlassopsDay(Integer dayOffset, Integer count) {
+    Date day = Date.newInstance(2026, 11, 1).addDays(dayOffset);
+    insert new Usage_Counter__c(
+      Kind__c = UsageCounterWriter.KIND_GLASSOPS_DEPLOY,
+      Day__c = day,
+      Key__c = 'Glassops_Deploy:' + String.valueOf(day),
+      Count__c = count
+    );
+  }
+
+  @IsTest
+  static void shouldShowTheGlassopsTotalWhenTheSourceIsGlassopsDeploys() {
+    insertGlassopsDay(0, 8);
+    insertGlassopsDay(1, 3);
+    insert new Usage_Counter__c(
+      Kind__c = UsageCounterWriter.KIND_COVER_LETTER,
+      Day__c = Date.newInstance(2026, 11, 1),
+      Key__c = 'Cover_Letter:2026-11-01',
+      Count__c = 40
+    );
+    Project__c row = homeProject('GlassOps', 1, false);
+    row.Case_Metric__c = '8';
+    row.Case_Metric_Label__c = '{n} production deploys through GlassOps';
+    row.Case_Metric_Source__c = ProjectCardController.SOURCE_GLASSOPS_DEPLOYS;
+    insert row;
+
+    Test.startTest();
+    ProjectCardController.CaseStudy card = ProjectCardController.getHomeCaseStudies()[0];
+    Test.stopTest();
+
+    Assert.areEqual(
+      '11',
+      card.headlineMetric,
+      'Both GlassOps days, no letters'
+    );
+    Assert.areEqual(
+      '11 production deploys through GlassOps',
+      card.headlineLabel,
+      'The token is filled'
+    );
+    Assert.areEqual(
+      ProjectCardController.SOURCE_GLASSOPS_DEPLOYS,
+      card.headlineSource,
+      'Named source'
+    );
+  }
+
+  @IsTest
+  static void shouldKeepTheStoredTextWhenNoGlassopsDeployIsCounted() {
+    Project__c row = homeProject('GlassOps', 1, false);
+    row.Case_Metric__c = '8';
+    row.Case_Metric_Label__c = 'production deploys through GlassOps';
+    row.Case_Metric_Source__c = ProjectCardController.SOURCE_GLASSOPS_DEPLOYS;
+    insert row;
+
+    Test.startTest();
+    ProjectCardController.CaseStudy card = ProjectCardController.getHomeCaseStudies()[0];
+    Test.stopTest();
+
+    Assert.areEqual(
+      '8',
+      card.headlineMetric,
+      'No count, so the stored 8 shows'
+    );
+    Assert.areEqual(
+      ProjectCardController.SOURCE_STORED,
+      card.headlineSource,
+      'Stored source'
+    );
+  }
+
+  @IsTest
+  static void shouldCountAGlassopsRowWithNoCountAsZero() {
+    insertGlassopsDay(0, 5);
+    insert new Usage_Counter__c(
+      Kind__c = UsageCounterWriter.KIND_GLASSOPS_DEPLOY,
+      Day__c = Date.newInstance(2026, 12, 1),
+      Key__c = 'Glassops_Deploy:2026-12-01'
+    );
+    Project__c row = homeProject('GlassOps', 1, false);
+    row.Case_Metric__c = '1';
+    row.Case_Metric_Source__c = ProjectCardController.SOURCE_GLASSOPS_DEPLOYS;
+    insert row;
+
+    Test.startTest();
+    ProjectCardController.CaseStudy card = ProjectCardController.getHomeCaseStudies()[0];
+    Test.stopTest();
+
+    Assert.areEqual('5', card.headlineMetric, 'A blank count adds nothing');
+  }
 }

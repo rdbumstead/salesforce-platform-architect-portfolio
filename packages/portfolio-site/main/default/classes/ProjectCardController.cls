@@ -23,7 +23,10 @@
  *                      runs PortfolioStatsController counts as deploys recorded). That source
  *                      also fills {total}, all retained deploy runs, and {recovery}, a clause
  *                      on how fast failures were fixed, empty when there are none or the
- *                      latest is not fixed yet. The computed number
+ *                      latest is not fixed yet. GlassOps deploys is the running total of
+ *                      production deploys that went through GlassOps, summed from the
+ *                      Usage_Counter__c rows the deploy handler writes, so run retention never
+ *                      lowers it. The computed number
  *                      replaces the first number in the stored metric and fills the label's
  *                      {n} token ({coverage} too for Apex tests). When a source fails, the
  *                      stored text is shown, and a label whose token cannot be filled hides the
@@ -46,6 +49,7 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
   public static final String SOURCE_AI_PROVIDERS = 'AI providers';
   public static final String SOURCE_APEX_TESTS = 'Apex tests';
   public static final String SOURCE_PRODUCTION_DEPLOYS = 'Production deploys';
+  public static final String SOURCE_GLASSOPS_DEPLOYS = 'GlassOps deploys';
   /** headlineSource when the card shows its stored text. */
   public static final String SOURCE_STORED = 'stored';
 
@@ -423,6 +427,8 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
         computed = latestTestRun();
       } else if (source == SOURCE_PRODUCTION_DEPLOYS) {
         computed = productionDeploys();
+      } else if (source == SOURCE_GLASSOPS_DEPLOYS) {
+        computed.n = glassopsDeploys();
       } else {
         return null;
       }
@@ -434,6 +440,18 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
     } catch (Exception e) {
       return null;
     }
+  }
+
+  // The running total of governed deploys. Run retention deletes Pipeline_Run__c rows, so the
+  // total lives in the day rows of Usage_Counter__c.
+  private static Integer glassopsDeploys() {
+    Decimal total = 0;
+    for (
+      Usage_Counter__c row : new ProjectCardSelector().selectGlassopsDeploys()
+    ) {
+      total += row.Count__c ?? 0;
+    }
+    return total.intValue();
   }
 
   private static Integer countSpecPaths() {
@@ -660,6 +678,16 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
         WHERE Name IN :names
         WITH SYSTEM_MODE
         LIMIT 2
+      ];
+    }
+
+    private List<Usage_Counter__c> selectGlassopsDeploys() {
+      return [
+        SELECT Count__c
+        FROM Usage_Counter__c
+        WHERE Kind__c = :UsageCounterWriter.KIND_GLASSOPS_DEPLOY
+        WITH SYSTEM_MODE
+        LIMIT 10000
       ];
     }
 

@@ -16,7 +16,7 @@ export const COUNTED_ON = "2026-11-21";
 export const APEX_GROUPS = [
   {
     name: "Other site classes",
-    tests: 366
+    tests: 372
   },
   {
     name: "REST API endpoints",
@@ -28,11 +28,11 @@ export const APEX_GROUPS = [
   },
   {
     name: "Delivery data and the numbers panel",
-    tests: 250
+    tests: 253
   },
   {
     name: "Rate limits, tokens and request rules",
-    tests: 239
+    tests: 240
   },
   {
     name: "Testimonials, contact form and leads",

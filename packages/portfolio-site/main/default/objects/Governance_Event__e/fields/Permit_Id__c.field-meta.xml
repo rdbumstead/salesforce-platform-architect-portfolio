@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Permit_Id__c</fullName>
+    <description
+  >The id of the signed GlassOps PERMIT the production deploy ran under. The deploy workflow sets it when GlassOps deployed the run and leaves it blank otherwise, so a governed deploy can be told from an ungoverned one.</description>
+    <isFilteringDisabled>false</isFilteringDisabled>
+    <isNameField>false</isNameField>
+    <isSortingDisabled>false</isSortingDisabled>
+    <label>Permit Id</label>
+    <length>64</length>
+    <required>false</required>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>
