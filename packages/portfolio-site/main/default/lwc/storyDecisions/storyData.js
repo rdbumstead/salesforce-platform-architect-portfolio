@@ -94,8 +94,8 @@ export const STORIES = Object.freeze({
     related: [SCHEMA, MOBILE_SVG, GRAPHQL],
     alternatives: [
       {
-        option: "Route by department and share the records between them.",
-        why: "This keeps each team's ownership as it is today. The partner would still have to know which department to ask, and that was the problem the client described."
+        option: "Route by the service the partner asks for.",
+        why: "It is the usual answer when each department owns a service. Here the departments offer much the same services, a job posting, a career event or training, each to the employers in its own industries. The service alone would not say which team knows the partner, so the case records the service and the industry decides the queue."
       },
       {
         option: "Use the Education Cloud partnership objects.",
@@ -115,12 +115,11 @@ export const STORIES = Object.freeze({
     related: [MATRIX],
     alternatives: [
       {
-        option: "Education Cloud, the option the client weighed against NPSP.",
+        option: "Choose Education Cloud.",
         why: "It has standard assessment and employment objects, but its academic model is built for credit bearing study and is heavier than adult literacy cohorts. It needs a paid licence that Power of Us does not cover and has no volunteer objects, so it scored 152 of 330."
       },
       {
-        option:
-          "Nonprofit Cloud, added afterwards as the option a reviewer would ask about.",
+        option: "Choose Nonprofit Cloud.",
         why: "It has native programs, volunteers and outcome management, and it is where Salesforce is investing. Person Accounts, its setup prerequisites and a newer product leave more to keep running when nobody on staff looks after Salesforce, so it scored 260 against 268."
       },
       {
@@ -165,7 +164,7 @@ export const STORIES = Object.freeze({
       },
       {
         option: "Buy a commercial Salesforce DevOps platform.",
-        why: "These platforms are stronger than GlassOps at deployment intelligence, data deployments and release orchestration, and they are the right call for many teams. I wanted the policy to be mine, in the open and independent of whatever runs the deploy, in the plan, check and apply model that Terraform gave infrastructure teams, and I did not find a Salesforce tool that works that way."
+        why: "These platforms are stronger than GlassOps at deployment intelligence, data deployments and release orchestration, and they are the right call for many teams. I wanted the policy to be mine, in the open and independent of whatever runs the deploy, in a plan, check and apply model, and I did not find a Salesforce tool that works that way."
       },
       {
         option: "Adopt an existing open source Salesforce CI toolkit.",
