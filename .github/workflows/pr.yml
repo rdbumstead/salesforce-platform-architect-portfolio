@@ -25,8 +25,8 @@ permissions:
   contents: read
 
 env:
-  # GlassOps v1.0.1, pinned by digest and never by tag. The same image as deploy.yml.
-  GLASSOPS_IMAGE: ghcr.io/glassops-platform/glassops@sha256:c90bdfcd36cccd127a979fcf71a1e8996f3879802517b141347b1195d9a6d514
+  # GlassOps v1.0.2, pinned by digest and never by tag. The same image as deploy.yml.
+  GLASSOPS_IMAGE: ghcr.io/glassops-platform/glassops@sha256:c13ed90912405491d5ed86a4bd3616fc659d7e46a92c043bc2bfcfe028907393
   GLASSOPS_CONFIG: .github/glassops/pr.yaml
 
 jobs:
@@ -331,7 +331,7 @@ jobs:
   # and allows 6 a day and 3 at once, so it runs only where the owner asks for the comparison.
   # It validates the whole source check only with every local test, prints one line to compare
   # with scratch-org-test, and deletes its org. It never blocks the PR: continue-on-error, and
-  # pr-status does not wait for it. The production check and deploy.yml stay on v1.0.1.
+  # pr-status does not wait for it. The production check and deploy.yml stay on v1.0.2.
   glassops-scratch-shadow:
     if: >-
       contains(github.event.pull_request.labels.*.name, 'glassops:shadow') &&
