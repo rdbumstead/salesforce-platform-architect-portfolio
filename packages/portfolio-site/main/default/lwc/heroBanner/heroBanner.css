@@ -120,11 +120,35 @@
   color: var(--pf-body);
 }
 
+/* Each count stays whole. The line starts 3ch left of the panel's edge, and the clip hides
+   that strip, so a separator that wraps to the start of a line is never seen and a line
+   never ends on one. The first count is pushed back to the edge. */
 .proof-stats {
   margin: 0;
+  overflow: hidden;
   font-family: var(--pf-font-mono);
   font-size: 13px;
   color: var(--pf-text);
+}
+
+.proof-line {
+  display: flex;
+  flex-wrap: wrap;
+  margin-inline-start: -3ch;
+}
+
+.proof-part {
+  white-space: nowrap;
+}
+
+.proof-part:first-child {
+  margin-inline-start: 3ch;
+}
+
+.proof-sep {
+  display: inline-block;
+  width: 3ch;
+  white-space: pre;
 }
 
 .proof-actions {

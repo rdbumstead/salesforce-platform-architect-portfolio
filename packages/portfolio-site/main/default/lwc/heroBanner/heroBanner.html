@@ -23,7 +23,16 @@
         <div class="proof-panel" data-id="proof-panel">
           <p class="proof-intro" data-id="proof-intro">{proofIntro}</p>
           <template lwc:if={statsText}>
-            <p class="proof-stats" data-id="proof-stats">{statsText}</p>
+            <p class="proof-stats" data-id="proof-stats">
+              <span class="proof-line"
+                ><template for:each={statsParts} for:item="part"
+                  ><span key={part.key} class="proof-part"
+                    ><span lwc:if={part.sep} class="proof-sep">{part.sep}</span
+                    >{part.text}</span
+                  ></template
+                ></span
+              >
+            </p>
           </template>
           <a
             class="nc-button hero-button tour-link"
