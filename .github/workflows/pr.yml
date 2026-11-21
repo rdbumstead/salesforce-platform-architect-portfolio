@@ -425,8 +425,13 @@ jobs:
 
           FAILED=false
 
+          # A label event skips the quality job on purpose, since it changes no code. That skip is
+          # not a failure, or every glassops:shadow label would mark the pull request red. The
+          # quality job of the push before the label still stands.
           if [ "${{ needs.quality-check.result }}" = "success" ]; then
              echo "**Quality Gates**: Passed" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.quality-check.result }}" = "skipped" ] && [ "${{ github.event.action }}" = "labeled" ]; then
+             echo "**Quality Gates**: Skipped on a label event" >> $GITHUB_STEP_SUMMARY
           else
              echo "**Quality Gates**: Failed" >> $GITHUB_STEP_SUMMARY
              FAILED=true
