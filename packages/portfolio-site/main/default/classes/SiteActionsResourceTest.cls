@@ -280,6 +280,7 @@ private class SiteActionsResourceTest {
 
   @isTest
   static void contactLimitsEachVisitorByHashAndNotTheWholeSite() {
+    pinRateClock();
     List<RestResponse> sameVisitor = new List<RestResponse>();
     RestResponse otherVisitor;
     System.runAs(edgeUser()) {
@@ -434,8 +435,24 @@ private class SiteActionsResourceTest {
     );
   }
 
+  /**
+   * The per visitor limit counts per clock minute, so posts that straddle a minute boundary
+   * land in two windows and the limit never trips. A fixed clock keeps every post in one window.
+   */
+  private static void pinRateClock() {
+    RateWindowLimiter.nowOverride = Datetime.newInstanceGmt(
+      2026,
+      11,
+      20,
+      12,
+      0,
+      30
+    );
+  }
+
   @isTest
   static void testimonialLimitsEachVisitorByHash() {
+    pinRateClock();
     List<RestResponse> answers = new List<RestResponse>();
     RestResponse other;
     System.runAs(edgeUser()) {
