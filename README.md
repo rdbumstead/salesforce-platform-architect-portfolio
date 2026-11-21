@@ -188,7 +188,7 @@ EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design"
 | [ADR-042](docs/adr/042-prerender-every-public-page-at-build-time.md)                     | Prerender Every Public Page at Build Time     | Front End and Performance       | Accepted           | In progress (SPAP-98)                                                                                           |
 | [ADR-043](docs/adr/043-provider-router-for-tailored-letters.md)                          | A Provider Router for Tailored Letters        | AI / Tailoring                  | Accepted           | Designed                                                                                                        |
 | [ADR-044](docs/adr/044-glassops-makes-the-production-deploy.md)                          | GlassOps Makes the Production Deploy          | DevOps Automation               | Accepted           | [Live](.github/workflows/deploy.yml)                                                                            |
-| [ADR-045](docs/adr/045-governance-evidence-model.md)                                     | The Governance Evidence Model                 | DevOps Automation               | Accepted           | In progress (SPAP-0)                                                                                            |
+| [ADR-045](docs/adr/045-governance-evidence-model.md)                                     | The Governance Evidence Model                 | DevOps Automation               | Accepted           | In progress (SPAP-99)                                                                                           |
 
 </details>
 

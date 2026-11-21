@@ -680,7 +680,7 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 | [ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)                 | Headless Static Front End on Cloudflare Pages                   | Accepted           | [Live](../../docs/guides/cutover-runbook.md)                                                                          |
 | [ADR-043](../adr/043-provider-router-for-tailored-letters.md)                          | A Provider Router for Tailored Letters                          | Accepted           | Designed                                                                                                              |
 | [ADR-044](../adr/044-glassops-makes-the-production-deploy.md)                          | GlassOps Makes the Production Deploy                            | Accepted           | [Live](../../.github/workflows/deploy.yml)                                                                            |
-| [ADR-045](../adr/045-governance-evidence-model.md)                                     | The Governance Evidence Model                                   | Accepted           | In progress (SPAP-0)                                                                                                  |
+| [ADR-045](../adr/045-governance-evidence-model.md)                                     | The Governance Evidence Model                                   | Accepted           | In progress (SPAP-99)                                                                                                 |
 
 ## 8. Contingency & Rollback Plans
 
