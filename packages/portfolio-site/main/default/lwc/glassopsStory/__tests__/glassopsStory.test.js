@@ -97,7 +97,7 @@ describe("c-glassops-story", () => {
     expect(outcome).toContain("agreement on a failing change was not shown");
     expect(outcome).toContain("24 days");
     expect(outcome).toContain("740 test functions");
-    expect(outcome).toContain("pinned to v1.0.1");
+    expect(outcome).toContain("pinned to v1.0.2");
   });
 
   it("names no client, employer, org, deploy, vendor product or private note", () => {
