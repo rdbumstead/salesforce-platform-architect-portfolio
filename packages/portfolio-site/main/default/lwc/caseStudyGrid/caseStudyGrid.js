@@ -2,8 +2,8 @@
  * @description       : The home page project showcase, directly under the hero: a heading and a
  *                      short intro, then up to eight projects from
  *                      ProjectCardController.getHomeCaseStudies in two tiers. The first four rows
- *                      are the featured tier: full cards with the number labelled "Outcome", the
- *                      title, the client line, "My part", one line each labelled "Context" and
+ *                      are the featured tier: full cards with the title and the client line
+ *                      first, then the number labelled "Outcome", "My part", one line each labelled "Context" and
  *                      "Decision", a slot for the picture (drawn only when figureKey is set,
  *                      sized by the CSS at 4 to 3, the picture component is placed inside it)
  *                      and "Read the case study". Row five on is "More work": compact rows with
@@ -53,6 +53,20 @@ export const TIER_MORE = "more";
  */
 function textOrNull(value) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+/**
+ * Thousands separators on a whole number at the start of a card's number, so a computed
+ * "1701 Apex tests" reads "1,701 Apex tests". Numbers under 1000, and text that does not start
+ * with a whole number, such as "$0", are left as they are. The same rule as the build section's
+ * cards, kept here so the home bundle does not load that component.
+ * @param {string} value the number text
+ * @returns {string} the text with its leading number grouped
+ */
+export function groupLeadingNumber(value) {
+  return value.replace(/^\d{4,}(?=\s|$)/, (digits) =>
+    Number(digits).toLocaleString("en-US")
+  );
 }
 
 /**
@@ -161,7 +175,7 @@ export default class CaseStudyGrid extends LightningElement {
       isFeatured,
       clientLine: textOrNull(row.clientLine),
       hasHeadline: Boolean(metric && label),
-      headlineMetric: metric,
+      headlineMetric: metric ? groupLeadingNumber(metric) : null,
       // The leading space keeps "$0 software licence cost" apart when read as one line.
       headlineLabel: label ? ` ${label}` : null,
       myPart,

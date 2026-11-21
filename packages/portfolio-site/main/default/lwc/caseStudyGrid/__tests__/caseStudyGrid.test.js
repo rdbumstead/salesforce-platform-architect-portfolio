@@ -13,7 +13,10 @@
  * @Created           : 10/26/2026
  **/
 import { createElement } from "@lwc/engine-dom";
-import CaseStudyGrid, { isShownCase } from "c/caseStudyGrid";
+import CaseStudyGrid, {
+  isShownCase,
+  groupLeadingNumber
+} from "c/caseStudyGrid";
 import getHomeCaseStudies from "@salesforce/apex/ProjectCardController.getHomeCaseStudies";
 import { trackEvent } from "c/analyticsService";
 
@@ -220,6 +223,37 @@ describe("c-case-study-grid", () => {
     }
   });
 
+  it("puts thousands separators on a leading whole number and leaves the rest alone", () => {
+    expect(groupLeadingNumber("1701 Apex tests")).toBe("1,701 Apex tests");
+    expect(groupLeadingNumber("12345")).toBe("12,345");
+    expect(groupLeadingNumber("1,691 Apex tests")).toBe("1,691 Apex tests");
+    expect(groupLeadingNumber("999 tests")).toBe("999 tests");
+    expect(groupLeadingNumber("$0")).toBe("$0");
+    expect(groupLeadingNumber("9 production deploys")).toBe(
+      "9 production deploys"
+    );
+  });
+
+  it("names the project first: title, then client line, then the Outcome, then My part", async () => {
+    const element = render();
+    getHomeCaseStudies.emit(CARDS);
+    await flush();
+    const [first] = cards(element);
+    const order = [
+      ".card-title",
+      '[data-id="client"]',
+      '[data-id="metric"]',
+      '[data-id="my-part"]'
+    ].map((selector) => first.querySelector(selector));
+    order.forEach((node) => expect(node).not.toBeNull());
+    for (let i = 1; i < order.length; i++) {
+      expect(
+        order[i - 1].compareDocumentPosition(order[i]) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+    }
+  });
+
   it("labels the outcome and shows the number only with its label, and the client line only when set", async () => {
     const element = render();
     getHomeCaseStudies.emit(CARDS);
@@ -230,7 +264,7 @@ describe("c-case-study-grid", () => {
     );
     expect(second.querySelector('[data-id="metric"]')).toBeNull();
     expect(text(third.querySelector('[data-id="metric"]'))).toBe(
-      "Outcome 1000 Apex tests passing at the last successful deploy"
+      "Outcome 1,000 Apex tests passing at the last successful deploy"
     );
     expect(text(first.querySelector('[data-id="client"]'))).toBe(
       "Adult literacy nonprofit · freelance"
