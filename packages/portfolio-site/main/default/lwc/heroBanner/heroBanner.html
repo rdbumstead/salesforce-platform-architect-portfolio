@@ -27,7 +27,8 @@
               <span class="proof-line"
                 ><template for:each={statsParts} for:item="part"
                   ><span key={part.key} class="proof-part"
-                    ><span lwc:if={part.sep} class="proof-sep">{part.sep}</span
+                    ><span lwc:if={part.sep} class="proof-sep" data-align-ok
+                      >{part.sep}</span
                     >{part.text}</span
                   ></template
                 ></span
