@@ -25,16 +25,16 @@
             <li key={card.key} class="card" data-id="card" data-tier="featured">
               <article class="card-body">
                 <div class="card-text">
+                  <h3 class="card-title">{card.title}</h3>
+                  <template lwc:if={card.clientLine}>
+                    <p class="client" data-id="client">{card.clientText}</p>
+                  </template>
                   <template lwc:if={card.hasHeadline}>
                     <p class="metric" data-id="metric">
                       <span class="metric-kicker">Outcome&nbsp;</span>
                       <span class="metric-number">{card.headlineMetric}</span>
                       <span class="metric-label">{card.headlineLabel}</span>
                     </p>
-                  </template>
-                  <h3 class="card-title">{card.title}</h3>
-                  <template lwc:if={card.clientLine}>
-                    <p class="client" data-id="client">{card.clientText}</p>
                   </template>
                   <template lwc:if={card.myPart}>
                     <p class="line" data-id="my-part">
