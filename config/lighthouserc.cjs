@@ -12,7 +12,8 @@ const routes = [
   "/skills",
   "/api-lab",
   "/business-architecture",
-  "/nonprofit-solutions"
+  "/nonprofit-solutions",
+  "/glassops"
 ];
 
 module.exports = {
