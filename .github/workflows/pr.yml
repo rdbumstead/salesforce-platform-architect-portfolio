@@ -326,7 +326,7 @@ jobs:
         if: always()
         run: rm -f "$RUNNER_TEMP/devhub.key"
 
-  # A trial of GlassOps 1.2.0-rc.1 beside scratch-org-test, on pull requests labelled
+  # A trial of GlassOps 1.2.0-rc.2 beside scratch-org-test, on pull requests labelled
   # glassops:shadow only. Each run creates a scratch org from the Dev Hub, which is production
   # and allows 6 a day and 3 at once, so it runs only where the owner asks for the comparison.
   # It validates the whole source check only with every local test, prints one line to compare
@@ -344,7 +344,7 @@ jobs:
       group: glassops-shadow-${{ github.event.pull_request.number }}
       cancel-in-progress: false
     env:
-      SHADOW_IMAGE: ghcr.io/glassops-platform/glassops@sha256:7aedc3e910c101c2627331cb9ae9532d6232b1277983d6f789143415d1d7e8b9
+      SHADOW_IMAGE: ghcr.io/glassops-platform/glassops@sha256:159ecdc2f1805d1fd9a43041b68dca2642684794b61eb3a08ff8a3e16311cbcd
       SHADOW_CONFIG: .github/glassops/scratch.yaml
     steps:
       - uses: actions/checkout@v4

@@ -1,4 +1,4 @@
-# GlassOps config for the glassops-scratch-shadow job in pr.yml. It runs GlassOps 1.2.0-rc.1
+# GlassOps config for the glassops-scratch-shadow job in pr.yml. It runs GlassOps 1.2.0-rc.2
 # beside scratch-org-test on pull requests labelled glassops:shadow, so the two can be compared
 # before GlassOps 1.2.0 is final. A scratch target plans the whole source, so no refs are needed.
 # It creates one scratch org from the portfolio Dev Hub, validates check only with every local
@@ -31,6 +31,13 @@ pipelines:
   shadow:
     - plan --target ephemeral
     - env create
+    # An exec session (new in 1.2.0-rc.2): the command runs logged in to the scratch org as
+    # glassops-target, and its token is revoked when the step ends. A scratch target needs no
+    # PERMIT binding. It prints the image's Node version and runs the API reserve script the
+    # scratch-org-test job runs on its own login, so the log shows the exec login works.
+    - step: exec
+      run: node --version && node scripts/api-reserve.js --target-org glassops-target --label "GlassOps shadow exec"
+      target: ephemeral
     - validate --target ephemeral
     - step: report --summary .glassops/summary.md
       when: always
