@@ -190,6 +190,7 @@
 
 .client {
   margin: 0;
+  text-wrap: pretty;
   font-size: var(--pf-font-meta, 12px);
   color: var(--pf-muted);
 }

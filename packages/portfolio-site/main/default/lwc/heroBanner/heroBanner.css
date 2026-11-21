@@ -40,8 +40,10 @@
   gap: var(--pf-space-3);
 }
 
+/* Pretty wrapping keeps the last word of the location off a line of its own on a phone. */
 .hero-meta {
   margin: 0;
+  text-wrap: pretty;
   font-size: 13px;
   color: var(--pf-muted);
 }

@@ -73,6 +73,7 @@
   font-weight: 600;
   text-decoration: underline;
   overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
 .adr-link:focus-visible {
