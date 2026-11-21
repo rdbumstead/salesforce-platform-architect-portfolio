@@ -74,7 +74,7 @@ private class SiteQueryDefinitionsTest {
     Map<String, QueryDefinitions.QueryDefault> defaults = siteDefaults();
     Map<String, Query_Definition__mdt> records = Query_Definition__mdt.getAll();
 
-    Assert.areEqual(24, defaults.size(), 'Twenty four site content reads');
+    Assert.areEqual(26, defaults.size(), 'Twenty six site content reads');
     for (String name : defaults.keySet()) {
       Assert.isTrue(records.containsKey(name), 'Record ships for ' + name);
       Assert.isTrue(records.get(name).Active__c, name + ' ships active');
@@ -272,6 +272,7 @@ private class SiteQueryDefinitionsTest {
     Test.startTest();
     System.runAs(guest) {
       GovernanceController.getPipelineStatus();
+      GovernanceController.getGovernanceEvidence();
     }
     Test.stopTest();
 

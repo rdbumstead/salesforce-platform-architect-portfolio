@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Gate_Checks__c</fullName>
+    <description
+  >The gate checks of the GlassOps run as a JSON array of rule and outcome pairs, where outcome is pass, fail or skipped. A drill event carries the checks that denied the change. Holds no secrets.</description>
+    <label>Gate Checks</label>
+    <length>4000</length>
+    <type>LongTextArea</type>
+    <visibleLines>5</visibleLines>
+</CustomField>

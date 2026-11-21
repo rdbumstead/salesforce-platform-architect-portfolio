@@ -324,12 +324,22 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Pipeline_Run__c.Approver__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Pipeline_Run__c.Commit_Sha__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
         <field>Pipeline_Run__c.Completed_At__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Pipeline_Run__c.Gate_Checks__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

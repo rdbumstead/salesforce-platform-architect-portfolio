@@ -49,6 +49,7 @@ public with sharing class SiteExportCalls {
     'DeliveryController.getRecentCommits' => new Set<String>{ 'simulate' },
     'DeliveryController.getRoadmap' => new Set<String>{ 'simulate' },
     'GovernanceController.getPipelineStatus' => new Set<String>(),
+    'GovernanceController.getGovernanceEvidence' => new Set<String>(),
     'PortfolioStatsController.getStats' => new Set<String>(),
     'SourceController.getDocs' => new Set<String>(),
     'SourceController.getDoc' => new Set<String>{ 'docKey' },
@@ -167,6 +168,9 @@ public with sharing class SiteExportCalls {
       }
       when 'GovernanceController.getPipelineStatus' {
         return GovernanceController.getPipelineStatus();
+      }
+      when 'GovernanceController.getGovernanceEvidence' {
+        return GovernanceController.getGovernanceEvidence();
       }
       when 'PortfolioStatsController.getStats' {
         return PortfolioStatsController.getStats();

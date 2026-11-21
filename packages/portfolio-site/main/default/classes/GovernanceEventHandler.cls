@@ -5,7 +5,9 @@
  *                      identical replay writes nothing. Only the newest 60 rows per workflow are
  *                      kept. Events with an unknown workflow or status, or no run id, are skipped.
  *                      The known workflows are deploy, heartbeat, smoke (the live site check
- *                      that runs after a production deploy) and site (the static site build).
+ *                      that runs after a production deploy), site (the static site build) and
+ *                      drill (a rehearsal that GlassOps denied on purpose). The known statuses
+ *                      are Success, Failure and Denied.
  *                      Test counts and org coverage are stored only when they make sense together
  *                      (whole numbers, passed no more than run, coverage from 0 to 100), so the
  *                      Pillar E card never shows a broken number. The Jest counts follow the
@@ -14,7 +16,14 @@
  *                      first time a successful deploy run is stored with a permit id, the
  *                      handler adds one to the running total of governed deploys in
  *                      Usage_Counter__c, which pruning never touches. A run already stored with a
- *                      permit id is never counted again, whatever its replays carry.
+ *                      permit id is never counted again, whatever its replays carry. A drill
+ *                      run keeps the deny id in the same field when its status is Denied, and
+ *                      is never counted as a governed deploy, whatever it carries.
+ *                      A deploy event may also carry the GitHub login that approved the
+ *                      glassops-deploy environment (1 to 39 letters, digits or single hyphens,
+ *                      else dropped) and the gate checks as a JSON array of at most 30 rule and
+ *                      outcome pairs (outcome pass, fail or skipped, else the whole list is
+ *                      dropped). Both are stored on the run.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -27,8 +36,13 @@ public with sharing class GovernanceEventHandler {
   public static final String WORKFLOW_HEARTBEAT = 'heartbeat';
   public static final String WORKFLOW_SMOKE = 'smoke';
   public static final String WORKFLOW_SITE = 'site';
+  public static final String WORKFLOW_DRILL = 'drill';
   public static final String STATUS_SUCCESS = 'Success';
   public static final String STATUS_FAILURE = 'Failure';
+  public static final String STATUS_DENIED = 'Denied';
+  public static final Integer MAX_CHECKS = 30;
+  public static final Integer MAX_RULE_LENGTH = 100;
+  public static final Integer MAX_APPROVER_LENGTH = 39;
   public static final Integer KEEP_PER_WORKFLOW = 60;
   @TestVisible
   private static final Integer MAX_RETRIES = 2;
@@ -37,12 +51,22 @@ public with sharing class GovernanceEventHandler {
     WORKFLOW_DEPLOY,
     WORKFLOW_HEARTBEAT,
     WORKFLOW_SMOKE,
-    WORKFLOW_SITE
+    WORKFLOW_SITE,
+    WORKFLOW_DRILL
   };
   private static final Map<String, String> STATUSES = new Map<String, String>{
     'success' => STATUS_SUCCESS,
-    'failure' => STATUS_FAILURE
+    'failure' => STATUS_FAILURE,
+    'denied' => STATUS_DENIED
   };
+  private static final Set<String> OUTCOMES = new Set<String>{
+    'pass',
+    'fail',
+    'skipped'
+  };
+  private static final Pattern APPROVER_PATTERN = Pattern.compile(
+    '[A-Za-z0-9]+(-[A-Za-z0-9]+)*'
+  );
   private static final Pattern PERMIT_ID_PATTERN = Pattern.compile(
     '[A-Za-z0-9_.:-]{1,64}'
   );
@@ -132,6 +156,8 @@ public with sharing class GovernanceEventHandler {
       Commit_Sha__c = matches(SHA_PATTERN, sha) ? sha : null,
       Completed_At__c = event.Completed_At__c,
       Permit_Id__c = matches(PERMIT_ID_PATTERN, permitId) ? permitId : null,
+      Approver__c = validApprover(event.Approver__c?.trim()),
+      Gate_Checks__c = validChecks(event.Gate_Checks__c),
       Tests_Run__c = testsValid ? event.Tests_Run__c : null,
       Tests_Passed__c = testsValid ? event.Tests_Passed__c : null,
       Org_Coverage__c = testsValid ? event.Org_Coverage__c : null,
@@ -141,6 +167,68 @@ public with sharing class GovernanceEventHandler {
         ? event.Jest_Coverage__c
         : null
     );
+  }
+
+  // A GitHub login: 1 to 39 letters, digits or single hyphens, never starting or ending with one.
+  @TestVisible
+  private static String validApprover(String login) {
+    return String.isNotBlank(login) &&
+      login.length() <= MAX_APPROVER_LENGTH &&
+      APPROVER_PATTERN.matcher(login).matches()
+      ? login
+      : null;
+  }
+
+  // The checks are kept only as a whole. A list of at most 30 rule and outcome pairs with known
+  // outcomes is stored again in a fixed shape, and anything else is dropped to null so a
+  // half valid list never reads as the full gate.
+  @TestVisible
+  private static String validChecks(String raw) {
+    if (String.isBlank(raw)) {
+      return null;
+    }
+    List<Object> parsed;
+    try {
+      parsed = (List<Object>) JSON.deserializeUntyped(raw);
+    } catch (Exception e) {
+      return null;
+    }
+    if (parsed.size() > MAX_CHECKS) {
+      return null;
+    }
+    // 30 pairs of at most 100 characters of rule stay under the 4000 of the field.
+    List<String> clean = new List<String>();
+    for (Object item : parsed) {
+      String pair = cleanCheck(item);
+      if (pair == null) {
+        return null;
+      }
+      clean.add(pair);
+    }
+    return '[' + String.join(clean, ',') + ']';
+  }
+
+  private static String cleanCheck(Object item) {
+    if (!(item instanceof Map<String, Object>)) {
+      return null;
+    }
+    Map<String, Object> raw = (Map<String, Object>) item;
+    Object rule = raw.get('rule');
+    Object outcome = raw.get('outcome');
+    if (
+      !(rule instanceof String) ||
+      !(outcome instanceof String) ||
+      String.isBlank((String) rule) ||
+      ((String) rule).length() > MAX_RULE_LENGTH ||
+      !OUTCOMES.contains((String) outcome)
+    ) {
+      return null;
+    }
+    return '{"rule":' +
+      JSON.serialize(((String) rule).trim()) +
+      ',"outcome":' +
+      JSON.serialize((String) outcome) +
+      '}';
   }
 
   // The Jest pair is judged on its own. A deploy can report Apex without Jest and the other
@@ -223,7 +311,7 @@ public with sharing class GovernanceEventHandler {
     store.deleteRuns(beyondRetention(store.newestFirst(workflows)));
   }
 
-  // Only a successful deploy run keeps a permit id. A run already stored with one keeps it, so
+  // Only a successful deploy run or a denied drill run keeps a permit id. A run already stored with one keeps it, so
   // a replay that drops it or flips the status never makes the run count a second time.
   private static String effectivePermit(
     Pipeline_Run__c run,
@@ -232,13 +320,15 @@ public with sharing class GovernanceEventHandler {
     if (existing != null && String.isNotBlank(existing.Permit_Id__c)) {
       return existing.Permit_Id__c;
     }
-    return run.Workflow__c == WORKFLOW_DEPLOY &&
-      run.Status__c == STATUS_SUCCESS
-      ? run.Permit_Id__c
-      : null;
+    Boolean keeps =
+      (run.Workflow__c == WORKFLOW_DEPLOY && run.Status__c == STATUS_SUCCESS) ||
+      (run.Workflow__c == WORKFLOW_DRILL &&
+      run.Status__c == STATUS_DENIED);
+    return keeps ? run.Permit_Id__c : null;
   }
 
-  // Adds one to the running total for each run that now has a permit id and had none before.
+  // Adds one to the running total for each deploy run that now has a permit id and had none before.
+  // A drill row holds a deny id in the same field and is never counted.
   // When the counter cannot be written, the run is stored without its permit id so a replay
   // counts it. The counter write is in the event transaction, so a retry rolls it back.
   private static void countNewGovernedDeploys(
@@ -250,6 +340,7 @@ public with sharing class GovernanceEventHandler {
       Boolean alreadyCounted =
         existing != null && String.isNotBlank(existing.Permit_Id__c);
       if (
+        run.Workflow__c == WORKFLOW_DEPLOY &&
         String.isNotBlank(run.Permit_Id__c) &&
         !alreadyCounted &&
         !UsageCounterWriter.record(UsageCounterWriter.KIND_GLASSOPS_DEPLOY)
@@ -268,6 +359,8 @@ public with sharing class GovernanceEventHandler {
       existing.Commit_Sha__c == incoming.Commit_Sha__c &&
       existing.Completed_At__c == incoming.Completed_At__c &&
       existing.Permit_Id__c == incoming.Permit_Id__c &&
+      existing.Approver__c == incoming.Approver__c &&
+      existing.Gate_Checks__c == incoming.Gate_Checks__c &&
       existing.Tests_Run__c == incoming.Tests_Run__c &&
       existing.Tests_Passed__c == incoming.Tests_Passed__c &&
       existing.Org_Coverage__c == incoming.Org_Coverage__c &&
@@ -310,6 +403,8 @@ public with sharing class GovernanceEventHandler {
           Commit_Sha__c,
           Completed_At__c,
           Permit_Id__c,
+          Approver__c,
+          Gate_Checks__c,
           Tests_Run__c,
           Tests_Passed__c,
           Org_Coverage__c,

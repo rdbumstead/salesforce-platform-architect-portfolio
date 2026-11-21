@@ -954,4 +954,35 @@ private class ProjectCardControllerHomeTest {
 
     Assert.areEqual('5', card.headlineMetric, 'A blank count adds nothing');
   }
+
+  @IsTest
+  static void shouldLeaveDrillRunsOutOfTheProductionDeploysSource() {
+    Pipeline_Run__c denied = new Pipeline_Run__c(
+      Run_Key__c = 'drill:9',
+      Workflow__c = GovernanceEventHandler.WORKFLOW_DRILL,
+      Status__c = GovernanceEventHandler.STATUS_DENIED,
+      Run_Id__c = '9',
+      Permit_Id__c = 'deny-9',
+      Completed_At__c = Datetime.now()
+    );
+    insert new List<Pipeline_Run__c>{
+      deployRun('1', 'Success'),
+      deployRun('2', 'Failure'),
+      denied
+    };
+    Project__c row = homeProject('Delivery', 1, false);
+    row.Case_Metric_Label__c = 'production deploys recorded by the CI pipeline';
+    row.Case_Metric_Source__c = ProjectCardController.SOURCE_PRODUCTION_DEPLOYS;
+    insert row;
+
+    Test.startTest();
+    ProjectCardController.CaseStudy card = ProjectCardController.getHomeCaseStudies()[0];
+    Test.stopTest();
+
+    Assert.areEqual(
+      '1',
+      card.headlineMetric,
+      'The denied drill is neither a success nor a failure of the deploy rate'
+    );
+  }
 }
