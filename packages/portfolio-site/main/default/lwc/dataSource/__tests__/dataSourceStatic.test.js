@@ -9,7 +9,7 @@
  * @Created           : 11/05/2026
  **/
 import { createElement } from "@lwc/engine-dom";
-import DataSource from "c/dataSource";
+import DataSource, { keepStampWhole } from "c/dataSource";
 import { builtAt } from "c/siteHost";
 import getSources from "@salesforce/apex/DataSourceController.getSources";
 
@@ -68,8 +68,9 @@ describe("c-data-source label on the static site", () => {
     builtAt.mockReturnValue("2026-11-19T01:33:09.000Z");
     const el = create();
     await Promise.resolve();
+    // The stamp's spaces are no break spaces, so a narrow screen never splits it.
     expect(label(el).textContent).toBe(
-      "From Salesforce · built Nov 18, 2026, 8:33 PM EST"
+      "From Salesforce · built Nov 18, 2026, 8:33 PM EST"
     );
     expect(button(el).getAttribute("title")).toBeNull();
     expect(button(el).getAttribute("aria-label")).toBe(
@@ -112,5 +113,15 @@ describe("c-data-source label on the static site", () => {
     await Promise.resolve();
     expect(label(el).textContent).toBe("Live from Salesforce");
     expect(button(el).getAttribute("title")).toBeNull();
+  });
+});
+
+describe("keepStampWhole", () => {
+  it("joins the spaces of the stamp after built and leaves other labels alone", () => {
+    expect(
+      keepStampWhole("From Salesforce · built Nov 18, 2026, 8:33 PM EST")
+    ).toBe("From Salesforce · built Nov 18, 2026, 8:33 PM EST");
+    expect(keepStampWhole("Live from Salesforce")).toBe("Live from Salesforce");
+    expect(keepStampWhole(undefined)).toBe("");
   });
 });

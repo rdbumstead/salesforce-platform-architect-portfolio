@@ -153,4 +153,22 @@ private class PortfolioAgentCredentialsTest {
       'Two reads'
     );
   }
+
+  @IsTest
+  static void aSkillWithNoNameIsLeftOut() {
+    List<PortfolioAgentCredentials.SkillGroup> groups = PortfolioAgentCredentials.groupSkills(
+      new List<Skill__c>{
+        new Skill__c(Name = '  ', Category__c = 'Backend'),
+        new Skill__c(Name = 'Apex', Category__c = 'Backend')
+      },
+      null
+    );
+
+    Assert.areEqual(1, groups.size(), 'One group');
+    Assert.areEqual(
+      1,
+      groups[0].skills.size(),
+      'The unnamed skill is not listed'
+    );
+  }
 }

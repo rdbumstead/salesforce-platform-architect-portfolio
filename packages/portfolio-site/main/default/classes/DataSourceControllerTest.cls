@@ -269,4 +269,104 @@ private class DataSourceControllerTest {
       'A null list returns nothing.'
     );
   }
+
+  private static User readerWithNoAccessToSkills() {
+    String unique = String.valueOf(Crypto.getRandomInteger()).replace('-', 'n');
+    User user = new User(
+      Alias = 'dsrc',
+      Email = 'dsrc' + unique + '@example.com',
+      EmailEncodingKey = 'UTF-8',
+      LastName = 'Reader',
+      LanguageLocaleKey = 'en_US',
+      LocaleSidKey = 'en_US',
+      ProfileId = [SELECT Id FROM Profile WHERE Name = 'Standard User' LIMIT 1]
+      .Id,
+      TimeZoneSidKey = 'America/Los_Angeles',
+      Username = 'dsrc' + unique + '@example.com'
+    );
+    insert user;
+    return user;
+  }
+
+  @isTest
+  static void aNameGivenTwiceIsReadOnce() {
+    DataSourceController.overrides.put('Test_Twice', definition(null, true));
+
+    List<DataSourceController.DataSource> sources = DataSourceController.getSources(
+      new List<String>{ 'Test_Twice', ' Test_Twice ', 'Test_Twice' }
+    );
+
+    Assert.areEqual(1, sources.size(), 'A repeated name is read once.');
+  }
+
+  @isTest
+  static void objectSourcesStopAtTheCap() {
+    insertSkills(1, 'Backend');
+    List<String> names = new List<String>{ 'Skill__c' };
+    for (Integer i = 0; i < DataSourceController.MAX_NAMES + 2; i++) {
+      names.add('Not_Served_' + i + '__c');
+    }
+    names.add('Skill__c');
+
+    List<DataSourceController.DataSource> sources = DataSourceController.getObjectSources(
+      names
+    );
+
+    Assert.areEqual(1, sources.size(), 'Only the served object comes back.');
+    Assert.areEqual('Skill__c', sources[0].name);
+  }
+
+  @isTest
+  static void anObjectWithNoLabelIsLeftOut() {
+    Query_Definition__mdt gone = definition(null, true);
+    gone.Object__c = 'Gone_Object__c';
+    DataSourceController.overrides.put('Test_Gone', gone);
+    Query_Definition__mdt unnamed = definition(null, true);
+    unnamed.Object__c = null;
+    DataSourceController.overrides.put('Test_Unnamed', unnamed);
+
+    List<DataSourceController.DataSource> objectSources = DataSourceController.getObjectSources(
+      new List<String>{ 'Gone_Object__c' }
+    );
+    List<DataSourceController.DataSource> sources = DataSourceController.getSources(
+      new List<String>{ 'Test_Gone', 'Test_Unnamed' }
+    );
+
+    Assert.isTrue(
+      objectSources.isEmpty(),
+      'An object that cannot be described is not served.'
+    );
+    Assert.isTrue(
+      sources.isEmpty(),
+      'A definition with no object or an unknown one has no label.'
+    );
+  }
+
+  @isTest
+  static void aCountTheUserMayNotRunLeavesThePanelWithoutOne() {
+    Query_Definition__mdt userMode = definition(null, true);
+    userMode.Access_Mode__c = 'USER_MODE';
+    DataSourceController.overrides.put('Test_User_Mode', userMode);
+    User reader = readerWithNoAccessToSkills();
+    List<DataSourceController.DataSource> sources;
+    List<DataSourceController.DataSource> objectSources;
+
+    Test.startTest();
+    System.runAs(reader) {
+      sources = DataSourceController.getSources(
+        new List<String>{ 'Test_User_Mode' }
+      );
+      objectSources = DataSourceController.getObjectSources(
+        new List<String>{ 'Skill__c' }
+      );
+    }
+    Test.stopTest();
+
+    Assert.areEqual(1, sources.size(), 'The source is still listed.');
+    Assert.isFalse(sources[0].hasCount, 'A refused count is not shown.');
+    Assert.isNull(sources[0].count);
+    Assert.areEqual(1, objectSources.size(), 'The object is still listed.');
+    Assert.isFalse(objectSources[0].hasCount, 'A refused count is not shown.');
+    Assert.isNull(objectSources[0].count);
+  }
 }

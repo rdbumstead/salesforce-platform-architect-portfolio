@@ -1114,7 +1114,7 @@ describe("c-footer", () => {
     const labels = Array.from(
       element.shadowRoot.querySelectorAll("c-view-source")
     ).map((el) => el.label);
-    expect(labels).toEqual([undefined, "View analytics source"]);
+    expect(labels).toEqual([undefined, "Analytics source"]);
   });
 
   it("keeps Request limits on the tooling row with its count beside its label", async () => {
@@ -1141,7 +1141,7 @@ describe("c-footer", () => {
       /<c-view-source\s+source-key="footer"\s*><\/c-view-source>/
     );
     expect(html).toMatch(
-      /<c-view-source\s+source-key="siteAnalytics"\s+label="View analytics source"\s*><\/c-view-source>/
+      /<c-view-source\s+source-key="siteAnalytics"\s+label="Analytics source"\s*><\/c-view-source>/
     );
     expect(html.match(/<c-view-source/g)).toHaveLength(2);
   });

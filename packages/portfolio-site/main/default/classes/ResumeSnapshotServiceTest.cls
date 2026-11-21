@@ -753,4 +753,52 @@ private class ResumeSnapshotServiceTest {
     Test.stopTest();
     Assert.isTrue(refused, 'Without the build permission set nothing is read');
   }
+
+  @isTest
+  static void shouldNameAVariantByIdWhenItHasNoKeyAndNoType() {
+    Resume_Variant__c orphan = variant(null, null, 'Orphan text');
+    insert orphan;
+    Test.startTest();
+    String message = failureAsBuildUser();
+    Test.stopTest();
+    Assert.isTrue(
+      message.contains(String.valueOf(orphan.Id)),
+      'With no key the record Id names it: ' + message
+    );
+    Assert.isTrue(
+      message.contains('has no Variant_Type__c'),
+      'Says the type is missing'
+    );
+  }
+
+  @isTest
+  static void shouldFailWhenAnItemHasNoText() {
+    insert variant('no-text-variant', 'Summary', null);
+    Test.startTest();
+    String message = failureAsBuildUser();
+    Test.stopTest();
+    Assert.isTrue(
+      message.contains('no-text-variant has no text'),
+      'Names the item with no text: ' + message
+    );
+  }
+
+  @isTest
+  static void shouldFailWhenARoleHasNoKey() {
+    Contact owner = [SELECT Id FROM Contact WHERE Is_Portfolio_Owner__c = TRUE];
+    PublicKeyService.suspended = true;
+    insert new Experience__c(
+      Name = 'Keyless Role',
+      Contact__c = owner.Id,
+      Sort_Order__c = 9
+    );
+    PublicKeyService.suspended = false;
+    Test.startTest();
+    String message = failureAsBuildUser();
+    Test.stopTest();
+    Assert.isTrue(
+      message.contains('The role Keyless Role has no Public_Key__c'),
+      'Names the role: ' + message
+    );
+  }
 }

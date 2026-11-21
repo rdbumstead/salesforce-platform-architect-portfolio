@@ -280,6 +280,7 @@ private class SiteActionsResourceTest {
 
   @isTest
   static void contactLimitsEachVisitorByHashAndNotTheWholeSite() {
+    pinRateClock();
     List<RestResponse> sameVisitor = new List<RestResponse>();
     RestResponse otherVisitor;
     System.runAs(edgeUser()) {
@@ -434,8 +435,24 @@ private class SiteActionsResourceTest {
     );
   }
 
+  /**
+   * The per visitor limit counts per clock minute, so posts that straddle a minute boundary
+   * land in two windows and the limit never trips. A fixed clock keeps every post in one window.
+   */
+  private static void pinRateClock() {
+    RateWindowLimiter.nowOverride = Datetime.newInstanceGmt(
+      2026,
+      11,
+      20,
+      12,
+      0,
+      30
+    );
+  }
+
   @isTest
   static void testimonialLimitsEachVisitorByHash() {
+    pinRateClock();
     List<RestResponse> answers = new List<RestResponse>();
     RestResponse other;
     System.runAs(edgeUser()) {
@@ -695,5 +712,118 @@ private class SiteActionsResourceTest {
     Assert.areEqual(200, res.statusCode, 'Served, body ' + text(res));
     Assert.isTrue(text(res).contains('"key":"site"'), 'The site row');
     Assert.isTrue(text(res).contains('Static site build green'), 'Its label');
+  }
+
+  @isTest
+  static void aRequestWithNoAddressIsAnUnknownAction() {
+    RestRequest req = new RestRequest();
+    req.httpMethod = 'GET';
+    req.addHeader(
+      SiteActionsResource.REQUEST_ID_HEADER,
+      SiteActionsTestSupport.REQUEST_ID
+    );
+    RestContext.request = req;
+    RestContext.response = new RestResponse();
+
+    System.runAs(edgeUser()) {
+      SiteActionsResource.doGet();
+    }
+
+    assertError(RestContext.response, 400, 'BAD_REQUEST', 'Unknown action.');
+  }
+
+  @isTest
+  static void labInvokeAcceptsTextParameters() {
+    Test.setMock(
+      HttpCalloutMock.class,
+      new PortfolioApiCalloutMock().withRestResponse(200, '[{"id":"a"}]', null)
+    );
+    RestResponse res;
+    Test.startTest();
+    System.runAs(edgeUser()) {
+      res = post(
+        'lab-invoke',
+        '{"path":"/sapi/skills","params":{"limit":"1"},"apiVersion":"v2"}',
+        null
+      );
+    }
+    Test.stopTest();
+
+    Assert.areEqual(200, res.statusCode, 'Body ' + text(res));
+  }
+
+  @isTest
+  static void labInvokeAcceptsNoParametersAtAll() {
+    Test.setMock(
+      HttpCalloutMock.class,
+      new PortfolioApiCalloutMock().withRestResponse(200, '[{"id":"a"}]', null)
+    );
+    RestResponse res;
+    Test.startTest();
+    System.runAs(edgeUser()) {
+      res = post(
+        'lab-invoke',
+        '{"path":"/sapi/skills","apiVersion":"v2"}',
+        null
+      );
+    }
+    Test.stopTest();
+
+    Assert.areEqual(
+      200,
+      res.statusCode,
+      'Parameters are optional, body ' + text(res)
+    );
+  }
+
+  @isTest
+  static void labInvokeAnswers503WhenTheApiCannotBeReached() {
+    Test.setMock(
+      HttpCalloutMock.class,
+      new PortfolioApiCalloutMock().throwing('Read timed out')
+    );
+    RestResponse res;
+    Test.startTest();
+    System.runAs(edgeUser()) {
+      res = post(
+        'lab-invoke',
+        '{"path":"/sapi/skills","params":{},"apiVersion":"v2"}',
+        null
+      );
+    }
+    Test.stopTest();
+
+    assertError(res, 503, 'UNAVAILABLE', ApiMessages.LAB_API_UNREACHABLE);
+  }
+
+  @isTest
+  static void aFailedSaveIsAnswered500WithTheComponentText() {
+    ContactFormController.forceSaveFailure = true;
+    TestimonialController.forceSaveFailure = true;
+    RestResponse contact;
+    RestResponse testimonial;
+    Test.startTest();
+    System.runAs(edgeUser()) {
+      contact = post('contact', CONTACT_BODY, SiteActionsTestSupport.HASH_A);
+      testimonial = post(
+        'testimonial',
+        OWN_BODY,
+        SiteActionsTestSupport.HASH_B
+      );
+    }
+    Test.stopTest();
+
+    assertError(
+      contact,
+      500,
+      'CALL_FAILED',
+      ContactFormController.SAVE_FAILED_MESSAGE
+    );
+    assertError(
+      testimonial,
+      500,
+      'CALL_FAILED',
+      TestimonialController.SAVE_FAILED_MESSAGE
+    );
   }
 }

@@ -311,4 +311,42 @@ private class SAPIExperienceTest {
     }
     insert past;
   }
+
+  @IsTest
+  static void shouldStopWhenTheVersionIsNotSupported() {
+    RestTestUtil.initGetRaw(
+      '/services/apexrest/sapi/experiences/',
+      new Map<String, String>{
+        'X-Request-Id' => UUID.randomUUID().toString(),
+        'X-API-Version' => 'v3'
+      },
+      null
+    );
+
+    Test.startTest();
+    SAPIExperience.getExperiences();
+    Test.stopTest();
+
+    SapiTestData.assertError(400, 'BAD_REQUEST');
+  }
+
+  @IsTest
+  static void shouldReturnABlankStartDateWhenARoleHasNone() {
+    insert new Experience__c(Name = 'Undated Role', Sort_Order__c = 9);
+    SapiTestData.get('experiences', null);
+
+    Test.startTest();
+    SAPIExperience.getExperiences();
+    Test.stopTest();
+
+    Boolean sawUndated = false;
+    for (Map<String, Object> row : SapiTestData.bodyAsList()) {
+      if (row.get('name') == 'Undated Role') {
+        sawUndated = true;
+        Assert.isNull(row.get('startDate'), 'No start date, no value');
+        Assert.isNull(row.get('endDate'), 'No end date, no value');
+      }
+    }
+    Assert.isTrue(sawUndated, 'The undated role is listed');
+  }
 }

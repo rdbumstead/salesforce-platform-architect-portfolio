@@ -330,4 +330,65 @@ private class PAPITransformerTest {
       'displayName falls back to Name when Display_Name__c is blank'
     );
   }
+
+  @IsTest
+  static void calculateSummaryNamesTheDefaultTitleWhenNoRoleIsCurrent() {
+    Experience__c past = new Experience__c(
+      Name = 'Past Role',
+      Start_Date__c = Date.today().addYears(-4),
+      End_Date__c = Date.today().addYears(-1),
+      Is_Current_Role__c = false
+    );
+
+    String result = PAPITransformer.calculateSummary(
+      new List<Experience__c>{ past }
+    );
+
+    Assert.areEqual(
+      '4+ Years of Experience as a Salesforce Platform Architect',
+      result,
+      'With no current role the default title is used'
+    );
+  }
+
+  @IsTest
+  static void transformProjectCarriesTheCompletionDateWhenThereIsOne() {
+    insert new Project__c(
+      Is_Verified__c = true,
+      Name = 'Finished Project',
+      Status__c = 'Live – In Production',
+      Sort_Order__c = 1,
+      Date_Completed__c = Date.newInstance(2025, 3, 14)
+    );
+    Project__c proj = [
+      SELECT
+        Id,
+        Public_Key__c,
+        Name,
+        Challenge__c,
+        Solution__c,
+        Business_Value__c,
+        Status__c,
+        Hero_Image_URL__c,
+        Live_URL__c,
+        Repository_URL__c,
+        Date_Completed__c,
+        Is_Featured__c,
+        Pillar_Label__c
+      FROM Project__c
+      WHERE Name = 'Finished Project'
+    ];
+
+    Map<String, Object> result = PAPITransformer.transformProject(
+      proj,
+      new List<String>(),
+      new List<Map<String, Object>>()
+    );
+
+    Assert.areEqual(
+      '2025-03-14',
+      result.get('completionDate'),
+      'A finished project carries its completion date'
+    );
+  }
 }

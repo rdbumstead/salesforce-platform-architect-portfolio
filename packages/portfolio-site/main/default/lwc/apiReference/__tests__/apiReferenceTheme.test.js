@@ -287,6 +287,24 @@ describe("the reference component with the theme", () => {
     expect(REDOC_STYLE_OVERRIDES).toContain("[data-pf-fab] { display: none");
   });
 
+  it("scrolls the Menu bar to its pinned place before the menu opens, so no page text shows above it", async () => {
+    const element = create({ fullWidth: true, openOnLoad: true });
+    await flush();
+    const bar = element.shadowRoot.querySelector(".menu-bar");
+    bar.getBoundingClientRect = () => ({ top: 500 });
+    window.scrollBy = jest.fn();
+    bar.querySelector("button.menu-button").click();
+    expect(window.scrollBy).toHaveBeenCalledTimes(1);
+    expect(window.scrollBy.mock.calls[0][0].top).toBeGreaterThan(0);
+
+    // A bar already pinned needs no scroll.
+    window.scrollBy.mockClear();
+    bar.getBoundingClientRect = () => ({ top: 0 });
+    bar.querySelector("button.menu-button").click();
+    expect(window.scrollBy).not.toHaveBeenCalled();
+    delete window.scrollBy;
+  });
+
   it("has no Menu bar when the reference is embedded, and leaves Redoc's button alone", async () => {
     const element = create();
     await flush();
@@ -348,7 +366,7 @@ describe("helpers for the markup Redoc draws", () => {
     );
   });
 
-  it("marks the address in each server panel, so it scrolls and never breaks inside a word", () => {
+  it("marks the address in each server panel, so it breaks only at a slash", () => {
     const root = document.createElement("div");
     fill(
       root,
@@ -365,6 +383,26 @@ describe("helpers for the markup Redoc draws", () => {
     expect(REDOC_STYLE_OVERRIDES).toContain("word-break: normal");
     expect(REDOC_STYLE_OVERRIDES).not.toContain("break-all");
     markServerUrls(null);
+  });
+
+  it("allows a break after each slash of the address, except inside the two slashes of a scheme", () => {
+    const root = document.createElement("div");
+    fill(
+      root,
+      '<div><button><span class="http-verb">get</span></button><div><div role="button"><div><span>https://{domain}/services/apexrest/sapi</span>/contacts</div></div></div></div>'
+    );
+    markServerUrls(root);
+    markServerUrls(root);
+    const address = root.querySelector("[data-pf-server-url]");
+    expect(address.textContent).toBe(
+      "https://{domain}/services/apexrest/sapi/contacts"
+    );
+    const breaks = Array.from(address.querySelectorAll("wbr")).map((wbr) =>
+      wbr.previousSibling.nodeValue.slice(-1)
+    );
+    expect(address.querySelectorAll("wbr")).toHaveLength(5);
+    expect(breaks.every((last) => last === "/")).toBe(true);
+    expect(address.querySelector("span").firstChild.nodeValue).toBe("https://");
   });
 
   it("keeps the side menu badge readable and the authorization chevron beside its label", () => {
@@ -391,5 +429,13 @@ describe("helpers for the markup Redoc draws", () => {
     expect(table.getAttribute("aria-label")).toBe("Table, scrolls sideways");
     expect(pre.hasAttribute("tabindex")).toBe(false);
     makeScrollersFocusable(null);
+  });
+});
+
+describe("balanced wrapping in the reference", () => {
+  it("balances Redoc headings and response rows so no line holds one word alone", () => {
+    expect(REDOC_STYLE_OVERRIDES).toMatch(
+      /\.redoc-target h3, \.redoc-target button \{ text-wrap: balance; \}/
+    );
   });
 });

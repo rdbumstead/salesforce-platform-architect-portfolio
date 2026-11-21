@@ -123,20 +123,21 @@
 }
 
 /* On a phone the toggles show their label and the status text drops, so the whole row takes
-   two lines. The one exception is Request limits, which keeps its count beside its label. */
+   two lines. From 900 px every toggle keeps its status, Request limits with its count. */
 @media (max-width: 899.98px) {
   .chips {
-    --view-source-padding: var(--pf-space-1);
+    --view-source-padding: 2px;
 
-    gap: 0 var(--pf-space-1);
-    margin-inline-start: calc(-1 * var(--pf-space-1));
+    gap: 0 2px;
+    margin-inline-start: -2px;
   }
 
   .chip {
-    padding: 0 var(--pf-space-1);
+    gap: 2px;
+    padding: 0 2px;
   }
 
-  .chip:not(.chip--limits) .group-status {
+  .chip .group-status {
     display: none;
   }
 }

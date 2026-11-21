@@ -486,4 +486,22 @@ private class GeminiServiceTest {
       throw e;
     }
   }
+
+  @IsTest
+  static void shortDetailKeepsNothingForNoTextAndCutsALongOne() {
+    Assert.isNull(GeminiService.shortDetail(null), 'No text, no detail');
+
+    String cut = GeminiService.shortDetail('word '.repeat(60));
+
+    Assert.areEqual(
+      120,
+      cut.length(),
+      'A long detail is cut to 120 characters'
+    );
+    Assert.areEqual(
+      'secret=[redacted] ok',
+      GeminiService.shortDetail('secret=abc123 ok'),
+      'A credential value is redacted'
+    );
+  }
 }

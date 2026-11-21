@@ -121,4 +121,22 @@ private class SAPIProjectSkillTest {
     SapiTestData.assertError(500, 'INTERNAL_SERVER_ERROR');
     RestTestUtil.assertServerError();
   }
+
+  @IsTest
+  static void shouldStopWhenTheVersionIsNotSupported() {
+    RestTestUtil.initGetRaw(
+      '/services/apexrest/sapi/project-skills/',
+      new Map<String, String>{
+        'X-Request-Id' => UUID.randomUUID().toString(),
+        'X-API-Version' => 'v3'
+      },
+      null
+    );
+
+    Test.startTest();
+    SAPIProjectSkill.getProjectSkills();
+    Test.stopTest();
+
+    SapiTestData.assertError(400, 'BAD_REQUEST');
+  }
 }

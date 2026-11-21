@@ -606,14 +606,12 @@ export const REDOC_STYLE_OVERRIDES = [
   // gives in em, so it came out 6 px tall with 7 px text. It takes a readable size, and grows
   // to fit its word (DELETE) while keeping its label beside it.
   ".redoc-target .operation-type { box-sizing: border-box; flex: none; width: auto; min-width: 40px; height: auto; padding: 2px 5px; font-size: 11px; font-weight: 700; line-height: 1.3; text-align: center; }",
-  // The address in the server panel breaks nowhere. It scrolls inside its own box, which is
-  // the focusable button Redoc draws around it, with the edges shaded as the cue.
-  ".redoc-target [data-pf-server-url] { overflow-x: auto; border: 1px solid var(--pf-border); background-color: var(--pf-surface);",
-  " background-image: linear-gradient(to right, var(--pf-surface) 30%, transparent), linear-gradient(to left, var(--pf-surface) 30%, transparent),",
-  " linear-gradient(to right, rgba(0, 0, 0, 0.35), transparent), linear-gradient(to left, rgba(0, 0, 0, 0.35), transparent);",
-  " background-position: left center, right center, left center, right center; background-repeat: no-repeat;",
-  " background-size: 28px 100%, 28px 100%, 12px 100%, 12px 100%; background-attachment: local, local, scroll, scroll; }",
-  ".redoc-target [data-pf-server-url] > div { min-width: max-content; border: 0; background: transparent; white-space: nowrap; word-break: normal; overflow-wrap: normal; }",
+  // The address in the server panel breaks only at a slash, where markServerUrls puts a break
+  // opportunity. It never breaks inside a word. A segment wider than the box still scrolls.
+  ".redoc-target [data-pf-server-url] { overflow-x: auto; border: 1px solid var(--pf-border); background-color: var(--pf-surface); }",
+  ".redoc-target [data-pf-server-url] > div { min-width: 0; border: 0; background: transparent; white-space: normal; word-break: normal; overflow-wrap: normal; }",
+  // A wrapped heading or response row is balanced, so no line holds one word alone.
+  ".redoc-target h2, .redoc-target h3, .redoc-target button { text-wrap: balance; }",
   // The chevron that opens the authorization details sits beside its label. Redoc let it wrap
   // to a line of its own when the scheme name beside it took the width.
   ".redoc-target div:has(> h5 + svg:last-child) { flex: none; white-space: nowrap; }",
@@ -846,9 +844,40 @@ export function makeScrollersFocusable(root) {
 }
 
 /**
- * Marks the address in each endpoint's server panel, so it scrolls instead of breaking
+ * Puts a break opportunity after each slash of the text under a node, but never between the two
+ * slashes of "://". A node already given them is left alone.
+ * @param {Element} address the element that holds the address
+ */
+function breakAtSlashes(address) {
+  if (address.hasAttribute("data-pf-slashes")) {
+    return;
+  }
+  address.setAttribute("data-pf-slashes", "");
+  const walker = document.createTreeWalker(address, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) {
+    nodes.push(walker.currentNode);
+  }
+  nodes.forEach((node) => {
+    const pieces = node.nodeValue.split(/(?<=\/)(?!\/)/);
+    if (pieces.length < 2) {
+      return;
+    }
+    const fragment = document.createDocumentFragment();
+    pieces.forEach((piece, index) => {
+      if (index > 0) {
+        fragment.appendChild(document.createElement("wbr"));
+      }
+      fragment.appendChild(document.createTextNode(piece));
+    });
+    node.parentNode.replaceChild(fragment, node);
+  });
+}
+
+/**
+ * Marks the address in each endpoint's server panel, so it breaks only at a slash and never
  * inside a word. The panel opens from the method bar (the button that holds the verb) and
- * holds the address in a focusable button of its own, which becomes the scroll box.
+ * holds the address in a focusable button of its own.
  * @param {Element} root the Redoc target
  */
 export function markServerUrls(root) {
@@ -861,6 +890,7 @@ export function markServerUrls(root) {
     if (panel) {
       panel.querySelectorAll('[role="button"]').forEach((address) => {
         address.setAttribute("data-pf-server-url", "");
+        breakAtSlashes(address);
       });
     }
   });
@@ -1281,8 +1311,29 @@ export default class ApiReference extends LightningElement {
   handleMenuClick() {
     const fab = findMenuButton(this.template.querySelector(".redoc-target"));
     if (fab) {
+      if (!this.menuOpen) {
+        this.pinMenuBar();
+      }
       fab.click();
       setTimeout(() => this.syncMenuState(), CLICK_SETTLE_MS);
+    }
+  }
+
+  /**
+   * Redoc fixes the open menu below the pinned bar, at the header plus the bar's height. When
+   * the bar has not yet reached its pinned place, page text shows in the gap above the menu and
+   * is cut mid line, the page title included. Scrolling the bar to its pinned place first
+   * leaves the bar and the menu with nothing between them.
+   */
+  pinMenuBar() {
+    const bar = this.template.querySelector(".menu-bar");
+    if (!bar || typeof window.scrollBy !== "function") {
+      return;
+    }
+    const gap =
+      bar.getBoundingClientRect().top - headerOffset(this.template.host);
+    if (gap > 0) {
+      window.scrollBy({ top: gap, behavior: "auto" });
     }
   }
 

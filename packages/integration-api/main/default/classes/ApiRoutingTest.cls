@@ -80,4 +80,50 @@ private class ApiRoutingTest {
     Assert.areEqual(403, RestContext.response.statusCode, 'Status');
     Assert.areEqual('FORBIDDEN', RestTestUtil.getBodyAsMap().get('errorCode'));
   }
+
+  @IsTest
+  static void shouldWrite404ThroughTheRequestRulesWhenCalledWithNoFlag() {
+    RestTestUtil.initGet('/services/apexrest/papi/nothing-here');
+
+    ApiRouting.notFound();
+
+    Assert.areEqual(404, RestContext.response.statusCode, 'Status');
+    Assert.areEqual('NOT_FOUND', RestTestUtil.getBodyAsMap().get('errorCode'));
+  }
+
+  @IsTest
+  static void shouldLeaveTheVersionRefusalInPlaceOnEveryRouterAnswer() {
+    for (Integer answer = 0; answer < 3; answer++) {
+      RestTestUtil.initGetRaw(
+        '/services/apexrest/papi/projects',
+        new Map<String, String>{
+          'X-Request-Id' => UUID.randomUUID().toString(),
+          'X-API-Version' => 'v3'
+        },
+        null
+      );
+      if (answer == 0) {
+        ApiRouting.notFound(false);
+      } else if (answer == 1) {
+        ApiRouting.switchedOff();
+      } else {
+        ApiRouting.methodNotAllowed('DELETE', 'GET,HEAD', 'projects');
+      }
+
+      Assert.areEqual(
+        400,
+        RestContext.response.statusCode,
+        'The request rules answer first for router answer ' + answer
+      );
+      Assert.areEqual(
+        'BAD_REQUEST',
+        RestTestUtil.getBodyAsMap().get('errorCode'),
+        'The refusal is not overwritten by the router answer ' + answer
+      );
+      Assert.isNull(
+        RestContext.response.headers.get('Allow'),
+        'No Allow header on a refused request ' + answer
+      );
+    }
+  }
 }

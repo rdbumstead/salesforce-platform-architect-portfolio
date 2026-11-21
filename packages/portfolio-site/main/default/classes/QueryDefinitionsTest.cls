@@ -546,4 +546,40 @@ private class QueryDefinitionsTest {
       'Every fault is named'
     );
   }
+
+  @IsTest
+  static void aReadWithNoBindsRunsAndCountsWhenTheDefaultNeedsNone() {
+    put(null);
+    QueryDefinitions.QueryDefault noBinds = new QueryDefinitions.QueryDefault(
+        'Account',
+        FIELDS
+      )
+      .filter('Name LIKE \'' + PREFIX + '%\'')
+      .orderBy('Name ASC')
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .requires('Id')
+      .binds(null);
+
+    Test.startTest();
+    List<SObject> rows = QueryDefinitions.run(NAME, null, noBinds);
+    Integer total = QueryDefinitions.count(NAME, null, noBinds);
+    Test.stopTest();
+
+    Assert.areEqual(ACCOUNT_COUNT, rows.size(), 'The read needs no bind');
+    Assert.areEqual(ACCOUNT_COUNT, total, 'The count needs no bind');
+  }
+
+  @IsTest
+  static void anEscapedQuoteInsideALiteralDoesNotEndTheLiteral() {
+    Query_Definition__mdt definition = narrowing();
+    definition.Filter__c = 'Name != \'a\\\'b:c\' AND Name = :pick';
+    put(definition);
+    List<SObject> rows = runIt();
+    Assert.areEqual(
+      1,
+      rows.size(),
+      'A colon after an escaped quote is still text, not a bind'
+    );
+    Assert.areEqual('record', QueryDefinitions.sourceByName.get(NAME), 'Used');
+  }
 }

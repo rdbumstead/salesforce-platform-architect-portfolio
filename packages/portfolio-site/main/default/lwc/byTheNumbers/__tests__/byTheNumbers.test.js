@@ -96,7 +96,7 @@ describe("c-by-the-numbers", () => {
     expect(pending).not.toBeNull();
     expect(pending.getAttribute("aria-hidden")).toBe("true");
     expect(pending.classList.contains("stats-pending")).toBe(true);
-    expect(pending.querySelectorAll("li.stat")).toHaveLength(8);
+    expect(pending.querySelectorAll("li.stat")).toHaveLength(6);
   });
 
   it("drops the hidden tiles once the counts arrive", async () => {
@@ -129,8 +129,6 @@ describe("c-by-the-numbers", () => {
       "deploys",
       "apex",
       "jest",
-      "apex-coverage",
-      "jest-coverage",
       "letters",
       "tokens",
       "requests"
@@ -161,7 +159,7 @@ describe("c-by-the-numbers", () => {
       "Apex tests passed"
     );
     expect(text(element, "[data-stat='apex'] .detail")).toBe(
-      "of 965 run in the newest deploy."
+      "of 965 run in the newest deploy, 98% of lines covered."
     );
     expect(text(element, "[data-stat='apex'] .plain-line")).toBe(APEX_LINE);
     expect(text(element, "[data-stat='jest'] .value")).toBe("747");
@@ -169,60 +167,50 @@ describe("c-by-the-numbers", () => {
       "Jest tests passed"
     );
     expect(text(element, "[data-stat='jest'] .detail")).toBe(
-      "of 748 run in the newest deploy."
+      "of 748 run in the newest deploy, 81.5% of lines covered."
     );
     expect(text(element, "[data-stat='jest'] .plain-line")).toBe(JEST_LINE);
   });
 
-  it("shows Apex coverage and Jest coverage as tiles of their own", async () => {
+  it("has six tiles and no tile of its own for coverage", async () => {
     const element = mount();
     getStats.emit(stats());
-    await flush();
-    expect(text(element, "[data-stat='apex-coverage'] .value")).toBe("98%");
-    expect(text(element, "[data-stat='apex-coverage'] .label")).toBe(
-      "Apex coverage"
-    );
-    expect(text(element, "[data-stat='apex-coverage'] .detail")).toBe(
-      "of Apex lines, run in production after the newest deploy."
-    );
-    expect(text(element, "[data-stat='jest-coverage'] .value")).toBe("81.5%");
-    expect(text(element, "[data-stat='jest-coverage'] .label")).toBe(
-      "Jest coverage"
-    );
-    expect(text(element, "[data-stat='jest-coverage'] .detail")).toBe(
-      "of site component lines, from the Jest run on the newest deploy."
-    );
-  });
-
-  it("leaves the coverage out of the Apex detail line", async () => {
-    const element = mount();
-    getStats.emit(stats());
-    await flush();
-    expect(text(element, "[data-stat='apex'] .detail")).not.toMatch(/%|cover/i);
-  });
-
-  it("hides a coverage tile with no figure and never draws 0%", async () => {
-    const element = mount();
-    getStats.emit(stats({ latestJestCoverage: null, latestCoverage: 0 }));
     await flush();
     expect(
-      element.shadowRoot.querySelector("[data-stat='jest-coverage']")
-    ).toBeNull();
+      element.shadowRoot.querySelectorAll("ul.stats li.stat")
+    ).toHaveLength(6);
     expect(
       element.shadowRoot.querySelector("[data-stat='apex-coverage']")
     ).toBeNull();
+    expect(
+      element.shadowRoot.querySelector("[data-stat='jest-coverage']")
+    ).toBeNull();
+  });
+
+  it("leaves the coverage part out of a detail line with no figure and never draws 0%", async () => {
+    const element = mount();
+    getStats.emit(stats({ latestJestCoverage: null, latestCoverage: 0 }));
+    await flush();
+    expect(text(element, "[data-stat='apex'] .detail")).toBe(
+      "of 965 run in the newest deploy."
+    );
+    expect(text(element, "[data-stat='jest'] .detail")).toBe(
+      "of 748 run in the newest deploy."
+    );
     expect(element.shadowRoot.textContent).not.toContain("0%");
     expect(text(element, "[data-stat='apex'] .value")).toBe("964");
   });
 
-  it("hides only the Jest coverage tile when only that figure is missing", async () => {
+  it("leaves out only the Jest coverage when only that figure is missing", async () => {
     const element = mount();
     getStats.emit(stats({ latestJestCoverage: undefined }));
     await flush();
-    expect(
-      element.shadowRoot.querySelector("[data-stat='jest-coverage']")
-    ).toBeNull();
-    expect(text(element, "[data-stat='apex-coverage'] .value")).toBe("98%");
+    expect(text(element, "[data-stat='jest'] .detail")).toBe(
+      "of 748 run in the newest deploy."
+    );
+    expect(text(element, "[data-stat='apex'] .detail")).toContain(
+      "98% of lines covered"
+    );
   });
 
   it("shows the two usage counters with the month counting began", async () => {
@@ -633,8 +621,11 @@ describe("formatting helpers", () => {
     expect(formatPercent(null)).toBe("");
   });
 
-  it("builds the Apex detail without the coverage", () => {
+  it("builds the Apex detail with the coverage when there is one", () => {
     expect(apexDetail({ latestTestsRun: 10, latestCoverage: 90 })).toBe(
+      "of 10 run in the newest deploy, 90% of lines covered."
+    );
+    expect(apexDetail({ latestTestsRun: 10, latestCoverage: 0 })).toBe(
       "of 10 run in the newest deploy."
     );
     expect(apexDetail({ latestTestsRun: 10 })).toBe(

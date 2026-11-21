@@ -388,4 +388,34 @@ private class ContactFormControllerTest {
     Assert.areEqual('Navy', kept.Company__c, 'Company kept');
     Assert.isTrue(kept.Error__c.contains('Forced'), 'The reason is kept');
   }
+
+  @isTest
+  static void aKeptFailureNeedsNoAdminToBeSaved() {
+    System.runAs(new User(Id = UserInfo.getUserId())) {
+      delete [
+        SELECT Id
+        FROM PermissionSetAssignment
+        WHERE PermissionSet.Name = 'Portfolio_Admin'
+      ];
+    }
+    ContactFormLeadWriter.forceFailure = true;
+    EventBus.publish(
+      new Contact_Form_Submission__e(
+        First_Name__c = 'Grace',
+        Last_Name__c = 'Hopper',
+        Email__c = 'grace@example.com',
+        Company__c = 'Navy',
+        Message__c = 'Hi'
+      )
+    );
+    for (Integer i = 0; i <= ContactFormLeadWriter.MAX_RETRIES; i++) {
+      Test.getEventBus().deliver();
+    }
+
+    Assert.areEqual(
+      1,
+      [SELECT COUNT() FROM Contact_Form_Failure__c],
+      'The message is kept even when no admin can be told'
+    );
+  }
 }
