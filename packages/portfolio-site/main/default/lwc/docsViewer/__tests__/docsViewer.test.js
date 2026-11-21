@@ -1176,3 +1176,23 @@ describe("c-docs-viewer diagram dialog", () => {
     expect(root.querySelector('[role="dialog"]')).toBeNull();
   });
 });
+
+describe("separator dots in guide text", () => {
+  it("keeps each dot with the word after it, so a wrapped line never ends on a dot", () => {
+    const result = renderMarkdown(
+      MARKED,
+      "- Tabs read LWC · HTML · Apex class.\n",
+      {
+        doc: document,
+        baseUrl: "https://github.com/o/r/blob/main/docs/guides/03-SAS.md",
+        docHrefForPath: () => null
+      }
+    );
+    const holder = document.createElement("div");
+    holder.appendChild(result.fragment);
+    const nbsp = String.fromCharCode(160);
+    expect(holder.querySelector("li").textContent).toBe(
+      `Tabs read LWC ·${nbsp}HTML ·${nbsp}Apex class.`
+    );
+  });
+});

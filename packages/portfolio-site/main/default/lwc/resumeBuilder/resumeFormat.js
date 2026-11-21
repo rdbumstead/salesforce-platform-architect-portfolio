@@ -483,6 +483,10 @@ export function buildViewModel(resume, options) {
           label: RESUME_LAYOUT.labels.earlierRoles,
           labelText: `${RESUME_LAYOUT.labels.earlierRoles}: `,
           text: earlierRolesText(earlier),
+          displayText: earlierRolesText(earlier).replace(
+            / \u00B7 /g,
+            " \u00B7\u00A0"
+          ),
           count: earlier.length
         }
       : null,

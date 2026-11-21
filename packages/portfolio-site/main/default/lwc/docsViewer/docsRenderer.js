@@ -47,6 +47,14 @@ const STACK_COLUMNS = 4;
 const FRONT_LINE = /^(Project|Version|Owner|Date|Status):\s*(.+)$/;
 const FRONT_ORDER = ["Project", "Version", "Owner", "Date", "Status"];
 
+/**
+ * Keeps each " · " separator with the word after it, with a no break space, so a wrapped line
+ * never ends on a dot that has lost its neighbour.
+ */
+export function glueDots(text) {
+  return String(text).replace(/ \u00B7 /g, " \u00B7\u00A0");
+}
+
 /** Decodes the few entities markdown text carries, for display as text. */
 export function decodeEntities(text) {
   return String(text ?? "").replace(ENTITY_PATTERN, (m) => ENTITIES[m] ?? m);
@@ -654,7 +662,7 @@ class Builder {
           this.inline(span, token.tokens);
           return span;
         }
-        return this.text(decodeEntities(token.text));
+        return this.text(glueDots(decodeEntities(token.text)));
       case "strong":
       case "em":
       case "del": {

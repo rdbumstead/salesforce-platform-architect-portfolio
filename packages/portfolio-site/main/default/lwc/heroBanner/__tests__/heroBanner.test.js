@@ -488,6 +488,26 @@ describe("c-hero-banner", () => {
       expect(byId(element, "docs-link")).not.toBeNull();
     });
 
+    it("keeps each count whole and carries its separator with it, so no line ends on a dot", async () => {
+      const element = render();
+      getBuildCounts.emit({
+        apexPassed: 1234,
+        coverage: 91,
+        jestPassed: 567
+      });
+      await flush();
+      const parts = Array.from(
+        byId(element, "proof-stats").querySelectorAll(".proof-part")
+      );
+      expect(parts.map((part) => part.textContent)).toEqual([
+        "1,234 Apex tests passing",
+        " · 91% coverage",
+        " · 567 Jest tests passing"
+      ]);
+      expect(parts[0].querySelector(".proof-sep")).toBeNull();
+      expect(parts[1].querySelector(".proof-sep").textContent).toBe(" · ");
+    });
+
     it("joins the live counts in one line", async () => {
       const element = render();
       getBuildCounts.emit({

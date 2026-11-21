@@ -40,10 +40,14 @@
   outline-offset: 2px;
 }
 
+/* The dot sits inside the label, so it stays on the label's first line when the label wraps.
+   As a flex item of its own it was left alone on a row above the label on a phone. */
 .dot {
-  flex: 0 0 auto;
+  display: inline-block;
   width: 0.5rem;
   height: 0.5rem;
+  margin-inline-end: var(--pf-space-2);
+  vertical-align: middle;
   border-radius: 50%;
   background-color: var(--pf-accent);
 }

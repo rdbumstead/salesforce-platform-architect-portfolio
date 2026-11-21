@@ -83,16 +83,13 @@ const TEXT_PAGE_CSS = [
 ].join("");
 
 /**
- * The earlier roles line. Each separator stays with the entry before it, joined by a no break
- * space, so a wrapped line never starts with the dot.
+ * The earlier roles line. Each separator stays with the entry after it, joined by a no break
+ * space, so a wrapped line never ends on the dot.
  */
 function earlierRolesHtml(earlier) {
   const entries = String(earlier.text).split(" · ");
   const body = entries
-    .map(
-      (entry, index) =>
-        escapeHtml(entry) + (index < entries.length - 1 ? "&nbsp;·" : "")
-    )
+    .map((entry, index) => (index > 0 ? "·&nbsp;" : "") + escapeHtml(entry))
     .join(" ");
   return `<p class="earlier"><span class="label">${escapeHtml(earlier.label)}:</span> ${body}</p>`;
 }

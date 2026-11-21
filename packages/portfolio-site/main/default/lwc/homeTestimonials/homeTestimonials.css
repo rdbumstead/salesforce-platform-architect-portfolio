@@ -39,6 +39,13 @@
   padding: 32px 0;
 }
 
+/* On a phone the sections sit 56px apart: 16px of padding on each side of the 24px layout spacer. */
+@media (max-width: 899px) {
+  .section {
+    padding: 16px 0;
+  }
+}
+
 .section-intro {
   margin: var(--pf-space-2) 0 var(--pf-space-6);
   color: var(--pf-muted);

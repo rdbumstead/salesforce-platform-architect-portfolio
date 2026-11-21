@@ -376,14 +376,6 @@
     grid-column: 1 / -1;
   }
 
-  .matrix-table .criterion-description {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    overflow: hidden;
-  }
-
   .matrix-table tbody th.criterion {
     padding: var(--pf-space-2) var(--pf-space-3);
   }

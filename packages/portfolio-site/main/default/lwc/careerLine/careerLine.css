@@ -41,6 +41,13 @@
   padding: 32px 0;
 }
 
+/* On a phone the sections sit 56px apart: 16px of padding on each side of the 24px layout spacer. */
+@media (max-width: 899px) {
+  .section {
+    padding: 16px 0;
+  }
+}
+
 .toggle:focus-visible,
 .row-head:focus-visible {
   outline: 2px solid var(--pf-focus);

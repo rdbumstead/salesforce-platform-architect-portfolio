@@ -22,6 +22,14 @@
   padding: 32px 0;
 }
 
+/* Under 900 px the layout already leaves 60 px before the footer, so the section adds none
+   below the panel. With it the band above the footer on home was 92 px. */
+@media (max-width: 899.98px) {
+  .contact-call {
+    padding-bottom: 0;
+  }
+}
+
 .contact-call__panel {
   display: flex;
   flex-wrap: wrap;

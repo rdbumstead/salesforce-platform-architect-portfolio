@@ -47,6 +47,14 @@ export const TIER_FEATURED = "featured";
 export const TIER_MORE = "more";
 
 /**
+ * The client line with each " · " kept with the word after it, by a no break space, so a
+ * wrapped line never ends on a dot.
+ */
+function glueDots(text) {
+  return text ? text.replace(/ \u00B7 /g, " \u00B7\u00A0") : text;
+}
+
+/**
  * Trimmed text, or null when the value is not a non blank string.
  * @param {*} value a value from the wire
  * @returns {string|null} the text
@@ -174,6 +182,7 @@ export default class CaseStudyGrid extends LightningElement {
       position: index + 1,
       isFeatured,
       clientLine: textOrNull(row.clientLine),
+      clientText: glueDots(textOrNull(row.clientLine)),
       hasHeadline: Boolean(metric && label),
       headlineMetric: metric ? groupLeadingNumber(metric) : null,
       // The leading space keeps "$0 software licence cost" apart when read as one line.

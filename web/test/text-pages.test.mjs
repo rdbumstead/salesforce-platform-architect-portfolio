@@ -297,7 +297,7 @@ test("certifications read as one line per issuer, names comma separated, like th
   }
 });
 
-test("the earlier roles separator stays with the entry before it, so a wrapped line never starts with it", async () => {
+test("the earlier roles separator stays with the entry after it, so a wrapped line never ends on it", async () => {
   const { format } = await loadShipped();
   const [first] = resumesFrom(reads);
   const route = textRoutes().find((entry) => entry.focus === first.persona);
@@ -305,8 +305,9 @@ test("the earlier roles separator stays with the entry before it, so a wrapped l
   assert.ok(model.earlierRoles, "the fixture has earlier roles");
   const html = textPageHtml({ route, model, head: [], styles: "/a.css" });
   const line = html.match(/<p class="earlier">[\s\S]*?<\/p>/)[0];
-  assert.match(line, /&nbsp;· /);
+  assert.match(line, / ·&nbsp;/);
   assert.doesNotMatch(line, / · /);
+  assert.doesNotMatch(line, /&nbsp;· /);
 });
 
 test("the page sizes its own headings, since the site stylesheet resets them to body size", () => {
