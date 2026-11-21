@@ -64,6 +64,13 @@ const GOVERNANCE = {
   onDocs: true
 };
 
+const GOVERNANCE_EVIDENCE = {
+  adr: "045",
+  title: "The Governance Evidence Model",
+  note: "What each deploy stores, why drills are kept apart from the count, and why the page claims no certification.",
+  onDocs: true
+};
+
 const JWT = {
   adr: "006",
   title: "JWT Bearer Flow for CI/CD",
@@ -168,7 +175,13 @@ export const STORIES = Object.freeze({
     ]
   },
   governance: {
-    related: [GLASSOPS, GOVERNANCE, STATIC_FRONT_END, TOKEN_VENDING],
+    related: [
+      GOVERNANCE_EVIDENCE,
+      GLASSOPS,
+      GOVERNANCE,
+      STATIC_FRONT_END,
+      TOKEN_VENDING
+    ],
     alternatives: [
       {
         option: "Claim a certification or a framework mapping.",

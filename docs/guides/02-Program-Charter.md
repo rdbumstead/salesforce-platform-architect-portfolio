@@ -64,7 +64,7 @@ This is not a static website. It is a live, observable platform governed by prod
 
 **In Scope:**
 
-- **Public-facing site** with "5-Minute Tour" guided navigation. It is a static build on Cloudflare Pages since 2026-11-09 ([ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)), and the Experience Cloud (LWR) site it replaced stays up as the rollback target until 2026-11-23.
+- **Public-facing site** with "12 Minute Tour" guided navigation. It is a static build on Cloudflare Pages since 2026-11-09 ([ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)), and the Experience Cloud (LWR) site it replaced stays up as the rollback target until 2026-11-23.
 - **Custom LWC component framework** including a custom API Testing Harness.
 - **Apex REST API implementation** in MuleSoft's API led layers (a System API and a Process API), matching the OpenAPI specifications in the repository (15 SAPI and 8 PAPI paths, version 1.3.0).
 - **Generative AI** grounding and prompt engineering in Apex (`PortfolioGroundingService`, `ContentGenerationController.dispatch`). Agentforce, a Prompt Builder template, is the first provider and ships on.
@@ -98,7 +98,7 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 
 **Functional Acceptance:**
 
-- All 5 pillars accessible via guided navigation.
+- All 6 pillars accessible via guided navigation.
 - API tester successfully calls at least 3 endpoints (Experience, Skills, Certifications).
 - The resume downloads as one text based PDF, and a "Copy ATS text" button copies the plain text version (`c-resume-builder`).
 - The skills page shows the matrix on every device, and its graph view opens on desktop and tablet only.
