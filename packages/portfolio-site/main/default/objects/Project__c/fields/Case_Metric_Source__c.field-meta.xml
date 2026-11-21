@@ -39,6 +39,11 @@
                 <default>false</default>
                 <label>Production deploys</label>
             </value>
+            <value>
+                <fullName>GlassOps deploys</fullName>
+                <default>false</default>
+                <label>GlassOps deploys</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>

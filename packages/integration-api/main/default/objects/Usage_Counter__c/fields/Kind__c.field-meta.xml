@@ -2,7 +2,7 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Kind__c</fullName>
     <description
-  >What this row counts: a cover letter written, or a request sent from the API Lab.</description>
+  >What this row counts: a cover letter written, a request sent from the API Lab, or a production deploy that went through GlassOps.</description>
     <label>Kind</label>
     <required>false</required>
     <type>Picklist</type>
@@ -14,6 +14,8 @@
         >false</default><label>Cover Letter</label></value>
             <value><fullName>Api_Lab_Request</fullName><default
         >false</default><label>API Lab Request</label></value>
+            <value><fullName>Glassops_Deploy</fullName><default
+        >false</default><label>GlassOps Deploy</label></value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>
