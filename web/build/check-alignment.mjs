@@ -257,8 +257,10 @@ export function scanAlignment() {
           const range = document.createRange();
           range.setStart(node, match.index);
           range.setEnd(node, match.index + match[0].length);
-          const rect = range.getBoundingClientRect();
-          if (rect.width > 0) pieces.push({ rect, text: match[0] });
+          // A word that breaks at a hyphen has one box on each line. Each box is a piece.
+          Array.from(range.getClientRects())
+            .filter((rect) => rect.width > 0)
+            .forEach((rect) => pieces.push({ rect, text: match[0] }));
         }
       } else if (node.nodeType === 1) {
         const childStyle = getComputedStyle(node);

@@ -238,6 +238,17 @@ describe("c-case-study-grid", () => {
     expect(second.querySelector('[data-id="client"]')).toBeNull();
   });
 
+  it("keeps the client line's separator with the word after it, so a wrapped line never ends on a dot", async () => {
+    const element = render();
+    getHomeCaseStudies.emit(CARDS);
+    await flush();
+    const [first] = cards(element);
+    const nbsp = String.fromCharCode(160);
+    expect(first.querySelector('[data-id="client"]').textContent).toBe(
+      `Adult literacy nonprofit ·${nbsp}freelance`
+    );
+  });
+
   it("shows My part, Context and Decision with their labels, trimmed, and leaves a blank line out", async () => {
     const element = render();
     getHomeCaseStudies.emit(CARDS);

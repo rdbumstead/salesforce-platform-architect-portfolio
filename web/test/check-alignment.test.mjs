@@ -206,3 +206,15 @@ test("a line that ends on a separator dot is a mark at edge, and a plain wrapped
     false
   );
 });
+
+test("a separator before a word that breaks at its hyphen is not at the edge of a line", async (t) => {
+  const findings = await scan(
+    `<body style="margin:0"><p id="hyphen" style="width:100px;font:13px monospace">ab cd ·\u00a0Non-Credit end</p></body>`,
+    t
+  );
+  if (!findings) return;
+  assert.equal(
+    findings.some((f) => f.kind === "mark at edge"),
+    false
+  );
+});
