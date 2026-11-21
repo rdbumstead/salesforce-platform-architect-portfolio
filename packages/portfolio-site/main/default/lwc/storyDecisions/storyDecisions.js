@@ -1,6 +1,7 @@
 /**
- * @description       : The two sections every story page ends with: "Alternatives considered" and
- *                      "Related decisions". The view names the story with story-key, one of
+ * @description       : The sections every story page ends with: "Alternatives considered" and
+ *                      "Related decisions", after an "Outcome" section for a story whose page has
+ *                      no outcome of its own (the employer hub, whose decision is with the client). The view names the story with story-key, one of
  *                      business-architecture, nonprofit-solutions, delivery or glassops, and the
  *                      text comes from the storyData module in this folder. Alternatives are a one
  *                      line option and a short reason. Related decisions are links to decision
@@ -39,6 +40,15 @@ export default class StoryDecisions extends LightningElement {
     return Object.prototype.hasOwnProperty.call(STORIES, key)
       ? STORIES[key]
       : null;
+  }
+
+  get outcome() {
+    const value = this.story ? this.story.outcome : null;
+    return typeof value === "string" && value.trim() ? value.trim() : null;
+  }
+
+  get hasOutcome() {
+    return this.outcome !== null;
   }
 
   get alternatives() {

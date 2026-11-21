@@ -175,6 +175,24 @@ jobs:
         continue-on-error: ${{ github.event_name != 'pull_request' }}
         run: CHROME_PATH="$(command -v google-chrome)" npm run check:overflow
 
+      # Fails when the home showcase breaks its layout rules with 3, 4, 5 or 8 projects, at 360 to
+      # 1280 in both schemes: sideways scroll, a link under 24 px, the heading too far above the
+      # first card on a phone, the first two cards below the fold at 1280, a title ending with one
+      # word alone, or the section heading on more than one line. Blocks a pull request and only
+      # warns on main and the scheduled build, as the overflow check does.
+      - name: Showcase check
+        working-directory: web
+        continue-on-error: ${{ github.event_name != 'pull_request' }}
+        run: CHROME_PATH="$(command -v google-chrome)" npm run check:showcase
+
+      # Fails when multiline text is centred or right aligned where it should start at the left,
+      # or when text is cut off by its container, on every route at 360 to 1280 in both schemes.
+      # Blocks a pull request and only warns on main and the scheduled build.
+      - name: Alignment check
+        working-directory: web
+        continue-on-error: ${{ github.event_name != 'pull_request' }}
+        run: CHROME_PATH="$(command -v google-chrome)" npm run check:alignment
+
       # The project is made once by hand (see the runbook). Until it exists, or while the token
       # cannot see it, the deploy is skipped with a notice instead of failing every run.
       - name: Check the Pages project

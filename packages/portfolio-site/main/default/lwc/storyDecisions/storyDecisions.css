@@ -1,5 +1,6 @@
 @import "c/panel";
 @import "c/sectionHeading";
+@import "c/storyLabel";
 
 /*
  * Colours, fonts, radii and spacing come only from the --pf- design tokens, so both sections

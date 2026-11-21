@@ -71,7 +71,10 @@ describe("c-story-decisions", () => {
   it.each(KEYS)("draws both sections for %s, alternatives first", (key) => {
     const element = create(key);
     const headings = qa(element, "h2.section-heading").map(text);
-    expect(headings).toEqual(["Alternatives considered", "Related decisions"]);
+    expect(headings.slice(-2)).toEqual([
+      "Alternatives considered",
+      "Related decisions"
+    ]);
     const sections = qa(element, "section");
     sections.forEach((section) => {
       const heading = section.querySelector("h2");
@@ -93,6 +96,25 @@ describe("c-story-decisions", () => {
     }
   );
 
+  it("draws an Outcome first only for a story that has one", () => {
+    const hub = create("business-architecture");
+    const outcome = hub.shadowRoot.querySelector('[data-id="outcome"]');
+    expect(outcome).not.toBeNull();
+    expect(text(outcome.querySelector('[data-id="part-label"]'))).toBe(
+      "Outcome"
+    );
+    expect(text(outcome.querySelector('[data-id="outcome-text"]'))).toBe(
+      STORIES["business-architecture"].outcome
+    );
+    expect(qa(hub, "h2.section-heading").map(text)[0]).toBe("Where it stands");
+    ["nonprofit-solutions", "delivery", "glassops"].forEach((key) => {
+      const element = create(key);
+      expect(
+        element.shadowRoot.querySelector('[data-id="outcome"]')
+      ).toBeNull();
+    });
+  });
+
   it("opens a record the docs viewer lists in the viewer, under the base path", () => {
     const element = create("nonprofit-solutions");
     const links = qa(element, '[data-id="adr-link"]');
@@ -102,18 +124,21 @@ describe("c-story-decisions", () => {
     expect(text(links[0])).toBe("ADR-030: Decision Matrix as Custom Metadata");
   });
 
-  it("opens any other record on GitHub in a new tab and says so", () => {
-    const element = create("glassops");
-    const link = qa(element, '[data-id="adr-link"]').find(
-      (a) => a.dataset.adr === "044"
-    );
-    expect(link.getAttribute("href")).toBe(
-      "https://github.com/rdbumstead/salesforce-platform-architect-portfolio/blob/main/docs/adr/044-glassops-makes-the-production-deploy.md"
-    );
-    expect(link.getAttribute("target")).toBe("_blank");
-    expect(link.getAttribute("rel")).toBe("noopener noreferrer");
-    expect(text(link)).toContain("on GitHub");
-    expect(text(link)).toContain("opens in a new tab");
+  it("opens every related record in the docs viewer, never on GitHub", () => {
+    [
+      "business-architecture",
+      "nonprofit-solutions",
+      "delivery",
+      "glassops"
+    ].forEach((key) => {
+      const element = create(key);
+      qa(element, '[data-id="adr-link"]').forEach((link) => {
+        expect(link.getAttribute("href")).toBe(
+          `/portfolio/docs?doc=adr-${link.dataset.adr}`
+        );
+        expect(link.getAttribute("target")).toBeNull();
+      });
+    });
   });
 
   it("links the site story to the deploy decision", () => {
@@ -172,6 +197,7 @@ describe("the story data", () => {
         all.push(item.option, item.why)
       );
       STORIES[key].related.forEach((entry) => all.push(entry.note));
+      if (STORIES[key].outcome) all.push(STORIES[key].outcome);
     });
     all.forEach((line) => {
       expect(line).not.toMatch(/[–—;]/);
