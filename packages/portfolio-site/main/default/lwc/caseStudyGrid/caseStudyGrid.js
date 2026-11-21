@@ -56,6 +56,20 @@ function textOrNull(value) {
 }
 
 /**
+ * Thousands separators on a whole number at the start of a card's number, so a computed
+ * "1701 Apex tests" reads "1,701 Apex tests". Numbers under 1000, and text that does not start
+ * with a whole number, such as "$0", are left as they are. The same rule as the build section's
+ * cards, kept here so the home bundle does not load that component.
+ * @param {string} value the number text
+ * @returns {string} the text with its leading number grouped
+ */
+export function groupLeadingNumber(value) {
+  return value.replace(/^\d{4,}(?=\s|$)/, (digits) =>
+    Number(digits).toLocaleString("en-US")
+  );
+}
+
+/**
  * A card's link: a path on this site under the base path, or a safe http or https address.
  * Anything else gives no link.
  * @param {string} value the stored Live_URL__c
@@ -161,7 +175,7 @@ export default class CaseStudyGrid extends LightningElement {
       isFeatured,
       clientLine: textOrNull(row.clientLine),
       hasHeadline: Boolean(metric && label),
-      headlineMetric: metric,
+      headlineMetric: metric ? groupLeadingNumber(metric) : null,
       // The leading space keeps "$0 software licence cost" apart when read as one line.
       headlineLabel: label ? ` ${label}` : null,
       myPart,
