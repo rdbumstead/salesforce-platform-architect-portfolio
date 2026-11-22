@@ -11,9 +11,9 @@ Seed records for the pillar pages, for walking the site in a scratch org. One pl
 
 The four images are redrawn for the portfolio from the original Employer Hub demo deck, step for step for the two flows and chart for chart for the two dashboards. They carry no names, and the dashboard values are samples, which each image says.
 
-## Copy for the owner's review
+## Copy for review
 
-The project name and the three text fields are proposals. The owner judges the copy (Round 6 plan §2, reading R11). The text describes the Employer Hub demo design only, nothing about a client's own org, data or later requests. The same text is in the owner's production script for the home case studies, so a change to any of them is made in both places. Pillar A is described as "an education provider" everywhere, so one search for "education provider" finds every place to change.
+The project name and the three text fields are proposals for me to review. The text describes the Employer Hub demo design only, nothing about a client's own org, data or later requests. The same text is in my production script for the home case studies, so a change to any of them is made in both places. Pillar A is described as "an education provider" everywhere, so one search for "education provider" finds every place to change.
 
 - **Name:** "Employer Hub for an education provider". No client name.
 - **Challenge:** "Several departments at an education provider worked with the same employer partners, each from its own inbox and spreadsheet. Partners repeated themselves, and nobody could see the whole relationship. Leadership had no shared numbers for engagement, investment or hiring."
@@ -32,8 +32,8 @@ Run it from Git Bash with stdin closed, or it can hang. The running user needs f
 
 ## Production
 
-Production records change only through the owner's scripts, run by hand from the owner's local checkout. `.claude/data-changes/2026-10-22-pillar-a-production.apex` (Round 5, already run) renamed the Pillar A project, removed the old deck asset and inserted the four image rows. `.claude/data-changes/2026-10-22-pillar-a-reword.apex` (Round 6) set the name, Challenge, Solution and Business Value to their earlier wording. The demo only Solution and Business Value above reach production through the owner's home case study script. No deck row is published.
+Production records change through separate scripts, which are not in this repository. One renamed the Pillar A project, removed the old deck asset and inserted the four image rows. A later one set the name, Challenge, Solution and Business Value to their earlier wording. The demo only Solution and Business Value above reach production through the home case study script. No deck row is published.
 
 ## Pillar B
 
-`plan-b.json` loads one `Project__c` for Pillar B, named "Literacy program platform for an adult literacy nonprofit", with proposed `Challenge__c`, `Solution__c` and `Business_Value__c` text marked for the owner's review (N1). It loads no `Project_Asset__c` rows, because there is no video prototype (D8). Load it into a scratch org only, with stdin closed: `sf data import tree --plan data/pillars/plan-b.json --target-org <scratch-alias> --json < /dev/null`. Production changes go through `.claude/data-changes/2026-10-22-pillar-b-production.apex`, which the owner runs.
+`plan-b.json` loads one `Project__c` for Pillar B, named "Literacy program platform for an adult literacy nonprofit", with proposed `Challenge__c`, `Solution__c` and `Business_Value__c` text marked for my review. It loads no `Project_Asset__c` rows, because there is no video prototype. Load it into a scratch org only, with stdin closed: `sf data import tree --plan data/pillars/plan-b.json --target-org <scratch-alias> --json < /dev/null`. Production changes go through a separate script, which is not in this repository.
