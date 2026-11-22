@@ -200,11 +200,17 @@ export function keyOf(read) {
   return readKey(read.call, read.params);
 }
 
+/** The export's answer to a call it does not serve, such as a read a pull request adds. */
+export const NOT_YET_SERVED = /NOT_ALLOWED: Unknown call/;
+
 /**
- * Runs every read once, a few at a time.
+ * Runs every read once, a few at a time. A preview build may pass `fallback`, sample results by
+ * read key: a read the org does not serve yet (a pull request that adds one, before it deploys)
+ * then takes its sample result, and its key is added to `usedFallback`. Every other failure
+ * still fails, and a production build passes no fallback, so it fails on any read it cannot get.
  * @returns {Promise<Record<string, any>>} results by read key
  */
-export async function runReads(connection, reads) {
+export async function runReads(connection, reads, { fallback, usedFallback = [] } = {}) {
   const unique = new Map();
   reads.forEach((read) => unique.set(keyOf(read), read));
   const queue = [...unique.entries()];
@@ -219,12 +225,22 @@ export async function runReads(connection, reads) {
         dropped += filtered.dropped;
         results[key] = filtered.response;
       } else {
-        results[key] = await exportCall(connection, read.call, read.params);
+        try {
+          results[key] = await exportCall(connection, read.call, read.params);
+        } catch (error) {
+          const known = fallback && Object.prototype.hasOwnProperty.call(fallback, key);
+          if (!known || !NOT_YET_SERVED.test(error.message)) throw error;
+          results[key] = fallback[key];
+          usedFallback.push(key);
+        }
       }
     }
   }
   await Promise.all(Array.from({ length: PARALLEL }, worker));
   console.log(`Verified filter: ${unverified.size} unverified skills and projects, ${dropped} GraphQL rows dropped`);
+  if (usedFallback.length) {
+    console.log(`Preview: the org does not serve ${usedFallback.join(', ')} yet, so this preview shows its sample data.`);
+  }
   return results;
 }
 
