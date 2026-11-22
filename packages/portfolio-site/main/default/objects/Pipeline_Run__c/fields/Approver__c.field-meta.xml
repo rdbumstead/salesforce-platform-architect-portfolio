@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Approver__c</fullName>
+    <description
+  >The GitHub login of the person who approved the glassops-deploy environment for this production deploy run. Blank when the run was not deployed through GlassOps or no approval is on record. Copied from the governance event.</description>
+    <externalId>false</externalId>
+    <inlineHelpText
+  >Set by the deploy workflow from the run's approvals. Blank when GlassOps did not deploy the run.</inlineHelpText>
+    <label>Approver</label>
+    <length>39</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

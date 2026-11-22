@@ -109,6 +109,7 @@ private class SiteExportResourceTest {
     assertSameAsGuest('DeliveryController.getRoadmap', one('simulate', false));
     assertSameAsGuest('DeliveryController.getRoadmap', one('simulate', true));
     assertSameAsGuest('GovernanceController.getPipelineStatus', none());
+    assertSameAsGuest('GovernanceController.getGovernanceEvidence', none());
     Test.stopTest();
   }
 
@@ -183,6 +184,7 @@ private class SiteExportResourceTest {
       'DeliveryController.getRecentCommits',
       'DeliveryController.getRoadmap',
       'GovernanceController.getPipelineStatus',
+      'GovernanceController.getGovernanceEvidence',
       'PortfolioStatsController.getStats',
       'SourceController.getDocs',
       'SourceController.getDoc',

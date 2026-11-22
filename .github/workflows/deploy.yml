@@ -125,6 +125,8 @@ jobs:
     outputs:
       deployed: ${{ steps.glassops.outputs.deployed }}
       permit_id: ${{ steps.glassops.outputs.permit_id }}
+      approver: ${{ steps.glassops.outputs.approver }}
+      gate_checks: ${{ steps.glassops.outputs.gate_checks }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -211,6 +213,16 @@ jobs:
              # successful deploy run that carries one as a governed deploy.
              PERMIT_ID=$(jq -r '.id // empty' .glassops/permit.json 2>/dev/null || true)
              [ -n "$PERMIT_ID" ] && echo "permit_id=$PERMIT_ID" >> "$GITHUB_OUTPUT"
+             # The GitHub login that approved the glassops-deploy environment. The signed PERMIT
+             # names it, and the run's approvals are the fallback. An empty value is left out.
+             APPROVER=$(jq -r '.separation_of_duties.approver // empty' .glassops/permit.json 2>/dev/null || true)
+             if [ -z "$APPROVER" ]; then
+                APPROVER=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/approvals" --jq '[.[] | select(.state == "approved") | .user.login] | first // empty' 2>/dev/null || true)
+             fi
+             [ -n "$APPROVER" ] && echo "approver=$APPROVER" >> "$GITHUB_OUTPUT"
+             # The rule and outcome pairs of the PERMIT checks, on one line.
+             GATE_CHECKS=$(jq -c '[.checks[]? | {rule: .rule, outcome: .outcome}]' .glassops/permit.json 2>/dev/null || true)
+             [ -n "$GATE_CHECKS" ] && echo "gate_checks=$GATE_CHECKS" >> "$GITHUB_OUTPUT"
           fi
           if [ "$DEPLOY_EXIT" = "0" ]; then
              "${G[@]}" verify --target prod --config "$GLASSOPS_CONFIG"
@@ -471,6 +483,8 @@ jobs:
       - name: Publish Governance Event
         if: success() && steps.execute.outputs.deployed == 'true'
         continue-on-error: true
+        env:
+          GATE_CHECKS: ${{ needs.glassops.outputs.gate_checks }}
         run: |
           VALUES="Workflow__c=deploy Status__c=Success Run_Id__c=${{ github.run_id }} Run_Url__c=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} Commit_Sha__c=${{ github.sha }} Completed_At__c=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -482,6 +496,11 @@ jobs:
           # by hand never counts as a governed deploy.
           if [ "${{ needs.glassops.outputs.deployed }}" = "true" ] && [ -n "${{ needs.glassops.outputs.permit_id }}" ]; then
              VALUES="$VALUES Permit_Id__c=${{ needs.glassops.outputs.permit_id }}"
+             if [ -n "${{ needs.glassops.outputs.approver }}" ]; then
+                VALUES="$VALUES Approver__c=${{ needs.glassops.outputs.approver }}"
+             fi
+          else
+             GATE_CHECKS=""
           fi
 
           if [ -n "${{ steps.jest.outputs.jest_run }}" ]; then
@@ -491,10 +510,20 @@ jobs:
              fi
           fi
 
-          sf data create record \
-            --sobject Governance_Event__e \
-            --values "$VALUES" \
-            --target-org portfolio
+          if [ -n "$GATE_CHECKS" ]; then
+             # sf data create record reads a value that looks like JSON as JSON, so the checks
+             # travel as a text value in a REST body. No value holds a space, so the pairs split.
+             BODY=$(jq -n -c --arg v "$VALUES" --arg c "$GATE_CHECKS" '($v | split(" ") | map(split("=") | {(.[0]): (.[1:] | join("="))}) | add) + {Gate_Checks__c: $c}')
+             sf api request rest /services/data/v62.0/sobjects/Governance_Event__e \
+               --method POST \
+               --body "$BODY" \
+               --target-org portfolio
+          else
+             sf data create record \
+               --sobject Governance_Event__e \
+               --values "$VALUES" \
+               --target-org portfolio
+          fi
 
       - name: Publish Failure Event
         if: failure()

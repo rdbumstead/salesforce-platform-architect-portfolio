@@ -1,0 +1,102 @@
+{
+  "type": "sfdc_cms__view",
+  "title": "Governance",
+  "contentBody": {
+    "component": {
+      "children": [
+        {
+          "children": [
+            {
+              "attributes": {
+                "backgroundImageConfig": "",
+                "backgroundImageOverlay": "rgba(0,0,0,0)",
+                "componentSpacerSize": "",
+                "layoutDirectionDesktop": "row",
+                "layoutDirectionMobile": "column",
+                "layoutDirectionTablet": "column",
+                "maxContentWidth": "",
+                "sectionColumnGutterWidth": "",
+                "sectionConfig": "{\"UUID\":\"0ea0e366-e487-4fd8-9973-06c7a708e5fd\",\"columns\":[{\"UUID\":\"f351ea99-ca88-4e4b-8817-256f3db91db6\",\"columnName\":\"Column 1\",\"columnKey\":\"col1\",\"columnWidth\":\"12\",\"seedComponents\":null}]}",
+                "sectionMinHeight": "",
+                "sectionVerticalAlign": "flex-start"
+              },
+              "children": [
+                {
+                  "children": [
+                    {
+                      "attributes": {
+                        "designLabel": "",
+                        "designUrl": "",
+                        "eyebrow": "",
+                        "heading": "Governance",
+                        "lead": "How production change is controlled on this site, and the record that proves it. Each control links its source, and each deploy links the run behind it."
+                      },
+                      "definition": "c:pageIntro",
+                      "id": "c3a4752e-09f8-4332-a044-8ced48966b50",
+                      "type": "component"
+                    },
+                    {
+                      "definition": "c:governanceStory",
+                      "id": "410d77ef-7e4c-430f-8f5a-cb2e05dd5df9",
+                      "type": "component"
+                    },
+                    {
+                      "definition": "c:governanceEvidence",
+                      "id": "607cc2d7-948a-4435-9a5a-31d564cdf563",
+                      "type": "component"
+                    },
+                    {
+                      "attributes": {
+                        "storyKey": "governance"
+                      },
+                      "definition": "c:storyDecisions",
+                      "id": "7020701d-27f9-4429-b56e-67e752ab2c8e",
+                      "type": "component"
+                    }
+                  ],
+                  "id": "f351ea99-ca88-4e4b-8817-256f3db91db6",
+                  "name": "col1",
+                  "title": "Column 1",
+                  "type": "region"
+                }
+              ],
+              "definition": "community_layout:section",
+              "id": "0ea0e366-e487-4fd8-9973-06c7a708e5fd",
+              "type": "component"
+            }
+          ],
+          "id": "22e079b9-0532-40de-9b26-5d52d33c9e7f",
+          "name": "content",
+          "title": "Content",
+          "type": "region"
+        },
+        {
+          "children": [
+            {
+              "attributes": {
+                "customHeadTags": "<link rel=\"canonical\" href=\"https://ryanbumstead.com/governance\" />\n<meta property=\"og:title\" content=\"Governance | Ryan Bumstead\" />\n<meta property=\"og:description\" content=\"How production change is controlled on this Salesforce portfolio, with the approver, checks and run behind each governed deploy.\" />\n<meta property=\"og:url\" content=\"https://ryanbumstead.com/governance\" />\n<meta name=\"twitter:title\" content=\"Governance | Ryan Bumstead\" />\n<meta name=\"twitter:description\" content=\"How production change is controlled on this Salesforce portfolio, with the approver, checks and run behind each governed deploy.\" />",
+                "description": "How production change is controlled on this Salesforce portfolio, with the approver, checks and run behind each governed deploy.",
+                "pageTitle": "Governance | Ryan Bumstead",
+                "recordId": "{!recordId}"
+              },
+              "definition": "community_builder:seoAssistant",
+              "id": "167c7474-00bd-4d9b-8e98-44b16544b19c",
+              "type": "component"
+            }
+          ],
+          "id": "adf83662-b0b9-4a3b-a3d9-e75ed8e8631b",
+          "name": "sfdcHiddenRegion",
+          "title": "sfdcHiddenRegion",
+          "type": "region"
+        }
+      ],
+      "definition": "community_layout:sldsFlexibleLayout",
+      "id": "ba8e40c5-c6b5-4a16-a12c-8ca59f77ee59",
+      "type": "component"
+    },
+    "dataProviders": [],
+    "themeLayoutType": "MTKkiMoYojf79mPK59EBOir53DGAQ9",
+    "viewType": "custom-governance"
+  },
+  "urlName": "governance"
+}

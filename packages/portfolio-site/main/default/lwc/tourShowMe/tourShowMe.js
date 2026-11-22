@@ -25,7 +25,7 @@ export const ANCHOR_ATTRIBUTE = "data-tour-anchor";
 
 /**
  * Asks the component that owns a stop to show its control.
- * @param {string} stop the stop letter, A to E
+ * @param {string} stop the stop letter, A to F
  * @returns {boolean} true when the event was dispatched
  */
 export function showMe(stop) {
@@ -44,7 +44,7 @@ export function showMe(stop) {
 
 /**
  * Calls back whenever the tour bar asks for this stop.
- * @param {string} stop the stop letter this component owns, A to E
+ * @param {string} stop the stop letter this component owns, A to F
  * @param {function(): void} callback runs on each request for that stop
  * @returns {function(): void} removes the listener
  */

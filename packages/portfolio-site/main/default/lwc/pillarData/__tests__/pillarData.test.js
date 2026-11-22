@@ -65,12 +65,20 @@ const EXPECTED = [
     "/portfolio/delivery",
     false,
     "Agile Delivery & DevOps"
+  ],
+  [
+    "F",
+    "Governance",
+    "Governance & Change Control",
+    "/portfolio/governance",
+    false,
+    "Proof for each production deploy"
   ]
 ];
 
 describe("c/pillarData", () => {
-  it("lists the five pillars A to E in order with their route hrefs", () => {
-    expect(PILLARS).toHaveLength(5);
+  it("lists the six pillars A to F in order with their route hrefs", () => {
+    expect(PILLARS).toHaveLength(6);
     PILLARS.forEach((pillar, index) => {
       const [letter, pageLabel, sasName, href, inProgress, menuNote] =
         EXPECTED[index];
@@ -107,8 +115,8 @@ describe("c/pillarData", () => {
   });
 
   it("uses unique keys and letters", () => {
-    expect(new Set(PILLARS.map((pillar) => pillar.key)).size).toBe(5);
-    expect(new Set(PILLARS.map((pillar) => pillar.letter)).size).toBe(5);
+    expect(new Set(PILLARS.map((pillar) => pillar.key)).size).toBe(6);
+    expect(new Set(PILLARS.map((pillar) => pillar.letter)).size).toBe(6);
   });
 
   it("is frozen so no consumer can change the shared list", () => {
@@ -124,19 +132,20 @@ describe("c/pillarData", () => {
   });
 
   it("returns undefined for an unknown or missing letter", () => {
-    expect(pillarByLetter("F")).toBeUndefined();
+    expect(pillarByLetter("G")).toBeUndefined();
     expect(pillarByLetter("")).toBeUndefined();
     expect(pillarByLetter(undefined)).toBeUndefined();
     expect(pillarByLetter(3)).toBeUndefined();
   });
 
-  it("has all five pillars live and none coming", () => {
+  it("has all six pillars live and none coming", () => {
     expect(LIVE_PILLARS.map((pillar) => pillar.letter)).toEqual([
       "A",
       "B",
       "C",
       "D",
-      "E"
+      "E",
+      "F"
     ]);
     expect(COMING_PILLARS).toHaveLength(0);
     expect(PILLARS.filter((pillar) => pillar.inProgress)).toHaveLength(0);
@@ -205,7 +214,8 @@ describe("c/pillarData", () => {
       "Move one weight in the matrix and watch the ranking change.",
       "Press Execute GET and find X-Request-Id and X-RateLimit-Limit.",
       "Paste a job posting, press Generate, read the letter (about 40 s).",
-      "Find In Progress on the Jira board, then the latest commit below."
+      "Find In Progress on the Jira board, then the latest commit below.",
+      "Open a deploy's run link, then read its checks and approver."
     ]);
     PILLARS.forEach((pillar) => {
       expect(pillar.tour.length).toBeLessThanOrEqual(TOUR_TASK_MAX);
@@ -214,9 +224,9 @@ describe("c/pillarData", () => {
 
   it("gives each stop its own minutes and sums them over the live stops", () => {
     expect(PILLARS.map((pillar) => pillar.tourMinutes)).toEqual([
-      2, 3, 1, 3, 1
+      2, 3, 1, 3, 1, 2
     ]);
-    expect(TOUR_MINUTES).toBe(10);
+    expect(TOUR_MINUTES).toBe(12);
     expect(TOUR_MINUTES).toBe(
       LIVE_PILLARS.reduce((total, pillar) => total + pillar.tourMinutes, 0)
     );

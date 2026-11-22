@@ -35,7 +35,8 @@ const KEYS = [
   "business-architecture",
   "nonprofit-solutions",
   "delivery",
-  "glassops"
+  "glassops",
+  "governance"
 ];
 const ROOT = join(__dirname, "..", "..", "..", "..", "..", "..", "..");
 const ADR_DIR = join(ROOT, "docs", "adr");
@@ -107,12 +108,14 @@ describe("c-story-decisions", () => {
       STORIES["business-architecture"].outcome
     );
     expect(qa(hub, "h2.section-heading").map(text)[0]).toBe("Where it stands");
-    ["nonprofit-solutions", "delivery", "glassops"].forEach((key) => {
-      const element = create(key);
-      expect(
-        element.shadowRoot.querySelector('[data-id="outcome"]')
-      ).toBeNull();
-    });
+    ["nonprofit-solutions", "delivery", "glassops", "governance"].forEach(
+      (key) => {
+        const element = create(key);
+        expect(
+          element.shadowRoot.querySelector('[data-id="outcome"]')
+        ).toBeNull();
+      }
+    );
   });
 
   it("opens a record the docs viewer lists in the viewer, under the base path", () => {
@@ -129,7 +132,8 @@ describe("c-story-decisions", () => {
       "business-architecture",
       "nonprofit-solutions",
       "delivery",
-      "glassops"
+      "glassops",
+      "governance"
     ].forEach((key) => {
       const element = create(key);
       qa(element, '[data-id="adr-link"]').forEach((link) => {
@@ -164,7 +168,7 @@ describe("the story data", () => {
     STORIES[key].related.map((entry) => [key, entry])
   );
 
-  it("holds exactly the four stories", () => {
+  it("holds exactly the five stories", () => {
     expect(Object.keys(STORIES).sort()).toEqual([...KEYS].sort());
   });
 

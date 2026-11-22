@@ -13,7 +13,8 @@ const routes = [
   "/api-lab",
   "/business-architecture",
   "/nonprofit-solutions",
-  "/glassops"
+  "/glassops",
+  "/governance"
 ];
 
 module.exports = {

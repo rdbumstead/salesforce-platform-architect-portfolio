@@ -182,7 +182,7 @@ test("a tour walk out of step with the pillars, or on a missing page, fails", ()
 
 test("the smoke's own tour walk matches this repository's pillars and site", () => {
   assert.deepStrictEqual(checkTour(path.join(__dirname, ".."), TOUR), []);
-  assert.strictEqual(TOUR.stops.length, 5);
+  assert.strictEqual(TOUR.stops.length, 6);
 });
 
 test("a part inside a component the page does not place fails", () => {

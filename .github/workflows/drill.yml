@@ -1,0 +1,170 @@
+name: Governance Drill
+
+# A governance drill: a deliberate fault on a short lived drill branch, run through
+# GlassOps against a fresh scratch org, so the Governance page can show the gate saying no.
+# Run it by hand from a drill/* branch, which is never merged. It deploys nothing anywhere:
+# plan, validate (check only) and gate run against the scratch org, and the scratch org is
+# deleted at the end. The one production write is a single governance event that records the
+# deny, so the page can list it. The production PERMIT key never enters this job. The deny is
+# signed with a throwaway key made in the job, which production's deploy would refuse.
+
+on:
+  workflow_dispatch:
+    inputs:
+      drill:
+        description: "Which drill to run"
+        required: true
+        type: choice
+        options:
+          - failing-test
+          - low-coverage
+          - no-approval
+
+concurrency:
+  group: governance-drill
+  cancel-in-progress: false
+
+# separation_of_duties reads the run's approvals and the pull request a commit came from.
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+env:
+  # GlassOps v1.0.2, the production pin, so the page shows the production gate saying no.
+  GLASSOPS_IMAGE: ghcr.io/glassops-platform/glassops@sha256:c13ed90912405491d5ed86a4bd3616fc659d7e46a92c043bc2bfcfe028907393
+  DRILL_CONFIG: .github/glassops/drill-${{ inputs.drill }}.yaml
+
+jobs:
+  drill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      # A drill on main would test nothing and could never be explained, so only drill/* runs.
+      - name: Refuse anything but a drill branch
+        run: |
+          case "$GITHUB_REF_NAME" in
+            drill/*) echo "Drill ${{ inputs.drill }} on $GITHUB_REF_NAME." ;;
+            *) echo "::error::Drills run only from a drill/* branch, not $GITHUB_REF_NAME."; exit 1 ;;
+          esac
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Salesforce & Tools
+        uses: rdbumstead/setup-salesforce-action@v2
+        with:
+          node_version: "26"
+          jwt_key: ${{ secrets.SFDX_JWT_KEY }}
+          client_id: ${{ secrets.SFDX_CLIENT_ID }}
+          username: ${{ secrets.SFDX_USERNAME }}
+          is_dev_hub: "true"
+          alias: "portfolio"
+
+      # The Dev Hub is production and serves the public site, so the drill takes no scratch org
+      # and no API requests from the reserve the site needs.
+      - name: Check the API Reserve
+        run: node scripts/api-reserve.js --target-org portfolio --need-scratch-org --label "Governance drill"
+
+      # One container runs every step, so the scratch login that env create writes to the
+      # container's temp folder is there for plan, validate, gate and env delete.
+      - name: GlassOps Env Create, Plan, Validate, Gate and Env Delete
+        id: glassops
+        env:
+          SFDX_JWT_KEY: ${{ secrets.SFDX_JWT_KEY }}
+          SFDX_CLIENT_ID: ${{ secrets.SFDX_CLIENT_ID }}
+          SFDX_USERNAME: ${{ secrets.SFDX_USERNAME }}
+          SF_PORTFOLIO_ORG_ID: ${{ secrets.SF_PORTFOLIO_ORG_ID }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          # A throwaway signing key, made here and never stored. A PERMIT signed with it can never
+          # pass production's deploy, which checks the real key.
+          GLASSOPS_PERMIT_KEY=$(openssl rand -base64 32)
+          export GLASSOPS_PERMIT_KEY
+          docker run --rm --entrypoint sh \
+            -e SFDX_JWT_KEY -e SFDX_CLIENT_ID -e SFDX_USERNAME -e SF_PORTFOLIO_ORG_ID -e GLASSOPS_PERMIT_KEY \
+            -e GITHUB_ACTIONS -e GITHUB_REPOSITORY -e GITHUB_RUN_ID -e GITHUB_ACTOR -e GITHUB_TRIGGERING_ACTOR \
+            -e GITHUB_REF -e GITHUB_EVENT_NAME -e GITHUB_API_URL -e GITHUB_SERVER_URL -e GITHUB_TOKEN -e GITHUB_SHA \
+            -e DRILL_CONFIG \
+            -v "$GITHUB_WORKSPACE:/work" -w /work "$GLASSOPS_IMAGE" \
+            -c "sh scripts/governance-drill.sh"
+          cat .glassops/drill-exit.txt
+          [ -f .glassops/summary.md ] && cat .glassops/summary.md >> $GITHUB_STEP_SUMMARY || true
+
+      # A drill passes only when gate denied: exit 1 and a PERMIT with allow false. An allow (exit 0)
+      # means the rule did not fire, and an error (exit 2) is not a deny, so neither may show on
+      # the page as one.
+      #
+      # It must also be the right deny. The rule under test must be among the failed checks, and
+      # no check may start with "evidence.", since a missing fact (no commit, an API error) also
+      # denies, and that would put a fake drill result on the page.
+      - name: Check the Gate Denied
+        id: verdict
+        env:
+          DRILL: ${{ inputs.drill }}
+        run: |
+          . .glassops/drill-exit.txt
+          case "$DRILL" in
+            failing-test) EXPECTED=validate_passed ;;
+            low-coverage) EXPECTED=coverage_min ;;
+            no-approval) EXPECTED=separation_of_duties ;;
+          esac
+          ALLOW=$(jq -r '.allow' .glassops/permit.json 2>/dev/null || echo missing)
+          echo "create $CREATE_EXIT, plan $PLAN_EXIT, validate $VALIDATE_EXIT, gate $GATE_EXIT, env delete $DELETE_EXIT, allow $ALLOW"
+          if [ "$GATE_EXIT" != "1" ] || [ "$ALLOW" != "false" ]; then
+             echo "::error::The drill did not end in a signed deny (gate exit $GATE_EXIT, allow $ALLOW)."
+             exit 1
+          fi
+          if ! jq -e --arg r "$EXPECTED" '[.checks[] | select(.outcome == "fail") | .rule] | index($r)' .glassops/permit.json > /dev/null; then
+             echo "::error::The deny did not fail $EXPECTED, the rule this drill tests."
+             jq -r '.checks[] | "check \(.rule): \(.outcome) \(.detail // "")"' .glassops/permit.json
+             exit 1
+          fi
+          if jq -e '[.checks[] | select(.rule | startswith("evidence."))] | length > 0' .glassops/permit.json > /dev/null; then
+             echo "::error::A check starts with evidence., so a fact was missing and the deny is not the drill's."
+             jq -r '.checks[] | "check \(.rule): \(.outcome) \(.detail // "")"' .glassops/permit.json
+             exit 1
+          fi
+          if [ "$DELETE_EXIT" != "0" ]; then
+             echo "::warning::env delete exited $DELETE_EXIT. The scratch org expires in 1 day."
+          fi
+          DENY_ID=$(jq -r '.id' .glassops/permit.json)
+          CHECKS=$(jq -c '[.checks[] | select(.outcome == "fail") | {rule, outcome}]' .glassops/permit.json)
+          echo "deny_id=$DENY_ID" >> "$GITHUB_OUTPUT"
+          echo "checks=$CHECKS" >> "$GITHUB_OUTPUT"
+          echo "Deny $DENY_ID, failed checks $CHECKS"
+          jq -r '.checks[] | "check \(.rule): \(.outcome) \(.detail // "")"' .glassops/permit.json
+
+      # The one production write: a governance event that records the deny as a drill run. It is
+      # never counted as a governed deploy, and the Delivery success rate counts deploy runs only.
+      - name: Publish the Deny
+        env:
+          DENY_ID: ${{ steps.verdict.outputs.deny_id }}
+          CHECKS: ${{ steps.verdict.outputs.checks }}
+        run: |
+          # The checks are JSON, and the record create command reads a JSON looking value as JSON
+          # and refuses it for a text field, so the event goes as a REST body with the checks as text.
+          BODY=$(jq -n -c \
+            --arg run "${{ github.run_id }}" \
+            --arg url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg sha "${{ github.sha }}" \
+            --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg deny "$DENY_ID" \
+            --arg checks "$CHECKS" \
+            '{Workflow__c: "drill", Status__c: "Denied", Run_Id__c: $run, Run_Url__c: $url, Commit_Sha__c: $sha, Completed_At__c: $at, Permit_Id__c: $deny, Gate_Checks__c: $checks}')
+          sf api request rest /services/data/v62.0/sobjects/Governance_Event__e \
+            --method POST \
+            --body "$BODY" \
+            --target-org portfolio
+
+      - name: Keep the Evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: governance-drill-${{ inputs.drill }}-${{ github.run_id }}
+          path: |
+            .glassops/permit.json
+            .glassops/facts.json
+            .glassops/results/
+          if-no-files-found: ignore

@@ -112,13 +112,21 @@ async function loadData(args, routes, reachable) {
     const docKeys = docs.filter((doc) => doc && doc.key).map((doc) => doc.key);
     const { plans, problems } = planAll(routes, reachable, { docKeys });
     if (problems.length) throw new Error(`The read plan has problems:\n${problems.join('\n')}`);
-    const reads = await runReads(connection, [...plans.values()].flatMap((plan) => plan.reads));
+    // A preview of a pull request that adds a read reads production before the read is
+    // deployed there, so it may fall back to that read's sample data. Production never does.
+    const fixtures = isPreviewBuild(args) ? readData(FIXTURE_DIR) : null;
+    const usedFallback = [];
+    const reads = await runReads(connection, [...plans.values()].flatMap((plan) => plan.reads), {
+      fallback: fixtures ? fixtures.reads : undefined,
+      usedFallback
+    });
     const manifest = {
       builtAt: new Date().toISOString(),
       orgId: connection.orgId,
       commit: process.env.GITHUB_SHA || null,
       fixture: false,
-      reads: Object.keys(reads).length
+      reads: Object.keys(reads).length,
+      ...(usedFallback.length ? { sampleReads: usedFallback } : {})
     };
     writeData(reads, manifest);
     // The resume snapshot is build only. It goes under functions/_generated, never into the

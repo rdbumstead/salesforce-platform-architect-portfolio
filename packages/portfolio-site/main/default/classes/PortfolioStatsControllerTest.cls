@@ -519,4 +519,26 @@ private class PortfolioStatsControllerTest {
   private static String normal(String text) {
     return text == null ? '' : text.normalizeSpace();
   }
+
+  @isTest
+  static void shouldNotCountDrillRunsAsDeploys() {
+    Pipeline_Run__c drill = run(
+      GovernanceEventHandler.WORKFLOW_DRILL,
+      null,
+      Datetime.now()
+    );
+    drill.Status__c = GovernanceEventHandler.STATUS_DENIED;
+    insert new List<Pipeline_Run__c>{
+      run(DEPLOY, 10, Datetime.now().addDays(-2)),
+      drill
+    };
+
+    User reader = adminReader();
+
+    Test.startTest();
+    PortfolioStatsController.Stats stats = statsAs(reader);
+    Test.stopTest();
+
+    Assert.areEqual(1, stats.deployRuns, 'A drill run is not a deploy');
+  }
 }

@@ -64,6 +64,13 @@ const GOVERNANCE = {
   onDocs: true
 };
 
+const GOVERNANCE_EVIDENCE = {
+  adr: "045",
+  title: "The Governance Evidence Model",
+  note: "What each deploy stores, why drills are kept apart from the count, and why the page claims no certification.",
+  onDocs: true
+};
+
 const JWT = {
   adr: "006",
   title: "JWT Bearer Flow for CI/CD",
@@ -75,6 +82,13 @@ const GLASSOPS = {
   adr: "044",
   title: "GlassOps Makes the Production Deploy",
   note: "Why a merge to main waits for my approval, and how GlassOps records that the change was allowed.",
+  onDocs: true
+};
+
+const TOKEN_VENDING = {
+  adr: "028",
+  title: "Evaluator Access via Token Vending",
+  note: "How a visitor gets a short lived API token, and the audit row, rate limit and daily cap behind each one.",
   onDocs: true
 };
 
@@ -157,6 +171,33 @@ export const STORIES = Object.freeze({
       {
         option: "Keep the first version.",
         why: "It began as a GitHub Action written in TypeScript, and I rewrote it in Go for the reasons in the decision above."
+      }
+    ]
+  },
+  governance: {
+    related: [
+      GOVERNANCE_EVIDENCE,
+      GLASSOPS,
+      GOVERNANCE,
+      STATIC_FRONT_END,
+      TOKEN_VENDING
+    ],
+    alternatives: [
+      {
+        option: "Claim a certification or a framework mapping.",
+        why: "A badge would read well and prove little. I hold no audit report, so the page names what an auditor would test and links the record that shows it, and leaves the judgement to the reader."
+      },
+      {
+        option: "Write the deploy history by hand.",
+        why: "A page I typed would only prove that I can type. Every row here is written by the pipeline when a run finishes, and it links the run on GitHub that can be checked."
+      },
+      {
+        option: "Show the CI log as the evidence.",
+        why: "A log shows that steps ran. It does not name the approver, and it ages out. The approver and the checks are stored in the org with the permit, so they stay with the deploy."
+      },
+      {
+        option: "Show only the deploys that passed.",
+        why: "A control is shown by what it blocks. The page lists the drills the gate denied as well, each with the rule that failed, and keeps them apart from the deploy count."
       }
     ]
   }

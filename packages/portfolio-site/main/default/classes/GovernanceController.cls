@@ -4,6 +4,10 @@
  *                      newest CreatedDate of each integration cache, and four checklist items
  *                      worked out from that evidence. An item passes only on evidence: no run
  *                      means NO_SIGNAL, a Failure means FAIL, and old evidence means STALE.
+ *                      getGovernanceEvidence() serves the Governance page. It returns the running
+ *                      total of governed deploys, the newest 25 governed deploy runs and every
+ *                      drill run, newest first, each with its permit or deny id, approver, gate
+ *                      checks and test results.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -15,6 +19,13 @@ public with sharing class GovernanceController implements QueryDefinitions.Provi
   private static final String RUNS_QUERY = 'GovernanceController_PipelineRuns';
   private static final String GITHUB_QUERY = 'GovernanceController_GithubCache';
   private static final String JIRA_QUERY = 'GovernanceController_JiraCache';
+  private static final String DEPLOY_EVIDENCE_QUERY = 'GovernanceController_DeployEvidence';
+  private static final String DRILL_EVIDENCE_QUERY = 'GovernanceController_DrillEvidence';
+  private static final String EVIDENCE_FIELDS =
+    'Workflow__c, Status__c, Run_Id__c, Run_Url__c, Commit_Sha__c, Completed_At__c, ' +
+    'Permit_Id__c, Approver__c, Gate_Checks__c, Tests_Run__c, Tests_Passed__c, Org_Coverage__c';
+  public static final Integer DEPLOY_EVIDENCE_LIMIT = 25;
+  public static final Integer DRILL_EVIDENCE_LIMIT = 100;
   public static final String ITEM_DEPLOY = 'deploy';
   public static final String ITEM_HEARTBEAT = 'heartbeat';
   public static final String ITEM_SITE = 'site';
@@ -36,6 +47,35 @@ public with sharing class GovernanceController implements QueryDefinitions.Provi
 
   @TestVisible
   private static Datetime nowOverride;
+  @TestVisible
+  private static Boolean failTotalRead = false;
+
+  /**
+   * @description The Governance page evidence. governedTotal is the running total of governed
+   *              deploys, the same sum the GlassOps card shows, or null when it cannot be read.
+   *              runs holds the newest 25 deploy runs that carry a permit id and every drill
+   *              run, newest first. Cacheable and a read only, so the static export serves it.
+   * @return GovernanceEvidence The total and the runs.
+   */
+  @AuraEnabled(cacheable=true)
+  public static GovernanceEvidence getGovernanceEvidence() {
+    EvidenceSelector selector = new EvidenceSelector();
+    GovernanceEvidence result = new GovernanceEvidence();
+    result.governedTotal = selector.governedTotal();
+    result.runs = new List<EvidenceRun>();
+    for (Pipeline_Run__c row : selector.deployEvidence()) {
+      result.runs.add(new EvidenceRun(row));
+    }
+    // Only a denied drill is evidence. A drill row with any other status came from a mistaken
+    // event, and listing it under the denied drills would read as a pass.
+    for (Pipeline_Run__c row : selector.drillEvidence()) {
+      if (row.Status__c == GovernanceEventHandler.STATUS_DENIED) {
+        result.runs.add(new EvidenceRun(row));
+      }
+    }
+    result.runs.sort();
+    return result;
+  }
 
   /**
    * @description The latest run per workflow, the cache times and the four checklist items.
@@ -188,6 +228,45 @@ public with sharing class GovernanceController implements QueryDefinitions.Provi
       return latest;
     }
 
+    private List<Pipeline_Run__c> deployEvidence() {
+      return (List<Pipeline_Run__c>) QueryDefinitions.run(
+        DEPLOY_EVIDENCE_QUERY,
+        evidenceBinds(GovernanceEventHandler.WORKFLOW_DEPLOY),
+        deployEvidenceDefault()
+      );
+    }
+
+    private List<Pipeline_Run__c> drillEvidence() {
+      return (List<Pipeline_Run__c>) QueryDefinitions.run(
+        DRILL_EVIDENCE_QUERY,
+        evidenceBinds(GovernanceEventHandler.WORKFLOW_DRILL),
+        drillEvidenceDefault()
+      );
+    }
+
+    // The sum of the Glassops_Deploy day rows, as the GlassOps card reads it. Null when the
+    // read fails, so the page never shows a made up zero.
+    private Integer governedTotal() {
+      try {
+        if (failTotalRead) {
+          throw new QueryException('Forced failure for the null total test');
+        }
+        Decimal total = 0;
+        for (Usage_Counter__c row : [
+          SELECT Count__c
+          FROM Usage_Counter__c
+          WHERE Kind__c = :UsageCounterWriter.KIND_GLASSOPS_DEPLOY
+          WITH SYSTEM_MODE
+          LIMIT 10000
+        ]) {
+          total += row.Count__c ?? 0;
+        }
+        return total.intValue();
+      } catch (QueryException e) {
+        return null;
+      }
+    }
+
     private Boolean hasEverReportedSiteBuild() {
       return ![
           SELECT Id
@@ -241,6 +320,41 @@ public with sharing class GovernanceController implements QueryDefinitions.Provi
     return new Map<String, Object>{ 'workflows' => WORKFLOWS };
   }
 
+  private static Map<String, Object> evidenceBinds(String workflow) {
+    return new Map<String, Object>{ 'workflow' => workflow };
+  }
+
+  /**
+   * @description The governed deploy runs as code: deploy runs that carry a permit id, newest
+   *              first, 25 of them, in system mode.
+   *              Query_Definition.GovernanceController_DeployEvidence ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault deployEvidenceDefault() {
+    return new QueryDefinitions.QueryDefault('Pipeline_Run__c', EVIDENCE_FIELDS)
+      .filter('Workflow__c = :workflow AND Permit_Id__c != null')
+      .orderBy('Completed_At__c DESC NULLS LAST, CreatedDate DESC, Id DESC')
+      .rowLimit(DEPLOY_EVIDENCE_LIMIT)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(evidenceBinds(GovernanceEventHandler.WORKFLOW_DEPLOY));
+  }
+
+  /**
+   * @description The drill runs as code: every retained drill run, newest first, in system mode.
+   *              Query_Definition.GovernanceController_DrillEvidence ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault drillEvidenceDefault() {
+    return new QueryDefinitions.QueryDefault('Pipeline_Run__c', EVIDENCE_FIELDS)
+      .filter('Workflow__c = :workflow')
+      .orderBy('Completed_At__c DESC NULLS LAST, CreatedDate DESC, Id DESC')
+      .rowLimit(DRILL_EVIDENCE_LIMIT)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(evidenceBinds(GovernanceEventHandler.WORKFLOW_DRILL));
+  }
+
   /**
    * @description The newest GitHub cache time as code, in system mode.
    *              Query_Definition.GovernanceController_GithubCache ships equal to it.
@@ -278,7 +392,9 @@ public with sharing class GovernanceController implements QueryDefinitions.Provi
     return new Map<String, QueryDefinitions.QueryDefault>{
       RUNS_QUERY => runsDefault(),
       GITHUB_QUERY => githubDefault(),
-      JIRA_QUERY => jiraDefault()
+      JIRA_QUERY => jiraDefault(),
+      DEPLOY_EVIDENCE_QUERY => deployEvidenceDefault(),
+      DRILL_EVIDENCE_QUERY => drillEvidenceDefault()
     };
   }
 
@@ -351,5 +467,106 @@ public with sharing class GovernanceController implements QueryDefinitions.Provi
       this.commitSha = row.Commit_Sha__c;
       this.completedAt = row.Completed_At__c;
     }
+  }
+
+  // The handler stores only a valid list, so a blank or broken value gives an empty list.
+  private static List<GateCheck> parseChecks(String raw) {
+    List<GateCheck> checks = new List<GateCheck>();
+    if (String.isBlank(raw)) {
+      return checks;
+    }
+    try {
+      for (Object item : (List<Object>) JSON.deserializeUntyped(raw)) {
+        Map<String, Object> pair = (Map<String, Object>) item;
+        GateCheck check = new GateCheck();
+        check.rule = (String) pair.get('rule');
+        check.outcome = (String) pair.get('outcome');
+        checks.add(check);
+      }
+    } catch (Exception e) {
+      return new List<GateCheck>();
+    }
+    return checks;
+  }
+
+  /**
+   * @description What the Governance page shows.
+   */
+  public class GovernanceEvidence {
+    @AuraEnabled
+    public Integer governedTotal;
+    @AuraEnabled
+    public List<EvidenceRun> runs;
+  }
+
+  /**
+   * @description One governed deploy or one drill run. For a drill, permitId is the deny id.
+   *              Sorts newest first, runs with no completion time last.
+   */
+  public class EvidenceRun implements Comparable {
+    @AuraEnabled
+    public String runId;
+    @AuraEnabled
+    public String runUrl;
+    @AuraEnabled
+    public String commitSha;
+    @AuraEnabled
+    public Datetime completedAt;
+    @AuraEnabled
+    public String workflow;
+    @AuraEnabled
+    public String status;
+    @AuraEnabled
+    public String permitId;
+    @AuraEnabled
+    public String approver;
+    @AuraEnabled
+    public List<GateCheck> checks;
+    @AuraEnabled
+    public Integer testsRun;
+    @AuraEnabled
+    public Integer testsPassed;
+    @AuraEnabled
+    public Decimal coverage;
+
+    public EvidenceRun(Pipeline_Run__c row) {
+      this.runId = row.Run_Id__c;
+      this.runUrl = row.Run_Url__c;
+      this.commitSha = row.Commit_Sha__c;
+      this.completedAt = row.Completed_At__c;
+      this.workflow = row.Workflow__c;
+      this.status = row.Status__c;
+      this.permitId = row.Permit_Id__c;
+      this.approver = row.Approver__c;
+      this.checks = parseChecks(row.Gate_Checks__c);
+      this.testsRun = row.Tests_Run__c?.intValue();
+      this.testsPassed = row.Tests_Passed__c?.intValue();
+      this.coverage = row.Org_Coverage__c;
+    }
+
+    public Integer compareTo(Object other) {
+      Datetime mine = this.completedAt;
+      Datetime theirs = ((EvidenceRun) other).completedAt;
+      if (mine == theirs) {
+        return 0;
+      }
+      if (mine == null) {
+        return 1;
+      }
+      if (theirs == null) {
+        return -1;
+      }
+      return mine > theirs ? -1 : 1;
+    }
+  }
+
+  /**
+   * @description One gate check, a rule and its outcome (pass, fail or skipped).
+   */
+  public class GateCheck {
+    @AuraEnabled
+    public String rule;
+    @AuraEnabled
+    public String outcome;
   }
 }

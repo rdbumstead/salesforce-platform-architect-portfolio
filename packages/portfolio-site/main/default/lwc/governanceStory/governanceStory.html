@@ -1,0 +1,85 @@
+<template>
+  <article class="story">
+    <section
+      class="story-section pf-panel"
+      data-section="context"
+      aria-labelledby="context-heading"
+    >
+      <p class="story-label" data-id="part-label">Context</p>
+      <h2 id="context-heading" class="story-heading section-heading">
+        Why production change needs proof
+      </h2>
+      <p>
+        Every merge to main on this site deploys to a real Salesforce org. This
+        page shows how that change is controlled, and it lets you check the
+        claims yourself. Each control below links the file, test or run that
+        proves it.
+      </p>
+      <p data-id="no-certification">
+        This is not a certification, and nothing here says an auditor has signed
+        off. For each control I say what an IT auditor would test in change
+        management, and then I show the record.
+      </p>
+      <p data-id="glassops-link">
+        The release tool behind these controls is described on&#32;<a
+          class="story-link"
+          href={glassopsHref}
+          data-id="glassops-page-link"
+          >the GlassOps page</a
+        >.
+      </p>
+    </section>
+
+    <section
+      class="story-section pf-panel"
+      data-section="decision"
+      aria-labelledby="decision-heading"
+    >
+      <p class="story-label" data-id="part-label">Decision</p>
+      <h2 id="decision-heading" class="story-heading section-heading">
+        Six controls between a commit and production
+      </h2>
+      <p>
+        For each control: what it does, what an auditor would test, and where
+        the proof is.
+      </p>
+      <ol class="controls" data-id="controls">
+        <template for:each={controls} for:item="control">
+          <li
+            key={control.key}
+            class="control"
+            data-id="control"
+            data-control={control.key}
+          >
+            <h3 id={control.headingId} class="control-heading">
+              {control.title}
+            </h3>
+            <p class="control-text" data-id="does">{control.does}</p>
+            <p class="control-text" data-id="audit">
+              <strong class="control-term">An auditor would test: </strong
+              >{control.audit}
+            </p>
+            <ul class="proofs" data-id="proofs">
+              <template for:each={control.proofs} for:item="proof">
+                <li key={proof.key} class="proof">
+                  <a
+                    class="story-link"
+                    href={proof.href}
+                    target={proof.target}
+                    rel={proof.rel}
+                    data-id="proof-link"
+                    >{proof.label}<template lwc:if={proof.external}
+                      ><span class="assistive"
+                        >, on GitHub, opens in a new tab</span
+                      ></template
+                    ></a
+                  >
+                </li>
+              </template>
+            </ul>
+          </li>
+        </template>
+      </ol>
+    </section>
+  </article>
+</template>

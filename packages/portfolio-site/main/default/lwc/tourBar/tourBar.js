@@ -1,5 +1,5 @@
 /**
- * @description       : The 10 minute tour's bar, placed by the theme layout under the header.
+ * @description       : The 12 minute tour's bar, placed by the theme layout under the header.
  *                      Opt in: it renders nothing unless a tour is running, and a tour runs only
  *                      after the visitor starts one from the hero's link or the first row of the
  *                      header's "How it's built" menu (startTour). The only thing remembered is
@@ -118,7 +118,7 @@ export function firstStopHref() {
   return LIVE_PILLARS.length ? toHref(LIVE_PILLARS[0].url) : toHref("");
 }
 
-/** "Take the 10 minute tour", from the live stops' minutes, never typed. */
+/** "Take the 12 minute tour", from the live stops' minutes, never typed. */
 export const TOUR_LABEL = `Take the ${TOUR_MINUTES} minute tour`;
 
 /**

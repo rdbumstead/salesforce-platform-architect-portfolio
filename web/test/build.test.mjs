@@ -20,6 +20,7 @@ const PUBLIC_ROUTES = [
   '/business-architecture',
   '/nonprofit-solutions',
   '/glassops',
+  '/governance',
   '/contact'
 ];
 

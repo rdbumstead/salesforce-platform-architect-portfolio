@@ -25,7 +25,7 @@
 // the old footer, and the site build waits on that run. Turn it on once the new footer is live
 // on the apex. With the variable unset no footer rows exist and the row count is unchanged.
 //
-// The accessibility check, per engine, for eight routes (AXE_ROUTES below, the seven the
+// The accessibility check, per engine, for nine routes (AXE_ROUTES below, the eight the
 // Lighthouse audit covers and /docs, whose Decisions group it opens first), at both sizes and in both colour schemes. After the route's
 // components are visible it injects axe-core and fails the row on any violation of the WCAG 2.0
 // to 2.2 A and AA rules, naming the rule id and the first elements. Dark is checked because the
@@ -165,6 +165,14 @@ const ROUTES = [
   {
     path: "/glassops",
     components: ["c-glassops-story", "c-story-decisions"]
+  },
+  {
+    path: "/governance",
+    components: [
+      "c-governance-story",
+      "c-governance-evidence",
+      "c-story-decisions"
+    ]
   }
 ];
 
@@ -246,7 +254,8 @@ const AXE_ROUTES = [
   "/api-lab",
   "/business-architecture",
   "/nonprofit-solutions",
-  "/glassops"
+  "/glassops",
+  "/governance"
 ];
 const AXE_SCHEMES = ["light", "dark"];
 const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
@@ -264,7 +273,8 @@ const TOUR = {
     { letter: "B", path: "/nonprofit-solutions" },
     { letter: "C", path: "/api-lab" },
     { letter: "D", path: "/ai-lab" },
-    { letter: "E", path: "/delivery" }
+    { letter: "E", path: "/delivery" },
+    { letter: "F", path: "/governance" }
   ]
 };
 

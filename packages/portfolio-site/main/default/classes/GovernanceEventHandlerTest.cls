@@ -60,7 +60,9 @@ private class GovernanceEventHandlerTest {
         Jest_Tests_Run__c,
         Jest_Tests_Passed__c,
         Jest_Coverage__c,
-        Permit_Id__c
+        Permit_Id__c,
+        Approver__c,
+        Gate_Checks__c
       FROM Pipeline_Run__c
       ORDER BY Run_Key__c
     ];
@@ -738,5 +740,248 @@ private class GovernanceEventHandlerTest {
     );
     Assert.areEqual(1, governedTotal(), 'The replay counts it');
     Assert.areEqual('P-8', runs()[0].Permit_Id__c, 'Permit stored now');
+  }
+
+  private static Governance_Event__e drillEvent(String runId, String denyId) {
+    Governance_Event__e e = event('drill', 'Denied', runId);
+    e.Permit_Id__c = denyId;
+    e.Gate_Checks__c = '[{"rule":"validate_passed","outcome":"fail"}]';
+    return e;
+  }
+
+  @isTest
+  static void shouldStoreADeniedDrillWithItsDenyIdAndChecksAndNeverCountIt() {
+    Test.startTest();
+    publishAndDeliver(
+      new List<Governance_Event__e>{
+        drillEvent('601', '0123456789abcdef0123456789abcdef')
+      }
+    );
+    Test.stopTest();
+
+    Pipeline_Run__c stored = runs()[0];
+    Assert.areEqual('drill:601', stored.Run_Key__c, 'Drill key');
+    Assert.areEqual('Denied', stored.Status__c, 'Denied is a known status');
+    Assert.areEqual(
+      '0123456789abcdef0123456789abcdef',
+      stored.Permit_Id__c,
+      'The deny id is kept on a denied drill'
+    );
+    Assert.areEqual(
+      '[{"rule":"validate_passed","outcome":"fail"}]',
+      stored.Gate_Checks__c,
+      'The failed check is kept'
+    );
+    Assert.isNull(stored.Approver__c, 'A drill has no approver');
+    Assert.areEqual(0, governedTotal(), 'A drill is never a governed deploy');
+  }
+
+  @isTest
+  static void shouldNeverCountADrillWhateverItCarriesAndNotOnReplay() {
+    Governance_Event__e carrying = drillEvent('611', 'deny-1');
+    carrying.Approver__c = 'rdbumstead';
+    publishAndDeliver(new List<Governance_Event__e>{ carrying });
+    publishAndDeliver(
+      new List<Governance_Event__e>{ drillEvent('611', 'deny-1') }
+    );
+    Governance_Event__e success = event('drill', 'Success', '612');
+    success.Permit_Id__c = 'deny-2';
+    publishAndDeliver(new List<Governance_Event__e>{ success });
+
+    Assert.areEqual(0, governedTotal(), 'No drill row counts');
+    Map<String, Pipeline_Run__c> byKey = new Map<String, Pipeline_Run__c>();
+    for (Pipeline_Run__c run : runs()) {
+      byKey.put(run.Run_Key__c, run);
+    }
+    Assert.areEqual('deny-1', byKey.get('drill:611').Permit_Id__c, 'Deny id');
+    Assert.isNull(
+      byKey.get('drill:612').Permit_Id__c,
+      'Only a Denied drill keeps the id'
+    );
+  }
+
+  @isTest
+  static void shouldKeepAValidApproverAndDropAnInvalidOne() {
+    Assert.areEqual(
+      'rdbumstead',
+      GovernanceEventHandler.validApprover('rdbumstead')
+    );
+    Assert.areEqual(
+      'a',
+      GovernanceEventHandler.validApprover('a'),
+      'One letter'
+    );
+    Assert.areEqual(
+      'a-b-1',
+      GovernanceEventHandler.validApprover('a-b-1'),
+      'Single hyphens'
+    );
+    Assert.isNull(GovernanceEventHandler.validApprover(null), 'Null');
+    Assert.isNull(GovernanceEventHandler.validApprover(' '), 'Blank');
+    Assert.isNull(
+      GovernanceEventHandler.validApprover('bad--login'),
+      'Double hyphen'
+    );
+    Assert.isNull(
+      GovernanceEventHandler.validApprover('-leading'),
+      'Leading hyphen'
+    );
+    Assert.isNull(
+      GovernanceEventHandler.validApprover('trailing-'),
+      'Trailing hyphen'
+    );
+    Assert.isNull(GovernanceEventHandler.validApprover('has space'), 'Space');
+    Assert.isNull(
+      GovernanceEventHandler.validApprover('under_score'),
+      'Underscore'
+    );
+    Assert.isNull(
+      GovernanceEventHandler.validApprover('x'.repeat(40)),
+      'More than 39 characters'
+    );
+    Assert.areEqual(
+      'x'.repeat(39),
+      GovernanceEventHandler.validApprover('x'.repeat(39)),
+      '39 characters'
+    );
+  }
+
+  @isTest
+  static void shouldTrimAndDropTheApproverOnTheWayIn() {
+    Governance_Event__e padded = permitEvent('Success', '701', 'P-701');
+    padded.Approver__c = '  padded-1  ';
+    Governance_Event__e bad = permitEvent('Success', '702', 'P-702');
+    bad.Approver__c = 'bad--login';
+    publishAndDeliver(new List<Governance_Event__e>{ padded, bad });
+
+    Map<String, String> stored = new Map<String, String>();
+    for (Pipeline_Run__c run : runs()) {
+      stored.put(run.Run_Id__c, run.Approver__c);
+    }
+    Assert.areEqual('padded-1', stored.get('701'), 'Trimmed');
+    Assert.isNull(stored.get('702'), 'Invalid dropped');
+  }
+
+  @isTest
+  static void shouldKeepValidChecksInAFixedShapeAndDropAnythingElse() {
+    Assert.isNull(GovernanceEventHandler.validChecks(null), 'Null');
+    Assert.isNull(GovernanceEventHandler.validChecks('  '), 'Blank');
+    Assert.isNull(GovernanceEventHandler.validChecks('not json'), 'Broken');
+    Assert.isNull(GovernanceEventHandler.validChecks('{"a":1}'), 'An object');
+    Assert.areEqual(
+      '[]',
+      GovernanceEventHandler.validChecks('[]'),
+      'An empty list is valid'
+    );
+    Assert.areEqual(
+      '[{"rule":"coverage_min","outcome":"skipped"},{"rule":"sod","outcome":"pass"}]',
+      GovernanceEventHandler.validChecks(
+        '[{"rule":" coverage_min ","outcome":"skipped","extra":"x"},{"rule":"sod","outcome":"pass"}]'
+      ),
+      'Kept in the fixed shape'
+    );
+    Assert.areEqual(
+      '[{"rule":"separation_of_duties","outcome":"satisfied_by_approval"},{"rule":"window","outcome":"waived_by_config"}]',
+      GovernanceEventHandler.validChecks(
+        '[{"rule":"separation_of_duties","outcome":"satisfied_by_approval"},{"rule":"window","outcome":"waived_by_config"}]'
+      ),
+      'The approval and waiver outcomes GlassOps writes are kept'
+    );
+    Assert.isNull(
+      GovernanceEventHandler.validChecks('["text"]'),
+      'An item that is not an object'
+    );
+    Assert.isNull(
+      GovernanceEventHandler.validChecks('[{"rule":"r","outcome":"maybe"}]'),
+      'Unknown outcome'
+    );
+    Assert.isNull(
+      GovernanceEventHandler.validChecks('[{"rule":"","outcome":"pass"}]'),
+      'Blank rule'
+    );
+    Assert.isNull(
+      GovernanceEventHandler.validChecks('[{"rule":7,"outcome":"pass"}]'),
+      'Rule not text'
+    );
+    Assert.isNull(
+      GovernanceEventHandler.validChecks('[{"rule":"r","outcome":1}]'),
+      'Outcome not text'
+    );
+    Assert.isNull(
+      GovernanceEventHandler.validChecks('[{"outcome":"pass"}]'),
+      'No rule'
+    );
+    Assert.isNull(
+      GovernanceEventHandler.validChecks(
+        '[{"rule":"' + 'r'.repeat(101) + '","outcome":"pass"}]'
+      ),
+      'Rule too long'
+    );
+  }
+
+  @isTest
+  static void shouldDropChecksOverThirtyItems() {
+    List<String> thirty = new List<String>();
+    for (Integer i = 0; i < 30; i++) {
+      thirty.add('{"rule":"' + 'r'.repeat(100) + '","outcome":"pass"}');
+    }
+    Assert.isNotNull(
+      GovernanceEventHandler.validChecks('[' + String.join(thirty, ',') + ']'),
+      'Thirty is allowed'
+    );
+    Assert.IsTrue(
+      GovernanceEventHandler.validChecks('[' + String.join(thirty, ',') + ']')
+        .length() < 4000,
+      'Thirty of the longest rules still fit the field'
+    );
+    thirty.add('{"rule":"r30","outcome":"pass"}');
+    Assert.isNull(
+      GovernanceEventHandler.validChecks('[' + String.join(thirty, ',') + ']'),
+      'Thirty one is not'
+    );
+  }
+
+  @isTest
+  static void shouldStoreTheChecksAndApproverOnADeployAndTreatAChangeAsNew() {
+    Governance_Event__e first = permitEvent('Success', '801', 'P-801');
+    first.Approver__c = 'rdbumstead';
+    first.Gate_Checks__c = '[{"rule":"sod","outcome":"pass"}]';
+    publishAndDeliver(new List<Governance_Event__e>{ first });
+
+    Pipeline_Run__c stored = runs()[0];
+    Assert.areEqual('rdbumstead', stored.Approver__c, 'Approver stored');
+    Assert.areEqual(
+      '[{"rule":"sod","outcome":"pass"}]',
+      stored.Gate_Checks__c,
+      'Checks stored'
+    );
+
+    Governance_Event__e again = permitEvent('Success', '801', 'P-801');
+    again.Approver__c = 'rdbumstead';
+    again.Gate_Checks__c = '[{"rule":"sod","outcome":"pass"}]';
+    publishAndDeliver(new List<Governance_Event__e>{ again });
+    Assert.areEqual(
+      0,
+      GovernanceEventHandler.lastWriteCount,
+      'Replay writes nothing'
+    );
+
+    Governance_Event__e changed = permitEvent('Success', '801', 'P-801');
+    changed.Approver__c = 'someone-else';
+    changed.Gate_Checks__c = '[{"rule":"sod","outcome":"pass"}]';
+    publishAndDeliver(new List<Governance_Event__e>{ changed });
+    Assert.areEqual(
+      1,
+      GovernanceEventHandler.lastWriteCount,
+      'Approver change'
+    );
+    Assert.areEqual('someone-else', runs()[0].Approver__c, 'Approver updated');
+
+    Governance_Event__e newChecks = permitEvent('Success', '801', 'P-801');
+    newChecks.Approver__c = 'someone-else';
+    newChecks.Gate_Checks__c = '[{"rule":"sod","outcome":"fail"}]';
+    publishAndDeliver(new List<Governance_Event__e>{ newChecks });
+    Assert.areEqual(1, GovernanceEventHandler.lastWriteCount, 'Checks change');
+    Assert.areEqual(1, governedTotal(), 'Still counted once');
   }
 }

@@ -1,5 +1,5 @@
 /**
- * @description       : The one list of the five portfolio pillars, and the home page's proof
+ * @description       : The one list of the six portfolio pillars, and the home page's proof
  *                      points. A service module with no template. siteBuildSection,
  *                      portfolioThemeLayout, heroBanner, homeTestimonials and tourBar import it.
  *                      Nobody else edits it. Text follows the agreed home mockup, route URLs follow
@@ -99,11 +99,27 @@ const SOURCE = [
     tourMinutes: 1,
     tags: ["Jira", "GitHub Actions"],
     inProgress: false
+  },
+  {
+    key: "governance",
+    letter: "F",
+    pageLabel: "Governance",
+    sasName: "Governance & Change Control",
+    menuNote: "Proof for each production deploy",
+    url: "governance",
+    summary:
+      "How production change is controlled, with the approver, checks and run behind each deploy.",
+    staticSummary:
+      "How production change is controlled, with the approver, checks and run behind each deploy, as of the last build.",
+    tour: "Open a deploy's run link, then read its checks and approver.",
+    tourMinutes: 2,
+    tags: ["Change control", "Signed permits"],
+    inProgress: false
   }
 ];
 
 /**
- * The five pillars, A to E, in tour order. Each entry is frozen, tags and sub links included.
+ * The six pillars, A to F, in tour order. Each entry is frozen, tags and sub links included.
  * Fields: key, letter, pageLabel, sasName, menuNote, url, href, summary, tour, tourMinutes, tags,
  * inProgress, subLinks, and code where a pillar has a code line to show.
  * sasName is the name the solution architecture document uses and the Project pillar label
@@ -191,7 +207,7 @@ export const COMING_PILLARS = Object.freeze(
 
 /**
  * Finds one pillar by its letter, case insensitive.
- * @param {string} letter A to E
+ * @param {string} letter A to F
  * @returns {object|undefined} the pillar, or undefined when no pillar has that letter
  */
 export function pillarByLetter(letter) {
