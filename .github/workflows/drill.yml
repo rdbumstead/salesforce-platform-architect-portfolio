@@ -167,4 +167,6 @@ jobs:
             .glassops/permit.json
             .glassops/facts.json
             .glassops/results/
-          if-no-files-found: ignore
+          # The folder name starts with a dot, which upload-artifact skips as hidden unless told.
+          include-hidden-files: true
+          if-no-files-found: warn
