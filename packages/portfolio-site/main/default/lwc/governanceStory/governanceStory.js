@@ -46,7 +46,7 @@ export const CONTROLS = Object.freeze([
     title: "Approval before each governed deploy",
     does: "A governed deploy waits in a protected GitHub environment named glassops-deploy. The key that signs the permit lives only there, so GlassOps deploys nothing until I approve the run. The diagram files and two manual modes deploy outside that approval today. Since November 21, 2026, the approver's GitHub login is stored with each governed deploy.",
     audit:
-      "Pick a deploy from the list. Check that its run shows an approval, that the approver is named in the record, and that the run cannot start without one. I am the only person on this project, so this shows a deliberate approval step with a record of it, not a second person.",
+      "Pick a deploy from the list. Check that its run shows an approval, that the approver is named in the record, and that the GlassOps job cannot start without one. I am the only person on this project, so this shows a deliberate approval step with a record of it, not a second person.",
     proofs: [
       {
         label: "The deploy workflow",
