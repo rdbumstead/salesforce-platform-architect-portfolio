@@ -18,7 +18,7 @@
  *                      constant when it is blank or missing. Beside it a proof panel says the site runs on Salesforce, shows one monospace line of
  *                      live test counts from ProjectCardController.getBuildCounts (each part
  *                      left out when its count is missing, the whole line left out with no Apex
- *                      count), then holds the hero's buttons. "Take the 10 minute tour" (the
+ *                      count), then holds the hero's buttons. "Take the 12 minute tour" (the
  *                      minutes from c/pillarData) is the one primary button, on its own row. It
  *                      starts the tour (c/tourBar startTour) and goes straight to its first stop
  *                      as a plain link. If the tour cannot start (storage is blocked) the link

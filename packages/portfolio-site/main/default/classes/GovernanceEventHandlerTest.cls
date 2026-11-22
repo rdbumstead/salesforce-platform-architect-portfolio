@@ -880,6 +880,13 @@ private class GovernanceEventHandlerTest {
       ),
       'Kept in the fixed shape'
     );
+    Assert.areEqual(
+      '[{"rule":"separation_of_duties","outcome":"satisfied_by_approval"},{"rule":"window","outcome":"waived_by_config"}]',
+      GovernanceEventHandler.validChecks(
+        '[{"rule":"separation_of_duties","outcome":"satisfied_by_approval"},{"rule":"window","outcome":"waived_by_config"}]'
+      ),
+      'The approval and waiver outcomes GlassOps writes are kept'
+    );
     Assert.isNull(
       GovernanceEventHandler.validChecks('["text"]'),
       'An item that is not an object'

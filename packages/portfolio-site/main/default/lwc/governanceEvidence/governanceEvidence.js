@@ -33,7 +33,15 @@ const LOGIN_PATTERN = /^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}$/i;
 const OUTCOMES = {
   pass: { text: "Passed", className: "pill outcome outcome-pass" },
   fail: { text: "Failed", className: "pill outcome outcome-fail" },
-  skipped: { text: "Skipped", className: "pill outcome outcome-skipped" }
+  skipped: { text: "Skipped", className: "pill outcome outcome-skipped" },
+  satisfied_by_approval: {
+    text: "Approved",
+    className: "pill outcome outcome-pass"
+  },
+  waived_by_config: {
+    text: "Waived",
+    className: "pill outcome outcome-skipped"
+  }
 };
 
 const STATUSES = {

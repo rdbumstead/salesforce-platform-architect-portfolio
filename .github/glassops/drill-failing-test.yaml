@@ -1,4 +1,4 @@
-# Governance drill 1, a failing test (drill.yml, R29-5). Only validate_passed is on, so the deny
+# Governance drill 1, a failing test (drill.yml). Only validate_passed is on, so the deny
 # names that one rule. The drill branch adds an Apex test that fails on purpose. Never merged.
 version: 1
 provider: salesforce

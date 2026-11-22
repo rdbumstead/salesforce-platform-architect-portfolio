@@ -10,7 +10,7 @@
  *                      control, and they slide back as it appears. Home links to the home page from
  *                      every page and, already on the home page, scrolls to the top and moves focus
  *                      to the page content, as the Back to top arrow does. The menu lists
- *                      "Take the 10 minute tour" first, which starts the tour and goes to its
+ *                      "Take the 12 minute tour" first, which starts the tour and goes to its
  *                      first stop, then the six pillars from c/pillarData, then Docs, the
  *                      GlassOps story and each pillar's own pages (the API reference) as items of
  *                      their own. The tour

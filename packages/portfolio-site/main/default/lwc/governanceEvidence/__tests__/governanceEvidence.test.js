@@ -172,6 +172,8 @@ describe("c-governance-evidence helpers", () => {
       { rule: "a", outcome: "pass" },
       { rule: "b", outcome: "fail" },
       { rule: "c", outcome: "skipped" },
+      { rule: "s", outcome: "satisfied_by_approval" },
+      { rule: "w", outcome: "waived_by_config" },
       { rule: "d", outcome: "maybe" },
       { rule: "", outcome: "pass" },
       null
@@ -179,7 +181,9 @@ describe("c-governance-evidence helpers", () => {
     expect(rows.map((row) => [row.rule, row.text, row.failed])).toEqual([
       ["a", "Passed", false],
       ["b", "Failed", true],
-      ["c", "Skipped", false]
+      ["c", "Skipped", false],
+      ["s", "Approved", false],
+      ["w", "Waived", false]
     ]);
   });
 

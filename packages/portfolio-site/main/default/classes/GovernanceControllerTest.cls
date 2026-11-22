@@ -500,6 +500,8 @@ private class GovernanceControllerTest {
         evidenceRun('drill', 'Denied', 'k' + i, NOW.addDays(-30 - i), 'D-' + i)
       );
     }
+    // A drill that was not denied is not evidence and is left out.
+    rows.add(evidenceRun('drill', 'Success', 'k-not-denied', NOW, null));
     insert rows;
 
     GovernanceController.GovernanceEvidence evidence = GovernanceController.getGovernanceEvidence();

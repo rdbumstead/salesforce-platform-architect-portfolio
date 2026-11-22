@@ -1,5 +1,5 @@
 #!/bin/sh
-# Runs one governance drill inside the GlassOps image (drill.yml, R29-5). One container holds
+# Runs one governance drill inside the GlassOps image (drill.yml). One container holds
 # every step, so the scratch login env create writes to the container's temp folder is still
 # there for plan, validate, gate and env delete. gate runs with --no-connect, so it records the
 # configured tier and runs every rule, where a gate that logged in to a scratch org would treat

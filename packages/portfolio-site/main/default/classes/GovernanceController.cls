@@ -66,8 +66,12 @@ public with sharing class GovernanceController implements QueryDefinitions.Provi
     for (Pipeline_Run__c row : selector.deployEvidence()) {
       result.runs.add(new EvidenceRun(row));
     }
+    // Only a denied drill is evidence. A drill row with any other status came from a mistaken
+    // event, and listing it under the denied drills would read as a pass.
     for (Pipeline_Run__c row : selector.drillEvidence()) {
-      result.runs.add(new EvidenceRun(row));
+      if (row.Status__c == GovernanceEventHandler.STATUS_DENIED) {
+        result.runs.add(new EvidenceRun(row));
+      }
     }
     result.runs.sort();
     return result;

@@ -1,6 +1,6 @@
 name: Governance Drill
 
-# A governance drill (R29-5): a deliberate fault on a short lived drill branch, run through
+# A governance drill: a deliberate fault on a short lived drill branch, run through
 # GlassOps against a fresh scratch org, so the Governance page can show the gate saying no.
 # Run it by hand from a drill/* branch, which is never merged. It deploys nothing anywhere:
 # plan, validate (check only) and gate run against the scratch org, and the scratch org is

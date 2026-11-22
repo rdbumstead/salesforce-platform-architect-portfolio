@@ -22,7 +22,8 @@
  *                      A deploy event may also carry the GitHub login that approved the
  *                      glassops-deploy environment (1 to 39 letters, digits or single hyphens,
  *                      else dropped) and the gate checks as a JSON array of at most 30 rule and
- *                      outcome pairs (outcome pass, fail or skipped, else the whole list is
+ *                      outcome pairs (an outcome GlassOps writes: pass, fail, skipped,
+ *                      waived_by_config or satisfied_by_approval, else the whole list is
  *                      dropped). Both are stored on the run.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
@@ -59,10 +60,14 @@ public with sharing class GovernanceEventHandler {
     'failure' => STATUS_FAILURE,
     'denied' => STATUS_DENIED
   };
+  // Every outcome a GlassOps PERMIT check can carry. Production's separation of duties check
+  // reads satisfied_by_approval, so a list without it would drop every real deploy's checks.
   private static final Set<String> OUTCOMES = new Set<String>{
     'pass',
     'fail',
-    'skipped'
+    'skipped',
+    'waived_by_config',
+    'satisfied_by_approval'
   };
   private static final Pattern APPROVER_PATTERN = Pattern.compile(
     '[A-Za-z0-9]+(-[A-Za-z0-9]+)*'

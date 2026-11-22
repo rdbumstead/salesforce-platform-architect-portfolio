@@ -1,4 +1,4 @@
-# Governance drill 2, coverage under 75% (drill.yml, R29-5). Only coverage_min is on, so the deny
+# Governance drill 2, coverage under 75% (drill.yml). Only coverage_min is on, so the deny
 # names that one rule. The drill branch adds a class its test covers only in part. Never merged.
 version: 1
 provider: salesforce
