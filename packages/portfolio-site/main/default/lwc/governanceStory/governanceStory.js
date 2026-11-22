@@ -136,7 +136,7 @@ export const CONTROLS = Object.freeze([
   {
     key: "kill-switches",
     title: "Kill switches for the features that call Salesforce",
-    does: "Five features call Salesforce while a visitor waits: the contact form, testimonials, the cover letter, the API Lab and the live readings. Each has a switch set to live or recorded in one file. Setting it to recorded turns the feature off in minutes. A host that is not the production site is always recorded.",
+    does: "Five features call Salesforce while a visitor waits: the contact form, testimonials, the cover letter, the API Lab and the live readings. Each has a switch set to live or recorded in one file. Setting it to recorded turns the feature off at the next site deploy. A host that is not the production site is always recorded.",
     audit:
       "Ask how a feature is stopped during an incident and who can do it. Check the switch values in the file and the test that fails when one goes missing.",
     proofs: [
