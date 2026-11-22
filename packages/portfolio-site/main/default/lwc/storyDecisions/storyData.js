@@ -193,7 +193,7 @@ export const STORIES = Object.freeze({
       },
       {
         option: "Show the CI log as the evidence.",
-        why: "A log shows that steps ran. It does not name the approver, and it ages out. The approver and the checks are stored in the org with the permit, so they stay with the deploy."
+        why: "A log shows that steps ran. It does not name the approver, and it ages out. Since November 21, 2026, the approver and the checks are stored in the org with the permit, so they stay with the deploy."
       },
       {
         option: "Show only the deploys that passed.",

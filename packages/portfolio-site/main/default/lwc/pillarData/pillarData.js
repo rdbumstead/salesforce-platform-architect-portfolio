@@ -105,7 +105,7 @@ const SOURCE = [
     letter: "F",
     pageLabel: "Governance",
     sasName: "Governance & Change Control",
-    menuNote: "Proof for each production deploy",
+    menuNote: "Proof for each governed deploy",
     url: "governance",
     summary:
       "How production change is controlled, with the approver, checks and run behind each deploy.",

@@ -72,7 +72,7 @@ const EXPECTED = [
     "Governance & Change Control",
     "/portfolio/governance",
     false,
-    "Proof for each production deploy"
+    "Proof for each governed deploy"
   ]
 ];
 

@@ -75,7 +75,7 @@ These are production Lighthouse audit results, which are lab data and not Core W
 
 ## Open question
 
-The static pages and most functions do not touch the org when a visitor loads a page, but the live readings, the forms, the cover letter and the API Lab still call it. Public API traffic from a Developer Edition org still uses that org's daily API request quota, which the footer shows. Whether a public site that consumes the quota this way is allowed is a question only Salesforce sales can answer, and it is still open. The kill switches let me move every feature to `recorded` in minutes if the answer is no. The static front end reduces the load on the org and gives me a way to leave it. It does not settle the licensing question, and I do not claim that it does.
+The static pages and most functions do not touch the org when a visitor loads a page, but the live readings, the forms, the cover letter and the API Lab still call it. Public API traffic from a Developer Edition org still uses that org's daily API request quota, which the footer shows. Whether a public site that consumes the quota this way is allowed is a question only Salesforce sales can answer, and it is still open. The kill switches let me move every feature to `recorded` at the next site deploy if the answer is no. The static front end reduces the load on the org and gives me a way to leave it. It does not settle the licensing question, and I do not claim that it does.
 
 ## Rollback
 
