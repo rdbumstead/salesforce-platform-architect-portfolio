@@ -43,10 +43,10 @@ function adr(number) {
 export const CONTROLS = Object.freeze([
   {
     key: "approval",
-    title: "Approval before every production deploy",
-    does: "The deploy job waits in a protected GitHub environment named glassops-deploy. The key that signs the permit lives only in that environment, so nothing deploys until I approve the run. The approver's GitHub login is stored with the deploy and shown in the list below.",
+    title: "Approval before each governed deploy",
+    does: "A governed deploy waits in a protected GitHub environment named glassops-deploy. The key that signs the permit lives only there, so GlassOps deploys nothing until I approve the run. The diagram files and two manual modes deploy outside that approval today. Since November 21, 2026, the approver's GitHub login is stored with each governed deploy.",
     audit:
-      "Pick a deploy from the list. Check that its run shows an approval, that the approver is named in the record, and that the run cannot start without one. I am the only person on this project, so this shows a deliberate approval step with a record of it, not a second person.",
+      "Pick a deploy from the list. Check that its run shows an approval, that the approver is named in the record, and that the GlassOps job cannot start without one. I am the only person on this project, so this shows a deliberate approval step with a record of it, not a second person.",
     proofs: [
       {
         label: "The deploy workflow",
@@ -63,7 +63,7 @@ export const CONTROLS = Object.freeze([
     title: "A signed decision from the gate",
     does: "Before a deploy, GlassOps checks the change against the policy and signs a permit or a deny. The deploy step refuses to run without a permit for that exact commit. The checks include a passing validation, test coverage of at least 75 percent and the environment approval.",
     audit:
-      "Check that each deploy in the list shows a permit id and that every check on it passed. Then check the drills, where the gate signed a deny and the rule that failed is named.",
+      "Check that each deploy in the list shows a permit id and, since November 21, 2026, its checks with none failed. Then check the drills, where the gate signed a deny and the rule that failed is named.",
     proofs: [
       {
         label: "The production policy",
@@ -136,7 +136,7 @@ export const CONTROLS = Object.freeze([
   {
     key: "kill-switches",
     title: "Kill switches for the features that call Salesforce",
-    does: "Five features call Salesforce while a visitor waits: the contact form, testimonials, the cover letter, the API Lab and the live readings. Each has a switch set to live or recorded in one file. Setting it to recorded turns the feature off in minutes. A host that is not the production site is always recorded.",
+    does: "Five features call Salesforce while a visitor waits: the contact form, testimonials, the cover letter, the API Lab and the live readings. Each has a switch set to live or recorded in one file. Setting it to recorded turns the feature off at the next site deploy. A host that is not the production site is always recorded.",
     audit:
       "Ask how a feature is stopped during an incident and who can do it. Check the switch values in the file and the test that fails when one goes missing.",
     proofs: [

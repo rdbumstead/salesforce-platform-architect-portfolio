@@ -3,7 +3,7 @@
 ## Status
 
 - **Decision:** Accepted.
-- **Build:** [Live](../../.github/workflows/deploy.yml). Every production deploy with a metadata change has gone through GlassOps since November 18, 2026. The config is [prod.yaml](../../.github/glassops/prod.yaml).
+- **Build:** [Live](../../.github/workflows/deploy.yml). Every production deploy with a metadata change has gone through GlassOps since November 18, 2026, except the diagram files and the manual full and destructive modes. The config is [prod.yaml](../../.github/glassops/prod.yaml).
 
 It supplements [ADR-006](006-jwt-bearer-flow-for-ci-cd.md). The JWT sign in stays as it is.
 

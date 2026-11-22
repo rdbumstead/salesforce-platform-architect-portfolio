@@ -9,7 +9,7 @@ It builds on [ADR-044](044-glassops-makes-the-production-deploy.md) and the even
 
 ## Context
 
-- **A permit id alone is thin.** [ADR-044](044-glassops-makes-the-production-deploy.md) made GlassOps the gate for every production deploy with a metadata change, and the deploy event carries the PERMIT id. A visitor who wants to check one deploy needs more: who approved it, and which rules the gate ran.
+- **A permit id alone is thin.** [ADR-044](044-glassops-makes-the-production-deploy.md) made GlassOps the gate for every production deploy with a metadata change, except the diagram files and the manual full and destructive modes. The deploy event carries the PERMIT id. A visitor who wants to check one deploy needs more: who approved it, and which rules the gate ran.
 - **The run log is the wrong place to keep it.** A GitHub run log shows that steps ran, and it ages out. The evidence should live with the deploy record in the org, where the site already reads its pipeline results.
 - **Retention is short.** The event handler keeps only the newest 60 `Pipeline_Run__c` rows per workflow to protect the Developer Edition's data storage. A count taken from the rows would fall as old rows were pruned.
 - **A control is shown by what it blocks.** A page that lists only passing deploys proves little. The gate saying no is the evidence, and it needs a safe way to be produced and shown.
