@@ -112,30 +112,9 @@ svg {
 }
 
 /*
- * The client tag is text outside the picture, at 12 px. From 320 px wide the full drawing
- * keeps a clear band at its foot and the tag sits over it. Narrower than that the words in
- * the drawing would fall under 12 px, so the shapes only drawing takes over and the tag drops
- * below it in the flow, where it wraps to two lines on a very narrow slot. Wrapped lines start
- * at the left, so they read as a paragraph and not as ragged text. The picture then shrinks
- * to the space left, and the 4 to 3 host box never changes.
+ * Narrower than 320 px the words in the full drawing would fall under 12 px, so the shapes
+ * only drawing takes over. The 4 to 3 host box never changes.
  */
-.tag {
-  position: absolute;
-  right: 2.5%;
-  bottom: 5%;
-  box-sizing: border-box;
-  max-width: 95%;
-  padding: 2px 10px;
-  border: 1px solid var(--pf-muted);
-  border-radius: 12px;
-  background-color: var(--pf-chip);
-  color: var(--pf-chip-text);
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.25;
-  text-align: right;
-}
-
 @container (max-width: 319px) {
   .full {
     display: none;
@@ -143,14 +122,5 @@ svg {
 
   .thumb {
     display: block;
-  }
-
-  .tag {
-    position: static;
-    align-self: flex-end;
-    max-width: 100%;
-    margin-top: 2px;
-    padding: 1px 6px;
-    text-align: left;
   }
 }

@@ -267,7 +267,7 @@ describe("c-case-study-grid", () => {
       "Outcome 1,000 Apex tests passing at the last successful deploy"
     );
     expect(text(first.querySelector('[data-id="client"]'))).toBe(
-      "Adult literacy nonprofit · freelance"
+      "Adult literacy nonprofit · freelance · private"
     );
     expect(second.querySelector('[data-id="client"]')).toBeNull();
   });
@@ -279,8 +279,33 @@ describe("c-case-study-grid", () => {
     const [first] = cards(element);
     const nbsp = String.fromCharCode(160);
     expect(first.querySelector('[data-id="client"]').textContent).toBe(
-      `Adult literacy nonprofit ·${nbsp}freelance`
+      `Adult literacy nonprofit ·${nbsp}freelance ·${nbsp}private`
     );
+  });
+
+  it("ends the client line in private for private client work only, and says so when the line is blank", async () => {
+    const element = render();
+    getHomeCaseStudies.emit([
+      { ...CARDS[0], clientLine: "  " },
+      {
+        ...CARDS[1],
+        clientLine: "Reference architecture",
+        figureKey: "employer-hub"
+      },
+      { ...CARDS[2], figureKey: "site-org" }
+    ]);
+    await flush();
+    const [first, second, third] = cards(element);
+    expect(text(first.querySelector('[data-id="client"]'))).toBe(
+      "Private client work"
+    );
+    expect(text(second.querySelector('[data-id="client"]'))).toBe(
+      "Reference architecture · private"
+    );
+    expect(text(third.querySelector('[data-id="client"]'))).toBe(
+      "Personal project · open source"
+    );
+    expect(element.shadowRoot.querySelector("span.tag")).toBeNull();
   });
 
   it("shows My part, Context and Decision with their labels, trimmed, and leaves a blank line out", async () => {

@@ -3,7 +3,8 @@
  *                      short intro, then up to eight projects from
  *                      ProjectCardController.getHomeCaseStudies in two tiers. The first four rows
  *                      are the featured tier: full cards with the title and the client line
- *                      first, then the number labelled "Outcome", "My part", one line each labelled "Context" and
+ *                      first (ending in "private" when c/caseStudyFigure marks the work as
+ *                      private client work), then the number labelled "Outcome", "My part", one line each labelled "Context" and
  *                      "Decision", a slot for the picture (drawn only when figureKey is set,
  *                      sized by the CSS at 4 to 3, the picture component is placed inside it)
  *                      and "Read the case study". Row five on is "More work": compact rows with
@@ -38,6 +39,7 @@ import getHomeCaseStudies from "@salesforce/apex/ProjectCardController.getHomeCa
 import { toExternalUrl } from "c/externalUrl";
 import { trackEvent, EVENTS } from "c/analyticsService";
 import { isReduced } from "c/motionPreference";
+import { isPrivateFigure } from "c/caseStudyFigure";
 
 export const ANCHOR_ID = "case-studies";
 const ANCHOR_HASH = `#${ANCHOR_ID}`;
@@ -52,6 +54,19 @@ export const TIER_MORE = "more";
  */
 function glueDots(text) {
   return text ? text.replace(/ \u00B7 /g, " \u00B7\u00A0") : text;
+}
+
+/**
+ * The client line as shown: private client work ends in " \u00B7 private", and private work
+ * with no line of its own reads "Private client work". The picture decides what is private
+ * (c/caseStudyFigure), so the stored line never has to say it.
+ * @param {string|null} line the trimmed Client_Line__c
+ * @param {boolean} isPrivate whether the card's figure is private client work
+ * @returns {string|null} the text, or null when there is none
+ */
+function clientTextOf(line, isPrivate) {
+  if (!isPrivate) return glueDots(line);
+  return line ? glueDots(`${line} \u00B7 private`) : "Private client work";
 }
 
 /**
@@ -182,7 +197,10 @@ export default class CaseStudyGrid extends LightningElement {
       position: index + 1,
       isFeatured,
       clientLine: textOrNull(row.clientLine),
-      clientText: glueDots(textOrNull(row.clientLine)),
+      clientText: clientTextOf(
+        textOrNull(row.clientLine),
+        isPrivateFigure(figureKey)
+      ),
       hasHeadline: Boolean(metric && label),
       headlineMetric: metric ? groupLeadingNumber(metric) : null,
       // The leading space keeps "$0 software licence cost" apart when read as one line.
