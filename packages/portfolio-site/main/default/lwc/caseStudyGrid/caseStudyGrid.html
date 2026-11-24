@@ -26,7 +26,7 @@
               <article class="card-body">
                 <div class="card-text">
                   <h3 class="card-title">{card.title}</h3>
-                  <template lwc:if={card.clientLine}>
+                  <template lwc:if={card.clientText}>
                     <p class="client" data-id="client">{card.clientText}</p>
                   </template>
                   <template lwc:if={card.hasHeadline}>

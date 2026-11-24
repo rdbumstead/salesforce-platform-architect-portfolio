@@ -1,7 +1,7 @@
 /**
  * @description       : Unit tests for caseStudyFigure LWC: each of the four keys draws its SVG
- *                      with its label, the private tag shows on the two client works and not
- *                      on the others, an unknown or blank key draws nothing and hides the host,
+ *                      with its label, isPrivateFigure marks the two client works and no other
+ *                      key, no picture draws a tag, an unknown or blank key draws nothing and hides the host,
  *                      a key change redraws, and the markup holds no literal colour and stays
  *                      under 6 KB per picture.
  * @author            : Ryan Bumstead
@@ -12,7 +12,7 @@
 import { createElement } from "@lwc/engine-dom";
 import { readFileSync } from "fs";
 import { join } from "path";
-import CaseStudyFigure, { FIGURES } from "c/caseStudyFigure";
+import CaseStudyFigure, { FIGURES, isPrivateFigure } from "c/caseStudyFigure";
 
 const mount = (key) => {
   const el = createElement("c-case-study-figure", { is: CaseStudyFigure });
@@ -45,21 +45,31 @@ describe("c-case-study-figure", () => {
   });
 
   it.each(["literacy-platform", "employer-hub"])(
-    "%s carries the private tag as HTML text outside both drawings",
+    "%s is private client work, said in its label and not drawn as a tag",
     (key) => {
       const el = mount(key);
-      const tag = tagEl(el);
-      expect(tag.textContent).toBe("Client work, private");
-      expect(tag.closest("svg")).toBeNull();
-      expect(texts(el)).not.toContain("Client work, private");
+      expect(isPrivateFigure(key)).toBe(true);
+      expect(isPrivateFigure(` ${key} `)).toBe(true);
+      expect(tagEl(el)).toBeNull();
       expect(FIGURES[key].label).toMatch(/client work, private/i);
     }
   );
 
-  it.each(["site-org", "glassops"])("%s carries no private tag", (key) => {
-    const el = mount(key);
-    expect(tagEl(el)).toBeNull();
-  });
+  it.each(["site-org", "glassops"])(
+    "%s is not private and has no tag",
+    (key) => {
+      const el = mount(key);
+      expect(isPrivateFigure(key)).toBe(false);
+      expect(tagEl(el)).toBeNull();
+    }
+  );
+
+  it.each([undefined, null, "", "unknown", "constructor", 7])(
+    "isPrivateFigure is false for %p",
+    (key) => {
+      expect(isPrivateFigure(key)).toBe(false);
+    }
+  );
 
   it.each(Object.keys(FIGURES))(
     "%s also draws a shapes only thumbnail with the same label and no text",
@@ -74,7 +84,7 @@ describe("c-case-study-figure", () => {
     }
   );
 
-  it("switches to the thumbnail under 320 px by container query and keeps the tag in the flow", () => {
+  it("switches to the thumbnail under 320 px by container query", () => {
     const css = readFileSync(
       join(__dirname, "..", "caseStudyFigure.css"),
       "utf8"
@@ -82,7 +92,7 @@ describe("c-case-study-figure", () => {
     const q = css.slice(css.indexOf("@container (max-width: 319px)"));
     expect(q).toMatch(/\.full \{\s*display: none/);
     expect(q).toMatch(/\.thumb \{\s*display: block/);
-    expect(q).toMatch(/\.tag \{[^}]*position: static/);
+    expect(css).not.toMatch(/\.tag\b/);
   });
 
   it("draws the eight numbered steps of the Employer Hub", () => {

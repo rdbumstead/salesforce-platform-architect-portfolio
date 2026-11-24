@@ -7,8 +7,9 @@
  *                      from Project__c.Card_Figure__c through the card. Any other key, or none,
  *                      renders nothing and takes no space.
  *                      The figure map below also decides which work is private, so a card never
- *                      has to. Client work carries the text tag "Client work, private" inside
- *                      the picture. The pictures are schematic. They hold no client name, no
+ *                      has to. isPrivateFigure tells the card, which adds "private" to its
+ *                      client line. The picture itself carries no tag, since a tag wider than
+ *                      the picture slot ran past its edge. The pictures are schematic. They hold no client name, no
  *                      logo and no record data, and the matrix cells show structure, not scores.
  *                      The host fills its parent, which sets the 4 to 3 shape. Colours come from
  *                      the site's tokens, so the picture follows light and dark.
@@ -19,30 +20,40 @@
  **/
 import { LightningElement, api } from "lwc";
 
-const PRIVATE_TAG = "Client work, private";
-
 export const FIGURES = {
   "literacy-platform": {
     label:
       "Decision matrix for a literacy nonprofit: three platform options scored against ten weighted criteria, with the Nonprofit Success Pack and Program Management option chosen. Client work, private.",
-    tag: PRIVATE_TAG
+    isPrivate: true
   },
   "employer-hub": {
     label:
       "Employer inquiry flow in eight numbered steps: form, match, case, route, review, convert, contract and report. Client work, private.",
-    tag: PRIVATE_TAG
+    isPrivate: true
   },
   "site-org": {
     label:
       "This site's path from records in the org, through an export read and a static build, to the live page.",
-    tag: ""
+    isPrivate: false
   },
   glassops: {
     label:
       "GlassOps deploy chain: plan, validate and gate, then a signed permit, then deploy and verify.",
-    tag: ""
+    isPrivate: false
   }
 };
+
+/**
+ * Whether a figure key belongs to private client work.
+ * @param {*} key a Card_Figure__c value
+ * @returns {boolean} true only for a known private key
+ */
+export function isPrivateFigure(key) {
+  const k = typeof key === "string" ? key.trim() : "";
+  return (
+    Object.prototype.hasOwnProperty.call(FIGURES, k) && FIGURES[k].isPrivate
+  );
+}
 
 export default class CaseStudyFigure extends LightningElement {
   @api figureKey;
@@ -72,10 +83,6 @@ export default class CaseStudyFigure extends LightningElement {
 
   get label() {
     return this.figure ? this.figure.label : "";
-  }
-
-  get tag() {
-    return this.figure ? this.figure.tag : "";
   }
 
   renderedCallback() {
